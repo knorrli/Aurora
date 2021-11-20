@@ -28,12 +28,13 @@
 // TEMPO
 #define PIN_TEMPO 3
 #define PIN_TEMPO_LED 13
-#define TEMPO_GATE_DURATION 50
+#define TEMPO_GATE_READ_DURATION 80
+#define TEMPO_GATE_DURATION 75
 
 // COLOR FADERS
-#define PIN_FADER_RED A0
-#define PIN_FADER_GREEN A1
-#define PIN_FADER_BLUE A2
+#define PIN_FADER_HUE A0
+#define PIN_FADER_SATURATION A1
+#define PIN_FADER_VALUE A2
 #define PIN_FADER_MODE A7
 
 // TRIGGER
@@ -63,6 +64,8 @@ extern uint8_t lastPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
 extern bool linkModeEnabled;
+extern bool presetModeEnabled;
+extern bool touchModeEnabled;
 
 // LED FRAMEBUFFER
 //extern CRGB rawpixels[];
@@ -88,16 +91,18 @@ struct PositionColor {
 // ------------------------
 
 // --- HELPERS
-extern void fillTouchPad(CRGB color);
+extern void renderColorIndicators();
+extern void renderTouchpad(CRGB color);
 extern CHSV randomColor();
-extern void setStripPixelColor(uint8_t stripIndex, uint8_t pixelIndex, CHSV color);
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
 extern bool isTempoDivision(uint8_t division);
 
 // --- INPUT ColorFaders
 extern void setCurrentColor();
-extern uint8_t readColorFader(byte pin);
+extern uint8_t readHue();
+extern uint8_t readSaturation();
+extern uint8_t readValue();
 
 // --- INPUT Preset
 extern void readPreset();
@@ -112,9 +117,11 @@ extern void renderTempo();
 // --- RENDER Touchpad
 extern void renderTouchControl();
 
-extern void renderTouchAction(uint8_t touchPadPixelIndex);
-extern void renderEffect(uint8_t touchPadPixelIndex);
-extern void renderTouchColorIndicator();
+extern void renderTouchAction();
+extern void renderTouchMode();
+extern void renderStripMode();
+extern void affectPresetColor();
+extern void affectPresetValue();
 extern void renderTouchPosition(uint8_t touchPadPixelIndex);
 extern uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition);
 

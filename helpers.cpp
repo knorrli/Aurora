@@ -1,12 +1,24 @@
 #include "aurora.h"
 
-void fillTouchPad(CRGB color) {
-  touchpad.fill_solid(color);
-  touchpad.fadeLightBy(218);
+void renderColorIndicators() {
+  pixels[PIXEL_INDEX_PRESET_COLOR] = presetColor;
+  pixels[PIXEL_INDEX_PRESET_COLOR].fadeLightBy(128);
+  pixels[PIXEL_INDEX_TOUCH_COLOR] = touchColor;
+  pixels[PIXEL_INDEX_TOUCH_COLOR].fadeLightBy(128);
 }
 
-void setStripPixelColor(uint8_t stripIndex, uint8_t pixelIndex, CRGB color) {
-  strip[stripIndex][pixelIndex] = color;
+void renderTouchpad(CRGB color) {
+  touchpad.fill_solid(color);
+  touchpad.fadeLightBy(218); // dim touchpad
+}
+
+void renderTouchPosition(uint8_t touchPadPixelIndex) {
+  pixels[touchPadPixelIndex] = touchColor;
+}
+
+uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition) {
+  uint8_t touchPadPixelIndex = (gridPosition.y == 2) ? gridPosition.x : PIXEL_INDEX_TOUCHPAD_END - (gridPosition.x - 1);
+  return touchPadPixelIndex;
 }
 
 CHSV randomColor() {
@@ -14,7 +26,7 @@ CHSV randomColor() {
 }
 
 bool readTempoGate() {
-  if (!tempoGate && (currentMillis - lastGateMillis > TEMPO_GATE_DURATION)) {
+  if (!tempoGate && (currentMillis - lastGateMillis > TEMPO_GATE_READ_DURATION)) {
     if (digitalRead(PIN_TEMPO)) {
       currentTempo = currentMillis - lastGateMillis;
       lastGateMillis = currentMillis;

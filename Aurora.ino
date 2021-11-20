@@ -10,7 +10,9 @@ uint16_t currentTick = 0;
 uint8_t tickCounter = 0;
 
 // STATE
-bool linkModeEnabled = 0;
+bool presetModeEnabled = false;
+bool linkModeEnabled = false;
+bool touchModeEnabled = false;
 uint8_t currentPreset = 0; // 1 byte
 uint8_t lastPreset = 0; // 1 byte
 CHSV touchColor = CHSV(0, 0, 0);
@@ -24,16 +26,15 @@ struct CRGB * strip[NUMBER_OF_STRIPS];
 
 
 void setup() {
-//  Serial.begin(9600);
   delay(1500); // Boot recovery, let it breathe
 
   pinMode(PIN_TEMPO, INPUT);
   pinMode(PIN_LED_OUTPUT, OUTPUT);
   pinMode(PIN_TEMPO_LED, OUTPUT);
 
-  pinMode(PIN_FADER_RED, INPUT);
-  pinMode(PIN_FADER_GREEN, INPUT);
-  pinMode(PIN_FADER_BLUE, INPUT);
+  pinMode(PIN_FADER_HUE, INPUT);
+  pinMode(PIN_FADER_SATURATION, INPUT);
+  pinMode(PIN_FADER_VALUE, INPUT);
   pinMode(PIN_FADER_MODE, INPUT);
 
   pinMode(PIN_EFFECTS_MODE, INPUT);
@@ -57,13 +58,12 @@ void loop() {
   tempoGate = readTempoGate();
   perform();
   render();
-  isTempoDivision(4);
   if (tempoGate) {
     currentTick = 0;
     tickCounter = 0;
     ticks = (currentTempo / (millis() - currentMillis));
   } else {
-    currentTick = min(currentTick + 1, ticks-1);
+    currentTick = min(currentTick + 1, ticks - 1);
   }
 }
 
@@ -75,8 +75,10 @@ void perform() {
 
 void render() {
   FastLED.clear(false);
+  renderColorIndicators();
+  renderTouchpad(presetColor);
   renderPreset(currentPreset);
-  renderTouchControl();
+  renderTouchAction();
   if (linkModeEnabled) {
     for (uint8_t stripIndex = 0; stripIndex < (NUMBER_OF_STRIPS / 2); stripIndex++) {
       for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {

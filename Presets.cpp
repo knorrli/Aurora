@@ -1,7 +1,8 @@
 #include "aurora.h"
 
 // STROBE
-#define STROBE_LENGTH 50
+#define STROBE_LENGTH 20
+static unsigned long lastGateTrigger = 0;
 
 // RAIN
 
@@ -34,6 +35,9 @@ void Rainbow(CHSV color) {
 
 void Strobe(CHSV color) {
   if (isTempoDivision(2)) {
+    lastGateTrigger = currentMillis;
+  }
+  if ((currentMillis - lastGateTrigger < STROBE_LENGTH)) {
     strips.fill_solid(color);
   }
 }
