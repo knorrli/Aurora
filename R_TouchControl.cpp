@@ -105,10 +105,6 @@ void readTouchInputs() {
   touchModeEnabled = digitalRead(PIN_TOUCH_MODE);
   linkModeEnabled = digitalRead(PIN_LINK_MODE);
   TSPoint touchPosition = touchScreen.getPoint();
-  //  Serial.print("TouchPosition (X, Y): ");
-  //  Serial.print(touchPosition.x);
-  //  Serial.print(", ");
-  //  Serial.println(touchPosition.y);
   if (touchPosition.z > touchScreen.pressureThreshhold) {
     currentTouchPosition = touchPosition;
     gridPosition = calculateGridPosition(currentTouchPosition);

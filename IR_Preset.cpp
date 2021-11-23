@@ -15,28 +15,28 @@ void renderPreset(int8_t preset) {
       Fill(presetColor);
       return;
     case 2:
-      Gradient(presetColor);
+      Pulse(presetColor);
       break;
     case 3:
-      Rainbow(presetColor);
+      XVision(presetColor);
       break;
     case 4:
-      Stars(presetColor);
-      break;
-    case 5:
-      Strobe(presetColor);
-      break;
-    case 6:
-      Chaos(presetColor);
-      break;
-    case 7:
       Rain(presetColor);
       break;
-    case 8:
+    case 5:
+      Rise(presetColor);
+      break;
+    case 6:
       Invert(presetColor);
       break;
+    case 7:
+      Stars(presetColor);
+      break;
+    case 8:
+      Chaos(presetColor);
+      break;
     case 9:
-      XVision(presetColor);
+      Strobe(presetColor);
       break;
   }
 }

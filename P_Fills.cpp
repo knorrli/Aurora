@@ -1,12 +1,43 @@
 #include "aurora.h"
 
-#define XVISION_STEPS ((PIXELS_PER_STRIP-1) / (NUMBER_OF_STRIPS-1))
+/////////////////////////////////
+// FILL
+/////////////////////////////////
+void Fill(CHSV color) {
+  strips.fill_solid(color);
+}
 
+
+/////////////////////////////////
+// PULSE
+/////////////////////////////////
+
+uint8_t pulsePosition = 0;
+uint8_t pulseDirection = 1;
+
+void Pulse(CHSV color) {
+  if (isTempoDivision(4)) {
+    pulsePosition += pulseDirection;
+    if ((pulsePosition > ((PIXELS_PER_STRIP / 2) - 1)) || (pulsePosition <= 0)) {
+      pulseDirection *= -1;
+    }
+  }
+  
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    for (uint8_t pixelIndex = pulsePosition; pixelIndex <= ((PIXELS_PER_STRIP-1)-pulsePosition); pixelIndex++) {
+      strip[stripIndex][pixelIndex] = color;
+    }
+  }
+}
+
+/////////////////////////////////
+// XVISION
+/////////////////////////////////
+#define XVISION_STEPS ((PIXELS_PER_STRIP-1) / (NUMBER_OF_STRIPS-1))
 struct xVisionPositions {
   uint8_t startPixelIndex;
   uint8_t endPixelIndex;
 };
-
 static xVisionPositions xVision[] = {
   { (0 * XVISION_STEPS), (0 * XVISION_STEPS) },
   { (1 * XVISION_STEPS), (1 * XVISION_STEPS) },

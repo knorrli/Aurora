@@ -138,12 +138,13 @@ extern TSPoint calculateGridPosition(TSPoint position);
 
 // --- PRESETS
 extern void Fill(CHSV color = CHSV(0, 0, 255));
+extern void Pulse(CHSV color = CHSV(0, 0, 255));
 extern void Gradient(CHSV olor = CHSV(HUE_GREEN, 255, 255));
 extern void Strobe(CHSV color = CHSV(0, 0, 255));
 extern void Stars(CHSV color = CHSV(0, 0, 255));
 extern void Rain(CHSV color = CHSV(HUE_BLUE, 255, 255));
 extern void Rainbow(CHSV color = CHSV(HUE_RED, 255, 255));
 extern void Chaos(CHSV color = CHSV(0, 0, 255));
-extern void ColorRise(CHSV color = CHSV(HUE_PINK, 255, 255));
+extern void Rise(CHSV color = CHSV(HUE_PINK, 255, 255));
 extern void XVision(CHSV color = CHSV(0, 0, 255));
 extern void Invert(CHSV color = CHSV(0, 0, 255));
