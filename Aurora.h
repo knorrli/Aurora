@@ -63,9 +63,6 @@ extern uint8_t currentPreset;
 extern uint8_t lastPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
-extern bool linkModeEnabled;
-extern bool presetModeEnabled;
-extern bool touchModeEnabled;
 
 // LED FRAMEBUFFER
 //extern CRGB rawpixels[];
@@ -118,10 +115,9 @@ extern void renderTempo();
 extern void renderTouchControl();
 
 extern void renderTouchAction();
-extern void renderTouchMode();
-extern void renderStripMode();
-extern void affectPresetColor();
-extern void affectPresetValue();
+extern void renderPointMode(TSPoint touchPosition);
+extern void renderStripMode(TSPoint touchPosition);
+extern void affectPresetColor(TSPoint touchPosition);
 extern void renderTouchPosition(uint8_t touchPadPixelIndex);
 extern uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition);
 

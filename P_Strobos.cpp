@@ -1,24 +1,10 @@
 #include "aurora.h"
 
 /////////////////////////////////
-// STROBE
-/////////////////////////////////
-#define STROBE_LENGTH 20
-static unsigned long lastStrobeTrigger = 0;
-void Strobe(CHSV color) {
-  if (isTempoDivision(1)) {
-    lastStrobeTrigger = currentMillis;
-  }
-  if ((currentMillis - lastStrobeTrigger < STROBE_LENGTH)) {
-    strips.fill_solid(color);
-  }
-}
-
-/////////////////////////////////
 // STARS
 /////////////////////////////////
+#define STARS_SPEED 8
 #define NUMBER_OF_STARS 30
-#define STARS_SPEED 4
 static PositionColor stars[NUMBER_OF_STARS];
 static uint8_t changingStarIndex = 0;
 void Stars(CHSV color) {
@@ -46,11 +32,12 @@ void Stars(CHSV color) {
 /////////////////////////////////
 // CHAOS
 /////////////////////////////////
+#define CHAOS_SPEED 3
 #define CHAOS_LENGTH 100
 #define CHAOS_BLOCK_SIZE 10
 static PositionColor chaos[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
-  if (isTempoDivision(3)) {
+  if (isTempoDivision(CHAOS_SPEED)) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       chaos[stripIndex] = { stripIndex, random8(PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE) };
     }
@@ -58,5 +45,22 @@ void Chaos(CHSV color) {
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     fill_solid(strip[stripIndex] + chaos[stripIndex].pixelIndex, CHAOS_BLOCK_SIZE, color);
+  }
+}
+
+/////////////////////////////////
+// STROBE
+/////////////////////////////////
+#define STROBE_SPEED 1
+#define STROBE_TEMPO_FACTOR 4 // how long per tempo step
+#define MINIMUM_STROBE_LENGTH 20
+#define MAXIMUM_STROBE_LENGTH 200
+static unsigned long lastStrobeTrigger = 0;
+void Strobe(CHSV color) {
+  if (isTempoDivision(STROBE_SPEED)) {
+    lastStrobeTrigger = currentMillis;
+  }
+  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
+    strips.fill_solid(color);
   }
 }

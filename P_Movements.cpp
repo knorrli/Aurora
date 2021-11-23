@@ -4,13 +4,13 @@
 // RAIN
 /////////////////////////////////
 #define RAIN_LENGTH 20
-#define RAIN_SPEED 4
+#define RAIN_SPEED 8
 static PositionDirection rain[] = {
-  { 0, 10, -1 },
-  { 1, 20, -1 },
+  { 0, 20, -1 },
+  { 1, 25, -1 },
   { 2, 30, -1 },
-  { 3, 20, -1 },
-  { 4, 10, -1 }
+  { 3, 35, -1 },
+  { 4, 40, -1 }
 };
 static unsigned long rainTempoGate = 0;
 
@@ -47,12 +47,13 @@ void Rain(CHSV color) {
 /////////////////////////////////
 // RISE
 /////////////////////////////////
-#define RISE_LENGTH (PIXELS_PER_STRIP / 5)
-#define RISE_SPACING 5
+#define RISE_SPEED 4
+#define RISE_LENGTH (PIXELS_PER_STRIP / 6)
+#define RISE_SPACING RISE_LENGTH
 static PositionColor rise[NUMBER_OF_STRIPS];
 
 void Rise(CHSV color) {
-  if (isTempoDivision(4)) {
+  if (isTempoDivision(RISE_SPEED)) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rise[stripIndex].pixelIndex += 1;
 
@@ -64,11 +65,11 @@ void Rise(CHSV color) {
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     PositionColor stripRise = rise[stripIndex];
-    for (uint8_t i = 0; i < RISE_LENGTH; i++) {
-      strip[stripIndex][(stripRise.pixelIndex + i) % PIXELS_PER_STRIP] = color;
-    }
-    for (uint8_t i = RISE_LENGTH; i < RISE_LENGTH * 2; i++) {
-      strip[stripIndex][(stripRise.pixelIndex + i + RISE_SPACING) % PIXELS_PER_STRIP] = color;
+    for (uint8_t index = 0; index < PIXELS_PER_STRIP; index += (RISE_LENGTH + RISE_SPACING)) {
+      for (uint8_t risePixel = 0; risePixel < RISE_LENGTH; risePixel++) {
+        uint8_t pixelIndex = (stripRise.pixelIndex + index + risePixel) % (PIXELS_PER_STRIP-1);
+        strip[stripIndex][pixelIndex] = color;
+      }
     }
   }
 }
@@ -76,12 +77,13 @@ void Rise(CHSV color) {
 /////////////////////////////////
 // INVERT
 /////////////////////////////////
+#define INVERT_SPEED 6
 int8_t invertDirection = 1;
 uint8_t invertPosition = 0;
 uint8_t breakPosition = (PIXELS_PER_STRIP / 4) - 1;
 
 void Invert(CHSV color) {
-  if (isTempoDivision(3)) {
+  if (isTempoDivision(INVERT_SPEED)) {
     invertPosition += invertDirection;
     if ((invertPosition <= 0) || (invertPosition >= ((PIXELS_PER_STRIP - 1) / 2))) {
       invertDirection *= -1;

@@ -10,9 +10,6 @@ uint16_t currentTick = 0;
 uint8_t tickCounter = 0;
 
 // STATE
-bool presetModeEnabled = false;
-bool linkModeEnabled = false;
-bool touchModeEnabled = false;
 uint8_t currentPreset = 0; // 1 byte
 uint8_t lastPreset = 0; // 1 byte
 CHSV touchColor = CHSV(0, 0, 0);
@@ -26,6 +23,7 @@ struct CRGB * strip[NUMBER_OF_STRIPS];
 
 
 void setup() {
+//  Serial.begin(9600);
   delay(1500); // Boot recovery, let it breathe
 
   pinMode(PIN_TEMPO, INPUT);
@@ -79,13 +77,13 @@ void render() {
   renderTouchpad(presetColor);
   renderPreset(currentPreset);
   renderTouchAction();
-  if (linkModeEnabled) {
-    for (uint8_t stripIndex = 0; stripIndex < (NUMBER_OF_STRIPS / 2); stripIndex++) {
-      for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
-        strip[(NUMBER_OF_STRIPS - stripIndex - 1)][pixelIndex] = strip[stripIndex][pixelIndex];
-      }
-    }
-  }
+//  if (variationModeEnabled) {
+//    for (uint8_t stripIndex = 0; stripIndex < (NUMBER_OF_STRIPS / 2); stripIndex++) {
+//      for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+//        strip[(NUMBER_OF_STRIPS - stripIndex - 1)][pixelIndex] = strip[stripIndex][pixelIndex];
+//      }
+//    }
+//  }
   renderTrigger();
 
   FastLED.show();
