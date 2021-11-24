@@ -13,7 +13,7 @@
 
 #define X_AXIS_VALUE_LOWER_BOUND 90
 #define X_AXIS_VALUE_UPPER_BOUND 930
-#define Y_AXIS_VALUE_LOWER_BOUND 190
+#define Y_AXIS_VALUE_LOWER_BOUND 220
 #define Y_AXIS_VALUE_UPPER_BOUND 860
 
 #define GRID_OFFSET_X ((X_AXIS_VALUE_UPPER_BOUND - X_AXIS_VALUE_LOWER_BOUND) / GRID_SIZE_X) / 2
@@ -33,10 +33,8 @@ void renderTouchAction() {
   if ((currentPosition == NO_TOUCH_POSITION) && holdModeEnabled) {
     currentPosition = lastTouchPosition;
   }
-  if (currentPosition != NO_TOUCH_POSITION) {
-    uint8_t touchpadPixelIndex = mapToTouchPadPixelIndex(gridPosition);
-    renderTouchPosition(touchpadPixelIndex);
 
+  if (currentPosition != NO_TOUCH_POSITION) {
     if (presetModeEnabled) {
       affectPresetColor(currentPosition);
     } else {
@@ -46,21 +44,22 @@ void renderTouchAction() {
         renderPointMode(currentPosition);
       }
     }
+    renderTouchPosition(currentPosition);
   }
+  renderTouchpad();
 }
 
 void renderStripMode(TSPoint currentPosition) {
-  // extended range allows for easier complete black
-  int16_t yValue = constrain(map(currentPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -280, 255), -280, 255);
-  uint8_t stripIndex = (gridPosition.x - 1);
-  CHSV color = touchColor;
+  int16_t yValue = constrain(map(currentPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
+  uint8_t stripIndex = gridPosition.x;
+  //  CHSV color = touchColor;
   if (yValue < 0) {
-    color.value = max(0, 255 + yValue);
+    touchColor.value = max(0, 255 + yValue);
   } else {
-    color.saturation = 255 - yValue;
+    touchColor.saturation = 255 - yValue;
   }
-  fill_solid(strip[stripIndex], PIXELS_PER_STRIP, color);
-  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, color);
+  fill_solid(strip[stripIndex], PIXELS_PER_STRIP, touchColor);
+  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, touchColor);
 }
 
 void affectPresetColor(TSPoint currentPosition) {
@@ -91,7 +90,7 @@ void affectPresetColor(TSPoint currentPosition) {
 void renderPointMode(TSPoint currentPosition) {
   uint8_t pixelIndex = constrain(map(currentPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, 0, PIXELS_PER_STRIP) - 1, 0, PIXELS_PER_STRIP - 1);
   if (variationModeEnabled) {
-    uint8_t stripIndex = (gridPosition.x - 1);
+    uint8_t stripIndex = gridPosition.x;
     if (stripIndex > (NUMBER_OF_STRIPS / 2)) {
       stripIndex = (NUMBER_OF_STRIPS - 1) - stripIndex;
     }
@@ -123,23 +122,45 @@ void readTouchInputs() {
     gridPosition = calculateGridPosition(currentTouchPosition);
   } else {
     currentTouchPosition = NO_TOUCH_POSITION;
-    //    gridPosition = NO_TOUCH_POSITION;
   }
 }
 
 TSPoint calculateGridPosition(TSPoint touchPosition) {
-  uint8_t gridX = constrain(map(touchPosition.x + GRID_OFFSET_X, X_AXIS_VALUE_LOWER_BOUND, X_AXIS_VALUE_UPPER_BOUND, 1, GRID_SIZE_X), 1, GRID_SIZE_X);
-  uint8_t gridY = constrain(map(touchPosition.y + (GRID_OFFSET_Y * 2), Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, 1, GRID_SIZE_Y), 1, GRID_SIZE_Y);
+  uint8_t gridX = constrain(map(touchPosition.x + GRID_OFFSET_X, X_AXIS_VALUE_LOWER_BOUND, X_AXIS_VALUE_UPPER_BOUND, 0, GRID_SIZE_X - 1), 0, GRID_SIZE_X - 1);
+  uint8_t gridY = constrain(map(touchPosition.y + (GRID_OFFSET_Y * 2), Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, 0, GRID_SIZE_Y - 1), 0, GRID_SIZE_Y - 1);
 
   return TSPoint(gridX, gridY, touchPosition.z);
 }
-//
-//void renderTouchPosition(TSPoint touchPosition) {
-//  uint8_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, 0, 255), 0, 255);
-//  uint8_t upperPixelIndex = gridPosition.x;
-//  uint8_t lowerPixelIndex = PIXEL_INDEX_TOUCHPAD_END - (gridPosition.x - 1);
-//  uint8_t upperPixelValue = (255 / max(touchPosition.y, 1));
-//  uint8_t lowerPixelValue = 255 - upperPixelValue;
-//  pixels[upperPixelIndex] = CHSV(touchColor.hue, 255, upperPixelValue);
-//  pixels[lowerPixelIndex] = CHSV(touchColor.hue, 255, lowerPixelValue);
-//}
+
+void renderTouchpad() {
+  for (uint8_t gridX = 0; gridX < GRID_SIZE_X; gridX++) {
+    CRGB upperPixelColor;
+    CRGB lowerPixelColor;
+    for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+      nblend(upperPixelColor, strip[gridX][(PIXELS_PER_STRIP - 1) - pixelIndex], PIXELS_PER_STRIP);
+      nblend(lowerPixelColor, strip[gridX][pixelIndex], PIXELS_PER_STRIP);
+    }
+    touchpad[gridX] = lowerPixelColor;
+    touchpad[(PIXEL_INDEX_TOUCHPAD_END - 1) - gridX] = upperPixelColor;
+  }
+  //  touchpad.fadeLightBy(192); // dim touchpad
+}
+
+void renderTouchPosition(TSPoint touchPosition) {
+  uint8_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, 0, 255), 0, 255);
+  uint8_t upperPixelIndex = gridPosition.x;
+  uint8_t lowerPixelIndex = (PIXEL_INDEX_TOUCHPAD_END - 1) - upperPixelIndex;
+  //  if (presetModeEnabled) {
+  //    touchpad[upperPixelIndex] = blend(touchpad[upperPixelIndex], touchColor, min(yValue * 2, 255));
+  //    touchpad[lowerPixelIndex] = blend(touchpad[lowerPixelIndex], touchColor, min((255 - yValue) * 2, 255));
+  //    if (variationModeEnabled) {
+  //      uint8_t upperMirrorPixelIndex = (GRID_SIZE_X - 1) - gridPosition.x;
+  //      uint8_t lowerMirrorPixelIndex = (PIXEL_INDEX_TOUCHPAD_END - 1) - upperMirrorPixelIndex;
+  //      touchpad[upperMirrorPixelIndex] = touchpad[upperPixelIndex];
+  //      touchpad[lowerMirrorPixelIndex] = touchpad[lowerPixelIndex];
+  //    }
+  //  } else {
+  //    touchpad[upperPixelIndex] = touchColor;
+  //    touchpad[lowerPixelIndex] = touchColor;
+  //  }
+}

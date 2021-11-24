@@ -89,7 +89,6 @@ struct PositionColor {
 
 // --- HELPERS
 extern void renderColorIndicators();
-extern void renderTouchpad(CRGB color);
 extern CHSV randomColor();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
@@ -113,13 +112,13 @@ extern void renderTempo();
 
 // --- RENDER Touchpad
 extern void renderTouchControl();
-
+extern void renderTouchpad();
 extern void renderTouchAction();
 extern void renderPointMode(TSPoint touchPosition);
 extern void renderStripMode(TSPoint touchPosition);
 extern void affectPresetColor(TSPoint touchPosition);
-extern void renderTouchPosition(uint8_t touchPadPixelIndex);
-extern uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition);
+extern void renderTouchPosition(TSPoint touchPosition);
+//extern uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition);
 
 // --- INPUT Trigger
 extern bool readTrigger();

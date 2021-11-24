@@ -74,16 +74,8 @@ void perform() {
 void render() {
   FastLED.clear(false);
   renderColorIndicators();
-  renderTouchpad(presetColor);
   renderPreset(currentPreset);
   renderTouchAction();
-//  if (variationModeEnabled) {
-//    for (uint8_t stripIndex = 0; stripIndex < (NUMBER_OF_STRIPS / 2); stripIndex++) {
-//      for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
-//        strip[(NUMBER_OF_STRIPS - stripIndex - 1)][pixelIndex] = strip[stripIndex][pixelIndex];
-//      }
-//    }
-//  }
   renderTrigger();
 
   FastLED.show();

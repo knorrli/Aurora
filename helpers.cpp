@@ -7,19 +7,10 @@ void renderColorIndicators() {
   pixels[PIXEL_INDEX_TOUCH_COLOR].fadeLightBy(128);
 }
 
-void renderTouchpad(CRGB color) {
-  touchpad.fill_solid(color);
-  touchpad.fadeLightBy(218); // dim touchpad
-}
-
-void renderTouchPosition(uint8_t touchPadPixelIndex) {
-  pixels[touchPadPixelIndex] = touchColor;
-}
-
-uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition) {
-  uint8_t touchPadPixelIndex = (gridPosition.y == 2) ? gridPosition.x : PIXEL_INDEX_TOUCHPAD_END - (gridPosition.x - 1);
-  return touchPadPixelIndex;
-}
+//uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition) {
+//  uint8_t touchPadPixelIndex = (gridPosition.y == 2) ? gridPosition.x : PIXEL_INDEX_TOUCHPAD_END - (gridPosition.x - 1);
+//  return touchPadPixelIndex;
+//}
 
 CHSV randomColor() {
   return CHSV(random8(), 255, 255);
@@ -38,7 +29,7 @@ bool readTempoGate() {
 
 bool isTempoDivision(uint8_t division) {
   bool gate = tempoGate;
-  gate = (currentTick % ((ticks / division)+1) == 0);
+  gate = (currentTick % ((ticks / division) + 1) == 0);
   return gate;
 }
 
