@@ -41,9 +41,9 @@
 #define PIN_TRIGGER_INPUT A3
 
 // TOUCHSCREEN
-#define PIN_EFFECTS_MODE A6
-#define PIN_TOUCH_MODE 4
-#define PIN_LINK_MODE 5
+#define PIN_HOLD_MODE A6
+#define PIN_PRESET_MODE 4
+#define PIN_VARIATION_MODE 5
 
 // ------------------------
 // VARIABLES

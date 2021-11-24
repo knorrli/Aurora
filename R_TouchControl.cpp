@@ -44,7 +44,6 @@ void renderTouchAction() {
         renderPointMode(currentPosition);
       }
     }
-    renderTouchPosition(currentPosition);
   }
   renderTouchpad();
 }
@@ -112,9 +111,9 @@ void renderPointMode(TSPoint currentPosition) {
 
 void readTouchInputs() {
   // TODO: FIX PIN NAMING!
-  holdModeEnabled = (analogRead(PIN_EFFECTS_MODE) > 511);
-  presetModeEnabled = digitalRead(PIN_TOUCH_MODE);
-  variationModeEnabled = digitalRead(PIN_LINK_MODE);
+  holdModeEnabled = (analogRead(PIN_HOLD_MODE) > 511);
+  presetModeEnabled = digitalRead(PIN_PRESET_MODE);
+  variationModeEnabled = digitalRead(PIN_VARIATION_MODE);
   TSPoint touchPosition = touchScreen.getPoint();
   if (touchPosition.z > touchScreen.pressureThreshhold) {
     currentTouchPosition = touchPosition;
@@ -143,24 +142,4 @@ void renderTouchpad() {
     touchpad[gridX] = lowerPixelColor;
     touchpad[(PIXEL_INDEX_TOUCHPAD_END - 1) - gridX] = upperPixelColor;
   }
-  //  touchpad.fadeLightBy(192); // dim touchpad
-}
-
-void renderTouchPosition(TSPoint touchPosition) {
-  uint8_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, 0, 255), 0, 255);
-  uint8_t upperPixelIndex = gridPosition.x;
-  uint8_t lowerPixelIndex = (PIXEL_INDEX_TOUCHPAD_END - 1) - upperPixelIndex;
-  //  if (presetModeEnabled) {
-  //    touchpad[upperPixelIndex] = blend(touchpad[upperPixelIndex], touchColor, min(yValue * 2, 255));
-  //    touchpad[lowerPixelIndex] = blend(touchpad[lowerPixelIndex], touchColor, min((255 - yValue) * 2, 255));
-  //    if (variationModeEnabled) {
-  //      uint8_t upperMirrorPixelIndex = (GRID_SIZE_X - 1) - gridPosition.x;
-  //      uint8_t lowerMirrorPixelIndex = (PIXEL_INDEX_TOUCHPAD_END - 1) - upperMirrorPixelIndex;
-  //      touchpad[upperMirrorPixelIndex] = touchpad[upperPixelIndex];
-  //      touchpad[lowerMirrorPixelIndex] = touchpad[lowerPixelIndex];
-  //    }
-  //  } else {
-  //    touchpad[upperPixelIndex] = touchColor;
-  //    touchpad[lowerPixelIndex] = touchColor;
-  //  }
 }

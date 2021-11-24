@@ -35,9 +35,9 @@ void setup() {
   pinMode(PIN_FADER_VALUE, INPUT);
   pinMode(PIN_FADER_MODE, INPUT);
 
-  pinMode(PIN_EFFECTS_MODE, INPUT);
-  pinMode(PIN_TOUCH_MODE, INPUT);
-  pinMode(PIN_LINK_MODE, INPUT);
+  pinMode(PIN_HOLD_MODE, INPUT);
+  pinMode(PIN_PRESET_MODE, INPUT);
+  pinMode(PIN_VARIATION_MODE, INPUT);
 
   for (int stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     uint8_t pixelStartIndex = PIXEL_INDEX_STRIP_START + (stripIndex * PIXELS_PER_STRIP);
