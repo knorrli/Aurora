@@ -7,11 +7,6 @@ void renderColorIndicators() {
   pixels[PIXEL_INDEX_TOUCH_COLOR].fadeLightBy(128);
 }
 
-//uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition) {
-//  uint8_t touchPadPixelIndex = (gridPosition.y == 2) ? gridPosition.x : PIXEL_INDEX_TOUCHPAD_END - (gridPosition.x - 1);
-//  return touchPadPixelIndex;
-//}
-
 CHSV randomColor() {
   return CHSV(random8(), 255, 255);
 }

@@ -5,7 +5,7 @@
 /////////////////////////////////
 #define RAIN_LENGTH 20
 #define RAIN_SPEED 8
-static PositionDirection rain[] = {
+static PositionOrientation rain[] = {
   { 0, 20, -1 },
   { 1, 25, -1 },
   { 2, 30, -1 },
@@ -28,7 +28,7 @@ void Rain(CHSV color) {
   }
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    PositionDirection raindrop = rain[stripIndex];
+    PositionOrientation raindrop = rain[stripIndex];
     for (uint8_t index = 0; index < RAIN_LENGTH; index++) {
       int8_t pixelIndex = raindrop.pixelIndex - (((RAIN_LENGTH - 1) - index) * raindrop.orientation);
       if (pixelIndex < 0) {
@@ -48,7 +48,7 @@ void Rain(CHSV color) {
 // RISE
 /////////////////////////////////
 #define RISE_SPEED 4
-#define RISE_LENGTH (PIXELS_PER_STRIP / 6)
+#define RISE_LENGTH (PIXELS_PER_STRIP / 3)
 #define RISE_SPACING RISE_LENGTH
 static PositionColor rise[NUMBER_OF_STRIPS];
 
@@ -65,9 +65,10 @@ void Rise(CHSV color) {
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     PositionColor stripRise = rise[stripIndex];
-    for (uint8_t index = 0; index < PIXELS_PER_STRIP; index += (RISE_LENGTH + RISE_SPACING)) {
-      for (uint8_t risePixel = 0; risePixel < RISE_LENGTH; risePixel++) {
-        uint8_t pixelIndex = (stripRise.pixelIndex + index + risePixel) % (PIXELS_PER_STRIP-1);
+    uint8_t stripOffset = (stripIndex % 2 == 0) ? 0 : (RISE_LENGTH/2);
+    for (uint8_t index = 0; index < PIXELS_PER_STRIP; index += RISE_LENGTH) {
+      for (uint8_t risePixel = 0; risePixel < (RISE_LENGTH/2); risePixel++) {
+        uint8_t pixelIndex = ((index + stripRise.pixelIndex + risePixel) + stripOffset) % (PIXELS_PER_STRIP - 1);
         strip[stripIndex][pixelIndex] = color;
       }
     }

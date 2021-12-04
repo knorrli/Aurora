@@ -71,7 +71,7 @@ extern CRGBSet touchpad;
 extern CRGBSet strips;
 extern struct CRGB * strip[NUMBER_OF_STRIPS];
 
-struct PositionDirection {
+struct PositionOrientation {
   uint8_t stripIndex;
   uint8_t pixelIndex;
   int8_t orientation;
@@ -114,11 +114,9 @@ extern void renderTempo();
 extern void renderTouchControl();
 extern void renderTouchpad();
 extern void renderTouchAction();
-extern void renderPointMode(TSPoint touchPosition);
-extern void renderStripMode(TSPoint touchPosition);
-extern void affectPresetColor(TSPoint touchPosition);
+extern void modifyPresetColor(TSPoint touchPosition);
+extern void renderStripColorOverride(TSPoint touchPosition);
 extern void renderTouchPosition(TSPoint touchPosition);
-//extern uint8_t mapToTouchPadPixelIndex(TSPoint gridPosition);
 
 // --- INPUT Trigger
 extern bool readTrigger();
@@ -128,6 +126,7 @@ extern void renderTrigger();
 // --- INPUT Touch
 extern void readTouchInputs();
 extern TSPoint calculateGridPosition(TSPoint position);
+extern bool isTouched();
 
 
 
