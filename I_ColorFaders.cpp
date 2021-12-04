@@ -23,8 +23,8 @@ void setCurrentColor() {
 }
 
 void applyRainbow() {
-  uint8_t xValue = constrain(map((1023 - analogRead(PIN_FADER_SATURATION)), FADER_MIN_VAL, FADER_MAX_VAL, 0, (255 / (NUMBER_OF_STRIPS-1))), 0, (255 / (NUMBER_OF_STRIPS-1)));
-  uint8_t yValue = constrain(map((1023 - analogRead(PIN_FADER_VALUE)), FADER_MIN_VAL, FADER_MAX_VAL, 0, 255), 0, 255);
+  uint8_t xValue = constrain(map((1023 - analogRead(PIN_FADER_VALUE)), FADER_MIN_VAL, FADER_MAX_VAL, 0, (255 / (NUMBER_OF_STRIPS-1))), 0, (255 / (NUMBER_OF_STRIPS-1)));
+  uint8_t yValue = constrain(map((1023 - analogRead(PIN_FADER_SATURATION)), FADER_MIN_VAL, FADER_MAX_VAL, 0, 255), 0, 255);
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     uint8_t stripHue = presetColor.hue;
     stripHue += (xValue * (stripIndex - ((NUMBER_OF_STRIPS - 1) / 2)));
