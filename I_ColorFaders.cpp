@@ -13,22 +13,34 @@ void setCurrentColor() {
   uint8_t currentHue = readHue();
   uint8_t currentSaturation = readSaturation();
   uint8_t currentValue = readValue();
-  // manual touch color
+  // RAINBOW
   if ((analogRead(PIN_FADER_MODE) > 511)) {
-    if (isTouched()) {
-      touchColor = CHSV(currentHue, currentSaturation, currentValue);
-    } else {
-      presetColor = CHSV(currentHue, currentSaturation, currentValue);
-    }
+    presetColor = CHSV(readHue(), 255, 255);
   } else {
     presetColor = CHSV(readHue(), readSaturation(), readValue());
-    touchColor = CHSV(presetColor.hue + 128, presetColor.saturation, presetColor.value);
+  }
+  touchColor = CHSV(presetColor.hue + 128, presetColor.saturation, presetColor.value);
+}
+
+void applyRainbow() {
+  uint8_t xValue = constrain(map((1023 - analogRead(PIN_FADER_SATURATION)), FADER_MIN_VAL, FADER_MAX_VAL, 0, (255 / (NUMBER_OF_STRIPS-1))), 0, (255 / (NUMBER_OF_STRIPS-1)));
+  uint8_t yValue = constrain(map((1023 - analogRead(PIN_FADER_VALUE)), FADER_MIN_VAL, FADER_MAX_VAL, 0, 255), 0, 255);
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    uint8_t stripHue = presetColor.hue;
+    stripHue += (xValue * (stripIndex - ((NUMBER_OF_STRIPS - 1) / 2)));
+
+    for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+      if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
+        int8_t offsetPixelIndex = pixelIndex - (PIXELS_PER_STRIP / 2);
+        CHSV pixelColor = CHSV((stripHue + ((offsetPixelIndex * yValue) / PIXELS_PER_STRIP)), presetColor.saturation, presetColor.value);
+        strip[stripIndex][pixelIndex] = blend(strip[stripIndex][pixelIndex], pixelColor, 255);
+      }
+    }
   }
 }
 
 uint8_t readHue() {
-  uint16_t hueFaderValue = analogRead(PIN_FADER_HUE);
-  uint8_t hueValue = constrain(map((1023 - hueFaderValue), FADER_MIN_VAL, FADER_MAX_VAL, MIN_HUE, MAX_HUE), MIN_HUE, MAX_HUE);
+  uint8_t hueValue = constrain(map((1023 - analogRead(PIN_FADER_HUE)), FADER_MIN_VAL, FADER_MAX_VAL, MIN_HUE, MAX_HUE), MIN_HUE, MAX_HUE);
   //  if (analogRead(PIN_FADER_MODE) < 511) { // Continuous Colors
   return hueValue;
   //  } else { // binned colors

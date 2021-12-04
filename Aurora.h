@@ -93,6 +93,7 @@ extern CHSV randomColor();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
 extern bool isTempoDivision(uint8_t division);
+extern void applyRainbow();
 
 // --- INPUT ColorFaders
 extern void setCurrentColor();

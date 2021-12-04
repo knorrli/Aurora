@@ -75,6 +75,9 @@ void render() {
   FastLED.clear(false);
   renderColorIndicators();
   renderPreset(currentPreset);
+  if (analogRead(PIN_FADER_MODE) > 511) {
+    applyRainbow();
+  }
   renderTouchAction();
   renderTrigger();
 
