@@ -49,51 +49,45 @@ void renderTouchAction() {
 void renderStripColorOverride(TSPoint touchPosition) {
   int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
-  if (yValue < 0) {
-    touchColor.value = max(0, 255 + yValue);
-  } else {
-    touchColor.saturation = 255 - yValue;
-  }
-  if (variationModeEnabled) {
-    for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
-      if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
-        strip[stripIndex][pixelIndex] = blend(strip[stripIndex][pixelIndex], touchColor, 255);
-      }
-      if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
-        if (!strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] == CRGB::Black) {
-          strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = blend(strip[stripIndex][pixelIndex], touchColor, 255);
-        }
-      }
+  CHSV color = CHSV(presetColor.hue, 255, 255);
+  if (!variationModeEnabled) {
+    if (yValue < 0) {
+      color.value = max(0, 255 + yValue);
+    } else {
+      color.saturation = 255 - yValue;
     }
   } else {
-    fill_solid(strip[stripIndex], PIXELS_PER_STRIP, touchColor);
-    fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, touchColor);
+    color.hue += (yValue / 2);
   }
+  fill_solid(strip[stripIndex], PIXELS_PER_STRIP, color);
+  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, color);
 }
 
 void modifyPresetColor(TSPoint touchPosition) {
   int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
+  CHSV color = CHSV(presetColor.hue, 255, 255);
+  //  CHSV color = touchColor;
   if (!variationModeEnabled) {
     if (yValue < 0) {
-      touchColor.value = max(0, 255 + yValue);
+      color.value = max(0, 255 + yValue);
     } else {
-      touchColor.saturation = 255 - yValue;
+      color.saturation = 255 - yValue;
     }
   } else {
-    touchColor.hue += (yValue / NUMBER_OF_STRIPS);
+    color.hue += (yValue / 2);
   }
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
     if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
       strip[stripIndex][pixelIndex] = CRGB::Black;
     } else {
-      strip[stripIndex][pixelIndex] = CHSV(touchColor.hue, touchColor.saturation, touchColor.value);
+      strip[stripIndex][pixelIndex] = color;
     }
     if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
       if (!strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] == CRGB::Black) {
         strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = CRGB::Black;
       } else {
-        strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = CHSV(touchColor.hue, touchColor.saturation, touchColor.value);
+        strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = color;
       }
     }
   }
