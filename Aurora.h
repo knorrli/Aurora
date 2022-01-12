@@ -56,11 +56,13 @@ extern unsigned long lastGateMillis;
 extern unsigned long currentTempo;
 extern unsigned long ticks;
 extern uint16_t currentTick;
-extern uint8_t tickCounter;
+extern bool stripLengthGate;
+extern uint16_t stripLengthTick;
+extern uint16_t stripGateTempoDivision;
 
 // STATE
 extern uint8_t currentPreset;
-extern uint8_t lastPreset;
+extern uint8_t selectedPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
 
@@ -103,10 +105,11 @@ extern uint8_t readValue();
 
 // --- INPUT Preset
 extern void readPreset();
-extern uint8_t readKeypad();
+extern int8_t readKeypad();
 
 // --- RENDER Preset
-extern void renderPreset(int8_t preset);
+extern void renderPreset(uint8_t preset);
+extern void resetPreset(uint8_t preset);
 
 // --- RENDER Tempo
 extern void renderTempo();
@@ -133,13 +136,20 @@ extern bool isTouched();
 
 // --- PRESETS
 extern void Fill(CHSV color = CHSV(0, 0, 255));
+extern void resetFill();
 extern void Pulse(CHSV color = CHSV(0, 0, 255));
-extern void Gradient(CHSV olor = CHSV(HUE_GREEN, 255, 255));
-extern void Strobe(CHSV color = CHSV(0, 0, 255));
-extern void Stars(CHSV color = CHSV(0, 0, 255));
-extern void Rain(CHSV color = CHSV(HUE_BLUE, 255, 255));
-extern void Rainbow(CHSV color = CHSV(HUE_RED, 255, 255));
-extern void Chaos(CHSV color = CHSV(0, 0, 255));
-extern void Rise(CHSV color = CHSV(HUE_PINK, 255, 255));
+extern void resetPulse();
 extern void XVision(CHSV color = CHSV(0, 0, 255));
+extern void resetXVision();
+extern void Rain(CHSV color = CHSV(HUE_BLUE, 255, 255));
+extern void resetRain();
+extern void Rise(CHSV color = CHSV(HUE_PINK, 255, 255));
+extern void resetRise();
 extern void Invert(CHSV color = CHSV(0, 0, 255));
+extern void resetInvert();
+extern void Stars(CHSV color = CHSV(0, 0, 255));
+extern void resetStars();
+extern void Chaos(CHSV color = CHSV(0, 0, 255));
+extern void resetChaos();
+extern void Strobe(CHSV color = CHSV(0, 0, 255));
+extern void resetStrobe();

@@ -4,7 +4,7 @@
 #define KEYPAD_DEBOUNCE_DELAY 100
 static unsigned long lastKeyPadRead = 0;
 
-void renderPreset(int8_t preset) {
+void renderPreset(uint8_t preset) {
   // render preset color indicator
   pixels[PIXEL_INDEX_PRESET_COLOR] = presetColor;
 
@@ -43,16 +43,52 @@ void renderPreset(int8_t preset) {
 
 void readPreset() {
   if (currentMillis - lastKeyPadRead > KEYPAD_DEBOUNCE_DELAY) {
-    uint8_t newPreset = readKeypad();
-    if (currentPreset != newPreset) {
-      lastPreset = currentPreset;
-      currentPreset = newPreset;
+    int8_t newPreset = readKeypad();
+    if (newPreset >= 0) {
+      if (currentPreset != newPreset) {
+        currentPreset = newPreset;
+      }
+      resetPreset(currentPreset);
     }
     lastKeyPadRead = currentMillis;
   }
 }
 
-uint8_t readKeypad() {
+void resetPreset(uint8_t preset) {
+  switch (preset) {
+    case 0:
+      return;
+    case 1:
+      resetFill();
+      return;
+    case 2:
+      resetPulse();
+      break;
+    case 3:
+      resetXVision();
+      break;
+    case 4:
+      resetRain();
+      break;
+    case 5:
+      resetRise();
+      break;
+    case 6:
+      resetInvert();
+      break;
+    case 7:
+      resetStars();
+      break;
+    case 8:
+      resetChaos();
+      break;
+    case 9:
+      resetStrobe();
+      break;
+  }
+}
+
+int8_t readKeypad() {
   byte pin_8_13 = PINB | 0b00100000;
   switch (pin_8_13) {
     case 0b00100001:
@@ -76,6 +112,6 @@ uint8_t readKeypad() {
     case 0b00110011:
       return 0;
     default:
-      return currentPreset;
+      return -1;
   }
 }

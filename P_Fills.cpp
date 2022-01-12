@@ -7,15 +7,19 @@ void Fill(CHSV color) {
   strips.fill_solid(color);
 }
 
+void resetFill() {
+  return;
+}
+
 /////////////////////////////////
 // PULSE
 /////////////////////////////////
-#define PULSE_SPEED 6
+#define PULSE_SPEED 5
 uint8_t pulsePosition = (PIXELS_PER_STRIP / 2);
 uint8_t pulseDirection = -1;
 
 void Pulse(CHSV color) {
-  if (isTempoDivision(PULSE_SPEED)) {
+  if (stripLengthGate) {
     pulsePosition += pulseDirection;
     if ((pulsePosition > ((PIXELS_PER_STRIP / 2) - 1)) || (pulsePosition <= 0)) {
       pulseDirection *= -1;
@@ -27,6 +31,12 @@ void Pulse(CHSV color) {
       strip[stripIndex][pixelIndex] = color;
     }
   }
+}
+
+void resetPulse() {
+  pulsePosition = (PIXELS_PER_STRIP / 2);
+  pulseDirection = -1;
+  return;
 }
 
 /////////////////////////////////
@@ -50,7 +60,7 @@ static uint8_t xVisionDirection = 0;
 static uint8_t xVisionStep = 0;
 
 void XVision(CHSV color) {
-  if (isTempoDivision(XVISION_SPEED)) {
+  if (stripLengthGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       uint8_t xVisionStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
       switch (xVisionDirection) {
@@ -88,4 +98,16 @@ void XVision(CHSV color) {
       strip[stripIndex][pixelIndex] = color;
     }
   }
+}
+
+void resetXVision() {
+  xVision[0] = { (0 * XVISION_STEPS), (0 * XVISION_STEPS) };
+  xVision[1] = { (1 * XVISION_STEPS), (1 * XVISION_STEPS) };
+  xVision[2] = { (2 * XVISION_STEPS), (2 * XVISION_STEPS) };
+  xVision[3] = { (3 * XVISION_STEPS), (3 * XVISION_STEPS) };
+  xVision[4] = { (4 * XVISION_STEPS), (4 * XVISION_STEPS) };
+
+  xVisionDirection = 0;
+  xVisionStep = 0;
+  return;
 }

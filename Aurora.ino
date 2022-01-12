@@ -4,14 +4,15 @@
 bool tempoGate = LOW; // 1 byte
 unsigned long currentMillis = 0;
 unsigned long lastGateMillis = 0; // 4 bytes
-unsigned long currentTempo = 0;
+unsigned long currentTempo = 100;
 unsigned long ticks = 0;
 uint16_t currentTick = 0;
-uint8_t tickCounter = 0;
+bool stripLengthGate = LOW;
+uint16_t stripLengthTick = 0;
+uint16_t stripGateTempoDivision = 100;
 
 // STATE
 uint8_t currentPreset = 0; // 1 byte
-uint8_t lastPreset = 0; // 1 byte
 CHSV touchColor = CHSV(0, 0, 0);
 CHSV presetColor = CHSV(0, 0, 0);
 
@@ -23,8 +24,8 @@ struct CRGB * strip[NUMBER_OF_STRIPS];
 
 
 void setup() {
-//  Serial.begin(9600);
-  delay(1500); // Boot recovery, let it breathe
+//  Serial.begin(150200);
+  delay(1500); // Boot recovery
 
   pinMode(PIN_TEMPO, INPUT);
   pinMode(PIN_LED_OUTPUT, OUTPUT);
@@ -54,14 +55,22 @@ void setup() {
 void loop() {
   currentMillis = millis();
   tempoGate = readTempoGate();
+  if (stripLengthTick > stripGateTempoDivision) {
+    stripLengthGate = HIGH;
+    stripLengthTick = 0;
+  } else {
+    stripLengthGate = LOW;
+  }
   perform();
   render();
   if (tempoGate) {
     currentTick = 0;
-    tickCounter = 0;
+    stripLengthTick = 0;
     ticks = (currentTempo / (millis() - currentMillis));
+    stripGateTempoDivision = (currentTempo / ((PIXELS_PER_STRIP-1) * 4.225));
   } else {
     currentTick = min(currentTick + 1, ticks - 1);
+    stripLengthTick++;
   }
 }
 

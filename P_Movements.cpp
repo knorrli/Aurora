@@ -16,7 +16,7 @@ static unsigned long rainTempoGate = 0;
 
 void Rain(CHSV color) {
   rainTempoGate += 1;
-  if (isTempoDivision(RAIN_SPEED)) {
+  if (stripLengthGate) {
     rainTempoGate = 0;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rain[stripIndex].pixelIndex += rain[stripIndex].orientation;
@@ -44,6 +44,15 @@ void Rain(CHSV color) {
   }
 }
 
+void resetRain() {
+  rain[0] = { 0, 20, -1 };
+  rain[1] = { 1, 25, -1 };
+  rain[2] = { 2, 30, -1 };
+  rain[3] = { 3, 35, -1 };
+  rain[4] = { 4, 40, -1 };
+  return;
+}
+
 /////////////////////////////////
 // RISE
 /////////////////////////////////
@@ -53,7 +62,7 @@ void Rain(CHSV color) {
 static PositionColor rise[NUMBER_OF_STRIPS];
 
 void Rise(CHSV color) {
-  if (isTempoDivision(RISE_SPEED)) {
+  if (stripLengthGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rise[stripIndex].pixelIndex += 1;
 
@@ -65,9 +74,9 @@ void Rise(CHSV color) {
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     PositionColor stripRise = rise[stripIndex];
-    uint8_t stripOffset = (stripIndex % 2 == 0) ? 0 : (RISE_LENGTH/2);
+    uint8_t stripOffset = (stripIndex % 2 == 0) ? 0 : (RISE_LENGTH / 2);
     for (uint8_t index = 0; index < PIXELS_PER_STRIP; index += RISE_LENGTH) {
-      for (uint8_t risePixel = 0; risePixel < (RISE_LENGTH/2); risePixel++) {
+      for (uint8_t risePixel = 0; risePixel < (RISE_LENGTH / 2); risePixel++) {
         uint8_t pixelIndex = ((index + stripRise.pixelIndex + risePixel) + stripOffset) % (PIXELS_PER_STRIP - 1);
         strip[stripIndex][pixelIndex] = color;
       }
@@ -75,16 +84,22 @@ void Rise(CHSV color) {
   }
 }
 
+void resetRise() {
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    rise[stripIndex].pixelIndex = 0;
+  }
+}
+
 /////////////////////////////////
 // INVERT
 /////////////////////////////////
 #define INVERT_SPEED 6
+#define BREAK_POSITION ((PIXELS_PER_STRIP / 4) - 1)
 int8_t invertDirection = 1;
 uint8_t invertPosition = 0;
-uint8_t breakPosition = (PIXELS_PER_STRIP / 4) - 1;
 
 void Invert(CHSV color) {
-  if (isTempoDivision(INVERT_SPEED)) {
+  if (stripLengthGate) {
     invertPosition += invertDirection;
     if ((invertPosition <= 0) || (invertPosition >= ((PIXELS_PER_STRIP - 1) / 2))) {
       invertDirection *= -1;
@@ -92,15 +107,20 @@ void Invert(CHSV color) {
   }
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    uint8_t startIndex = min(invertPosition, breakPosition);
-    uint8_t endIndex = max(invertPosition, breakPosition);
+    uint8_t startIndex = min(invertPosition, BREAK_POSITION);
+    uint8_t endIndex = max(invertPosition, BREAK_POSITION);
     if (stripIndex % 2 == 0) {
-      startIndex = min((((PIXELS_PER_STRIP - 1) / 2) - invertPosition), breakPosition);
-      endIndex = max((((PIXELS_PER_STRIP - 1) / 2) - invertPosition), breakPosition);
+      startIndex = min((((PIXELS_PER_STRIP - 1) / 2) - invertPosition), BREAK_POSITION);
+      endIndex = max((((PIXELS_PER_STRIP - 1) / 2) - invertPosition), BREAK_POSITION);
     }
     for (uint8_t pixelIndex = startIndex; pixelIndex <= endIndex; pixelIndex++) {
       strip[stripIndex][pixelIndex] = color;
       strip[stripIndex][(PIXELS_PER_STRIP - 1) - pixelIndex] = color;
     }
   }
+}
+
+void resetInvert() {
+  invertDirection = 1;
+  invertPosition = 0;
 }

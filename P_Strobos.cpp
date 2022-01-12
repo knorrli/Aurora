@@ -29,6 +29,10 @@ void Stars(CHSV color) {
   }
 }
 
+void resetStars() {
+  return;
+}
+
 /////////////////////////////////
 // CHAOS
 /////////////////////////////////
@@ -37,7 +41,7 @@ void Stars(CHSV color) {
 #define CHAOS_BLOCK_SIZE 10
 static PositionColor chaos[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
-  if (isTempoDivision(CHAOS_SPEED)) {
+  if (tempoGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       chaos[stripIndex] = { stripIndex, random8(PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE) };
     }
@@ -46,6 +50,10 @@ void Chaos(CHSV color) {
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     fill_solid(strip[stripIndex] + chaos[stripIndex].pixelIndex, CHAOS_BLOCK_SIZE, color);
   }
+}
+
+void resetChaos() {
+  return;
 }
 
 /////////////////////////////////
@@ -63,4 +71,8 @@ void Strobe(CHSV color) {
   if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
     strips.fill_solid(color);
   }
+}
+
+void resetStrobe() {
+  return;
 }
