@@ -2,11 +2,16 @@
 
 
 #define KEYPAD_DEBOUNCE_DELAY 100
+uint8_t selectedPreset = 0;
 static unsigned long lastKeyPadRead = 0;
 
 void renderPreset(uint8_t preset) {
   // render preset color indicator
   pixels[PIXEL_INDEX_PRESET_COLOR] = presetColor;
+
+  if (tempoGate && (currentPreset != selectedPreset)) {
+    currentPreset = selectedPreset;
+  }
 
   switch (preset) {
     case 0:
@@ -45,10 +50,10 @@ void readPreset() {
   if (currentMillis - lastKeyPadRead > KEYPAD_DEBOUNCE_DELAY) {
     int8_t newPreset = readKeypad();
     if (newPreset >= 0) {
-      if (currentPreset != newPreset) {
-        currentPreset = newPreset;
+      if (selectedPreset != newPreset) {
+        selectedPreset = newPreset;
       }
-      resetPreset(currentPreset);
+      resetPreset(selectedPreset);
     }
     lastKeyPadRead = currentMillis;
   }
