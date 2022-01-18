@@ -53,12 +53,10 @@
 extern bool tempoGate;
 extern unsigned long currentMillis;
 extern unsigned long lastGateMillis;
+extern unsigned long divisionMillis;
 extern unsigned long currentTempo;
-extern unsigned long ticks;
-extern uint16_t currentTick;
-extern bool stripLengthGate;
-extern uint16_t stripLengthTick;
-extern uint16_t stripGateTempoDivision;
+extern unsigned long lastDivisionGateMillis;
+extern bool divisionGate;
 
 // STATE
 extern uint8_t currentPreset;

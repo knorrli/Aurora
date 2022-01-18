@@ -5,6 +5,7 @@
 /////////////////////////////////
 #define STARS_SPEED 8
 #define NUMBER_OF_STARS 30
+#define STARS_FADE_SPEED 200
 static PositionColor stars[NUMBER_OF_STARS];
 static uint8_t changingStarIndex = 0;
 void Stars(CHSV color) {
@@ -16,13 +17,13 @@ void Stars(CHSV color) {
     changingStarIndex += 1;
 
     for (uint8_t starIndex = 0; starIndex < NUMBER_OF_STARS; starIndex++) {
-      stars[starIndex].color.fadeToBlackBy(min((NUMBER_OF_STARS / ticks), 1));
+      stars[starIndex].color.fadeToBlackBy(min((NUMBER_OF_STARS / STARS_FADE_SPEED), 1));
     }
 
   }
 
   for (uint8_t starIndex = 0; starIndex < NUMBER_OF_STARS; starIndex++) {
-    uint8_t tickFadeAmount = ((NUMBER_OF_STARS * STARS_SPEED) / ticks);
+    uint8_t tickFadeAmount = ((NUMBER_OF_STARS * STARS_SPEED) / STARS_FADE_SPEED); // TODO: FIX FADE SPEED TO TEMPO
     stars[starIndex].color.fadeToBlackBy(max(1, tickFadeAmount));
     PositionColor star = stars[starIndex];
     strip[star.stripIndex][star.pixelIndex] = star.color;
@@ -41,7 +42,7 @@ void resetStars() {
 #define CHAOS_BLOCK_SIZE 10
 static PositionColor chaos[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
-  if (tempoGate) {
+  if (divisionGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       chaos[stripIndex] = { stripIndex, random8(PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE) };
     }

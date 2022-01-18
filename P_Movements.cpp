@@ -16,7 +16,7 @@ static unsigned long rainTempoGate = 0;
 
 void Rain(CHSV color) {
   rainTempoGate += 1;
-  if (stripLengthGate) {
+  if (divisionGate) {
     rainTempoGate = 0;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rain[stripIndex].pixelIndex += rain[stripIndex].orientation;
@@ -62,7 +62,7 @@ void resetRain() {
 static PositionColor rise[NUMBER_OF_STRIPS];
 
 void Rise(CHSV color) {
-  if (stripLengthGate) {
+  if (divisionGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rise[stripIndex].pixelIndex += 1;
 
@@ -99,7 +99,7 @@ int8_t invertDirection = 1;
 uint8_t invertPosition = 0;
 
 void Invert(CHSV color) {
-  if (stripLengthGate) {
+  if (divisionGate) {
     invertPosition += invertDirection;
     if ((invertPosition <= 0) || (invertPosition >= ((PIXELS_PER_STRIP - 1) / 2))) {
       invertDirection *= -1;

@@ -1,18 +1,18 @@
 #include "aurora.h"
 
 // TEMPO
-bool tempoGate = LOW; // 1 byte
+bool tempoGate = LOW;
 unsigned long currentMillis = 0;
-unsigned long lastGateMillis = 0; // 4 bytes
-unsigned long currentTempo = 100;
-unsigned long ticks = 0;
-uint16_t currentTick = 0;
-bool stripLengthGate = LOW;
-uint16_t stripLengthTick = 0;
-uint16_t stripGateTempoDivision = 100;
+unsigned long lastGateMillis = 0;
+unsigned long currentTempo = 5500;
+
+unsigned long lastDivisionTrigger = 0;
+bool divisionGate = LOW;
+unsigned long elapsedLoopTime = 0;
+
 
 // STATE
-uint8_t currentPreset = 0; // 1 byte
+uint8_t currentPreset = 0;
 CHSV touchColor = CHSV(0, 0, 0);
 CHSV presetColor = CHSV(0, 0, 0);
 
@@ -24,7 +24,7 @@ struct CRGB * strip[NUMBER_OF_STRIPS];
 
 
 void setup() {
-//  Serial.begin(150200);
+  //  Serial.begin(115200);
   delay(1500); // Boot recovery
 
   pinMode(PIN_TEMPO, INPUT);
@@ -55,28 +55,31 @@ void setup() {
 void loop() {
   currentMillis = millis();
   tempoGate = readTempoGate();
-  if (stripLengthTick > stripGateTempoDivision) {
-    stripLengthGate = HIGH;
-    stripLengthTick = 0;
-  } else {
-    stripLengthGate = LOW;
-  }
+
   perform();
   render();
-  if (tempoGate) {
-    currentTick = 0;
-    stripLengthTick = 0;
-    ticks = (currentTempo / (millis() - currentMillis));
-    stripGateTempoDivision = (currentTempo / ((PIXELS_PER_STRIP-1) * 4.225));
+
+  if (((lastDivisionTrigger * 5.625) >= currentTempo)) {
+    lastDivisionTrigger = 0;
+    divisionGate = HIGH;
   } else {
-    currentTick = min(currentTick + 1, ticks - 1);
-    stripLengthTick++;
+    divisionGate = LOW;
+  }
+  elapsedLoopTime = millis() - currentMillis;
+  lastDivisionTrigger = lastDivisionTrigger + elapsedLoopTime;
+  
+  if (tempoGate) {
+    currentTempo = millis() - lastGateMillis;
+    lastGateMillis = millis();
   }
 }
 
 void perform() {
   setCurrentColor();
   readPreset();
+  if (tempoGate && (currentPreset != selectedPreset)) {
+    currentPreset = selectedPreset;
+  }
   readTouchInputs();
 }
 

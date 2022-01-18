@@ -9,10 +9,6 @@ void renderPreset(uint8_t preset) {
   // render preset color indicator
   pixels[PIXEL_INDEX_PRESET_COLOR] = presetColor;
 
-  if (tempoGate && (currentPreset != selectedPreset)) {
-    currentPreset = selectedPreset;
-  }
-
   switch (preset) {
     case 0:
       return;

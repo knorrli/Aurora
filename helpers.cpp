@@ -12,10 +12,8 @@ CHSV randomColor() {
 }
 
 bool readTempoGate() {
-  if (!tempoGate && (currentMillis - lastGateMillis > TEMPO_GATE_READ_DURATION)) {
+  if (!tempoGate && ((currentMillis - lastGateMillis) > TEMPO_GATE_READ_DURATION)) {
     if (digitalRead(PIN_TEMPO)) {
-      currentTempo = currentMillis - lastGateMillis;
-      lastGateMillis = currentMillis;
       return HIGH;
     }
   }
@@ -23,7 +21,7 @@ bool readTempoGate() {
 }
 
 bool isTempoDivision(uint8_t division) {
-  return tempoGate || (currentTick % ((ticks / division) + 1) == 0);
+  return tempoGate;// || (currentTick % ((ticks / division) + 1) == 0);
 }
 
 void renderTempo() {

@@ -19,7 +19,7 @@ uint8_t pulsePosition = (PIXELS_PER_STRIP / 2);
 uint8_t pulseDirection = -1;
 
 void Pulse(CHSV color) {
-  if (stripLengthGate) {
+  if (divisionGate) {
     pulsePosition += pulseDirection;
     if ((pulsePosition > ((PIXELS_PER_STRIP / 2) - 1)) || (pulsePosition <= 0)) {
       pulseDirection *= -1;
@@ -60,7 +60,7 @@ static uint8_t xVisionDirection = 0;
 static uint8_t xVisionStep = 0;
 
 void XVision(CHSV color) {
-  if (stripLengthGate) {
+  if (divisionGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       uint8_t xVisionStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
       switch (xVisionDirection) {
