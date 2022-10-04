@@ -9,8 +9,8 @@ static PositionOrientation rain[] = {
   { 0, 20, -1 },
   { 1, 25, -1 },
   { 2, 30, -1 },
-  { 3, 35, -1 },
-  { 4, 40, -1 }
+  { 3, 25, -1 },
+  { 4, 20, -1 }
 };
 static unsigned long rainTempoGate = 0;
 
