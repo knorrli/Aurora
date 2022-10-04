@@ -31,13 +31,13 @@ void renderPreset(uint8_t preset) {
       Invert(presetColor);
       break;
     case 7:
-      Stars(presetColor);
+      OneOnOne(presetColor);
       break;
     case 8:
-      Chaos(presetColor);
+      Strobe(presetColor);
       break;
     case 9:
-      Strobe(presetColor);
+      Chaos(presetColor);
       break;
   }
 }
@@ -78,7 +78,7 @@ void resetPreset(uint8_t preset) {
       resetInvert();
       break;
     case 7:
-      resetStars();
+      resetOneOnOne();
       break;
     case 8:
       resetChaos();
