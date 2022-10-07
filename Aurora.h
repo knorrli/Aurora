@@ -88,6 +88,7 @@ struct PositionColor {
 // ------------------------
 
 // --- HELPERS
+extern bool isFaderAlternativeMode();
 extern void renderColorIndicators();
 extern CHSV randomColor();
 extern void showBootIndicatorReady();

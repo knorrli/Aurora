@@ -13,13 +13,12 @@ void setCurrentColor() {
   uint8_t currentHue = readHue();
   uint8_t currentSaturation = readSaturation();
   uint8_t currentValue = readValue();
-  // RAINBOW
-  if ((analogRead(PIN_FADER_MODE) > 511)) {
-    presetColor = CHSV(readHue(), 255, 255);
+  if (isFaderAlternativeMode()) {
+    presetColor = CHSV(currentHue, MAX_SATURATION, MAX_VALUE);
   } else {
-    presetColor = CHSV(readHue(), readSaturation(), readValue());
+    presetColor = CHSV(currentHue, currentSaturation, currentValue);
   }
-  touchColor = CHSV(presetColor.hue + 128, presetColor.saturation, presetColor.value);
+  touchColor = CHSV(presetColor.hue + (MAX_HUE/2), presetColor.saturation, presetColor.value);
 }
 
 void applyRainbow() {
@@ -41,12 +40,7 @@ void applyRainbow() {
 
 uint8_t readHue() {
   uint8_t hueValue = constrain(map((1023 - analogRead(PIN_FADER_HUE)), FADER_MIN_VAL, FADER_MAX_VAL, MIN_HUE, MAX_HUE), MIN_HUE, MAX_HUE);
-  //  if (analogRead(PIN_FADER_MODE) < 511) { // Continuous Colors
   return hueValue;
-  //  } else { // binned colors
-  //    uint8_t binnedValue = constrain(map(hueValue, MIN_HUE, MAX_HUE, 0, COLOR_BINS), 0, COLOR_BINS);
-  //    return binnedValue * ((256 - COLOR_BINS) / COLOR_BINS);
-  //  }
 }
 
 uint8_t readSaturation() {

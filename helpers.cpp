@@ -11,6 +11,10 @@ CHSV randomColor() {
   return CHSV(random8(), 255, 255);
 }
 
+bool isFaderAlternativeMode() {
+  return (analogRead(PIN_FADER_MODE) > 511);
+}
+
 bool readTempoGate() {
   if (!tempoGate && ((currentMillis - lastGateMillis) > TEMPO_GATE_READ_DURATION)) {
     if (digitalRead(PIN_TEMPO)) {
