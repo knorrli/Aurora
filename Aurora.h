@@ -8,7 +8,7 @@
 // LED STRIP SETTINGS
 #define NUMBER_OF_STRIPS 5
 #define PIXELS_PER_STRIP 45
-#define BRIGHTNESS 255
+#define MAX_BRIGHTNESS 255
 
 // LED SETTINGS
 #define PIN_LED_OUTPUT 2
@@ -90,6 +90,7 @@ struct PositionColor {
 // --- HELPERS
 extern void renderColorIndicators();
 extern CHSV randomColor();
+extern uint8_t readBrightness();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
 extern bool isTempoDivision(uint8_t division);
