@@ -4,25 +4,20 @@
 // ONE ON ONE
 /////////////////////////////////
 #define ONE_ON_ONE_SPEED 1
-#define STROBE_TEMPO_FACTOR 4 // how long per tempo step
-#define MINIMUM_ONE_ON_ONE_LENGTH 20
-#define MAXIMUM_ONE_ON_ONE_LENGTH 200
-static unsigned long lastOneOnOneTrigger = 0;
-static uint8_t one_on_one_position = 1;
+static uint8_t one_on_one_order[] = { 2, 0, 3, 1, 4 };
+static uint8_t one_on_one_index = 0;
 void OneOnOne(CHSV color) {
+  fill_solid(strip[one_on_one_order[one_on_one_index]], PIXELS_PER_STRIP, color);
   if (isTempoDivision(ONE_ON_ONE_SPEED)) {
-    lastOneOnOneTrigger = currentMillis;
-    if (one_on_one_position > (NUMBER_OF_STRIPS - 1)) {
-      one_on_one_position = 0;
+    one_on_one_index += 1;
+    if (one_on_one_index > (NUMBER_OF_STRIPS - 1)) {
+      one_on_one_index = 0;
     }
-  }
-  if ((currentMillis - lastOneOnOneTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_ONE_ON_ONE_LENGTH), MAXIMUM_ONE_ON_ONE_LENGTH)) {
-    fill_solid(strip[one_on_one_position], PIXELS_PER_STRIP, color);
-    one_on_one_position += 1;
   }
 }
 
 void resetOneOnOne() {
+  one_on_one_index = 0;
   return;
 }
 
