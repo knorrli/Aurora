@@ -36,8 +36,9 @@ uint8_t readBrightness() {
   uint8_t brightnessFactor = readKeypad();
   if (brightnessFactor == 0 || brightnessFactor == -1) {
     return MAX_BRIGHTNESS;
+  } else {
+    return map(brightnessFactor, 1, 9, 1, MAX_BRIGHTNESS / 2);
   }
-  return map(brightnessFactor, 1, 9, 10, MAX_BRIGHTNESS);
 }
 
 void showBootIndicatorReady() {
