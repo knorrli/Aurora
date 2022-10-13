@@ -65,7 +65,6 @@ extern CHSV touchColor;
 extern CHSV presetColor;
 
 // LED FRAMEBUFFER
-//extern CRGB rawpixels[];
 extern CRGBArray<NUM_PIXELS_TOTAL> pixels;
 extern CRGBSet touchpad;
 extern CRGBSet strips;
@@ -94,7 +93,7 @@ extern CHSV randomColor();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
 extern bool isTempoDivision(uint8_t division);
-extern void applyRainbow();
+/* extern void applyRainbow(); */
 
 // --- INPUT ColorFaders
 extern void setCurrentColor();

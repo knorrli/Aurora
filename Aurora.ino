@@ -87,9 +87,9 @@ void render() {
   FastLED.clear(false);
   renderColorIndicators();
   renderPreset(currentPreset);
-  if (isFaderAlternativeMode()) {
-    applyRainbow();
-  }
+  /* if (isFaderAlternativeMode()) { */
+  /*   applyRainbow(); */
+  /* } */
   renderTouchAction();
   renderTrigger();
 

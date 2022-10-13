@@ -67,7 +67,6 @@ void modifyPresetColor(TSPoint touchPosition) {
   int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
   CHSV color = CHSV(presetColor.hue, 255, 255);
-  //  CHSV color = touchColor;
   if (!variationModeEnabled) {
     if (yValue < 0) {
       color.value = max(0, 255 + yValue);

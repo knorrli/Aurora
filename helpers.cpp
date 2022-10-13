@@ -25,7 +25,7 @@ bool readTempoGate() {
 }
 
 bool isTempoDivision(uint8_t division) {
-  return tempoGate;// || (currentTick % ((ticks / division) + 1) == 0);
+  return tempoGate;
 }
 
 void renderTempo() {
