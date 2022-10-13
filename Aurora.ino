@@ -45,7 +45,9 @@ void setup() {
     strip[stripIndex] = pixels(pixelStartIndex, PIXELS_PER_STRIP - 1);
   }
 
-  FastLED.setBrightness(BRIGHTNESS);
+  uint8_t brightness = readBrightness();
+
+  FastLED.setBrightness(brightness);
 
   FastLED.addLeds<NEOPIXEL, PIN_LED_OUTPUT>(pixels, NUM_PIXELS_TOTAL);
 

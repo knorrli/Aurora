@@ -8,7 +8,7 @@
 // LED STRIP SETTINGS
 #define NUMBER_OF_STRIPS 5
 #define PIXELS_PER_STRIP 45
-#define BRIGHTNESS 255
+#define MAX_BRIGHTNESS 255
 
 // LED SETTINGS
 #define PIN_LED_OUTPUT 2
@@ -32,8 +32,8 @@
 #define TEMPO_GATE_DURATION 75
 
 // COLOR FADERS
-#define PIN_FADER_HUE A0
-#define PIN_FADER_SATURATION A1
+#define PIN_FADER_SATURATION A0
+#define PIN_FADER_HUE A1
 #define PIN_FADER_VALUE A2
 #define PIN_FADER_MODE A7
 
@@ -90,6 +90,7 @@ struct PositionColor {
 extern bool isFaderAlternativeMode();
 extern void renderColorIndicators();
 extern CHSV randomColor();
+extern uint8_t readBrightness();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
 extern bool isTempoDivision(uint8_t division);
@@ -145,9 +146,11 @@ extern void Rise(CHSV color = CHSV(HUE_PINK, 255, 255));
 extern void resetRise();
 extern void Invert(CHSV color = CHSV(0, 0, 255));
 extern void resetInvert();
-extern void Stars(CHSV color = CHSV(0, 0, 255));
-extern void resetStars();
-extern void Chaos(CHSV color = CHSV(0, 0, 255));
-extern void resetChaos();
+extern void OneOnOne(CHSV color = CHSV(0, 0, 255));
+extern void resetOneOnOne();
+//extern void Stars(CHSV color = CHSV(0, 0, 255));
+//extern void resetStars();
 extern void Strobe(CHSV color = CHSV(0, 0, 255));
 extern void resetStrobe();
+extern void Chaos(CHSV color = CHSV(0, 0, 255));
+extern void resetChaos();
