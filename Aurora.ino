@@ -24,7 +24,7 @@ struct CRGB * strip[NUMBER_OF_STRIPS];
 
 
 void setup() {
-  //  Serial.begin(115200);
+//  Serial.begin(115200);
   delay(1500); // Boot recovery
 
   pinMode(PIN_TEMPO, INPUT);
@@ -69,7 +69,7 @@ void loop() {
   }
   elapsedLoopTime = millis() - currentMillis;
   lastDivisionTrigger = lastDivisionTrigger + elapsedLoopTime;
-  
+
   if (tempoGate) {
     currentTempo = millis() - lastGateMillis;
     lastGateMillis = millis();
@@ -89,9 +89,6 @@ void render() {
   FastLED.clear(false);
   renderColorIndicators();
   renderPreset(currentPreset);
-  /* if (isFaderAlternativeMode()) { */
-  /*   applyRainbow(); */
-  /* } */
   renderTouchAction();
   renderTrigger();
 
