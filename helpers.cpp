@@ -32,6 +32,15 @@ void renderTempo() {
   }
 }
 
+uint8_t readBrightness() {
+  uint8_t brightnessFactor = readKeypad();
+  if (brightnessFactor == 0 || brightnessFactor == -1) {
+    return MAX_BRIGHTNESS;
+  } else {
+    return map(brightnessFactor, 1, 9, 1, MAX_BRIGHTNESS / 2);
+  }
+}
+
 void showBootIndicatorReady() {
   pixels[PIXEL_INDEX_TOUCH_COLOR] = CRGB::Red;
   pixels[PIXEL_INDEX_PRESET_COLOR] = CRGB::Red;
