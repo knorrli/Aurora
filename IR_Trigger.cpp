@@ -10,7 +10,7 @@ static bool triggerGate = LOW;
 void renderTrigger() {
   readTrigger();
 
-  if (triggerGate || (currentMillis - lastTriggerMillis < TRIGGER_EFFECT_DURATION)) {
+  if (triggerGate || ((currentMillis - lastTriggerMillis) < TRIGGER_EFFECT_DURATION)) {
     strips.fill_solid(triggerLedColor);
   }
 }

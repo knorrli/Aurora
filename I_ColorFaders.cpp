@@ -65,7 +65,7 @@ void setCurrentColor() {
     Serial.print(currentHue);
     Serial.print(", Mod Hue: ") + Serial.println(modifiedHue);
   } else {
-    uint8_t currentSaturation = readSaturation(); // invert fader
+    uint8_t currentSaturation = readSaturation();
     uint8_t currentValue = readValue();
     altColorModFactor = 0;
     presetColor = CHSV(currentHue, currentSaturation, currentValue);
