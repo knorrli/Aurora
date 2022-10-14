@@ -7,6 +7,7 @@ void renderColorIndicators() {
   pixels[PIXEL_INDEX_TOUCH_COLOR].fadeLightBy(128);
 }
 
+// TODO: take input and randomize away from input
 CHSV randomColor() {
   return CHSV(random8(), 255, 255);
 }

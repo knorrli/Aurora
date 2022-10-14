@@ -29,41 +29,22 @@ void setCurrentColor() {
     }
 
     uint8_t currentModRange = constrain(map(readValue(), MIN_VALUE, MAX_VALUE, MIN_COLOR_MOD_RANGE, MAX_COLOR_MOD_RANGE), MIN_COLOR_MOD_RANGE, MAX_COLOR_MOD_RANGE);
-    int8_t modRangeLowerBound = -(currentModRange/2)-1;
-    int8_t modRangeUpperBound = (currentModRange/2);
-    int8_t shiftedModRange = currentModRange - (currentModRange/2)-1;
+    int8_t modRangeLowerBound = -(currentModRange / 2) - 1;
+    int8_t modRangeUpperBound = (currentModRange / 2);
+    int8_t shiftedModRange = currentModRange - (currentModRange / 2) - 1;
 
-    if (altColorModFactor - ((altColorModDirection * currentModInterval)) < (modRangeLowerBound-1)) {
-      Serial.print("TOO LOW, SET TO: ");
-      Serial.println(modRangeLowerBound);
+    if (altColorModFactor - ((altColorModDirection * currentModInterval)) < (modRangeLowerBound - 1)) {
       altColorModFactor = modRangeLowerBound;
       altColorModDirection *= -1;
     }
 
     if (altColorModFactor + (altColorModDirection * currentModInterval) > modRangeUpperBound) {
-      Serial.print("TOO HIGH, SET TO: ");
-      Serial.println(modRangeUpperBound);
       altColorModFactor = modRangeUpperBound;
       altColorModDirection *= -1;
     }
 
     uint8_t modifiedHue = currentHue + altColorModFactor;
     presetColor = CHSV(modifiedHue, MAX_SATURATION, MAX_VALUE);
-    Serial.print("Counter: ");
-    Serial.print(color_mod_counter);
-    Serial.print(", Interval: ");
-    Serial.print(currentModInterval);
-    Serial.print(", Range: ");
-    Serial.print(currentModRange);
-    Serial.print(", Shifted: ");
-    Serial.print(shiftedModRange);
-    Serial.print(", Direction: ");
-    Serial.print(altColorModDirection);
-    Serial.print(", modFactor: ");
-    Serial.print(altColorModFactor);
-    Serial.print(", Hue: ");
-    Serial.print(currentHue);
-    Serial.print(", Mod Hue: ") + Serial.println(modifiedHue);
   } else {
     uint8_t currentSaturation = readSaturation();
     uint8_t currentValue = readValue();
