@@ -28,8 +28,8 @@
 // TEMPO
 #define PIN_TEMPO 3
 #define PIN_TEMPO_LED 13
-#define TEMPO_GATE_READ_DURATION 80
-#define TEMPO_GATE_DURATION 75
+#define TEMPO_GATE_READ_DURATION 100
+#define TEMPO_GATE_DURATION TEMPO_GATE_READ_DURATION
 
 // COLOR FADERS
 #define PIN_FADER_SATURATION A0
@@ -53,9 +53,11 @@
 extern bool tempoGate;
 extern unsigned long currentMillis;
 extern unsigned long lastGateMillis;
-extern unsigned long divisionMillis;
 extern unsigned long currentTempo;
+
 extern unsigned long lastDivisionGateMillis;
+extern uint8_t divisionFactor;
+extern uint8_t divisionCounter;
 extern bool divisionGate;
 
 // STATE

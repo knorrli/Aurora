@@ -84,7 +84,7 @@ void resetStrobe() {
 #define CHAOS_BLOCK_SIZE 10
 static PositionColor chaos[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
-  if (divisionGate) {
+  if (tempoGate) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       chaos[stripIndex] = { stripIndex, random8(PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE) };
     }

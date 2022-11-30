@@ -29,7 +29,7 @@ bool isTempoDivision(uint8_t division) {
 }
 
 void renderTempo() {
-  if (tempoGate || (currentMillis - lastGateMillis < TEMPO_GATE_DURATION)) {
+  if (tempoGate || ((currentMillis - lastGateMillis) < TEMPO_GATE_DURATION)) {
     digitalWrite(PIN_TEMPO_LED, HIGH);
   } else {
     digitalWrite(PIN_TEMPO_LED, LOW);

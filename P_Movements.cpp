@@ -93,13 +93,12 @@ void resetRise() {
 /////////////////////////////////
 // INVERT
 /////////////////////////////////
-#define INVERT_SPEED 6
-#define BREAK_POSITION ((PIXELS_PER_STRIP / 4) - 1)
+#define BREAK_POSITION ((PIXELS_PER_STRIP / 4))
 int8_t invertDirection = 1;
 uint8_t invertPosition = 0;
 
 void Invert(CHSV color) {
-  if (divisionGate) {
+  if (divisionGate && ((divisionCounter % 4) == 0)) {
     invertPosition += invertDirection;
     if ((invertPosition <= 0) || (invertPosition >= ((PIXELS_PER_STRIP - 1) / 2))) {
       invertDirection *= -1;

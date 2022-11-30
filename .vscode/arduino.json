@@ -1,0 +1,6 @@
+{
+    "configuration": "cpu=atmega328",
+    "board": "arduino:avr:nano",
+    "sketch": "Aurora.ino",
+    "port": "/dev/tty.usbserial-A6025Q76"
+}

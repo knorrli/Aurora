@@ -60,7 +60,7 @@ static uint8_t xVisionDirection = 0;
 static uint8_t xVisionStep = 0;
 
 void XVision(CHSV color) {
-  if (divisionGate) {
+  if (divisionGate && ((divisionCounter % 2) == 0)) {
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       uint8_t xVisionStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
       switch (xVisionDirection) {
