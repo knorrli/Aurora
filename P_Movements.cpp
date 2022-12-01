@@ -4,20 +4,24 @@
 // RAIN
 /////////////////////////////////
 #define RAIN_LENGTH 20
-#define RAIN_SPEED 8
+#define RAIN_STEPS_PER_GATE 4
 static PositionOrientation rain[] = {
   { 0, 20, -1 },
-  { 1, 25, -1 },
-  { 2, 30, -1 },
-  { 3, 25, -1 },
+  { 1, 28, -1 },
+  { 2, 34, -1 },
+  { 3, 28, -1 },
   { 4, 20, -1 }
 };
-static unsigned long rainTempoGate = 0;
+uint8_t rainGateCounter = 0;
+unsigned long lastRainGate = 0;
 
 void Rain(CHSV color) {
-  rainTempoGate += 1;
-  if (divisionGate) {
-    rainTempoGate = 0;
+  if (tempoGate) {
+    rainGateCounter = 0;
+  }
+  if ((rainGateCounter < RAIN_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastRainGate + (currentTempo / RAIN_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    rainGateCounter += 1;
+    lastRainGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rain[stripIndex].pixelIndex += rain[stripIndex].orientation;
 
@@ -46,23 +50,33 @@ void Rain(CHSV color) {
 
 void resetRain() {
   rain[0] = { 0, 20, -1 };
-  rain[1] = { 1, 25, -1 };
-  rain[2] = { 2, 30, -1 };
-  rain[3] = { 3, 25, -1 };
+  rain[1] = { 1, 28, -1 };
+  rain[2] = { 2, 34, -1 };
+  rain[3] = { 3, 28, -1 };
   rain[4] = { 4, 20, -1 };
+  rainGateCounter = 0;
+  lastRainGate = 0;
   return;
 }
 
 /////////////////////////////////
 // RISE
 /////////////////////////////////
-#define RISE_SPEED 4
+#define RISE_STEPS_PER_GATE 4
 #define RISE_LENGTH (PIXELS_PER_STRIP / 3)
 #define RISE_SPACING RISE_LENGTH
 static PositionColor rise[NUMBER_OF_STRIPS];
+uint8_t riseGateCounter = 0;
+unsigned long lastRiseGate = 0;
 
 void Rise(CHSV color) {
-  if (divisionGate) {
+  if (tempoGate) {
+    riseGateCounter = 0;
+  }
+  
+  if ((riseGateCounter < RISE_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastRiseGate + (currentTempo / RISE_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    riseGateCounter += 1;
+    lastRiseGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       rise[stripIndex].pixelIndex += 1;
 
@@ -88,17 +102,28 @@ void resetRise() {
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     rise[stripIndex].pixelIndex = 0;
   }
+  riseGateCounter = 0;
+  lastRiseGate = currentMillis;
 }
 
 /////////////////////////////////
 // INVERT
 /////////////////////////////////
+#define INVERT_STEPS_PER_GATE 11
 #define BREAK_POSITION ((PIXELS_PER_STRIP / 4))
 int8_t invertDirection = 1;
 uint8_t invertPosition = 0;
+uint8_t invertGateCounter = 0;
+unsigned long lastInvertGate = 0;
 
 void Invert(CHSV color) {
-  if (divisionGate && ((divisionCounter % 4) == 0)) {
+  if (tempoGate) {
+    invertGateCounter = 0;
+  }
+  
+  if ((invertGateCounter < INVERT_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastInvertGate + (currentTempo / INVERT_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    invertGateCounter += 1;
+    lastInvertGate = currentMillis;
     invertPosition += invertDirection;
     if ((invertPosition <= 0) || (invertPosition >= ((PIXELS_PER_STRIP - 1) / 2))) {
       invertDirection *= -1;
@@ -122,4 +147,6 @@ void Invert(CHSV color) {
 void resetInvert() {
   invertDirection = 1;
   invertPosition = 0;
+  invertGateCounter = 0;
+  lastInvertGate = currentMillis;
 }

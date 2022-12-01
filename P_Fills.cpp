@@ -14,12 +14,19 @@ void resetFill() {
 /////////////////////////////////
 // PULSE
 /////////////////////////////////
-#define PULSE_SPEED 5
+#define PULSE_STEPS_PER_GATE 11
 uint8_t pulsePosition = (PIXELS_PER_STRIP / 2);
 uint8_t pulseDirection = -1;
+uint8_t pulseGateCounter = 0;
+unsigned long lastPulseGate = 0;
 
 void Pulse(CHSV color) {
-  if (divisionGate) {
+  if (tempoGate) {
+    pulseGateCounter = 0;
+  }
+  if ((pulseGateCounter < PULSE_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastPulseGate + (currentTempo / PULSE_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    pulseGateCounter += 1;
+    lastPulseGate = currentMillis;
     pulsePosition += pulseDirection;
     if ((pulsePosition > ((PIXELS_PER_STRIP / 2) - 1)) || (pulsePosition <= 0)) {
       pulseDirection *= -1;
@@ -35,6 +42,8 @@ void Pulse(CHSV color) {
 
 void resetPulse() {
   pulsePosition = (PIXELS_PER_STRIP / 2);
+  pulseGateCounter = 0;
+  lastPulseGate = currentMillis;
   pulseDirection = -1;
   return;
 }
@@ -42,7 +51,7 @@ void resetPulse() {
 /////////////////////////////////
 // XVISION
 /////////////////////////////////
-#define XVISION_SPEED 6
+#define XVISION_STEPS_PER_GATE 11
 #define XVISION_STEPS ((PIXELS_PER_STRIP-1) / (NUMBER_OF_STRIPS-1))
 struct xVisionPositions {
   uint8_t startPixelIndex;
@@ -58,9 +67,16 @@ static xVisionPositions xVision[] = {
 
 static uint8_t xVisionDirection = 0;
 static uint8_t xVisionStep = 0;
+uint8_t xVisionGateCounter = 0;
+unsigned long lastXVisionGate = 0;
 
 void XVision(CHSV color) {
-  if (divisionGate && ((divisionCounter % 2) == 0)) {
+  if (tempoGate) {
+    xVisionGateCounter = 0;
+  }
+  if ((xVisionGateCounter < XVISION_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastXVisionGate + (currentTempo / XVISION_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    xVisionGateCounter += 1;
+    lastXVisionGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       uint8_t xVisionStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
       switch (xVisionDirection) {
@@ -109,5 +125,7 @@ void resetXVision() {
 
   xVisionDirection = 0;
   xVisionStep = 0;
+  xVisionGateCounter = 0;
+  lastXVisionGate = currentMillis;
   return;
 }

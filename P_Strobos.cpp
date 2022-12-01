@@ -8,7 +8,7 @@ static uint8_t one_on_one_order[] = { 2, 0, 3, 1, 4 };
 static uint8_t one_on_one_index = 0;
 void OneOnOne(CHSV color) {
   fill_solid(strip[one_on_one_order[one_on_one_index]], PIXELS_PER_STRIP, color);
-  if (isTempoDivision(ONE_ON_ONE_SPEED)) {
+  if (tempoGate) {
     one_on_one_index += 1;
     if (one_on_one_index > (NUMBER_OF_STRIPS - 1)) {
       one_on_one_index = 0;
@@ -30,7 +30,7 @@ void resetOneOnOne() {
 //static PositionColor stars[NUMBER_OF_STARS];
 //static uint8_t changingStarIndex = 0;
 //void Stars(CHSV color) {
-//  if (isTempoDivision(STARS_SPEED)) {
+//  if (tempoGate) {
 //    if (changingStarIndex == NUMBER_OF_STARS) {
 //      changingStarIndex = 0;
 //    }
@@ -64,7 +64,7 @@ void resetOneOnOne() {
 #define MAXIMUM_STROBE_LENGTH 200
 static unsigned long lastStrobeTrigger = 0;
 void Strobe(CHSV color) {
-  if (isTempoDivision(STROBE_SPEED)) {
+  if (tempoGate) {
     lastStrobeTrigger = currentMillis;
   }
   if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {

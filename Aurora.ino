@@ -5,12 +5,7 @@ bool tempoGate = LOW;
 unsigned long currentMillis = 0;
 unsigned long lastGateMillis = 0;
 unsigned long currentTempo = 5500;
-
-unsigned long lastDivisionGateMillis = 0;
-uint8_t divisionFactor = 45;
-uint8_t divisionCounter = 0;
-unsigned long divisionTempo = currentTempo / divisionFactor;
-bool divisionGate = LOW;
+unsigned long expectedNextGate = millis() + currentTempo;
 unsigned long elapsedLoopTime = 0;
 
 // STATE
@@ -68,24 +63,10 @@ void loop()
 
   if (tempoGate)
   {
-    divisionGate = HIGH;
-    divisionCounter = 0;
     elapsedLoopTime = millis() - currentMillis;
     currentTempo = millis() - lastGateMillis;
-    divisionTempo = (currentTempo) / divisionFactor;
+    expectedNextGate = millis() + currentTempo;
     lastGateMillis = millis();
-    lastDivisionGateMillis = lastGateMillis;
-  }
-
-  if (!divisionGate && (divisionCounter < divisionFactor) && (millis() > (lastDivisionGateMillis + divisionTempo - (elapsedLoopTime / 22))))
-  {
-    divisionGate = HIGH;
-    lastDivisionGateMillis = millis();
-    divisionCounter += 1;
-  }
-  else
-  {
-    divisionGate = LOW;
   }
 }
 

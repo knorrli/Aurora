@@ -54,11 +54,8 @@ extern bool tempoGate;
 extern unsigned long currentMillis;
 extern unsigned long lastGateMillis;
 extern unsigned long currentTempo;
-
-extern unsigned long lastDivisionGateMillis;
-extern uint8_t divisionFactor;
-extern uint8_t divisionCounter;
-extern bool divisionGate;
+extern unsigned long expectedNextGate;
+extern unsigned long elapsedLoopTime;
 
 // STATE
 extern uint8_t currentPreset;
@@ -95,7 +92,6 @@ extern CHSV randomColor();
 extern uint8_t readBrightness();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
-extern bool isTempoDivision(uint8_t division);
 /* extern void applyRainbow(); */
 
 // --- INPUT ColorFaders
