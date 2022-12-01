@@ -21,9 +21,9 @@
 #define GRID_OFFSET_X ((X_AXIS_VALUE_UPPER_BOUND - X_AXIS_VALUE_LOWER_BOUND) / GRID_SIZE_X) / 2
 #define GRID_OFFSET_Y ((Y_AXIS_VALUE_UPPER_BOUND - Y_AXIS_VALUE_LOWER_BOUND) / GRID_SIZE_Y) / 2
 
-static bool holdModeEnabled = false;
-static bool presetModeEnabled = false;
-static bool variationModeEnabled = false;
+bool holdModeEnabled = false;
+bool presetAltModeEnabled = false;
+bool variationModeEnabled = false;
 
 static TouchScreen touchScreen = TouchScreen(PIN_TOUCHPAD_XP, PIN_TOUCHPAD_YP, PIN_TOUCHPAD_XM, PIN_TOUCHPAD_YM, X_AXIS_RESISTANCE);
 static TSPoint lastTouchPosition = NO_TOUCH_POSITION;
@@ -37,16 +37,16 @@ void renderTouchAction() {
   }
 
   if (touchPosition != NO_TOUCH_POSITION) {
-    if (presetModeEnabled) {
+    if (presetAltModeEnabled) {
       modifyPresetColor(touchPosition);
     } else {
-      renderStripColorOverride(touchPosition);
+      overrideStripColor(touchPosition);
     }
   }
   renderTouchpad();
 }
 
-void renderStripColorOverride(TSPoint touchPosition) {
+void overrideStripColor(TSPoint touchPosition) {
   int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
   CHSV color = CHSV(presetColor.hue, 255, 255);
@@ -94,9 +94,10 @@ void modifyPresetColor(TSPoint touchPosition) {
 
 void readTouchInputs() {
   holdModeEnabled = (analogRead(PIN_HOLD_MODE) > 511);
-  presetModeEnabled = digitalRead(PIN_PRESET_MODE);
+  presetAltModeEnabled = digitalRead(PIN_PRESET_MODE);
   variationModeEnabled = digitalRead(PIN_VARIATION_MODE);
   TSPoint touchPosition = touchScreen.getPoint();
+
   if (touchPosition.z > touchScreen.pressureThreshhold) {
     currentTouchPosition = touchPosition;
     gridPosition = calculateGridPosition(touchPosition);

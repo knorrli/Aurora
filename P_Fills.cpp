@@ -12,6 +12,52 @@ void resetFill() {
 }
 
 /////////////////////////////////
+// SWELL
+/////////////////////////////////
+#define SWELL_SLOWDOWN_FACTOR 4
+#define SWELL_STEPS_PER_GATE 45
+#define SWELL_MIN_BRIGHTNESS 50
+uint8_t swellSlowGateCounter = 0;
+uint8_t swellGateCounter = 0;
+int8_t swellDirection = 1;
+uint8_t swellBrightness = SWELL_MIN_BRIGHTNESS;
+unsigned long lastSwellGate = 0;
+
+void Swell(CHSV color) {
+  bool swellGate = LOW;
+  if (tempoGate) {
+    swellSlowGateCounter += 1;
+    if ((swellSlowGateCounter % SWELL_SLOWDOWN_FACTOR) == 0) {
+      swellGate = HIGH;
+      swellSlowGateCounter = 0;
+    }
+  }
+  
+  if (swellGate) {
+    swellGateCounter = 0;
+  }
+  if ((swellGateCounter < SWELL_STEPS_PER_GATE) && (swellGate || ((millis() > (lastSwellGate + ((currentTempo * SWELL_SLOWDOWN_FACTOR) / SWELL_STEPS_PER_GATE) - (elapsedLoopTime / 2)))))) {
+    uint8_t swellMaxBrightness = color.value;
+    uint8_t brightnessStep = swellMaxBrightness / SWELL_STEPS_PER_GATE;
+    swellGateCounter += 1;
+    lastSwellGate = currentMillis;
+    swellBrightness += (swellDirection * brightnessStep);
+    if (swellBrightness <= SWELL_MIN_BRIGHTNESS || swellBrightness >= swellMaxBrightness)
+    {
+      swellGateCounter = 0;
+      swellDirection *= -1;
+      swellBrightness += (swellDirection * (swellMaxBrightness / SWELL_STEPS_PER_GATE));
+    }
+  }
+  strips.fill_solid(CHSV(color.hue, color.saturation, swellBrightness));
+}
+
+void resetSwell() {
+  swellGateCounter = 0;
+  lastSwellGate = currentMillis;
+}
+
+/////////////////////////////////
 // PULSE
 /////////////////////////////////
 #define PULSE_STEPS_PER_GATE 11

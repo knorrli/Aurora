@@ -1,23 +1,34 @@
 #include "aurora.h"
 
 /////////////////////////////////
-// ONE ON ONE
+// ONE ON ONE RANDOM
 /////////////////////////////////
 #define ONE_ON_ONE_SPEED 1
-static uint8_t one_on_one_order[] = { 2, 0, 3, 1, 4 };
-static uint8_t one_on_one_index = 0;
-void OneOnOne(CHSV color) {
-  fill_solid(strip[one_on_one_order[one_on_one_index]], PIXELS_PER_STRIP, color);
+static uint8_t oneOnOneOrderedOrder[] = { 2, 3, 4, 0, 1};
+static uint8_t oneOnOneRandomOrder[] = { 2, 0, 3, 1, 4 };
+static uint8_t oneOnOneIndex = 0;
+
+void OneOnOneOrdered(CHSV color) {
+  OneOnOne(color, oneOnOneOrderedOrder);
+}
+
+void OneOnOneRandom(CHSV color) {
+  OneOnOne(color, oneOnOneRandomOrder);
+}
+
+void OneOnOne(CHSV color, uint8_t order[]) {
+  fill_solid(strip[order[oneOnOneIndex]], PIXELS_PER_STRIP, color);
   if (tempoGate) {
-    one_on_one_index += 1;
-    if (one_on_one_index > (NUMBER_OF_STRIPS - 1)) {
-      one_on_one_index = 0;
+    oneOnOneIndex += 1;
+    if (oneOnOneIndex > (NUMBER_OF_STRIPS - 1))
+    {
+      oneOnOneIndex = 0;
     }
   }
 }
 
 void resetOneOnOne() {
-  one_on_one_index = 0;
+  oneOnOneIndex = 0;
   return;
 }
 

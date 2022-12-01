@@ -13,7 +13,11 @@ void renderPreset(uint8_t preset) {
     case 0:
       return;
     case 1:
-      Fill(presetColor);
+      if (presetAltModeEnabled) {
+        Swell(presetColor);
+      } else {
+        Fill(presetColor);
+      }
       return;
     case 2:
       Pulse(presetColor);
@@ -31,7 +35,12 @@ void renderPreset(uint8_t preset) {
       Invert(presetColor);
       break;
     case 7:
-      OneOnOne(presetColor);
+      if (presetAltModeEnabled) {
+        OneOnOneRandom(presetColor);
+      } else {
+        OneOnOneOrdered(presetColor);
+      }
+
       break;
     case 8:
       Strobe(presetColor);
@@ -60,7 +69,11 @@ void resetPreset(uint8_t preset) {
     case 0:
       return;
     case 1:
-      resetFill();
+      if (presetAltModeEnabled) {
+        resetSwell();
+      } else {
+        resetFill();
+      }
       return;
     case 2:
       resetPulse();

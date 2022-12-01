@@ -66,6 +66,9 @@ extern uint8_t selectedPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
 extern bool muted;
+extern bool holdModeEnabled;
+extern bool presetAltModeEnabled;
+extern bool variationModeEnabled;
 
 // LED FRAMEBUFFER
 extern CRGBArray<NUM_PIXELS_TOTAL> pixels;
@@ -121,7 +124,7 @@ extern void renderTouchControl();
 extern void renderTouchpad();
 extern void renderTouchAction();
 extern void modifyPresetColor(TSPoint touchPosition);
-extern void renderStripColorOverride(TSPoint touchPosition);
+extern void overrideStripColor(TSPoint touchPosition);
 extern void renderTouchPosition(TSPoint touchPosition);
 
 // --- INPUT Trigger
@@ -139,6 +142,8 @@ extern bool isTouched();
 // --- PRESETS
 extern void Fill(CHSV color = CHSV(0, 0, 255));
 extern void resetFill();
+extern void Swell(CHSV color = CHSV(0, 0, 255));
+extern void resetSwell();
 extern void Pulse(CHSV color = CHSV(0, 0, 255));
 extern void resetPulse();
 extern void XVision(CHSV color = CHSV(0, 0, 255));
@@ -149,7 +154,9 @@ extern void Rise(CHSV color = CHSV(HUE_PINK, 255, 255));
 extern void resetRise();
 extern void Invert(CHSV color = CHSV(0, 0, 255));
 extern void resetInvert();
-extern void OneOnOne(CHSV color = CHSV(0, 0, 255));
+extern void OneOnOneOrdered(CHSV color = CHSV(0, 0, 255));
+extern void OneOnOneRandom(CHSV color = CHSV(0, 0, 255));
+extern void OneOnOne(CHSV color, uint8_t order[]);
 extern void resetOneOnOne();
 //extern void Stars(CHSV color = CHSV(0, 0, 255));
 //extern void resetStars();
