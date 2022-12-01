@@ -21,40 +21,6 @@ void resetOneOnOne() {
   return;
 }
 
-///////////////////////////////////
-//// STARS
-///////////////////////////////////
-//#define STARS_SPEED 8
-//#define NUMBER_OF_STARS 30
-//#define STARS_FADE_SPEED 200
-//static PositionColor stars[NUMBER_OF_STARS];
-//static uint8_t changingStarIndex = 0;
-//void Stars(CHSV color) {
-//  if (tempoGate) {
-//    if (changingStarIndex == NUMBER_OF_STARS) {
-//      changingStarIndex = 0;
-//    }
-//    stars[changingStarIndex] = { random8(NUMBER_OF_STRIPS), random8(PIXELS_PER_STRIP), color };
-//    changingStarIndex += 1;
-//
-//    for (uint8_t starIndex = 0; starIndex < NUMBER_OF_STARS; starIndex++) {
-//      stars[starIndex].color.fadeToBlackBy(min((NUMBER_OF_STARS / STARS_FADE_SPEED), 1));
-//    }
-//
-//  }
-//
-//  for (uint8_t starIndex = 0; starIndex < NUMBER_OF_STARS; starIndex++) {
-//    uint8_t tickFadeAmount = ((NUMBER_OF_STARS * STARS_SPEED) / STARS_FADE_SPEED); // TODO: FIX FADE SPEED TO TEMPO
-//    stars[starIndex].color.fadeToBlackBy(max(1, tickFadeAmount));
-//    PositionColor star = stars[starIndex];
-//    strip[star.stripIndex][star.pixelIndex] = star.color;
-//  }
-//}
-//
-//void resetStars() {
-//  return;
-//}
-
 /////////////////////////////////
 // STROBE
 /////////////////////////////////
@@ -79,12 +45,19 @@ void resetStrobe() {
 /////////////////////////////////
 // CHAOS
 /////////////////////////////////
-#define CHAOS_SPEED 3
+#define CHAOS_STEPS_PER_GATE 2
 #define CHAOS_LENGTH 100
 #define CHAOS_BLOCK_SIZE 10
+uint8_t chaosGateCounter = 0;
+unsigned long lastChaosGate = 0;
 static PositionColor chaos[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
   if (tempoGate) {
+    chaosGateCounter = 0;
+  }
+  if ((chaosGateCounter < CHAOS_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastChaosGate + (currentTempo / CHAOS_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    chaosGateCounter += 1;
+    lastChaosGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       chaos[stripIndex] = { stripIndex, random8(PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE) };
     }
@@ -96,5 +69,7 @@ void Chaos(CHSV color) {
 }
 
 void resetChaos() {
+  chaosGateCounter = 0;
+  lastChaosGate = currentMillis;
   return;
 }

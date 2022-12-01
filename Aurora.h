@@ -40,6 +40,9 @@
 // TRIGGER
 #define PIN_TRIGGER_INPUT A3
 
+// MUTE
+#define PIN_MUTE_INPUT 8
+
 // TOUCHSCREEN
 #define PIN_HOLD_MODE A6
 #define PIN_PRESET_MODE 4
@@ -62,6 +65,7 @@ extern uint8_t currentPreset;
 extern uint8_t selectedPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
+extern bool muted;
 
 // LED FRAMEBUFFER
 extern CRGBArray<NUM_PIXELS_TOTAL> pixels;
@@ -90,6 +94,7 @@ extern bool isFaderAlternativeMode();
 extern void renderColorIndicators();
 extern CHSV randomColor();
 extern uint8_t readBrightness();
+extern bool isMuted();
 extern void showBootIndicatorReady();
 extern bool readTempoGate();
 /* extern void applyRainbow(); */

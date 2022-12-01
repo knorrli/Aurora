@@ -85,8 +85,10 @@ void render()
 {
   FastLED.clear(false);
   renderColorIndicators();
-  renderPreset(currentPreset);
-  renderTouchAction();
+  if (!isMuted()) {
+    renderPreset(currentPreset);
+    renderTouchAction();
+  }
   renderTrigger();
 
   FastLED.show();
