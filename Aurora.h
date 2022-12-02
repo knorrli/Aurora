@@ -5,6 +5,10 @@
 // DEFINES
 // ------------------------
 
+// GLOBAL SETTINGS
+#define UP 1
+#define DOWN -1
+
 // LED STRIP SETTINGS
 #define NUMBER_OF_STRIPS 5
 #define PIXELS_PER_STRIP 45
@@ -76,10 +80,10 @@ extern CRGBSet touchpad;
 extern CRGBSet strips;
 extern struct CRGB * strip[NUMBER_OF_STRIPS];
 
-struct PositionOrientation {
+struct PositionDirection {
   uint8_t stripIndex;
   uint8_t pixelIndex;
-  int8_t orientation;
+  int8_t direction;
 };
 
 struct PositionColor {
@@ -99,7 +103,7 @@ extern CHSV randomColor();
 extern uint8_t readBrightness();
 extern bool isMuted();
 extern void showBootIndicatorReady();
-extern bool readTempoGate();
+extern void readTempoGates();
 /* extern void applyRainbow(); */
 
 // --- INPUT ColorFaders
@@ -140,27 +144,30 @@ extern bool isTouched();
 
 
 // --- PRESETS
-extern void Fill(CHSV color = CHSV(0, 0, 255));
-extern void resetFill();
-extern void Swell(CHSV color = CHSV(0, 0, 255));
-extern void resetSwell();
-extern void Pulse(CHSV color = CHSV(0, 0, 255));
+extern void FillStrips(CHSV color);
+extern void resetFillStrips();
+extern void FillStars(CHSV color);
+extern void resetFillStars();
+extern void Pulse(CHSV color);
 extern void resetPulse();
-extern void XVision(CHSV color = CHSV(0, 0, 255));
+extern void XVision(CHSV color);
 extern void resetXVision();
-extern void Rain(CHSV color = CHSV(HUE_BLUE, 255, 255));
-extern void resetRain();
-extern void Rise(CHSV color = CHSV(HUE_PINK, 255, 255));
+extern void RiseStars(CHSV color);
+extern void RiseLines(CHSV color);
+extern void Rise(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetRise();
-extern void Invert(CHSV color = CHSV(0, 0, 255));
+extern void resetRiseStars();
+extern void Rain(CHSV color);
+extern void resetRain();
+extern void Invert(CHSV color);
 extern void resetInvert();
-extern void OneOnOneOrdered(CHSV color = CHSV(0, 0, 255));
-extern void OneOnOneRandom(CHSV color = CHSV(0, 0, 255));
+extern void OneOnOneOrdered(CHSV color);
+extern void OneOnOneRandom(CHSV color);
 extern void OneOnOne(CHSV color, uint8_t order[]);
 extern void resetOneOnOne();
 //extern void Stars(CHSV color = CHSV(0, 0, 255));
 //extern void resetStars();
-extern void Strobe(CHSV color = CHSV(0, 0, 255));
+extern void Strobe(CHSV color);
 extern void resetStrobe();
-extern void Chaos(CHSV color = CHSV(0, 0, 255));
+extern void Chaos(CHSV color);
 extern void resetChaos();

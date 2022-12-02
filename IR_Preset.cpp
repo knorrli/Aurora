@@ -14,22 +14,31 @@ void renderPreset(uint8_t preset) {
       return;
     case 1:
       if (presetAltModeEnabled) {
-        Swell(presetColor);
+        FillStars(presetColor);
       } else {
-        Fill(presetColor);
+        FillStrips(presetColor);
       }
       return;
     case 2:
-      Pulse(presetColor);
+      if (presetAltModeEnabled) {
+        Invert(presetColor);
+      } else {
+        Pulse(presetColor);
+      }
+      
       break;
     case 3:
       XVision(presetColor);
       break;
     case 4:
-      Rain(presetColor);
+      if (presetAltModeEnabled) {
+        RiseStars(presetColor);
+      } else {
+        RiseLines(presetColor);
+      }
       break;
     case 5:
-      Rise(presetColor);
+      Rain(presetColor);
       break;
     case 6:
       Invert(presetColor);
@@ -70,9 +79,9 @@ void resetPreset(uint8_t preset) {
       return;
     case 1:
       if (presetAltModeEnabled) {
-        resetSwell();
+        resetFillStars();
       } else {
-        resetFill();
+        resetFillStrips();
       }
       return;
     case 2:

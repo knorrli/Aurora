@@ -1,68 +1,39 @@
 #include "aurora.h"
 
 /////////////////////////////////
-// FILL
+// FILL_STRIPS
 /////////////////////////////////
-void Fill(CHSV color) {
+void FillStrips(CHSV color) {
   strips.fill_solid(color);
 }
 
-void resetFill() {
+void resetFillStrips() {
   return;
 }
 
 /////////////////////////////////
-// SWELL
+// FILL_STARS
 /////////////////////////////////
-#define SWELL_SLOWDOWN_FACTOR 4
-#define SWELL_STEPS_PER_GATE 45
-#define SWELL_MIN_BRIGHTNESS 50
-uint8_t swellSlowGateCounter = 0;
-uint8_t swellGateCounter = 0;
-int8_t swellDirection = 1;
-uint8_t swellBrightness = SWELL_MIN_BRIGHTNESS;
-unsigned long lastSwellGate = 0;
-
-void Swell(CHSV color) {
-  bool swellGate = LOW;
-  if (tempoGate) {
-    swellSlowGateCounter += 1;
-    if ((swellSlowGateCounter % SWELL_SLOWDOWN_FACTOR) == 0) {
-      swellGate = HIGH;
-      swellSlowGateCounter = 0;
+#define FILL_STARS_LENGTH 1
+#define FILL_STARS_GAP 4
+void FillStars(CHSV color) {
+  for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex += (FILL_STARS_LENGTH + FILL_STARS_GAP)) {
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+      fill_solid(strip[stripIndex] + pixelIndex, FILL_STARS_LENGTH, color);
     }
   }
-  
-  if (swellGate) {
-    swellGateCounter = 0;
-  }
-  if ((swellGateCounter < SWELL_STEPS_PER_GATE) && (swellGate || ((millis() > (lastSwellGate + ((currentTempo * SWELL_SLOWDOWN_FACTOR) / SWELL_STEPS_PER_GATE) - (elapsedLoopTime / 2)))))) {
-    uint8_t swellMaxBrightness = color.value;
-    uint8_t brightnessStep = swellMaxBrightness / SWELL_STEPS_PER_GATE;
-    swellGateCounter += 1;
-    lastSwellGate = currentMillis;
-    swellBrightness += (swellDirection * brightnessStep);
-    if (swellBrightness <= SWELL_MIN_BRIGHTNESS || swellBrightness >= swellMaxBrightness)
-    {
-      swellGateCounter = 0;
-      swellDirection *= -1;
-      swellBrightness += (swellDirection * (swellMaxBrightness / SWELL_STEPS_PER_GATE));
-    }
-  }
-  strips.fill_solid(CHSV(color.hue, color.saturation, swellBrightness));
 }
 
-void resetSwell() {
-  swellGateCounter = 0;
-  lastSwellGate = currentMillis;
+void resetFillStars() {
+  return;
 }
 
 /////////////////////////////////
 // PULSE
 /////////////////////////////////
 #define PULSE_STEPS_PER_GATE 11
-uint8_t pulsePosition = (PIXELS_PER_STRIP / 2);
-uint8_t pulseDirection = -1;
+uint8_t pulsePosition = 0;
+uint8_t pulseDirection = UP;
 uint8_t pulseGateCounter = 0;
 unsigned long lastPulseGate = 0;
 
@@ -87,10 +58,10 @@ void Pulse(CHSV color) {
 }
 
 void resetPulse() {
-  pulsePosition = (PIXELS_PER_STRIP / 2);
   pulseGateCounter = 0;
   lastPulseGate = currentMillis;
-  pulseDirection = -1;
+  pulsePosition = 0;
+  pulseDirection = UP;
   return;
 }
 
@@ -111,7 +82,7 @@ static xVisionPositions xVision[] = {
   { (4 * XVISION_STEPS), (4 * XVISION_STEPS) },
 };
 
-static uint8_t xVisionDirection = 0;
+static uint8_t xVisionOrientation = 0;
 static uint8_t xVisionStep = 0;
 uint8_t xVisionGateCounter = 0;
 unsigned long lastXVisionGate = 0;
@@ -125,7 +96,7 @@ void XVision(CHSV color) {
     lastXVisionGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
       uint8_t xVisionStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
-      switch (xVisionDirection) {
+      switch (xVisionOrientation) {
         case 0:
           xVision[stripIndex].endPixelIndex += (xVisionStep);
           xVision[stripIndex].startPixelIndex -= (NUMBER_OF_STRIPS - 1) - xVisionStep;
@@ -148,9 +119,9 @@ void XVision(CHSV color) {
     bool stripFull = ((xVision[0].endPixelIndex - xVision[0].startPixelIndex) == (PIXELS_PER_STRIP - 1));
 
     if (stripEmpty || stripFull) {
-      xVisionDirection += 1;
-      if (xVisionDirection > 3) {
-        xVisionDirection = 0;
+      xVisionOrientation += 1;
+      if (xVisionOrientation > 3) {
+        xVisionOrientation = 0;
       }
     }
   }
@@ -169,7 +140,7 @@ void resetXVision() {
   xVision[3] = { (3 * XVISION_STEPS), (3 * XVISION_STEPS) };
   xVision[4] = { (4 * XVISION_STEPS), (4 * XVISION_STEPS) };
 
-  xVisionDirection = 0;
+  xVisionOrientation = 0;
   xVisionStep = 0;
   xVisionGateCounter = 0;
   lastXVisionGate = currentMillis;

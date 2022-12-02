@@ -22,7 +22,7 @@ struct CRGB *strip[NUMBER_OF_STRIPS];
 void setup()
 {
   // Serial.begin(115200);
-  delay(1500); // Boot recovery
+  // delay(1500); // Boot recovery
 
   pinMode(PIN_TEMPO, INPUT);
   pinMode(PIN_LED_OUTPUT, OUTPUT);
@@ -55,7 +55,7 @@ void setup()
 void loop()
 {
   currentMillis = millis();
-  tempoGate = readTempoGate();
+  readTempoGates();
 
   perform();
   render();

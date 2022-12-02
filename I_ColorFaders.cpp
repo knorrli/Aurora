@@ -15,7 +15,7 @@
 #define MAX_VALUE 255
 
 static int8_t altColorModFactor = 0;
-static int8_t altColorModDirection = 1;
+static int8_t altColorModDirection = UP;
 static unsigned long color_mod_counter = 0;
 
 void setCurrentColor() {

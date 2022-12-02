@@ -15,13 +15,15 @@ bool isFaderAlternativeMode() {
   return (analogRead(PIN_FADER_MODE) > 511);
 }
 
-bool readTempoGate() {
+void readTempoGates() {
   if (!tempoGate && ((currentMillis - lastGateMillis) > TEMPO_GATE_READ_DURATION)) {
     if (digitalRead(PIN_TEMPO)) {
-      return HIGH;
+      tempoGate = HIGH;
+      return;
     }
   }
-  return LOW;
+  tempoGate = LOW;
+  return;
 }
 
 void renderTempo() {
