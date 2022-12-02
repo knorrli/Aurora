@@ -46,8 +46,6 @@ void Rise(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
     {
       risePosition = 0;
     }
-    
-    
   }
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)

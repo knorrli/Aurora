@@ -138,6 +138,7 @@ extern void renderTrigger();
 
 // --- INPUT Touch
 extern void readTouchInputs();
+extern void setTouchColor();
 extern TSPoint calculateGridPosition(TSPoint position);
 extern bool isTouched();
 

@@ -51,7 +51,6 @@ void setCurrentColor() {
     altColorModFactor = 0;
     presetColor = CHSV(currentHue, currentSaturation, currentValue);
   }
-  touchColor = CHSV(presetColor.hue + (MAX_HUE / 2), presetColor.saturation, presetColor.value);
 }
 
 uint8_t readHue() {

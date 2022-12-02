@@ -23,7 +23,7 @@
 
 bool holdModeEnabled = false;
 bool presetAltModeEnabled = false;
-bool variationModeEnabled = false;
+bool presetInvertModeEnabled = false;
 
 static TouchScreen touchScreen = TouchScreen(PIN_TOUCHPAD_XP, PIN_TOUCHPAD_YP, PIN_TOUCHPAD_XM, PIN_TOUCHPAD_YM, X_AXIS_RESISTANCE);
 static TSPoint lastTouchPosition = NO_TOUCH_POSITION;
@@ -32,66 +32,45 @@ static TSPoint gridPosition = NO_TOUCH_POSITION;
 
 void renderTouchAction() {
   TSPoint touchPosition = currentTouchPosition;
-  if ((touchPosition == NO_TOUCH_POSITION) && holdModeEnabled) {
+  if ((!isTouched()) && holdModeEnabled) {
     touchPosition = lastTouchPosition;
   }
 
   if (touchPosition != NO_TOUCH_POSITION) {
-    if (presetAltModeEnabled) {
-      fillStripMirrored(touchPosition);
-    } else {
+    if (presetInvertModeEnabled) {
       invertPresetPattern(touchPosition);
+    } else {
+      fillStripMirrored(touchPosition);
     }
   }
   renderTouchpad();
 }
 
 void fillStripMirrored(TSPoint touchPosition) {
-  int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
-  CHSV color = CHSV(presetColor.hue, 255, 255);
-  if (!variationModeEnabled) {
-    if (yValue < 0) {
-      color.value = max(0, 255 + yValue);
-    } else {
-      color.saturation = 255 - yValue;
-    }
-  } else {
-    color.hue += (yValue / 2);
-  }
-  fill_solid(strip[stripIndex], PIXELS_PER_STRIP, color);
-  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, color);
+  fill_solid(strip[stripIndex], PIXELS_PER_STRIP, touchColor);
+  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, touchColor);
 }
 
 void invertPresetPattern(TSPoint touchPosition) {
-  if (currentPreset == 1) {
+  // allow overriding of filled strips
+  if (currentPreset == 1 && !presetAltModeEnabled) {
     fillStripMirrored(touchPosition);
     return;
   }
 
-  int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
-  CHSV color = CHSV(presetColor.hue, 255, 255);
-  if (!variationModeEnabled) {
-    if (yValue < 0) {
-      color.value = max(0, 255 + yValue);
-    } else {
-      color.saturation = 255 - yValue;
-    }
-  } else {
-    color.hue += (yValue / 2);
-  }
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
     if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
       strip[stripIndex][pixelIndex] = CRGB::Black;
     } else {
-      strip[stripIndex][pixelIndex] = color;
+      strip[stripIndex][pixelIndex] = touchColor;
     }
     if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
       if (!strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] == CRGB::Black) {
         strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = CRGB::Black;
       } else {
-        strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = color;
+        strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = touchColor;
       }
     }
   }
@@ -100,7 +79,7 @@ void invertPresetPattern(TSPoint touchPosition) {
 void readTouchInputs() {
   holdModeEnabled = (analogRead(PIN_HOLD_MODE) > 511);
   presetAltModeEnabled = digitalRead(PIN_PRESET_MODE);
-  variationModeEnabled = digitalRead(PIN_VARIATION_MODE);
+  presetInvertModeEnabled = digitalRead(PIN_VARIATION_MODE);
   TSPoint touchPosition = touchScreen.getPoint();
 
   if (touchPosition.z > touchScreen.pressureThreshhold) {
@@ -109,6 +88,21 @@ void readTouchInputs() {
     lastTouchPosition = touchPosition;
   } else {
     currentTouchPosition = NO_TOUCH_POSITION;
+  }
+
+
+  if (isTouched()) {
+    setTouchColor();
+  }
+}
+
+void setTouchColor() {
+  int16_t yValue = constrain(map(currentTouchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
+  touchColor = CHSV(presetColor.hue, 255, 255);
+  if (yValue < 0) {
+    touchColor.value = max(0, 255 + yValue);
+  } else {
+    touchColor.saturation = 255 - yValue;
   }
 }
 
