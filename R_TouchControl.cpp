@@ -53,12 +53,6 @@ void fillStripMirrored(TSPoint touchPosition) {
 }
 
 void invertPresetPattern(TSPoint touchPosition) {
-  // allow overriding of filled strips
-  if (currentPreset == 1 && !presetAltModeEnabled) {
-    fillStripMirrored(touchPosition);
-    return;
-  }
-
   uint8_t stripIndex = gridPosition.x;
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
     if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
@@ -79,7 +73,7 @@ void invertPresetPattern(TSPoint touchPosition) {
 void readTouchInputs() {
   holdModeEnabled = (analogRead(PIN_HOLD_MODE) > 511);
   presetAltModeEnabled = digitalRead(PIN_PRESET_MODE);
-  presetInvertModeEnabled = digitalRead(PIN_VARIATION_MODE);
+  presetInvertModeEnabled = !digitalRead(PIN_VARIATION_MODE);
   TSPoint touchPosition = touchScreen.getPoint();
 
   if (touchPosition.z > touchScreen.pressureThreshhold) {

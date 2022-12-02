@@ -3,33 +3,53 @@
 /////////////////////////////////
 // RISE_LINES
 /////////////////////////////////
-#define RISE_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
-#define RISE_LINES_GAP (RISE_LINES_LINE_LENGTH + 1)
-#define RISE_LINES_DIRECTION UP
-void RiseLines(CHSV color) {
-  Rise(color, RISE_LINES_LINE_LENGTH, RISE_LINES_GAP, RISE_LINES_DIRECTION);
+#define RISING_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
+#define RISING_LINES_GAP (RISING_LINES_LINE_LENGTH + 1)
+#define RISING_LINES_DIRECTION UP
+void RisingLines(CHSV color) {
+  MoveFill(color, RISING_LINES_LINE_LENGTH, RISING_LINES_GAP, RISING_LINES_DIRECTION);
 }
 
 /////////////////////////////////
 // RISE_STARS
 /////////////////////////////////
-#define RISE_STARS_LINE_LENGTH 1
-#define RISE_STARS_GAP 4
-#define RISE_STARS_DIRECTION DOWN
-void RiseStars(CHSV color) {
-  Rise(color, RISE_STARS_LINE_LENGTH, RISE_STARS_GAP, RISE_STARS_DIRECTION);
+#define RISING_STARS_LINE_LENGTH 1
+#define RISING_STARS_GAP 4
+#define RISING_STARS_DIRECTION UP
+void RisingStars(CHSV color) {
+  MoveFill(color, RISING_STARS_LINE_LENGTH, RISING_STARS_GAP, RISING_STARS_DIRECTION);
+}
+
+/////////////////////////////////
+// FALL_LINES
+/////////////////////////////////
+#define FALLING_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
+#define FALLING_LINES_GAP (FALLING_LINES_LINE_LENGTH + 1)
+#define FALLING_LINES_DIRECTION DOWN
+void FallingLines(CHSV color) {
+  MoveFill(color, FALLING_LINES_LINE_LENGTH, FALLING_LINES_GAP, FALLING_LINES_DIRECTION);
+}
+
+/////////////////////////////////
+// FALL_STARS
+/////////////////////////////////
+#define FALLING_STARS_LINE_LENGTH 1
+#define FALLING_STARS_GAP 4
+#define FALLING_STARS_DIRECTION DOWN
+void FallingStars(CHSV color) {
+  MoveFill(color, FALLING_STARS_LINE_LENGTH, FALLING_STARS_GAP, FALLING_STARS_DIRECTION);
 }
 
 
 /////////////////////////////////
-// RISE
+// MOVE_FILL
 /////////////////////////////////
 #define RISE_STEPS_PER_GATE 4
 static int8_t risePosition;
 static uint8_t riseGateCounter = 0;
 static unsigned long lastRiseGate = 0;
 
-void Rise(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
+void MoveFill(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
   if (tempoGate) {
     riseGateCounter = 0;
   }

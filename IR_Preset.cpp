@@ -31,20 +31,24 @@ void renderPreset(uint8_t preset) {
       break;
     case 4:
       if (presetAltModeEnabled) {
-        RiseStars(presetColor);
+        RisingStars(presetColor);
       } else {
-        RiseLines(presetColor);
+        RisingLines(presetColor);
       }
       break;
     case 5:
+      if (presetAltModeEnabled) {
+        FallingStars(presetColor);
+      } else {
+        FallingLines(presetColor);
+      }
+      break;
+    case 6:
       if (presetAltModeEnabled) {
         RainBounce(presetColor);
       } else {
         RainFall(presetColor);
       }
-      break;
-    case 6:
-      Invert(presetColor);
       break;
     case 7:
       if (presetAltModeEnabled) {
