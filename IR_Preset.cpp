@@ -38,7 +38,11 @@ void renderPreset(uint8_t preset) {
       }
       break;
     case 5:
-      Rain(presetColor);
+      if (presetAltModeEnabled) {
+        RainBounce(presetColor);
+      } else {
+        RainFall(presetColor);
+      }
       break;
     case 6:
       Invert(presetColor);

@@ -1,65 +1,6 @@
 #include "aurora.h"
 
 /////////////////////////////////
-// RAIN
-/////////////////////////////////
-#define RAIN_LENGTH 20
-#define RAIN_STEPS_PER_GATE 4
-static PositionDirection rain[] = {
-  { 0, 20, DOWN },
-  { 1, 28, DOWN },
-  { 2, 34, DOWN },
-  { 3, 28, DOWN },
-  { 4, 20, DOWN }
-};
-uint8_t rainGateCounter = 0;
-unsigned long lastRainGate = 0;
-
-void Rain(CHSV color) {
-  if (tempoGate) {
-    rainGateCounter = 0;
-  }
-  if ((rainGateCounter < RAIN_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastRainGate + (currentTempo / RAIN_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
-    rainGateCounter += 1;
-    lastRainGate = currentMillis;
-    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-      rain[stripIndex].pixelIndex += rain[stripIndex].direction;
-
-      if ((rain[stripIndex].pixelIndex == 0) || (rain[stripIndex].pixelIndex == (PIXELS_PER_STRIP - 1))) {
-        rain[stripIndex].direction *= -1;
-      }
-    }
-  }
-
-  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    PositionDirection raindrop = rain[stripIndex];
-    for (uint8_t index = 0; index < RAIN_LENGTH; index++) {
-      int8_t pixelIndex = raindrop.pixelIndex - (((RAIN_LENGTH - 1) - index) * raindrop.direction);
-      if (pixelIndex < 0) {
-        pixelIndex = 0 - pixelIndex;
-      }
-      if (pixelIndex > (PIXELS_PER_STRIP - 1)) {
-        pixelIndex = (PIXELS_PER_STRIP - 1) - (pixelIndex - PIXELS_PER_STRIP);
-      }
-      strip[stripIndex][pixelIndex] = color;
-      uint8_t raindropFadeAmount = 255 - (255 / (RAIN_LENGTH - (index)));
-      strip[stripIndex][pixelIndex].fadeToBlackBy(raindropFadeAmount);
-    }
-  }
-}
-
-void resetRain() {
-  rain[0] = { 0, 20, -1 };
-  rain[1] = { 1, 28, -1 };
-  rain[2] = { 2, 34, -1 };
-  rain[3] = { 3, 28, -1 };
-  rain[4] = { 4, 20, -1 };
-  rainGateCounter = 0;
-  lastRainGate = 0;
-  return;
-}
-
-/////////////////////////////////
 // RISE_LINES
 /////////////////////////////////
 #define RISE_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
@@ -130,6 +71,101 @@ void resetRise()
   }
   riseGateCounter = 0;
   lastRiseGate = currentMillis;
+}
+
+/////////////////////////////////
+// RAIN_FALL
+/////////////////////////////////
+void RainFall(CHSV color)
+{
+  Rain(color, false);
+}
+
+/////////////////////////////////
+// RAIN_BOUNCE
+/////////////////////////////////
+void RainBounce(CHSV color)
+{
+  Rain(color, true);
+}
+
+/////////////////////////////////
+// RAIN
+/////////////////////////////////
+#define RAIN_LENGTH 20
+#define RAIN_STEPS_PER_GATE 4
+static PositionDirection rain[] = {
+  { 0, 20, DOWN },
+  { 1, 28, DOWN },
+  { 2, 34, DOWN },
+  { 3, 28, DOWN },
+  { 4, 20, DOWN }
+};
+uint8_t rainGateCounter = 0;
+unsigned long lastRainGate = 0;
+
+void Rain(CHSV color, bool changeDirectionOnEnds) {
+  if (tempoGate) {
+    rainGateCounter = 0;
+  }
+  if ((rainGateCounter < RAIN_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastRainGate + (currentTempo / RAIN_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    rainGateCounter += 1;
+    lastRainGate = currentMillis;
+
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+      rain[stripIndex].pixelIndex += rain[stripIndex].direction;
+
+      if ((rain[stripIndex].pixelIndex == 0) || (rain[stripIndex].pixelIndex == (PIXELS_PER_STRIP - 1))) {
+        if (changeDirectionOnEnds) {
+          rain[stripIndex].direction *= -1;
+        } else {
+          if ((rain[stripIndex].direction == DOWN) && (rain[stripIndex].pixelIndex == 0)) {
+            rain[stripIndex].pixelIndex = (PIXELS_PER_STRIP - 1);
+          }
+          if ((rain[stripIndex].direction == UP) && (rain[stripIndex].pixelIndex == (PIXELS_PER_STRIP - 1))) {
+            rain[stripIndex].pixelIndex = 0;
+          }
+        }
+      }
+    }
+  }
+
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    PositionDirection raindrop = rain[stripIndex];
+    for (uint8_t index = 0; index < RAIN_LENGTH; index++) {
+      int8_t pixelIndex = raindrop.pixelIndex - (((RAIN_LENGTH - 1) - index) * raindrop.direction);
+      if (changeDirectionOnEnds) {
+        if (pixelIndex < 0) {
+          pixelIndex = 0 - pixelIndex;
+        }
+        if (pixelIndex > (PIXELS_PER_STRIP - 1)) {
+          pixelIndex = (PIXELS_PER_STRIP - 1) - (pixelIndex - PIXELS_PER_STRIP);
+        }
+      } else {
+        if (pixelIndex < 0) {
+          pixelIndex = (PIXELS_PER_STRIP - 1) + pixelIndex;
+        }
+        if (pixelIndex > (PIXELS_PER_STRIP - 1)) {
+          pixelIndex = pixelIndex - PIXELS_PER_STRIP;
+        }
+      }
+
+      strip[stripIndex][pixelIndex] = color;
+      uint8_t raindropFadeAmount = 255 - (255 / (RAIN_LENGTH - (index)));
+      strip[stripIndex][pixelIndex].fadeToBlackBy(raindropFadeAmount);
+    }
+  }
+}
+
+void resetRain() {
+  rain[0] = { 0, 20, DOWN };
+  rain[1] = { 1, 28, DOWN };
+  rain[2] = { 2, 34, DOWN };
+  rain[3] = { 3, 28, DOWN };
+  rain[4] = { 4, 20, DOWN };
+  rainGateCounter = 0;
+  lastRainGate = 0;
+  return;
 }
 
 /////////////////////////////////
