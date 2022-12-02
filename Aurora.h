@@ -127,8 +127,8 @@ extern void renderTempo();
 extern void renderTouchControl();
 extern void renderTouchpad();
 extern void renderTouchAction();
-extern void modifyPresetColor(TSPoint touchPosition);
-extern void overrideStripColor(TSPoint touchPosition);
+extern void invertPresetPattern(TSPoint touchPosition);
+extern void fillStripMirrored(TSPoint touchPosition);
 extern void renderTouchPosition(TSPoint touchPosition);
 
 // --- INPUT Trigger
@@ -145,18 +145,15 @@ extern bool isTouched();
 
 // --- PRESETS
 extern void FillStrips(CHSV color);
-extern void resetFillStrips();
 extern void FillStars(CHSV color);
-extern void resetFillStars();
 extern void Pulse(CHSV color);
 extern void resetPulse();
-extern void XVision(CHSV color);
-extern void resetXVision();
+extern void XFill(CHSV color);
+extern void resetXFill();
 extern void RiseStars(CHSV color);
 extern void RiseLines(CHSV color);
 extern void Rise(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetRise();
-extern void resetRiseStars();
 extern void RainFall(CHSV color);
 extern void RainBounce(CHSV color);
 extern void Rain(CHSV color, bool changeDirectionOnEnds);
@@ -167,9 +164,9 @@ extern void OneOnOneOrdered(CHSV color);
 extern void OneOnOneRandom(CHSV color);
 extern void OneOnOne(CHSV color, uint8_t order[]);
 extern void resetOneOnOne();
-//extern void Stars(CHSV color = CHSV(0, 0, 255));
-//extern void resetStars();
-extern void Strobe(CHSV color);
+extern void StrobeStrips(CHSV color);
+extern void StrobeMirrored(CHSV color);
 extern void resetStrobe();
+extern void StrobeUpDown(CHSV color);
 extern void Chaos(CHSV color);
 extern void resetChaos();

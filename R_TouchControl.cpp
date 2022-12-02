@@ -38,15 +38,15 @@ void renderTouchAction() {
 
   if (touchPosition != NO_TOUCH_POSITION) {
     if (presetAltModeEnabled) {
-      modifyPresetColor(touchPosition);
+      fillStripMirrored(touchPosition);
     } else {
-      overrideStripColor(touchPosition);
+      invertPresetPattern(touchPosition);
     }
   }
   renderTouchpad();
 }
 
-void overrideStripColor(TSPoint touchPosition) {
+void fillStripMirrored(TSPoint touchPosition) {
   int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
   CHSV color = CHSV(presetColor.hue, 255, 255);
@@ -63,7 +63,12 @@ void overrideStripColor(TSPoint touchPosition) {
   fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, color);
 }
 
-void modifyPresetColor(TSPoint touchPosition) {
+void invertPresetPattern(TSPoint touchPosition) {
+  if (currentPreset == 1) {
+    fillStripMirrored(touchPosition);
+    return;
+  }
+
   int16_t yValue = constrain(map(touchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   uint8_t stripIndex = gridPosition.x;
   CHSV color = CHSV(presetColor.hue, 255, 255);

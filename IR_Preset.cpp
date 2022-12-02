@@ -25,10 +25,9 @@ void renderPreset(uint8_t preset) {
       } else {
         Pulse(presetColor);
       }
-      
       break;
     case 3:
-      XVision(presetColor);
+      XFill(presetColor);
       break;
     case 4:
       if (presetAltModeEnabled) {
@@ -53,13 +52,20 @@ void renderPreset(uint8_t preset) {
       } else {
         OneOnOneOrdered(presetColor);
       }
-
       break;
     case 8:
-      Strobe(presetColor);
+      if (presetAltModeEnabled) {
+        StrobeMirrored(presetColor);
+      } else {
+        StrobeStrips(presetColor);
+      }
       break;
     case 9:
-      Chaos(presetColor);
+      if (presetAltModeEnabled) {
+        Chaos(presetColor);
+      } else {
+        StrobeUpDown(presetColor);
+      }
       break;
   }
 }
@@ -82,17 +88,12 @@ void resetPreset(uint8_t preset) {
     case 0:
       return;
     case 1:
-      if (presetAltModeEnabled) {
-        resetFillStars();
-      } else {
-        resetFillStrips();
-      }
       return;
     case 2:
       resetPulse();
       break;
     case 3:
-      resetXVision();
+      resetXFill();
       break;
     case 4:
       resetRain();

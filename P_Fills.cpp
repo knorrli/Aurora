@@ -7,10 +7,6 @@ void FillStrips(CHSV color) {
   strips.fill_solid(color);
 }
 
-void resetFillStrips() {
-  return;
-}
-
 /////////////////////////////////
 // FILL_STARS
 /////////////////////////////////
@@ -24,18 +20,14 @@ void FillStars(CHSV color) {
   }
 }
 
-void resetFillStars() {
-  return;
-}
-
 /////////////////////////////////
 // PULSE
 /////////////////////////////////
 #define PULSE_STEPS_PER_GATE 11
-uint8_t pulsePosition = 0;
-uint8_t pulseDirection = UP;
-uint8_t pulseGateCounter = 0;
-unsigned long lastPulseGate = 0;
+static uint8_t pulsePosition = 0;
+static uint8_t pulseDirection = UP;
+static uint8_t pulseGateCounter = 0;
+static unsigned long lastPulseGate = 0;
 
 void Pulse(CHSV color) {
   if (tempoGate) {
@@ -66,83 +58,83 @@ void resetPulse() {
 }
 
 /////////////////////////////////
-// XVISION
+// X_FILL
 /////////////////////////////////
-#define XVISION_STEPS_PER_GATE 11
-#define XVISION_STEPS ((PIXELS_PER_STRIP-1) / (NUMBER_OF_STRIPS-1))
-struct xVisionPositions {
+#define X_FILL_STEPS_PER_GATE 11
+#define X_FILL_STEPS ((PIXELS_PER_STRIP-1) / (NUMBER_OF_STRIPS-1))
+struct xFillPositions {
   uint8_t startPixelIndex;
   uint8_t endPixelIndex;
 };
-static xVisionPositions xVision[] = {
-  { (0 * XVISION_STEPS), (0 * XVISION_STEPS) },
-  { (1 * XVISION_STEPS), (1 * XVISION_STEPS) },
-  { (2 * XVISION_STEPS), (2 * XVISION_STEPS) },
-  { (3 * XVISION_STEPS), (3 * XVISION_STEPS) },
-  { (4 * XVISION_STEPS), (4 * XVISION_STEPS) },
+static xFillPositions xFill[] = {
+  { (0 * X_FILL_STEPS), (0 * X_FILL_STEPS) },
+  { (1 * X_FILL_STEPS), (1 * X_FILL_STEPS) },
+  { (2 * X_FILL_STEPS), (2 * X_FILL_STEPS) },
+  { (3 * X_FILL_STEPS), (3 * X_FILL_STEPS) },
+  { (4 * X_FILL_STEPS), (4 * X_FILL_STEPS) },
 };
 
-static uint8_t xVisionOrientation = 0;
-static uint8_t xVisionStep = 0;
-uint8_t xVisionGateCounter = 0;
-unsigned long lastXVisionGate = 0;
+static uint8_t xFillOrientation = 0;
+static uint8_t xFillStep = 0;
+static uint8_t xFillGateCounter = 0;
+unsigned long lastXFillGate = 0;
 
-void XVision(CHSV color) {
+void XFill(CHSV color) {
   if (tempoGate) {
-    xVisionGateCounter = 0;
+    xFillGateCounter = 0;
   }
-  if ((xVisionGateCounter < XVISION_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastXVisionGate + (currentTempo / XVISION_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
-    xVisionGateCounter += 1;
-    lastXVisionGate = currentMillis;
+  if ((xFillGateCounter < X_FILL_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastXFillGate + (currentTempo / X_FILL_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    xFillGateCounter += 1;
+    lastXFillGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-      uint8_t xVisionStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
-      switch (xVisionOrientation) {
+      uint8_t xFillStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
+      switch (xFillOrientation) {
         case 0:
-          xVision[stripIndex].endPixelIndex += (xVisionStep);
-          xVision[stripIndex].startPixelIndex -= (NUMBER_OF_STRIPS - 1) - xVisionStep;
+          xFill[stripIndex].endPixelIndex += (xFillStep);
+          xFill[stripIndex].startPixelIndex -= (NUMBER_OF_STRIPS - 1) - xFillStep;
           break;
         case 1:
-          xVision[stripIndex].endPixelIndex -= (NUMBER_OF_STRIPS - 1) - xVisionStep;
-          xVision[stripIndex].startPixelIndex += xVisionStep;
+          xFill[stripIndex].endPixelIndex -= (NUMBER_OF_STRIPS - 1) - xFillStep;
+          xFill[stripIndex].startPixelIndex += xFillStep;
           break;
         case 2:
-          xVision[stripIndex].endPixelIndex += (NUMBER_OF_STRIPS - 1) - xVisionStep;
-          xVision[stripIndex].startPixelIndex -= xVisionStep;
+          xFill[stripIndex].endPixelIndex += (NUMBER_OF_STRIPS - 1) - xFillStep;
+          xFill[stripIndex].startPixelIndex -= xFillStep;
           break;
         case 3:
-          xVision[stripIndex].endPixelIndex -= xVisionStep;
-          xVision[stripIndex].startPixelIndex += (NUMBER_OF_STRIPS - 1) - xVisionStep;
+          xFill[stripIndex].endPixelIndex -= xFillStep;
+          xFill[stripIndex].startPixelIndex += (NUMBER_OF_STRIPS - 1) - xFillStep;
       }
     }
 
-    bool stripEmpty = (xVision[0].endPixelIndex == xVision[0].startPixelIndex);
-    bool stripFull = ((xVision[0].endPixelIndex - xVision[0].startPixelIndex) == (PIXELS_PER_STRIP - 1));
+    bool stripEmpty = (xFill[0].endPixelIndex == xFill[0].startPixelIndex);
+    bool stripFull = ((xFill[0].endPixelIndex - xFill[0].startPixelIndex) == (PIXELS_PER_STRIP - 1));
 
     if (stripEmpty || stripFull) {
-      xVisionOrientation += 1;
-      if (xVisionOrientation > 3) {
-        xVisionOrientation = 0;
+      xFillOrientation += 1;
+      if (xFillOrientation > 3) {
+        xFillOrientation = 0;
       }
     }
   }
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    for (uint8_t pixelIndex = xVision[stripIndex].startPixelIndex; pixelIndex <= xVision[stripIndex].endPixelIndex; pixelIndex++) {
+    for (uint8_t pixelIndex = xFill[stripIndex].startPixelIndex; pixelIndex <= xFill[stripIndex].endPixelIndex; pixelIndex++) {
       strip[stripIndex][pixelIndex] = color;
     }
   }
 }
 
-void resetXVision() {
-  xVision[0] = { (0 * XVISION_STEPS), (0 * XVISION_STEPS) };
-  xVision[1] = { (1 * XVISION_STEPS), (1 * XVISION_STEPS) };
-  xVision[2] = { (2 * XVISION_STEPS), (2 * XVISION_STEPS) };
-  xVision[3] = { (3 * XVISION_STEPS), (3 * XVISION_STEPS) };
-  xVision[4] = { (4 * XVISION_STEPS), (4 * XVISION_STEPS) };
+void resetXFill() {
+  xFill[0] = { (0 * X_FILL_STEPS), (0 * X_FILL_STEPS) };
+  xFill[1] = { (1 * X_FILL_STEPS), (1 * X_FILL_STEPS) };
+  xFill[2] = { (2 * X_FILL_STEPS), (2 * X_FILL_STEPS) };
+  xFill[3] = { (3 * X_FILL_STEPS), (3 * X_FILL_STEPS) };
+  xFill[4] = { (4 * X_FILL_STEPS), (4 * X_FILL_STEPS) };
 
-  xVisionOrientation = 0;
-  xVisionStep = 0;
-  xVisionGateCounter = 0;
-  lastXVisionGate = currentMillis;
+  xFillOrientation = 0;
+  xFillStep = 0;
+  xFillGateCounter = 0;
+  lastXFillGate = currentMillis;
   return;
 }

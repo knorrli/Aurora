@@ -26,8 +26,8 @@ void RiseStars(CHSV color) {
 /////////////////////////////////
 #define RISE_STEPS_PER_GATE 4
 static int8_t risePosition;
-uint8_t riseGateCounter = 0;
-unsigned long lastRiseGate = 0;
+static uint8_t riseGateCounter = 0;
+static unsigned long lastRiseGate = 0;
 
 void Rise(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
   if (tempoGate) {
@@ -65,10 +65,7 @@ void Rise(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
 
 void resetRise()
 {
-  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)
-  {
-    risePosition = 0;
-  }
+  risePosition = 0;
   riseGateCounter = 0;
   lastRiseGate = currentMillis;
 }
@@ -101,8 +98,8 @@ static PositionDirection rain[] = {
   { 3, 28, DOWN },
   { 4, 20, DOWN }
 };
-uint8_t rainGateCounter = 0;
-unsigned long lastRainGate = 0;
+static uint8_t rainGateCounter = 0;
+static unsigned long lastRainGate = 0;
 
 void Rain(CHSV color, bool changeDirectionOnEnds) {
   if (tempoGate) {
@@ -173,10 +170,10 @@ void resetRain() {
 /////////////////////////////////
 #define INVERT_STEPS_PER_GATE 11
 #define BREAK_POSITION ((PIXELS_PER_STRIP / 4))
-int8_t invertDirection = UP;
-uint8_t invertPosition = 0;
-uint8_t invertGateCounter = 0;
-unsigned long lastInvertGate = 0;
+static int8_t invertDirection = UP;
+static uint8_t invertPosition = 0;
+static uint8_t invertGateCounter = 0;
+static unsigned long lastInvertGate = 0;
 
 void Invert(CHSV color)
 {

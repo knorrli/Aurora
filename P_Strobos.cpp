@@ -33,14 +33,14 @@ void resetOneOnOne() {
 }
 
 /////////////////////////////////
-// STROBE
+// STROBE_STRIPS
 /////////////////////////////////
 #define STROBE_SPEED 1
 #define STROBE_TEMPO_FACTOR 4 // how long per tempo step
 #define MINIMUM_STROBE_LENGTH 20
 #define MAXIMUM_STROBE_LENGTH 200
 static unsigned long lastStrobeTrigger = 0;
-void Strobe(CHSV color) {
+void StrobeStrips(CHSV color) {
   if (tempoGate) {
     lastStrobeTrigger = currentMillis;
   }
@@ -49,8 +49,51 @@ void Strobe(CHSV color) {
   }
 }
 
+/////////////////////////////////
+// STROBE_MIRRORED
+/////////////////////////////////
+uint8_t strobeMirroredStripIndex = (NUMBER_OF_STRIPS / 2);
+void StrobeMirrored(CHSV color) {
+  if (tempoGate) {
+    lastStrobeTrigger = currentMillis;
+    strobeMirroredStripIndex += 1;
+    if (strobeMirroredStripIndex == NUMBER_OF_STRIPS) {
+      strobeMirroredStripIndex = 1;
+    }
+    
+  }
+  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
+    fill_solid(strip[strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
+    fill_solid(strip[(NUMBER_OF_STRIPS - 1) - strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
+  }
+}
+
+/////////////////////////////////
+// STROBE_UP_DOWN
+/////////////////////////////////
+uint8_t strobeUpDownDirection = DOWN;
+void StrobeUpDown(CHSV color) {
+  if (tempoGate) {
+    lastStrobeTrigger = currentMillis;
+    strobeUpDownDirection *= -1;
+    
+  }
+  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
+    if (strobeUpDownDirection == UP) {
+      for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+        fill_solid(strip[stripIndex] + (PIXELS_PER_STRIP / 2), (PIXELS_PER_STRIP / 2) + 1, color);
+      }
+    } else {
+      for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+        fill_solid(strip[stripIndex], (PIXELS_PER_STRIP / 2) + 1, color);
+      }
+    }
+  }
+}
+
 void resetStrobe() {
-  return;
+strobeUpDownDirection = DOWN;
+strobeMirroredStripIndex = (NUMBER_OF_STRIPS / 2);
 }
 
 /////////////////////////////////
@@ -59,8 +102,8 @@ void resetStrobe() {
 #define CHAOS_STEPS_PER_GATE 2
 #define CHAOS_LENGTH 100
 #define CHAOS_BLOCK_SIZE 10
-uint8_t chaosGateCounter = 0;
-unsigned long lastChaosGate = 0;
+static uint8_t chaosGateCounter = 0;
+static unsigned long lastChaosGate = 0;
 static PositionColor chaos[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
   if (tempoGate) {
