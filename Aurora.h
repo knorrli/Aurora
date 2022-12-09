@@ -44,9 +44,6 @@
 // TRIGGER
 #define PIN_TRIGGER_INPUT A3
 
-// MUTE
-#define PIN_MUTE_INPUT 8
-
 // TOUCHSCREEN
 #define PIN_HOLD_MODE A6
 #define PIN_PRESET_MODE 4
@@ -101,7 +98,6 @@ extern bool isFaderAlternativeMode();
 extern void renderColorIndicators();
 extern CHSV randomColor();
 extern uint8_t readBrightness();
-extern bool isMuted();
 extern void showBootIndicatorReady();
 extern void readTempoGates();
 /* extern void applyRainbow(); */
@@ -157,7 +153,9 @@ extern void FallingLines(CHSV color);
 extern void FallingStars(CHSV color);
 extern void MoveFill(CHSV color);
 extern void MoveFill(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
-extern void resetRise();
+extern void resetMove();
+extern void Bars(CHSV color);
+extern void resetBars();
 extern void RainFall(CHSV color);
 extern void RainBounce(CHSV color);
 extern void Rain(CHSV color, bool changeDirectionOnEnds);

@@ -43,10 +43,6 @@ uint8_t readBrightness() {
   }
 }
 
-bool isMuted() {
-  return digitalRead(PIN_MUTE_INPUT);
-}
-
 void showBootIndicatorReady() {
   pixels[PIXEL_INDEX_TOUCH_COLOR] = CRGB::Red;
   pixels[PIXEL_INDEX_PRESET_COLOR] = CRGB::Red;

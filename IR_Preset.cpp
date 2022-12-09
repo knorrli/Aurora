@@ -27,7 +27,11 @@ void renderPreset(uint8_t preset) {
       }
       break;
     case 3:
-      XFill(presetColor);
+      if (presetAltModeEnabled) {
+        XFill(presetColor);
+      } else {
+        Bars(presetColor);
+      }
       break;
     case 4:
       if (presetAltModeEnabled) {
@@ -97,13 +101,17 @@ void resetPreset(uint8_t preset) {
       resetPulse();
       break;
     case 3:
-      resetXFill();
+      if (presetAltModeEnabled) {
+        resetBars();
+      } else {
+        resetXFill();
+      }
       break;
     case 4:
       resetRain();
       break;
     case 5:
-      resetRise();
+      resetMove();
       break;
     case 6:
       resetInvert();
@@ -122,6 +130,12 @@ void resetPreset(uint8_t preset) {
 
 int8_t readKeypad() {
   byte pin_8_13 = PINB | 0b00100000;
+  if (pin_8_13 == 0b00111111) {
+    muted = true;
+  } else {
+    muted = false;
+  }
+  
   switch (pin_8_13) {
     case 0b00100001:
       return 1;

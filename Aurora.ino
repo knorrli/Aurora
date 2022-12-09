@@ -9,6 +9,7 @@ unsigned long expectedNextGate = millis() + currentTempo;
 unsigned long elapsedLoopTime = 0;
 
 // STATE
+bool muted = false;
 uint8_t currentPreset = 0;
 CHSV touchColor = CHSV(0, 0, 0);
 CHSV presetColor = CHSV(0, 0, 0);
@@ -22,7 +23,7 @@ struct CRGB *strip[NUMBER_OF_STRIPS];
 void setup()
 {
   // Serial.begin(115200);
-  // delay(1500); // Boot recovery
+  delay(1500); // Boot recovery
 
   pinMode(PIN_TEMPO, INPUT);
   pinMode(PIN_LED_OUTPUT, OUTPUT);
@@ -85,7 +86,7 @@ void render()
 {
   FastLED.clear(false);
   renderColorIndicators();
-  if (!isMuted()) {
+  if (!muted) {
     renderPreset(currentPreset);
     renderTouchAction();
   }

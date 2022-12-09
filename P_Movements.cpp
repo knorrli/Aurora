@@ -44,27 +44,27 @@ void FallingStars(CHSV color) {
 /////////////////////////////////
 // MOVE_FILL
 /////////////////////////////////
-#define RISE_STEPS_PER_GATE 4
-static int8_t risePosition;
-static uint8_t riseGateCounter = 0;
-static unsigned long lastRiseGate = 0;
+#define MOVE_STEPS_PER_GATE 4
+static int8_t movePosition;
+static uint8_t moveGateCounter = 0;
+static unsigned long lastMoveGate = 0;
 
 void MoveFill(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
   if (tempoGate) {
-    riseGateCounter = 0;
+    moveGateCounter = 0;
   }
   
-  if ((riseGateCounter < RISE_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastRiseGate + (currentTempo / RISE_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
-    riseGateCounter += 1;
-    lastRiseGate = currentMillis;
-    risePosition += direction;
-    if (risePosition < 0)
+  if ((moveGateCounter < MOVE_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastMoveGate + (currentTempo / MOVE_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    moveGateCounter += 1;
+    lastMoveGate = currentMillis;
+    movePosition += direction;
+    if (movePosition < 0)
     {
-      risePosition = (PIXELS_PER_STRIP - 1);
+      movePosition = (PIXELS_PER_STRIP - 1);
     }
-    if (risePosition == PIXELS_PER_STRIP)
+    if (movePosition == PIXELS_PER_STRIP)
     {
-      risePosition = 0;
+      movePosition = 0;
     }
   }
 
@@ -74,18 +74,60 @@ void MoveFill(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP
     {
       for (uint8_t pixelIndex = 0; pixelIndex < fillLength; pixelIndex++)
       {
-        uint8_t offsetPixelIndex = (fillStartIndex + pixelIndex + risePosition) % PIXELS_PER_STRIP;
+        uint8_t offsetPixelIndex = (fillStartIndex + pixelIndex + movePosition) % PIXELS_PER_STRIP;
         strip[stripIndex][offsetPixelIndex] = color;
       }
     }
   }
 }
 
-void resetRise()
+void resetMove()
 {
-  risePosition = 0;
-  riseGateCounter = 0;
-  lastRiseGate = currentMillis;
+  movePosition = 0;
+  moveGateCounter = 0;
+  lastMoveGate = currentMillis;
+}
+
+/////////////////////////////////
+// BARS
+/////////////////////////////////
+#define BARS_STEPS_PER_GATE 4
+#define BARS_BAR_LENGTH 8
+static int8_t barsPosition = 0;
+static int8_t barsDirection = DOWN;
+static uint8_t barsGateCounter = 0;
+static unsigned long lastBarsGate = 0;
+
+void Bars(CHSV color) {
+  if (tempoGate) {
+    barsGateCounter = 0;
+  }
+  
+  if ((barsGateCounter < BARS_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastBarsGate + (currentTempo / BARS_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    barsGateCounter += 1;
+    lastBarsGate = currentMillis;
+    if (barsPosition == 0)
+    {
+      barsDirection *= -1;
+    }
+    if (barsPosition >= ((PIXELS_PER_STRIP - 1) - BARS_BAR_LENGTH))
+    {
+      barsDirection *= -1;
+    }
+    barsPosition += barsDirection;
+  }
+
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)
+  {
+    fill_solid(strip[stripIndex] + barsPosition, BARS_BAR_LENGTH, color);
+  }
+}
+
+void resetBars()
+{
+  barsDirection = DOWN;
+  barsPosition = 0;
+  lastBarsGate = currentMillis;
 }
 
 /////////////////////////////////
