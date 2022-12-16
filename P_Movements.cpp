@@ -110,7 +110,7 @@ void Bars(CHSV color) {
     {
       barsDirection *= -1;
     }
-    if (barsPosition >= ((PIXELS_PER_STRIP - 1) - BARS_BAR_LENGTH))
+    if (barsPosition >= ((PIXELS_PER_STRIP) - BARS_BAR_LENGTH))
     {
       barsDirection *= -1;
     }

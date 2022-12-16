@@ -85,13 +85,13 @@ void readTouchInputs() {
   }
 
 
-  if (isTouched()) {
+  // if (isTouched()) {
     setTouchColor();
-  }
+  // }
 }
 
 void setTouchColor() {
-  int16_t yValue = constrain(map(currentTouchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
+  int16_t yValue = constrain(map(lastTouchPosition.y, Y_AXIS_VALUE_LOWER_BOUND, Y_AXIS_VALUE_UPPER_BOUND, -255, 255), -255, 255);
   touchColor = CHSV(presetColor.hue, 255, 255);
   if (yValue < 0) {
     touchColor.value = max(0, 255 + yValue);

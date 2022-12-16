@@ -62,10 +62,8 @@ void StrobeMirrored(CHSV color) {
     }
     
   }
-  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
-    fill_solid(strip[strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
-    fill_solid(strip[(NUMBER_OF_STRIPS - 1) - strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
-  }
+  fill_solid(strip[strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
+  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
 }
 
 /////////////////////////////////
@@ -76,17 +74,19 @@ void StrobeUpDown(CHSV color) {
   if (tempoGate) {
     lastStrobeTrigger = currentMillis;
     strobeUpDownDirection *= -1;
-    
   }
-  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
-    if (strobeUpDownDirection == UP) {
-      for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-        fill_solid(strip[stripIndex] + (PIXELS_PER_STRIP / 2), (PIXELS_PER_STRIP / 2) + 1, color);
-      }
-    } else {
-      for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-        fill_solid(strip[stripIndex], (PIXELS_PER_STRIP / 2) + 1, color);
-      }
+  if (strobeUpDownDirection == UP)
+  {
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)
+    {
+      fill_solid(strip[stripIndex] + (PIXELS_PER_STRIP / 2), (PIXELS_PER_STRIP / 2) + 1, color);
+    }
+  }
+  else
+  {
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)
+    {
+      fill_solid(strip[stripIndex], (PIXELS_PER_STRIP / 2) + 1, color);
     }
   }
 }
@@ -104,7 +104,7 @@ strobeMirroredStripIndex = (NUMBER_OF_STRIPS / 2);
 #define CHAOS_BLOCK_SIZE 10
 static uint8_t chaosGateCounter = 0;
 static unsigned long lastChaosGate = 0;
-static PositionColor chaos[NUMBER_OF_STRIPS];
+static uint8_t chaosStripPosition[NUMBER_OF_STRIPS];
 void Chaos(CHSV color) {
   if (tempoGate) {
     chaosGateCounter = 0;
@@ -113,12 +113,12 @@ void Chaos(CHSV color) {
     chaosGateCounter += 1;
     lastChaosGate = currentMillis;
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-      chaos[stripIndex] = { stripIndex, random8(PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE) };
+      chaosStripPosition[stripIndex] = (chaosStripPosition[stripIndex] + (PIXELS_PER_STRIP / 3) + random8(PIXELS_PER_STRIP / 3)) % (PIXELS_PER_STRIP - CHAOS_BLOCK_SIZE);
     }
   }
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    fill_solid(strip[stripIndex] + chaos[stripIndex].pixelIndex, CHAOS_BLOCK_SIZE, color);
+    fill_solid(strip[stripIndex] + chaosStripPosition[stripIndex], CHAOS_BLOCK_SIZE, color);
   }
 }
 

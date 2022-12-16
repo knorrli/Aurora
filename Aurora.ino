@@ -77,6 +77,7 @@ void perform()
   readPreset();
   if (tempoGate && (currentPreset != selectedPreset))
   {
+    previousPreset = currentPreset;
     currentPreset = selectedPreset;
   }
   readTouchInputs();

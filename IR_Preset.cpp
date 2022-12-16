@@ -3,11 +3,12 @@
 
 #define KEYPAD_DEBOUNCE_DELAY 100
 uint8_t selectedPreset = 0;
+uint8_t previousPreset = 0;
 static unsigned long lastKeyPadRead = 0;
 
 void renderPreset(uint8_t preset) {
   // render preset color indicator
-  pixels[PIXEL_INDEX_PRESET_COLOR] = presetColor;
+  pixels[PIXEL_INDEX_PRESET_COLOR] = CHSV(presetColor.hue, 255, 255);
 
   switch (preset) {
     case 0:
@@ -63,16 +64,16 @@ void renderPreset(uint8_t preset) {
       break;
     case 8:
       if (presetAltModeEnabled) {
-        StrobeMirrored(presetColor);
+        StrobeUpDown(presetColor);
       } else {
-        StrobeStrips(presetColor);
+        StrobeMirrored(presetColor);
       }
       break;
     case 9:
       if (presetAltModeEnabled) {
         Chaos(presetColor);
       } else {
-        StrobeUpDown(presetColor);
+        StrobeStrips(presetColor);
       }
       break;
   }
@@ -98,32 +99,36 @@ void resetPreset(uint8_t preset) {
     case 1:
       return;
     case 2:
-      resetPulse();
+      if (presetAltModeEnabled) {
+        resetInvert();
+      } else {
+        resetPulse();
+      }
       break;
     case 3:
       if (presetAltModeEnabled) {
-        resetBars();
-      } else {
         resetXFill();
+      } else {
+        resetBars();
       }
       break;
     case 4:
-      resetRain();
+      resetMove();
       break;
     case 5:
       resetMove();
       break;
     case 6:
-      resetInvert();
+      resetRain();
       break;
     case 7:
       resetOneOnOne();
       break;
     case 8:
-      resetChaos();
+      resetStrobe();
       break;
     case 9:
-      resetStrobe();
+      resetChaos();
       break;
   }
 }
@@ -135,9 +140,14 @@ int8_t readKeypad() {
   } else {
     muted = false;
   }
+
+  if (pin_8_13 == 0b00111101) {
+    return previousPreset;
+  }
   
   switch (pin_8_13) {
     case 0b00100001:
+    case 0b00110111:
       return 1;
     case 0b00100011:
       return 2;

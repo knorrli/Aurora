@@ -64,6 +64,7 @@ extern unsigned long elapsedLoopTime;
 // STATE
 extern uint8_t currentPreset;
 extern uint8_t selectedPreset;
+extern uint8_t previousPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
 extern bool muted;
