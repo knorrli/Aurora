@@ -1,7 +1,7 @@
 #include "aurora.h"
 
 void renderColorIndicators() {
-  pixels[PIXEL_INDEX_PRESET_COLOR] = presetColor;
+  pixels[PIXEL_INDEX_PRESET_COLOR] = CHSV(presetColor.hue, presetColor.saturation, 255);
   pixels[PIXEL_INDEX_PRESET_COLOR].fadeLightBy(128);
   pixels[PIXEL_INDEX_TOUCH_COLOR] = touchColor;
   pixels[PIXEL_INDEX_TOUCH_COLOR].fadeLightBy(128);

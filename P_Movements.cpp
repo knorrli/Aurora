@@ -45,7 +45,7 @@ void FallingStars(CHSV color) {
 // MOVE_FILL
 /////////////////////////////////
 #define MOVE_STEPS_PER_GATE 4
-static int8_t movePosition;
+static int8_t movePosition = 0;
 static uint8_t moveGateCounter = 0;
 static unsigned long lastMoveGate = 0;
 
@@ -91,8 +91,8 @@ void resetMove()
 /////////////////////////////////
 // BARS
 /////////////////////////////////
-#define BARS_STEPS_PER_GATE 4
-#define BARS_BAR_LENGTH 8
+#define BARS_STEPS_PER_GATE 9
+#define BARS_BAR_LENGTH 9
 static int8_t barsPosition = 0;
 static int8_t barsDirection = DOWN;
 static uint8_t barsGateCounter = 0;
