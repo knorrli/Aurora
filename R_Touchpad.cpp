@@ -21,10 +21,6 @@
 #define GRID_OFFSET_X ((X_AXIS_VALUE_UPPER_BOUND - X_AXIS_VALUE_LOWER_BOUND) / GRID_SIZE_X) / 2
 #define GRID_OFFSET_Y ((Y_AXIS_VALUE_UPPER_BOUND - Y_AXIS_VALUE_LOWER_BOUND) / GRID_SIZE_Y) / 2
 
-bool holdModeEnabled = false;
-bool presetAltModeEnabled = false;
-bool presetInvertModeEnabled = false;
-
 static TouchScreen touchScreen = TouchScreen(PIN_TOUCHPAD_XP, PIN_TOUCHPAD_YP, PIN_TOUCHPAD_XM, PIN_TOUCHPAD_YM, X_AXIS_RESISTANCE);
 static TSPoint lastTouchPosition = NO_TOUCH_POSITION;
 static TSPoint currentTouchPosition = NO_TOUCH_POSITION;
@@ -37,43 +33,95 @@ void renderTouchAction() {
   }
 
   if (touchPosition != NO_TOUCH_POSITION) {
-    if (presetInvertModeEnabled) {
-      invertPresetPattern(touchPosition);
+    if (touchpadMode == TOUCHPAD_MODE_EXCLUSIVE) {
+      invertExclusive(touchPosition);
+    } else if (touchpadMode == TOUCHPAD_MODE_FILL) {
+      fill(touchPosition);
     } else {
-      fillStripMirrored(touchPosition);
+      invert(touchPosition);
     }
+    
+    // if (touchpadAllModeEnabled) {
+    //   invertPresetPattern(touchPosition);
+    // } else {
+    //   fillStripMirrored(touchPosition);
+    // }
   }
   renderTouchpad();
 }
 
-void fillStripMirrored(TSPoint touchPosition) {
+void invertExclusive(TSPoint touchPosition) {
+  if (touchpadAllModeEnabled) {
+
+  } else {
+
+  }
+}
+
+void fill(TSPoint touchPosition) {
+  if (touchpadAllModeEnabled) {
+    fillAll();
+  } else {
+    fillMirrored(touchPosition);
+  }
+}
+
+void invert(TSPoint touchPosition) {
+  if (touchpadAllModeEnabled) {
+    strips.fill_solid(touchColor);
+  } else {
+    invertMirrored(touchPosition);
+  }
+}
+
+void fillAll() {
+  strips.fill_solid(touchColor);
+}
+
+void fillMirrored(TSPoint touchPosition) {
   uint8_t stripIndex = gridPosition.x;
   fill_solid(strip[stripIndex], PIXELS_PER_STRIP, touchColor);
   fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, touchColor);
 }
 
-void invertPresetPattern(TSPoint touchPosition) {
+void invertAll() {
+
+}
+
+void invertMirrored(TSPoint touchPosition) {
   uint8_t stripIndex = gridPosition.x;
+  invertStrip(stripIndex);
+  if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
+    invertStrip((NUMBER_OF_STRIPS - 1) - stripIndex);
+  }
+
+  // for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+  //   if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
+  //     strip[stripIndex][pixelIndex] = CRGB::Black;
+  //   } else {
+  //     strip[stripIndex][pixelIndex] = touchColor;
+  //   }
+  //   if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
+  //     if (!strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] == CRGB::Black) {
+  //       strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = CRGB::Black;
+  //     } else {
+  //       strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = touchColor;
+  //     }
+  //   }
+  // }
+}
+
+void invertStrip(uint8_t stripIndex) {
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
     if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
       strip[stripIndex][pixelIndex] = CRGB::Black;
     } else {
       strip[stripIndex][pixelIndex] = touchColor;
     }
-    if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
-      if (!strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] == CRGB::Black) {
-        strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = CRGB::Black;
-      } else {
-        strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = touchColor;
-      }
-    }
   }
 }
 
-void readTouchInputs() {
-  holdModeEnabled = (analogRead(PIN_HOLD_MODE) > 511);
-  presetAltModeEnabled = digitalRead(PIN_PRESET_MODE);
-  presetInvertModeEnabled = !digitalRead(PIN_VARIATION_MODE);
+void readTouchpad() {
   TSPoint touchPosition = touchScreen.getPoint();
 
   if (touchPosition.z > touchScreen.pressureThreshhold) {
@@ -84,10 +132,7 @@ void readTouchInputs() {
     currentTouchPosition = NO_TOUCH_POSITION;
   }
 
-
-  // if (isTouched()) {
-    setTouchColor();
-  // }
+  setTouchColor();
 }
 
 void setTouchColor() {

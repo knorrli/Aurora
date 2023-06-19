@@ -11,8 +11,33 @@ CHSV randomColor() {
   return CHSV(random8(), 255, 255);
 }
 
-bool isFaderAlternativeMode() {
-  return (analogRead(PIN_FADER_MODE) > 511);
+void readInputSwitches() {
+  holdModeEnabled = digitalRead(PIN_HOLD_MODE);
+  touchpadAllModeEnabled = !digitalRead(PIN_TOUCHPAD_ALL_MODE);
+
+  uint16_t faderAndPresetModeValue = analogRead(PIN_FADER_AND_PRESET_MODE);
+  if (faderAndPresetModeValue < 450) {
+    faderAltModeEnabled = true;
+    presetAltModeEnabled = false;
+  } else if (faderAndPresetModeValue >= 450 && faderAndPresetModeValue < 600) {
+    faderAltModeEnabled = false;
+    presetAltModeEnabled = false;
+  } else if (faderAndPresetModeValue >= 600 && faderAndPresetModeValue < 1000) {
+    faderAltModeEnabled = true;
+    presetAltModeEnabled = true;
+  } else {
+    faderAltModeEnabled = false;
+    presetAltModeEnabled = true;
+  }
+
+  uint16_t touchpadModeValue = analogRead(PIN_TOUCHPAD_MODE);
+  if (touchpadMode > 400 && touchpadMode <= 1000) {
+    touchpadMode = TOUCHPAD_MODE_FILL;
+  } else if (touchpadMode > 1000) {
+    touchpadMode = TOUCHPAD_MODE_EXCLUSIVE;
+  } else {
+    touchpadMode = TOUCHPAD_MODE_MIRRORED;
+  }
 }
 
 void readTempoGates() {

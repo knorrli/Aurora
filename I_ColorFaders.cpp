@@ -20,7 +20,7 @@ static unsigned long color_mod_counter = 0;
 
 void setCurrentColor() {
   uint8_t currentHue = readHue();
-  if (isFaderAlternativeMode()) {
+  if (faderAltModeEnabled) {
     color_mod_counter += 1;
     uint8_t currentModInterval = constrain(map(readSaturation(), MIN_SATURATION, MAX_SATURATION, MIN_COLOR_MOD_INTERVAL, MAX_COLOR_MOD_INTERVAL), MIN_COLOR_MOD_INTERVAL, MAX_COLOR_MOD_INTERVAL);
     uint8_t currentModRange = constrain(map(readValue(), MIN_VALUE, MAX_VALUE, MIN_COLOR_MOD_RANGE, MAX_COLOR_MOD_RANGE), MIN_COLOR_MOD_RANGE, MAX_COLOR_MOD_RANGE);

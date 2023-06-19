@@ -39,15 +39,20 @@
 #define PIN_FADER_SATURATION A0
 #define PIN_FADER_HUE A1
 #define PIN_FADER_VALUE A2
-#define PIN_FADER_MODE A7
 
 // TRIGGER
 #define PIN_TRIGGER_INPUT A3
 
-// TOUCHSCREEN
-#define PIN_HOLD_MODE A6
-#define PIN_PRESET_MODE 4
-#define PIN_VARIATION_MODE 5
+// TOUCHPAD
+#define TOUCHPAD_MODE_MIRRORED 0
+#define TOUCHPAD_MODE_EXCLUSIVE 1
+#define TOUCHPAD_MODE_FILL 2
+#define PIN_TOUCHPAD_ALL_MODE 4
+#define PIN_HOLD_MODE 5
+
+// SWITCHES
+#define PIN_TOUCHPAD_MODE A6
+#define PIN_FADER_AND_PRESET_MODE A7
 
 // ------------------------
 // VARIABLES
@@ -68,9 +73,11 @@ extern uint8_t previousPreset;
 extern CHSV touchColor;
 extern CHSV presetColor;
 extern bool muted;
-extern bool holdModeEnabled;
+extern bool faderAltModeEnabled;
 extern bool presetAltModeEnabled;
-extern bool variationModeEnabled;
+extern uint8_t touchpadMode;
+extern bool touchpadAllModeEnabled;
+extern bool holdModeEnabled;
 
 // LED FRAMEBUFFER
 extern CRGBArray<NUM_PIXELS_TOTAL> pixels;
@@ -101,6 +108,7 @@ extern CHSV randomColor();
 extern uint8_t readBrightness();
 extern void showBootIndicatorReady();
 extern void readTempoGates();
+extern void readInputSwitches();
 /* extern void applyRainbow(); */
 
 // --- INPUT ColorFaders
@@ -121,12 +129,18 @@ extern void resetPreset(uint8_t preset);
 extern void renderTempo();
 
 // --- RENDER Touchpad
-extern void renderTouchControl();
 extern void renderTouchpad();
 extern void renderTouchAction();
-extern void invertPresetPattern(TSPoint touchPosition);
-extern void fillStripMirrored(TSPoint touchPosition);
+extern void fill(TSPoint touchPosition);
+extern void fillAll();
+extern void fillMirrored(TSPoint touchPosition);
+extern void invert(TSPoint touchPosition);
+extern void invertAll();
+extern void invertMirrored(TSPoint touchPosition);
+extern void invertExclusive(TSPoint touchPosition);
+extern void invertExclusiveMirrored();
 extern void renderTouchPosition(TSPoint touchPosition);
+extern void invertStrip(uint8_t stripIndex);
 
 // --- INPUT Trigger
 extern bool readTrigger();
@@ -134,7 +148,8 @@ extern bool readTrigger();
 extern void renderTrigger();
 
 // --- INPUT Touch
-extern void readTouchInputs();
+extern void readTouchPadMode();
+extern void readTouchpad();
 extern void setTouchColor();
 extern TSPoint calculateGridPosition(TSPoint position);
 extern bool isTouched();
