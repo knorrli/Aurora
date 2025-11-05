@@ -60,7 +60,7 @@ void renderTempo() {
 }
 
 void setBootSettings() {
-  uint8_t keyValue = readKeypad();
+  int8_t keyValue = readKeypad();
   if (keyValue == 0) {
     touchpadVerticalMode = TOUCHPAD_VERTICAL_MODE_COLOR;
     return;

@@ -32,7 +32,6 @@ void setCurrentColor() {
 
     int8_t modRangeLowerBound = -(currentModRange/2)-1;
     int8_t modRangeUpperBound = (currentModRange/2);
-    int8_t shiftedModRange = currentModRange - (currentModRange/2)-1;
 
     if (altColorModFactor - ((altColorModDirection * currentModInterval)) < (modRangeLowerBound-1)) {
       altColorModFactor = modRangeLowerBound;
