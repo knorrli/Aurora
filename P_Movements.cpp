@@ -6,8 +6,8 @@
 #define RISING_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
 #define RISING_LINES_GAP (RISING_LINES_LINE_LENGTH + 1)
 #define RISING_LINES_DIRECTION UP
-void RisingLines(CHSV color) {
-  MoveFill(color, RISING_LINES_LINE_LENGTH, RISING_LINES_GAP, RISING_LINES_DIRECTION);
+void RisingBlocks(CHSV color) {
+  MovingBlocks(color, RISING_LINES_LINE_LENGTH, RISING_LINES_GAP, RISING_LINES_DIRECTION);
 }
 
 /////////////////////////////////
@@ -17,7 +17,7 @@ void RisingLines(CHSV color) {
 #define RISING_STARS_GAP 4
 #define RISING_STARS_DIRECTION UP
 void RisingStars(CHSV color) {
-  MoveFill(color, RISING_STARS_LINE_LENGTH, RISING_STARS_GAP, RISING_STARS_DIRECTION);
+  MovingBlocks(color, RISING_STARS_LINE_LENGTH, RISING_STARS_GAP, RISING_STARS_DIRECTION);
 }
 
 /////////////////////////////////
@@ -26,8 +26,8 @@ void RisingStars(CHSV color) {
 #define FALLING_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
 #define FALLING_LINES_GAP (FALLING_LINES_LINE_LENGTH + 1)
 #define FALLING_LINES_DIRECTION DOWN
-void FallingLines(CHSV color) {
-  MoveFill(color, FALLING_LINES_LINE_LENGTH, FALLING_LINES_GAP, FALLING_LINES_DIRECTION);
+void FallingBlocks(CHSV color) {
+  MovingBlocks(color, FALLING_LINES_LINE_LENGTH, FALLING_LINES_GAP, FALLING_LINES_DIRECTION);
 }
 
 /////////////////////////////////
@@ -37,7 +37,7 @@ void FallingLines(CHSV color) {
 #define FALLING_STARS_GAP 4
 #define FALLING_STARS_DIRECTION DOWN
 void FallingStars(CHSV color) {
-  MoveFill(color, FALLING_STARS_LINE_LENGTH, FALLING_STARS_GAP, FALLING_STARS_DIRECTION);
+  MovingBlocks(color, FALLING_STARS_LINE_LENGTH, FALLING_STARS_GAP, FALLING_STARS_DIRECTION);
 }
 
 
@@ -49,7 +49,7 @@ static int8_t movePosition = 0;
 static uint8_t moveGateCounter = 0;
 static unsigned long lastMoveGate = 0;
 
-void MoveFill(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
+void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
   if (tempoGate) {
     moveGateCounter = 0;
   }
@@ -81,7 +81,7 @@ void MoveFill(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP
   }
 }
 
-void resetMove()
+void resetMovingBlocks()
 {
   movePosition = 0;
   moveGateCounter = 0;

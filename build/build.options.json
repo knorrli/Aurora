@@ -1,0 +1,10 @@
+{
+  "additionalFiles": "../../..,../../..,../../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..",
+  "builtInToolsFolders": "",
+  "compiler.optimization_flags": "",
+  "customBuildProperties": "build.warn_data_percentage=75",
+  "fqbn": "arduino:avr:nano:cpu=atmega328",
+  "hardwareFolders": "/Users/igor/Library/Arduino15/packages",
+  "otherLibrariesFolders": "/Users/igor/Documents/Arduino/libraries",
+  "sketchLocation": "/Users/igor/Projects/Aurora"
+}

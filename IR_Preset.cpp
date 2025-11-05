@@ -14,6 +14,7 @@ void renderPreset(uint8_t preset) {
     case 0:
       return;
     case 1:
+      // FillBlocks
       if (presetAltModeEnabled) {
         FillStars(presetColor);
       } else {
@@ -21,34 +22,39 @@ void renderPreset(uint8_t preset) {
       }
       return;
     case 2:
-      if (presetAltModeEnabled) {
-        Invert(presetColor);
-      } else {
-        Pulse(presetColor);
-      }
-      break;
-    case 3:
-      if (presetAltModeEnabled) {
-        XFill(presetColor);
-      } else {
-        Bars(presetColor);
-      }
-      break;
-    case 4:
+      // DispersingBlocks
       if (presetAltModeEnabled) {
         RisingStars(presetColor);
       } else {
-        RisingLines(presetColor);
+        RisingBlocks(presetColor);
       }
       break;
-    case 5:
+    case 3:
+      // ConvergingBlocks
       if (presetAltModeEnabled) {
         FallingStars(presetColor);
       } else {
-        FallingLines(presetColor);
+        FallingBlocks(presetColor);
+      }
+      break;
+    case 4:
+      // TODO
+      if (presetAltModeEnabled) {
+        Bars(presetColor);
+      } else {
+        PulseFill(presetColor);
+      }
+      break;
+    case 5:
+      // TODO
+      if (presetAltModeEnabled) {
+        XFill(presetColor);
+      } else {
+        Invert(presetColor);
       }
       break;
     case 6:
+      // TODO
       if (presetAltModeEnabled) {
         RainBounce(presetColor);
       } else {
@@ -56,24 +62,24 @@ void renderPreset(uint8_t preset) {
       }
       break;
     case 7:
+      // StripByStripMirrored(presetColor);
       if (presetAltModeEnabled) {
-        OneOnOneRandom(presetColor);
+        StripByStripRandom(presetColor);
       } else {
-        OneOnOneOrdered(presetColor);
+        StripByStripOrdered(presetColor);
       }
       break;
     case 8:
-      if (presetAltModeEnabled) {
-        StrobeUpDown(presetColor);
-      } else {
-        StrobeMirrored(presetColor);
-      }
-      break;
-    case 9:
+      // StrobeUpDown(presetColor);
       if (presetAltModeEnabled) {
         Chaos(presetColor);
       } else {
         StrobeStrips(presetColor);
+      }
+      break;
+    case 9:
+      if (presetAltModeEnabled) {
+      } else {
       }
       break;
   }
@@ -99,36 +105,39 @@ void resetPreset(uint8_t preset) {
     case 1:
       return;
     case 2:
-      if (presetAltModeEnabled) {
-        resetInvert();
-      } else {
-        resetPulse();
-      }
+      resetMovingBlocks();
       break;
     case 3:
+      resetMovingBlocks();
+      break;
+    case 4:
+      if (presetAltModeEnabled) {
+        resetBars();
+      } else {
+        resetPulseFill();
+      }
+      break;
+    case 5:
       if (presetAltModeEnabled) {
         resetXFill();
       } else {
-        resetBars();
+        resetInvert();
       }
-      break;
-    case 4:
-      resetMove();
-      break;
-    case 5:
-      resetMove();
       break;
     case 6:
       resetRain();
       break;
     case 7:
-      resetOneOnOne();
+      resetStripByStrip();
       break;
     case 8:
-      resetStrobe();
+      if (presetAltModeEnabled) {
+        resetChaos();
+      } else {
+        resetStrobe();
+      }
       break;
     case 9:
-      resetChaos();
       break;
   }
 }

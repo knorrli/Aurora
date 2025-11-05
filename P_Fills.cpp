@@ -29,7 +29,7 @@ static uint8_t pulseDirection = UP;
 static uint8_t pulseGateCounter = 0;
 static unsigned long lastPulseGate = 0;
 
-void Pulse(CHSV color) {
+void PulseFill(CHSV color) {
   if (tempoGate) {
     pulseGateCounter = 0;
   }
@@ -49,7 +49,7 @@ void Pulse(CHSV color) {
   }
 }
 
-void resetPulse() {
+void resetPulseFill() {
   pulseGateCounter = 0;
   lastPulseGate = currentMillis;
   pulsePosition = 0;

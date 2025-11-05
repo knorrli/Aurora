@@ -13,7 +13,7 @@ CHSV randomColor() {
 
 void readInputSwitches() {
   holdModeEnabled = digitalRead(PIN_HOLD_MODE);
-  touchpadAllModeEnabled = !digitalRead(PIN_TOUCHPAD_ALL_MODE);
+  touchpadEffectMode = digitalRead(PIN_TOUCHPAD_EFFECT_MODE);
 
   uint16_t faderAndPresetModeValue = analogRead(PIN_FADER_AND_PRESET_MODE);
   if (faderAndPresetModeValue < 450) {
@@ -30,13 +30,13 @@ void readInputSwitches() {
     presetAltModeEnabled = true;
   }
 
-  uint16_t touchpadModeValue = analogRead(PIN_TOUCHPAD_MODE);
-  if (touchpadMode > 400 && touchpadMode <= 1000) {
-    touchpadMode = TOUCHPAD_MODE_FILL;
-  } else if (touchpadMode > 1000) {
-    touchpadMode = TOUCHPAD_MODE_EXCLUSIVE;
+  uint16_t touchpadStripModeValue = analogRead(PIN_TOUCHPAD_STRIP_MODE);
+  if (touchpadStripModeValue > 400 && touchpadStripModeValue <= 1000) {
+    touchpadStripMode = TOUCHPAD_STRIP_MODE_ALL;
+  } else if (touchpadStripModeValue > 1000) {
+    touchpadStripMode = TOUCHPAD_STRIP_MODE_MIRRORED_EXCLUSIVE;
   } else {
-    touchpadMode = TOUCHPAD_MODE_MIRRORED;
+    touchpadStripMode = TOUCHPAD_STRIP_MODE_MIRRORED;
   }
 }
 
@@ -59,12 +59,16 @@ void renderTempo() {
   }
 }
 
-uint8_t readBrightness() {
-  uint8_t brightnessFactor = readKeypad();
-  if (brightnessFactor == 0 || brightnessFactor == -1) {
-    return MAX_BRIGHTNESS;
+void setBootSettings() {
+  uint8_t keyValue = readKeypad();
+  if (keyValue == 0) {
+    touchpadVerticalMode = TOUCHPAD_VERTICAL_MODE_COLOR;
+    return;
+  } else if (keyValue == -1) {
+    brightness = MAX_BRIGHTNESS;
+    return;
   } else {
-    return map(brightnessFactor, 1, 9, 1, MAX_BRIGHTNESS / 2);
+    brightness = map(keyValue, 1, 9, 1, MAX_BRIGHTNESS / 2);
   }
 }
 

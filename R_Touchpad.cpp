@@ -3,10 +3,6 @@
 #define NO_TOUCH_POSITION TSPoint()
 
 #define X_AXIS_RESISTANCE 230
-#define PIN_TOUCHPAD_YP A4
-#define PIN_TOUCHPAD_XM A5
-#define PIN_TOUCHPAD_YM 7
-#define PIN_TOUCHPAD_XP 6
 
 #define GRID_SIZE_X 5
 #define GRID_SIZE_Y 2
@@ -33,44 +29,54 @@ void renderTouchAction() {
   }
 
   if (touchPosition != NO_TOUCH_POSITION) {
-    if (touchpadMode == TOUCHPAD_MODE_EXCLUSIVE) {
-      invertExclusive(touchPosition);
-    } else if (touchpadMode == TOUCHPAD_MODE_FILL) {
-      fill(touchPosition);
+    if (touchpadStripMode == TOUCHPAD_STRIP_MODE_MIRRORED_EXCLUSIVE) {
+      affectExclusive(touchPosition);
+    } else if (touchpadStripMode == TOUCHPAD_STRIP_MODE_ALL) {
+      affectAll();
     } else {
-      invert(touchPosition);
+      affectMirrored(touchPosition);
     }
-    
-    // if (touchpadAllModeEnabled) {
-    //   invertPresetPattern(touchPosition);
-    // } else {
-    //   fillStripMirrored(touchPosition);
-    // }
   }
   renderTouchpad();
 }
 
-void invertExclusive(TSPoint touchPosition) {
-  if (touchpadAllModeEnabled) {
-
-  } else {
-
-  }
-}
-
-void fill(TSPoint touchPosition) {
-  if (touchpadAllModeEnabled) {
+void affectAll() {
+  if (touchpadEffectMode == TOUCHPAD_EFFECT_MODE_FILL) {
     fillAll();
   } else {
-    fillMirrored(touchPosition);
+    invertAll();
   }
 }
 
-void invert(TSPoint touchPosition) {
-  if (touchpadAllModeEnabled) {
-    strips.fill_solid(touchColor);
+void affectMirrored(TSPoint touchPosition) {
+  if (touchpadEffectMode == TOUCHPAD_EFFECT_MODE_FILL) {
+    fillMirrored(touchPosition);
   } else {
     invertMirrored(touchPosition);
+  }
+}
+
+void affectExclusive(TSPoint touchPosition) {
+  if (touchpadEffectMode == TOUCHPAD_EFFECT_MODE_FILL) {
+    fillMirrored(touchPosition);
+  } else {
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+      for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+        if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
+          strip[stripIndex][pixelIndex] = touchColor;
+        }
+      }
+    }
+  }
+  // affectMirrored(touchPosition);
+  clearUntouchedStrips(touchPosition);
+}
+
+void clearUntouchedStrips(TSPoint touchPosition) {
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    if (!((stripIndex == gridPosition.x) || (stripIndex == mirroredStrip(gridPosition.x)))) {
+      fill_solid(strip[stripIndex], PIXELS_PER_STRIP, CRGB::Black);
+    }
   }
 }
 
@@ -81,34 +87,21 @@ void fillAll() {
 void fillMirrored(TSPoint touchPosition) {
   uint8_t stripIndex = gridPosition.x;
   fill_solid(strip[stripIndex], PIXELS_PER_STRIP, touchColor);
-  fill_solid(strip[(NUMBER_OF_STRIPS - 1) - stripIndex], PIXELS_PER_STRIP, touchColor);
+  fill_solid(strip[mirroredStrip(stripIndex)], PIXELS_PER_STRIP, touchColor);
 }
 
 void invertAll() {
-
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    invertStrip(stripIndex);
+  }
 }
 
 void invertMirrored(TSPoint touchPosition) {
   uint8_t stripIndex = gridPosition.x;
   invertStrip(stripIndex);
   if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
-    invertStrip((NUMBER_OF_STRIPS - 1) - stripIndex);
+    invertStrip(mirroredStrip(stripIndex));
   }
-
-  // for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
-  //   if (!strip[stripIndex][pixelIndex] == CRGB::Black) {
-  //     strip[stripIndex][pixelIndex] = CRGB::Black;
-  //   } else {
-  //     strip[stripIndex][pixelIndex] = touchColor;
-  //   }
-  //   if (!(stripIndex == ((NUMBER_OF_STRIPS - 1) / 2))) {
-  //     if (!strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] == CRGB::Black) {
-  //       strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = CRGB::Black;
-  //     } else {
-  //       strip[(NUMBER_OF_STRIPS - 1) - stripIndex][pixelIndex] = touchColor;
-  //     }
-  //   }
-  // }
 }
 
 void invertStrip(uint8_t stripIndex) {
@@ -141,7 +134,11 @@ void setTouchColor() {
   if (yValue < 0) {
     touchColor.value = max(0, 255 + yValue);
   } else {
-    touchColor.saturation = 255 - yValue;
+    if (touchpadVerticalMode == TOUCHPAD_VERTICAL_MODE_SATURATION) {
+      touchColor.saturation = 255 - yValue;
+    } else {
+      touchColor.hue += (yValue / 3);
+    }
   }
 }
 
@@ -167,4 +164,8 @@ void renderTouchpad() {
 
 bool isTouched() {
   return currentTouchPosition != NO_TOUCH_POSITION;
+}
+
+uint8_t mirroredStrip(uint8_t stripIndex) {
+  return (NUMBER_OF_STRIPS - 1) - stripIndex;
 }

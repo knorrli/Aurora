@@ -1,0 +1,127 @@
+[
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "/Users/igor/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino"
+  },
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "/Users/igor/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/variants/eightanaloginputs"
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/Aurora.ino.cpp",
+    "Include": "FastLED.h",
+    "Includepath": "/Users/igor/Documents/Arduino/libraries/FastLED/src"
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/Aurora.ino.cpp",
+    "Include": "TouchScreen.h",
+    "Includepath": "/Users/igor/Documents/Arduino/libraries/Adafruit_TouchScreen"
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/Aurora.ino.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/IR_Preset.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/IR_Trigger.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/I_ColorFaders.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/P_Fills.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/P_Movements.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/P_Strobes.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/R_Touchpad.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Projects/Aurora/build/sketch/helpers.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/FastLED.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/bitswap.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/colorpalettes.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/colorutils.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/hsv2rgb.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/lib8tion.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/noise.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/platforms/esp/32/clockless_rmt_esp32.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/platforms.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/power_mgt.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/FastLED/src/wiring.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/igor/Documents/Arduino/libraries/Adafruit_TouchScreen/TouchScreen.cpp",
+    "Include": "",
+    "Includepath": null
+  }
+]

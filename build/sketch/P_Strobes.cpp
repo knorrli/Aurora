@@ -1,59 +1,39 @@
+#line 1 "/Users/igor/Projects/Aurora/P_Strobes.cpp"
 #include "aurora.h"
 
-/////////////////////////////////
-// ONE ON ONE RANDOM
-/////////////////////////////////
-#define ONE_ON_ONE_SPEED 1
-static uint8_t oneOnOneOrderedOrder[] = { 2, 3, 4, 0, 1};
-static uint8_t oneOnOneRandomOrder[] = { 2, 0, 3, 1, 4 };
-static uint8_t oneOnOneIndex = 0;
+static unsigned long lastStrobeTrigger = 0;
 
-void OneOnOneOrdered(CHSV color) {
-  OneOnOne(color, oneOnOneOrderedOrder);
+/////////////////////////////////
+// STRIP BY STRIP
+/////////////////////////////////
+static uint8_t stripByStripOrderedOrder[] = { 2, 3, 4, 0, 1};
+static uint8_t stripByStripRandomOrder[] = { 2, 0, 3, 1, 4 };
+static uint8_t stripByStripIndex = 0;
+
+void StripByStripOrdered(CHSV color) {
+  StripByStrip(color, stripByStripOrderedOrder);
 }
 
-void OneOnOneRandom(CHSV color) {
-  OneOnOne(color, oneOnOneRandomOrder);
+void StripByStripRandom(CHSV color) {
+  StripByStrip(color, stripByStripRandomOrder);
 }
 
-void OneOnOne(CHSV color, uint8_t order[]) {
-  fill_solid(strip[order[oneOnOneIndex]], PIXELS_PER_STRIP, color);
+void StripByStrip(CHSV color, uint8_t order[]) {
+  fill_solid(strip[order[stripByStripIndex]], PIXELS_PER_STRIP, color);
   if (tempoGate) {
-    oneOnOneIndex += 1;
-    if (oneOnOneIndex > (NUMBER_OF_STRIPS - 1))
+    stripByStripIndex += 1;
+    if (stripByStripIndex > (NUMBER_OF_STRIPS - 1))
     {
-      oneOnOneIndex = 0;
+      stripByStripIndex = 0;
     }
   }
 }
 
-void resetOneOnOne() {
-  oneOnOneIndex = 0;
-  return;
-}
-
 /////////////////////////////////
-// STROBE_STRIPS
-/////////////////////////////////
-#define STROBE_SPEED 1
-#define STROBE_TEMPO_FACTOR 4 // how long per tempo step
-#define MINIMUM_STROBE_LENGTH 20
-#define MAXIMUM_STROBE_LENGTH 200
-static unsigned long lastStrobeTrigger = 0;
-void StrobeStrips(CHSV color) {
-  if (tempoGate) {
-    lastStrobeTrigger = currentMillis;
-  }
-  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
-    strips.fill_solid(color);
-  }
-}
-
-/////////////////////////////////
-// STROBE_MIRRORED
+// STRIP BY STRIP MIRRORED
 /////////////////////////////////
 uint8_t strobeMirroredStripIndex = (NUMBER_OF_STRIPS / 2);
-void StrobeMirrored(CHSV color) {
+void StripByStripMirrored(CHSV color) {
   if (tempoGate) {
     lastStrobeTrigger = currentMillis;
     strobeMirroredStripIndex += 1;
@@ -65,6 +45,29 @@ void StrobeMirrored(CHSV color) {
   fill_solid(strip[strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
   fill_solid(strip[(NUMBER_OF_STRIPS - 1) - strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
 }
+
+void resetStripByStrip() {
+  stripByStripIndex = 0;
+  strobeMirroredStripIndex = (NUMBER_OF_STRIPS / 2);
+  return;
+}
+
+/////////////////////////////////
+// STROBE STRIPS
+/////////////////////////////////
+#define STROBE_SPEED 1
+#define STROBE_TEMPO_FACTOR 4 // how long per tempo step
+#define MINIMUM_STROBE_LENGTH 20
+#define MAXIMUM_STROBE_LENGTH 200
+void StrobeStrips(CHSV color) {
+  if (tempoGate) {
+    lastStrobeTrigger = currentMillis;
+  }
+  if ((currentMillis - lastStrobeTrigger) < min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH)) {
+    strips.fill_solid(color);
+  }
+}
+
 
 /////////////////////////////////
 // STROBE_UP_DOWN
@@ -93,7 +96,6 @@ void StrobeUpDown(CHSV color) {
 
 void resetStrobe() {
 strobeUpDownDirection = DOWN;
-strobeMirroredStripIndex = (NUMBER_OF_STRIPS / 2);
 }
 
 /////////////////////////////////

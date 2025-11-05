@@ -9,14 +9,16 @@ unsigned long expectedNextGate = millis() + currentTempo;
 unsigned long elapsedLoopTime = 0;
 
 // STATE
+uint8_t brightness = MAX_BRIGHTNESS;
+uint8_t touchpadVerticalMode = TOUCHPAD_VERTICAL_MODE_SATURATION;
 uint8_t currentPreset = 0;
 CHSV touchColor = CHSV(0, 0, 0);
 CHSV presetColor = CHSV(0, 0, 0);
 bool muted = false;
 bool faderAltModeEnabled = false;
 bool presetAltModeEnabled = false;
-uint8_t touchpadMode = TOUCHPAD_MODE_MIRRORED;
-bool touchpadAllModeEnabled = false;
+uint8_t touchpadStripMode = TOUCHPAD_STRIP_MODE_MIRRORED;
+bool touchpadEffectMode = TOUCHPAD_EFFECT_MODE_INVERT;
 bool holdModeEnabled = false;
 
 // LED FRAMEBUFFER
@@ -27,7 +29,7 @@ struct CRGB *strip[NUMBER_OF_STRIPS];
 
 void setup()
 {
-  Serial.begin(19200);
+  // Serial.begin(19200);
   delay(1500); // Boot recovery
 
   pinMode(PIN_TEMPO, INPUT);
@@ -39,9 +41,9 @@ void setup()
   pinMode(PIN_FADER_VALUE, INPUT);
   pinMode(PIN_FADER_AND_PRESET_MODE, INPUT);
 
-  pinMode(PIN_TOUCHPAD_MODE, INPUT);
+  pinMode(PIN_TOUCHPAD_STRIP_MODE, INPUT);
+  pinMode(PIN_TOUCHPAD_EFFECT_MODE, INPUT);
   pinMode(PIN_HOLD_MODE, INPUT);
-  pinMode(PIN_TOUCHPAD_ALL_MODE, INPUT);
 
   for (int stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)
   {
@@ -49,7 +51,7 @@ void setup()
     strip[stripIndex] = pixels(pixelStartIndex, PIXELS_PER_STRIP - 1);
   }
 
-  uint8_t brightness = readBrightness();
+  setBootSettings();
 
   FastLED.setBrightness(brightness);
 

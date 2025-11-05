@@ -1,0 +1,8 @@
+#line 1 "/Users/igor/Projects/Aurora/.vscode/arduino.json"
+{
+    "configuration": "cpu=atmega328",
+    "board": "arduino:avr:nano",
+    "sketch": "Aurora.ino",
+    "port": "/dev/tty.usbserial-A6025Q76",
+    "output": "build"
+}
