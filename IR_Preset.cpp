@@ -14,73 +14,29 @@ void renderPreset(uint8_t preset) {
     case 0:
       return;
     case 1:
-      // FillBlocks
-      if (presetAltModeEnabled) {
-        FillStars(presetColor);
-      } else {
-        FillStrips(presetColor);
-      }
+      AlbtraumBreath();
       return;
     case 2:
-      // DispersingBlocks
-      if (presetAltModeEnabled) {
-        RisingStars(presetColor);
-      } else {
-        RisingBlocks(presetColor);
-      }
+      AlbtraumParty();
       break;
     case 3:
-      // ConvergingBlocks
-      if (presetAltModeEnabled) {
-        FallingStars(presetColor);
-      } else {
-        FallingBlocks(presetColor);
-      }
+      AlbtraumChaossaft();
       break;
     case 4:
-      // TODO
-      if (presetAltModeEnabled) {
-        Bars(presetColor);
-      } else {
-        PulseFill(presetColor);
-      }
+      TransitionRainbow();
       break;
     case 5:
-      // TODO
-      if (presetAltModeEnabled) {
-        XFill(presetColor);
-      } else {
-        Invert(presetColor);
-      }
-      break;
+      TransitionStrobo();
     case 6:
-      // TODO
-      if (presetAltModeEnabled) {
-        RainBounce(presetColor);
-      } else {
-        RainFall(presetColor);
-      }
       break;
     case 7:
-      // StripByStripMirrored(presetColor);
-      if (presetAltModeEnabled) {
-        StripByStripRandom(presetColor);
-      } else {
-        StripByStripOrdered(presetColor);
-      }
+      ErnstBreath();
       break;
     case 8:
-      // StrobeUpDown(presetColor);
-      if (presetAltModeEnabled) {
-        Chaos(presetColor);
-      } else {
-        StrobeStrips(presetColor);
-      }
+      ErnstParty();
       break;
     case 9:
-      if (presetAltModeEnabled) {
-      } else {
-      }
+      ErnstDark();
       break;
   }
 }
@@ -105,37 +61,18 @@ void resetPreset(uint8_t preset) {
     case 1:
       return;
     case 2:
-      resetMovingBlocks();
       break;
     case 3:
-      resetMovingBlocks();
       break;
     case 4:
-      if (presetAltModeEnabled) {
-        resetBars();
-      } else {
-        resetPulseFill();
-      }
       break;
     case 5:
-      if (presetAltModeEnabled) {
-        resetXFill();
-      } else {
-        resetInvert();
-      }
       break;
     case 6:
-      resetRain();
       break;
     case 7:
-      resetStripByStrip();
       break;
     case 8:
-      if (presetAltModeEnabled) {
-        resetChaos();
-      } else {
-        resetStrobe();
-      }
       break;
     case 9:
       break;
@@ -153,7 +90,7 @@ int8_t readKeypad() {
   if (pin_8_13 == 0b00111101) {
     return previousPreset;
   }
-  
+
   switch (pin_8_13) {
     case 0b00100001:
     case 0b00110111:

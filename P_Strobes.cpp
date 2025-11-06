@@ -54,7 +54,6 @@ void resetStripByStrip() {
 /////////////////////////////////
 // STROBE STRIPS
 /////////////////////////////////
-#define STROBE_SPEED 1
 #define STROBE_TEMPO_FACTOR 4 // how long per tempo step
 #define MINIMUM_STROBE_LENGTH 20
 #define MAXIMUM_STROBE_LENGTH 200
