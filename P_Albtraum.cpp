@@ -2,16 +2,16 @@
 #include "aurora.h"
 
 
-#define ALBTRAUM_BREATH_MIN_HUE 128
-#define ALBTRAUM_BREATH_MAX_HUE 180
-static uint8_t albtraumBreathHue = 160;
+#define ALBTRAUM_BREATH_MIN_HUE 70
+#define ALBTRAUM_BREATH_MAX_HUE 110
+static uint8_t albtraumBreathHue = 96;
 void AlbtraumBreath() {
   Breath(albtraumBreathHue, ALBTRAUM_BREATH_MIN_HUE, ALBTRAUM_BREATH_MAX_HUE);
 }
 
-#define ERNST_BREATH_MIN_HUE 64
-#define ERNST_BREATH_MAX_HUE 116
-static uint8_t ernstBreathHue = 96;
+#define ERNST_BREATH_MIN_HUE 128
+#define ERNST_BREATH_MAX_HUE 190
+static uint8_t ernstBreathHue = 160;
 void ErnstBreath() {
   Breath(ernstBreathHue, ERNST_BREATH_MIN_HUE, ERNST_BREATH_MAX_HUE);
 }
