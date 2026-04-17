@@ -284,25 +284,112 @@ Some things I floated earlier that are off the table:
 - **Wireless between controller and brain.** Stage reliability
   trumps cable freedom.
 
+## Development strategy: brain-first via USB MIDI
+
+Teensy 4.0 is a class-compliant USB MIDI device out of the box. The
+entire brain firmware can be built, debugged, and validated on a desk
+with just a Teensy, a USB cable to a laptop, and the LED strip — no
+controller modifications, no DIN MIDI hardware, no enclosure work.
+Any DAW, MIDI Monitor, or custom script on the laptop can send:
+
+- MIDI clock — exercises every phase-based preset's tempo lock.
+- Program Change — exercises preset selection.
+- CC — exercises palette hue / spread / brightness / sculpt-mode Y /
+  switch-mode equivalents / etc.
+
+When the brain feels right, adding DIN MIDI input is a ~30-minute
+solder job on the same Teensy (6N138 opto + two resistors + DIN jack
+on `Serial1`). **USB MIDI stays compiled in forever** as a dev/test
+path — leave it active; the live rig just uses DIN. The Teensy MIDI
+library treats USB and serial MIDI almost identically, so the code
+path is the same either way.
+
+Net effect: the brain can be fully validated before the controller
+is touched at all.
+
+## Clock routing: controller is the MIDI source to the brain
+
+The controller's tempo LED must flash in sync with whatever tempo
+source is live, which means the controller has to see the clock —
+so clock can't go directly from the DAW to the brain. Topology:
+
+```
+ DAW ─┐
+      ├─▶ Aurora Controller ── MIDI OUT ──▶ Brain
+ Foot Ctl ─┘      │
+                  └─ watches incoming clock → flashes tempo LED
+                  └─ re-emits its own clock to the brain (always)
+```
+
+The controller becomes a **MIDI router + merger**:
+
+- Receives external MIDI (DAW clock, foot-controller program changes,
+  anything chained in).
+- Parses clock to update its own tempo LED.
+- Emits a single unified MIDI stream on its DIN out to the brain:
+  clock (from whichever tempo source is active), PC from local numpad
+  and/or forwarded from foot controller, CC from faders / touchpad /
+  switches.
+
+The brain stays source-agnostic — whatever arrives on its DIN in is
+the truth.
+
+### Decision: Option A — controller always re-emits clock
+
+The controller does **not** pass external clock bytes through
+verbatim. It uses them to track tempo internally, then generates
+fresh 24-PPQN clock to the brain from that tempo. When the performer
+taps the tempo button, the same tempo-tracking logic just switches
+its source from external to local tap — the brain sees no
+discontinuity at the changeover.
+
+Why Option A over a true MIDI THRU merge:
+
+- Simpler firmware on the Nano controller.
+- "Tap overrides external clock" falls out for free.
+- Upstream clock drop-outs (DAW paused, cable glitch) don't propagate
+  to the brain — the controller keeps emitting at last-known tempo.
+- Debugging is easier: one clock source arriving at the brain,
+  always.
+
+### Controller-side Nano load after the split
+
+The controller no longer drives LEDs, so no FastLED interrupt
+blocking and no SRAM pressure. Remaining responsibilities:
+
+- Scan keypad, faders, touchpad, switches.
+- Parse incoming MIDI (D0/RX) — clock bytes at 48/sec @ 120 BPM,
+  occasional PC / CC.
+- Emit outgoing MIDI (D1/TX) — merged clock + local events.
+- Drive tempo LED.
+
+Trivial load. The full-duplex hardware UART handles IN and OUT
+simultaneously; no SoftwareSerial tricks needed on the main stream.
+
 ## Suggested order when resuming the architecture work
 
-1. Confirm the split is what we want.
-2. Build a DIN MIDI input circuit on breadboard. Test Teensy 4.0
-   receiving MIDI clock from the existing timing Arduino, verify
-   locked tempo in a test sketch.
-3. Port the existing Aurora firmware (from `preset-redesign` branch —
-   assumes the UX redesign has landed or is carried forward) to
-   Teensy 4.0. Replace FastLED WS2812 with OctoWS2811. Adjust the
-   keypad read (PINB tricks) for Teensy pin mapping.
-4. Move the brain side to DIN-MIDI-only input: MIDI clock replaces the
-   tempo pulse on the old D3 pin. Program change selects presets.
-5. Build the controller node firmware on a Nano: scan the physical
-   controls, emit MIDI. Strip out all FastLED / rendering code.
-6. Subsume the divider Arduino into the controller (tap tempo and mic
-   trigger handling).
-7. Stage test. Verify link reliability over the intended cable length.
+1. Confirm the split and Option A clock routing.
+2. **Brain bring-up on the bench with Teensy + USB MIDI.** Port the
+   `preset-redesign` firmware to Teensy 4.0. Replace FastLED's WS2812
+   output with OctoWS2811. Adjust the `readKeypad()` PORTB tricks for
+   Teensy pin mapping (or retire keypad entirely if the controller
+   will own it — probably retire; the brain shouldn't need local
+   numpad anymore).
+3. Validate clock-locked rendering, program-change preset switching,
+   CC-driven parameters — all over USB MIDI from a laptop.
+4. Add the DIN MIDI input circuit to the brain (Serial1 + 6N138).
+   Verify it behaves identically to the USB MIDI path.
+5. Write the controller firmware: scan local controls, parse
+   incoming MIDI (D0/RX), track tempo (external clock OR local tap
+   OR internal fallback), emit unified MIDI (D1/TX) per Option A.
+6. Modify the controller enclosure: add DIN MIDI OUT jack (2 resistors
+   + jack + Nano TX). Transplant tap-tempo button and mic-trigger
+   circuit from the divider Arduino into the controller. Retire the
+   divider Arduino.
+7. Stage test with the intended cable length between controller and
+   brain.
 8. Only after all this is rock solid — consider DMX, additional LED
-   fixtures, etc.
+   fixtures, mic-reactive FFT, etc.
 
 ## Memory / performance headroom after the move
 
