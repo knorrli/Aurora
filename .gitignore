@@ -1,0 +1,19 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+*.pyc
+
+# Arduino CLI / IDE build artefacts
+build/
+*.hex
+*.elf
+*.eep
+*.bin
+*.with_bootloader.bin
+*.with_bootloader.hex
+
+# OS / editor detritus
+.DS_Store
+*.swp
