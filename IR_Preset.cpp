@@ -13,32 +13,34 @@ void renderPreset(uint8_t preset) {
   switch (preset) {
     case 0:
       return;
+    // --- Row 1: ambient ---
     case 1:
-      // FillBlocks
+      // Solid / Starfield
       if (presetAltModeEnabled) {
-        FillStars(presetColor);
+        Starfield(presetColor);
       } else {
         FillStrips(presetColor);
       }
       return;
     case 2:
-      // DispersingBlocks
+      // Breathe / Wave
       if (presetAltModeEnabled) {
-        RisingStars(presetColor);
+        Wave(presetColor);
       } else {
-        RisingBlocks(presetColor);
+        Breathe(presetColor);
       }
       break;
     case 3:
-      // ConvergingBlocks
+      // Plasma / Aurora
       if (presetAltModeEnabled) {
-        FallingStars(presetColor);
+        Aurora(presetColor);
       } else {
-        FallingBlocks(presetColor);
+        Plasma(presetColor);
       }
       break;
+    // --- Row 2: groove ---
     case 4:
-      // TODO
+      // Pulse / Bars
       if (presetAltModeEnabled) {
         Bars(presetColor);
       } else {
@@ -46,40 +48,44 @@ void renderPreset(uint8_t preset) {
       }
       break;
     case 5:
-      // TODO
+      // Sweep / CrossSweep
       if (presetAltModeEnabled) {
-        XFill(presetColor);
+        CrossSweep(presetColor);
       } else {
-        Invert(presetColor);
+        Sweep(presetColor);
       }
       break;
     case 6:
-      // TODO
+      // Rain / Storm
       if (presetAltModeEnabled) {
-        RainBounce(presetColor);
+        Storm(presetColor);
       } else {
         RainFall(presetColor);
       }
       break;
+    // --- Row 3: intensity ---
     case 7:
-      // StripByStripMirrored(presetColor);
+      // Chase / Comet
       if (presetAltModeEnabled) {
-        StripByStripRandom(presetColor);
+        Comet(presetColor);
       } else {
         StripByStripOrdered(presetColor);
       }
       break;
     case 8:
-      // StrobeUpDown(presetColor);
+      // Strobe / Stutter
       if (presetAltModeEnabled) {
-        Chaos(presetColor);
+        Stutter(presetColor);
       } else {
         StrobeStrips(presetColor);
       }
       break;
     case 9:
+      // Chaos / Glitch
       if (presetAltModeEnabled) {
+        Glitch(presetColor);
       } else {
+        Chaos(presetColor);
       }
       break;
   }
@@ -102,14 +108,12 @@ void resetPreset(uint8_t preset) {
   switch (preset) {
     case 0:
       return;
+    // Row 1 (ambient) — all stateless, nothing to reset.
     case 1:
-      return;
     case 2:
-      resetMovingBlocks();
-      break;
     case 3:
-      resetMovingBlocks();
-      break;
+      return;
+    // Row 2 (groove)
     case 4:
       if (presetAltModeEnabled) {
         resetBars();
@@ -119,25 +123,38 @@ void resetPreset(uint8_t preset) {
       break;
     case 5:
       if (presetAltModeEnabled) {
-        resetXFill();
+        resetCrossSweep();
       } else {
-        resetInvert();
+        resetMovingBlocks();
       }
       break;
     case 6:
-      resetRain();
+      if (presetAltModeEnabled) {
+        resetStorm();
+      } else {
+        resetRain();
+      }
       break;
+    // Row 3 (intensity)
     case 7:
-      resetStripByStrip();
+      if (presetAltModeEnabled) {
+        resetComet();
+      } else {
+        resetStripByStrip();
+      }
       break;
     case 8:
       if (presetAltModeEnabled) {
-        resetChaos();
+        resetStutter();
       } else {
         resetStrobe();
       }
       break;
     case 9:
+      // Glitch is stateless; only Chaos needs reset.
+      if (!presetAltModeEnabled) {
+        resetChaos();
+      }
       break;
   }
 }

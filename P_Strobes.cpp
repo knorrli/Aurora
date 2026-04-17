@@ -6,15 +6,10 @@ static unsigned long lastStrobeTrigger = 0;
 // STRIP BY STRIP
 /////////////////////////////////
 static uint8_t stripByStripOrderedOrder[] = { 2, 3, 4, 0, 1};
-static uint8_t stripByStripRandomOrder[] = { 2, 0, 3, 1, 4 };
 static uint8_t stripByStripIndex = 0;
 
 void StripByStripOrdered(CHSV color) {
   StripByStrip(color, stripByStripOrderedOrder);
-}
-
-void StripByStripRandom(CHSV color) {
-  StripByStrip(color, stripByStripRandomOrder);
 }
 
 void StripByStrip(CHSV color, uint8_t order[]) {
@@ -39,7 +34,7 @@ void StripByStripMirrored(CHSV color) {
     if (strobeMirroredStripIndex == NUMBER_OF_STRIPS) {
       strobeMirroredStripIndex = 1;
     }
-    
+
   }
   fill_solid(strip[strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
   fill_solid(strip[(NUMBER_OF_STRIPS - 1) - strobeMirroredStripIndex], PIXELS_PER_STRIP, color);
@@ -98,6 +93,35 @@ strobeUpDownDirection = DOWN;
 }
 
 /////////////////////////////////
+// STUTTER — half-wall strobe alternating top/bottom each beat
+/////////////////////////////////
+static uint8_t stutterHalf = 0;
+static unsigned long lastStutterTrigger = 0;
+
+void Stutter(CHSV color) {
+  if (tempoGate) {
+    lastStutterTrigger = currentMillis;
+    stutterHalf = 1 - stutterHalf;
+  }
+  unsigned long duration = min(max((currentTempo / STROBE_TEMPO_FACTOR), MINIMUM_STROBE_LENGTH), MAXIMUM_STROBE_LENGTH);
+  if ((currentMillis - lastStutterTrigger) < duration) {
+    uint8_t halfLen = PIXELS_PER_STRIP / 2;
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+      if (stutterHalf == 0) {
+        fill_solid(strip[stripIndex], halfLen, color);
+      } else {
+        fill_solid(strip[stripIndex] + halfLen, PIXELS_PER_STRIP - halfLen, color);
+      }
+    }
+  }
+}
+
+void resetStutter() {
+  stutterHalf = 0;
+  lastStutterTrigger = currentMillis;
+}
+
+/////////////////////////////////
 // CHAOS
 /////////////////////////////////
 #define CHAOS_STEPS_PER_GATE 2
@@ -128,3 +152,22 @@ void resetChaos() {
   lastChaosGate = currentMillis;
   return;
 }
+
+/////////////////////////////////
+// GLITCH — random pixels flash white or preset color every frame
+/////////////////////////////////
+#define GLITCH_PIXELS_PER_FRAME 12
+#define GLITCH_WHITE_CHANCE 77 // out of 255
+void Glitch(CHSV color) {
+  for (uint8_t i = 0; i < GLITCH_PIXELS_PER_FRAME; i++) {
+    uint8_t stripIndex = random8(NUMBER_OF_STRIPS);
+    uint8_t pixelIndex = random8(PIXELS_PER_STRIP);
+    if (random8() < GLITCH_WHITE_CHANCE) {
+      strip[stripIndex][pixelIndex] = CRGB::White;
+    } else {
+      strip[stripIndex][pixelIndex] = CHSV(color.hue, color.saturation, color.value);
+    }
+  }
+}
+
+// Retired: StripByStripRandom. See P_Retired.cpp.

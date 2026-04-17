@@ -8,14 +8,69 @@ void FillStrips(CHSV color) {
 }
 
 /////////////////////////////////
-// FILL_STARS
+// STARFIELD — evenly-spaced stars, each twinkling on its own phase
 /////////////////////////////////
-#define FILL_STARS_LENGTH 1
-#define FILL_STARS_GAP 4
-void FillStars(CHSV color) {
-  for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex += (FILL_STARS_LENGTH + FILL_STARS_GAP)) {
+#define STARFIELD_GAP 4
+void Starfield(CHSV color) {
+  uint8_t t = (uint8_t)(millis() >> 4);
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    uint8_t stripOffset = (stripIndex * 2) % STARFIELD_GAP;
+    for (uint8_t pixelIndex = stripOffset; pixelIndex < PIXELS_PER_STRIP; pixelIndex += STARFIELD_GAP) {
+      uint8_t phase = (pixelIndex * 23) + (stripIndex * 67);
+      uint8_t twinkle = sin8(t + phase);
+      strip[stripIndex][pixelIndex] = CHSV(color.hue, color.saturation, scale8(color.value, twinkle));
+    }
+  }
+}
+
+/////////////////////////////////
+// BREATHE — whole-wall slow brightness LFO
+/////////////////////////////////
+void Breathe(CHSV color) {
+  uint8_t wave = sin8((uint8_t)(millis() >> 5));
+  uint8_t brightness = 50 + scale8(wave, 205);
+  strips.fill_solid(CHSV(color.hue, color.saturation, scale8(color.value, brightness)));
+}
+
+/////////////////////////////////
+// WAVE — brightness wave traveling up each strip
+/////////////////////////////////
+void Wave(CHSV color) {
+  uint8_t timePhase = (uint8_t)(millis() >> 4);
+  for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+    uint8_t wave = sin8(timePhase + (uint8_t)(pixelIndex * 6));
+    uint8_t brightness = 30 + scale8(wave, 225);
+    CHSV pixelColor = CHSV(color.hue, color.saturation, scale8(color.value, brightness));
     for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-      fill_solid(strip[stripIndex] + pixelIndex, FILL_STARS_LENGTH, color);
+      strip[stripIndex][pixelIndex] = pixelColor;
+    }
+  }
+}
+
+/////////////////////////////////
+// PLASMA — flowing hue field driven by combined sin8
+/////////////////////////////////
+void Plasma(CHSV color) {
+  uint8_t t = (uint8_t)(millis() >> 3);
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+      uint8_t wave1 = sin8((uint8_t)(pixelIndex * 8) + t);
+      uint8_t wave2 = sin8((uint8_t)(stripIndex * 40) + (uint8_t)(t >> 1));
+      uint8_t hueShift = ((uint16_t)wave1 + (uint16_t)wave2) >> 2;
+      strip[stripIndex][pixelIndex] = CHSV(color.hue + hueShift - 64, color.saturation, color.value);
+    }
+  }
+}
+
+/////////////////////////////////
+// AURORA — organic hue field driven by Perlin noise
+/////////////////////////////////
+void Aurora(CHSV color) {
+  uint16_t t = millis() >> 4;
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+      uint8_t noiseVal = inoise8(pixelIndex * 40, stripIndex * 80, t);
+      strip[stripIndex][pixelIndex] = CHSV(color.hue + (noiseVal >> 1) - 64, color.saturation, color.value);
     }
   }
 }
@@ -57,84 +112,4 @@ void resetPulseFill() {
   return;
 }
 
-/////////////////////////////////
-// X_FILL
-/////////////////////////////////
-#define X_FILL_STEPS_PER_GATE 11
-#define X_FILL_STEPS ((PIXELS_PER_STRIP-1) / (NUMBER_OF_STRIPS-1))
-struct xFillPositions {
-  uint8_t startPixelIndex;
-  uint8_t endPixelIndex;
-};
-static xFillPositions xFill[] = {
-  { (0 * X_FILL_STEPS), (0 * X_FILL_STEPS) },
-  { (1 * X_FILL_STEPS), (1 * X_FILL_STEPS) },
-  { (2 * X_FILL_STEPS), (2 * X_FILL_STEPS) },
-  { (3 * X_FILL_STEPS), (3 * X_FILL_STEPS) },
-  { (4 * X_FILL_STEPS), (4 * X_FILL_STEPS) },
-};
-
-static uint8_t xFillOrientation = 0;
-static uint8_t xFillStep = 0;
-static uint8_t xFillGateCounter = 0;
-unsigned long lastXFillGate = 0;
-
-void XFill(CHSV color) {
-  if (tempoGate) {
-    xFillGateCounter = 0;
-  }
-  if ((xFillGateCounter < X_FILL_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastXFillGate + (currentTempo / X_FILL_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
-    xFillGateCounter += 1;
-    lastXFillGate = currentMillis;
-    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-      uint8_t xFillStep = (NUMBER_OF_STRIPS - 1) - stripIndex;
-      switch (xFillOrientation) {
-        case 0:
-          xFill[stripIndex].endPixelIndex += (xFillStep);
-          xFill[stripIndex].startPixelIndex -= (NUMBER_OF_STRIPS - 1) - xFillStep;
-          break;
-        case 1:
-          xFill[stripIndex].endPixelIndex -= (NUMBER_OF_STRIPS - 1) - xFillStep;
-          xFill[stripIndex].startPixelIndex += xFillStep;
-          break;
-        case 2:
-          xFill[stripIndex].endPixelIndex += (NUMBER_OF_STRIPS - 1) - xFillStep;
-          xFill[stripIndex].startPixelIndex -= xFillStep;
-          break;
-        case 3:
-          xFill[stripIndex].endPixelIndex -= xFillStep;
-          xFill[stripIndex].startPixelIndex += (NUMBER_OF_STRIPS - 1) - xFillStep;
-      }
-    }
-
-    bool stripEmpty = (xFill[0].endPixelIndex == xFill[0].startPixelIndex);
-    bool stripFull = ((xFill[0].endPixelIndex - xFill[0].startPixelIndex) == (PIXELS_PER_STRIP - 1));
-
-    if (stripEmpty || stripFull) {
-      xFillOrientation += 1;
-      if (xFillOrientation > 3) {
-        xFillOrientation = 0;
-      }
-    }
-  }
-
-  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    for (uint8_t pixelIndex = xFill[stripIndex].startPixelIndex; pixelIndex <= xFill[stripIndex].endPixelIndex; pixelIndex++) {
-      strip[stripIndex][pixelIndex] = color;
-    }
-  }
-}
-
-void resetXFill() {
-  xFill[0] = { (0 * X_FILL_STEPS), (0 * X_FILL_STEPS) };
-  xFill[1] = { (1 * X_FILL_STEPS), (1 * X_FILL_STEPS) };
-  xFill[2] = { (2 * X_FILL_STEPS), (2 * X_FILL_STEPS) };
-  xFill[3] = { (3 * X_FILL_STEPS), (3 * X_FILL_STEPS) };
-  xFill[4] = { (4 * X_FILL_STEPS), (4 * X_FILL_STEPS) };
-
-  xFillOrientation = 0;
-  xFillStep = 0;
-  xFillGateCounter = 0;
-  lastXFillGate = currentMillis;
-  return;
-}
+// Retired: FillStars, XFill. See P_Retired.cpp.

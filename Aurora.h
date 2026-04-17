@@ -162,33 +162,53 @@ extern TSPoint calculateGridPosition(TSPoint position);
 extern bool isTouched();
 
 // --- PRESETS
+// Row 1 (ambient)
 extern void FillStrips(CHSV color);
-extern void FillStars(CHSV color);
+extern void Starfield(CHSV color);
+extern void Breathe(CHSV color);
+extern void Wave(CHSV color);
+extern void Plasma(CHSV color);
+extern void Aurora(CHSV color);
+// Row 2 (groove)
 extern void PulseFill(CHSV color);
 extern void resetPulseFill();
-extern void XFill(CHSV color);
-extern void resetXFill();
-extern void RisingBlocks(CHSV color);
-extern void RisingStars(CHSV color);
-extern void FallingBlocks(CHSV color);
-extern void FallingStars(CHSV color);
-extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
-extern void resetMovingBlocks();
 extern void Bars(CHSV color);
 extern void resetBars();
+extern void Sweep(CHSV color);
+extern void CrossSweep(CHSV color);
+extern void resetCrossSweep();
 extern void RainFall(CHSV color);
-extern void RainBounce(CHSV color);
+extern void Storm(CHSV color);
+extern void resetStorm();
+// Row 3 (intensity)
+extern void StripByStripOrdered(CHSV color);
+extern void Comet(CHSV color);
+extern void resetComet();
+extern void StrobeStrips(CHSV color);
+extern void Stutter(CHSV color);
+extern void resetStutter();
+extern void Chaos(CHSV color);
+extern void resetChaos();
+extern void Glitch(CHSV color);
+// Shared helpers (still active)
+extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
+extern void resetMovingBlocks();
 extern void Rain(CHSV color, bool changeDirectionOnEnds);
 extern void resetRain();
-extern void Invert(CHSV color);
-extern void resetInvert();
-extern void StripByStripOrdered(CHSV color);
-extern void StripByStripRandom(CHSV color);
 extern void StripByStrip(CHSV color, uint8_t order[]);
 extern void StripByStripMirrored(CHSV color);
 extern void resetStripByStrip();
-extern void StrobeStrips(CHSV color);
-extern void resetStrobe();
 extern void StrobeUpDown(CHSV color);
-extern void Chaos(CHSV color);
-extern void resetChaos();
+extern void resetStrobe();
+// Retired (kept for reference; bodies are #if 0-guarded in their source files)
+// extern void FillStars(CHSV color);
+// extern void XFill(CHSV color);
+// extern void resetXFill();
+// extern void RisingBlocks(CHSV color);
+// extern void RisingStars(CHSV color);
+// extern void FallingBlocks(CHSV color);
+// extern void FallingStars(CHSV color);
+// extern void RainBounce(CHSV color);
+// extern void Invert(CHSV color);
+// extern void resetInvert();
+// extern void StripByStripRandom(CHSV color);
