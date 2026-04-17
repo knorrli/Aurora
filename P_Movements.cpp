@@ -1,48 +1,7 @@
 #include "aurora.h"
 
 /////////////////////////////////
-// RISE_LINES
-/////////////////////////////////
-#define RISING_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
-#define RISING_LINES_GAP (RISING_LINES_LINE_LENGTH + 1)
-#define RISING_LINES_DIRECTION UP
-void RisingBlocks(CHSV color) {
-  MovingBlocks(color, RISING_LINES_LINE_LENGTH, RISING_LINES_GAP, RISING_LINES_DIRECTION);
-}
-
-/////////////////////////////////
-// RISE_STARS
-/////////////////////////////////
-#define RISING_STARS_LINE_LENGTH 1
-#define RISING_STARS_GAP 4
-#define RISING_STARS_DIRECTION UP
-void RisingStars(CHSV color) {
-  MovingBlocks(color, RISING_STARS_LINE_LENGTH, RISING_STARS_GAP, RISING_STARS_DIRECTION);
-}
-
-/////////////////////////////////
-// FALL_LINES
-/////////////////////////////////
-#define FALLING_LINES_LINE_LENGTH (PIXELS_PER_STRIP / 6)
-#define FALLING_LINES_GAP (FALLING_LINES_LINE_LENGTH + 1)
-#define FALLING_LINES_DIRECTION DOWN
-void FallingBlocks(CHSV color) {
-  MovingBlocks(color, FALLING_LINES_LINE_LENGTH, FALLING_LINES_GAP, FALLING_LINES_DIRECTION);
-}
-
-/////////////////////////////////
-// FALL_STARS
-/////////////////////////////////
-#define FALLING_STARS_LINE_LENGTH 1
-#define FALLING_STARS_GAP 4
-#define FALLING_STARS_DIRECTION DOWN
-void FallingStars(CHSV color) {
-  MovingBlocks(color, FALLING_STARS_LINE_LENGTH, FALLING_STARS_GAP, FALLING_STARS_DIRECTION);
-}
-
-
-/////////////////////////////////
-// MOVE_FILL
+// MOVE_FILL — shared helper for block scrolling
 /////////////////////////////////
 #define MOVE_STEPS_PER_GATE 4
 static int8_t movePosition = 0;
@@ -53,7 +12,7 @@ void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction 
   if (tempoGate) {
     moveGateCounter = 0;
   }
-  
+
   if ((moveGateCounter < MOVE_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastMoveGate + (currentTempo / MOVE_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
     moveGateCounter += 1;
     lastMoveGate = currentMillis;
@@ -89,10 +48,129 @@ void resetMovingBlocks()
 }
 
 /////////////////////////////////
-// BARS
+// SWEEP — single fat block rising across all strips in sync
 /////////////////////////////////
-#define BARS_STEPS_PER_GATE 9
+#define SWEEP_BLOCK_LENGTH 12
+void Sweep(CHSV color) {
+  MovingBlocks(color, SWEEP_BLOCK_LENGTH, PIXELS_PER_STRIP - SWEEP_BLOCK_LENGTH, UP);
+}
+
+/////////////////////////////////
+// CROSS_SWEEP — even strips rise, odd strips fall (interlocking)
+/////////////////////////////////
+#define CROSS_SWEEP_STEPS_PER_GATE 4
+#define CROSS_SWEEP_BLOCK_LENGTH 12
+static int8_t crossSweepPosition = 0;
+static uint8_t crossSweepGateCounter = 0;
+static unsigned long lastCrossSweepGate = 0;
+
+void CrossSweep(CHSV color) {
+  if (tempoGate) {
+    crossSweepGateCounter = 0;
+  }
+  if ((crossSweepGateCounter < CROSS_SWEEP_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastCrossSweepGate + (currentTempo / CROSS_SWEEP_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    crossSweepGateCounter += 1;
+    lastCrossSweepGate = currentMillis;
+    crossSweepPosition += 1;
+    if (crossSweepPosition >= PIXELS_PER_STRIP) {
+      crossSweepPosition = 0;
+    }
+  }
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    bool evenStrip = (stripIndex % 2 == 0);
+    int8_t basePos = evenStrip ? crossSweepPosition : ((PIXELS_PER_STRIP - 1) - crossSweepPosition);
+    for (uint8_t i = 0; i < CROSS_SWEEP_BLOCK_LENGTH; i++) {
+      int8_t pixelIndex = evenStrip ? (basePos + i) : (basePos - i);
+      if (pixelIndex < 0) pixelIndex += PIXELS_PER_STRIP;
+      if (pixelIndex >= PIXELS_PER_STRIP) pixelIndex -= PIXELS_PER_STRIP;
+      strip[stripIndex][pixelIndex] = color;
+    }
+  }
+}
+
+void resetCrossSweep() {
+  crossSweepPosition = 0;
+  crossSweepGateCounter = 0;
+  lastCrossSweepGate = currentMillis;
+}
+
+/////////////////////////////////
+// BARS — continuous-phase prototype
+//
+// Block travels bottom→top over BARS_BEATS_PER_BAR beats, then top→bottom
+// over the next BARS_BEATS_PER_BAR beats (full cycle = 2 bars). Position
+// is computed every frame from tempo-anchored phase — no step counter —
+// so the block glides smoothly and auto-corrects when tempo drifts.
+// Sub-pixel edges are rendered at fractional brightness to hide integer-
+// pixel jumps.
+/////////////////////////////////
 #define BARS_BAR_LENGTH 9
+#define BARS_BEATS_PER_BAR 4
+#define BARS_CYCLE_BEATS (BARS_BEATS_PER_BAR * 2)
+#define BARS_HALF_CYCLE_PHASE (BARS_BEATS_PER_BAR * 1000UL)
+#define BARS_FULL_CYCLE_PHASE (BARS_CYCLE_BEATS * 1000UL)
+
+static int8_t barsBeatIndex = -1;
+
+void Bars(CHSV color) {
+  if (tempoGate) {
+    barsBeatIndex = (barsBeatIndex + 1) % BARS_CYCLE_BEATS;
+  }
+  if (barsBeatIndex < 0) {
+    // no beat received yet — park at the bottom
+    for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+      fill_solid(strip[stripIndex], BARS_BAR_LENGTH, color);
+    }
+    return;
+  }
+
+  // phase within the current beat, 0..1000
+  uint32_t timeSinceBeat = currentMillis - lastGateMillis;
+  uint16_t beatPhase = (timeSinceBeat * 1000UL) / (currentTempo > 0 ? currentTempo : 1);
+  if (beatPhase > 1000) beatPhase = 1000;
+
+  // phase within the full cycle, 0..BARS_FULL_CYCLE_PHASE
+  uint16_t cyclePhase = (uint16_t)barsBeatIndex * 1000 + beatPhase;
+
+  // triangle wave: rising then falling
+  uint16_t upPhase = (cyclePhase < BARS_HALF_CYCLE_PHASE)
+                     ? cyclePhase
+                     : (uint16_t)(BARS_FULL_CYCLE_PHASE - cyclePhase);
+
+  // position in tenths of a pixel
+  uint8_t travel = PIXELS_PER_STRIP - BARS_BAR_LENGTH;
+  uint16_t position_x10 = (uint32_t)travel * 10 * upPhase / BARS_HALF_CYCLE_PHASE;
+
+  uint8_t integerPos = position_x10 / 10;
+  uint8_t fracPos = position_x10 % 10;
+
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    if (fracPos == 0) {
+      fill_solid(strip[stripIndex] + integerPos, BARS_BAR_LENGTH, color);
+    } else {
+      // trailing edge, dims as block moves away
+      uint8_t trailValue = (uint16_t)color.value * (10 - fracPos) / 10;
+      strip[stripIndex][integerPos] = CHSV(color.hue, color.saturation, trailValue);
+      // solid body
+      fill_solid(strip[stripIndex] + integerPos + 1, BARS_BAR_LENGTH - 1, color);
+      // leading edge, brightens as block moves into it
+      if (integerPos + BARS_BAR_LENGTH < PIXELS_PER_STRIP) {
+        uint8_t leadValue = (uint16_t)color.value * fracPos / 10;
+        strip[stripIndex][integerPos + BARS_BAR_LENGTH] = CHSV(color.hue, color.saturation, leadValue);
+      }
+    }
+  }
+}
+
+void resetBars() {
+  barsBeatIndex = -1;
+}
+
+/////////////////////////////////
+// BARS — previous discrete-step implementation (kept for reference)
+/////////////////////////////////
+#if 0
+#define BARS_STEPS_PER_GATE 9
 static int8_t barsPosition = 0;
 static int8_t barsDirection = DOWN;
 static uint8_t barsGateCounter = 0;
@@ -102,7 +180,7 @@ void Bars(CHSV color) {
   if (tempoGate) {
     barsGateCounter = 0;
   }
-  
+
   if ((barsGateCounter < BARS_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastBarsGate + (currentTempo / BARS_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
     barsGateCounter += 1;
     lastBarsGate = currentMillis;
@@ -129,6 +207,7 @@ void resetBars()
   barsPosition = 0;
   lastBarsGate = currentMillis;
 }
+#endif
 
 /////////////////////////////////
 // RAIN_FALL
@@ -139,15 +218,7 @@ void RainFall(CHSV color)
 }
 
 /////////////////////////////////
-// RAIN_BOUNCE
-/////////////////////////////////
-void RainBounce(CHSV color)
-{
-  Rain(color, true);
-}
-
-/////////////////////////////////
-// RAIN
+// RAIN — shared helper (fall + bounce)
 /////////////////////////////////
 #define RAIN_LENGTH 20
 #define RAIN_STEPS_PER_GATE 4
@@ -226,54 +297,78 @@ void resetRain() {
 }
 
 /////////////////////////////////
-// INVERT
+// STORM — rain plus occasional white-wall lightning flash
 /////////////////////////////////
-#define INVERT_STEPS_PER_GATE 11
-#define BREAK_POSITION ((PIXELS_PER_STRIP / 4))
-static int8_t invertDirection = UP;
-static uint8_t invertPosition = 0;
-static uint8_t invertGateCounter = 0;
-static unsigned long lastInvertGate = 0;
+#define STORM_LIGHTNING_DURATION 60
+#define STORM_LIGHTNING_CHANCE 32
+static bool stormLightningActive = false;
+static unsigned long stormLightningStart = 0;
 
-void Invert(CHSV color)
-{
-  if (tempoGate)
-  {
-    invertGateCounter = 0;
+void Storm(CHSV color) {
+  Rain(color, false);
+
+  if (tempoGate && (random8() < STORM_LIGHTNING_CHANCE)) {
+    stormLightningActive = true;
+    stormLightningStart = currentMillis;
   }
 
-  if ((invertGateCounter < INVERT_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastInvertGate + (currentTempo / INVERT_STEPS_PER_GATE) - (elapsedLoopTime / 2))))))
-  {
-    invertGateCounter += 1;
-    lastInvertGate = currentMillis;
-    invertPosition += invertDirection;
-    if ((invertPosition <= 0) || (invertPosition >= ((PIXELS_PER_STRIP - 1) / 2)))
-    {
-      invertDirection *= -1;
-    }
-  }
-
-  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++)
-  {
-    uint8_t startIndex = min(invertPosition, BREAK_POSITION);
-    uint8_t endIndex = max(invertPosition, BREAK_POSITION);
-    if (stripIndex % 2 == 0)
-    {
-      startIndex = min((((PIXELS_PER_STRIP - 1) / 2) - invertPosition), BREAK_POSITION);
-      endIndex = max((((PIXELS_PER_STRIP - 1) / 2) - invertPosition), BREAK_POSITION);
-    }
-    for (uint8_t pixelIndex = startIndex; pixelIndex <= endIndex; pixelIndex++)
-    {
-      strip[stripIndex][pixelIndex] = color;
-      strip[stripIndex][(PIXELS_PER_STRIP - 1) - pixelIndex] = color;
+  if (stormLightningActive) {
+    if ((currentMillis - stormLightningStart) < STORM_LIGHTNING_DURATION) {
+      strips.fill_solid(CRGB::White);
+    } else {
+      stormLightningActive = false;
     }
   }
 }
 
-void resetInvert()
-{
-  invertDirection = UP;
-  invertPosition = 0;
-  invertGateCounter = 0;
-  lastInvertGate = currentMillis;
+void resetStorm() {
+  stormLightningActive = false;
+  stormLightningStart = 0;
+  resetRain();
 }
+
+/////////////////////////////////
+// COMET — bright head + fading trail, hops across strips
+/////////////////////////////////
+#define COMET_LENGTH 15
+#define COMET_STEPS_PER_GATE 6
+static uint8_t cometOrder[] = { 0, 2, 4, 1, 3 };
+static uint8_t cometOrderIndex = 0;
+static int8_t cometPosition = 0;
+static int8_t cometDirection = UP;
+static uint8_t cometGateCounter = 0;
+static unsigned long lastCometGate = 0;
+
+void Comet(CHSV color) {
+  if (tempoGate) {
+    cometGateCounter = 0;
+  }
+  if ((cometGateCounter < COMET_STEPS_PER_GATE) && (tempoGate || ((millis() > (lastCometGate + (currentTempo / COMET_STEPS_PER_GATE) - (elapsedLoopTime/2)))))) {
+    cometGateCounter += 1;
+    lastCometGate = currentMillis;
+    cometPosition += cometDirection;
+    if (cometPosition >= PIXELS_PER_STRIP || cometPosition < 0) {
+      cometOrderIndex = (cometOrderIndex + 1) % NUMBER_OF_STRIPS;
+      cometDirection = -cometDirection;
+      cometPosition = (cometDirection == UP) ? 0 : (PIXELS_PER_STRIP - 1);
+    }
+  }
+
+  uint8_t activeStrip = cometOrder[cometOrderIndex];
+  for (uint8_t i = 0; i < COMET_LENGTH; i++) {
+    int8_t trailPos = cometPosition - (i * cometDirection);
+    if (trailPos < 0 || trailPos >= PIXELS_PER_STRIP) continue;
+    uint8_t brightness = 255 - ((uint16_t)i * 255 / COMET_LENGTH);
+    strip[activeStrip][trailPos] = CHSV(color.hue, color.saturation, scale8(color.value, brightness));
+  }
+}
+
+void resetComet() {
+  cometOrderIndex = 0;
+  cometPosition = 0;
+  cometDirection = UP;
+  cometGateCounter = 0;
+  lastCometGate = currentMillis;
+}
+
+// Retired: RisingBlocks, RisingStars, FallingBlocks, FallingStars, RainBounce, Invert. See P_Retired.cpp.
