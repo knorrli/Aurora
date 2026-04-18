@@ -1,38 +1,38 @@
 // Aurora_Controller — Nano firmware for the controller node.
 //
-// Job of this firmware:
-//   - Scan local controls (keypad, faders, touchpad, mode switches,
-//     tap-tempo button, mic trigger).
-//   - Parse incoming MIDI from D0/RX: clock from DAW, PC from foot
-//     controller, anything else chained upstream.
-//   - Track tempo (external clock OR local tap, with priority /
-//     fallback).
-//   - Flash the tempo LED in sync with whichever source is live.
-//   - Emit a unified MIDI stream on D1/TX to the brain per Option A in
-//     DESIGN.md: we always re-emit fresh 24-PPQN clock from our
-//     internal tempo, never pass external bytes verbatim.
+// Architecture (see DESIGN.md):
 //
-// Stub — to be filled in when the split work begins. See DESIGN.md
-// for the full plan.
+//     DAW / FootCtl ──MIDI──▶  controller  ──MIDI──▶  brain
+//
+// The controller is a MIDI router + merger. It:
+//   - Reads all local controls (keypad, faders, touchpad, switches,
+//     tap-tempo, mic trigger).
+//   - Receives external MIDI (DAW clock, foot-pedal PC messages).
+//   - Runs a tempo tracker that locks to whichever source is live
+//     (external clock takes priority; tap is fallback).
+//   - Emits a unified MIDI stream on its DIN OUT to the brain.
+//
+// Per Option A in DESIGN.md, we do not pass external clock bytes through
+// verbatim — we re-emit our own 24-PPQN clock from our internal tempo
+// estimate. Start/Continue/Stop are forwarded.
+//
+// Pin map:    see pins.h
+// Protocol:   see shared/aurora_protocol.h
+// Wiring:     see docs/wiring.md
 
-#include <Arduino.h>
-#include "aurora_protocol.h"
+#include "pins.h"
+#include "midi_io.h"
+#include "tempo.h"
+#include "controls.h"
 
 void setup() {
-  // TODO:
-  //   - Serial.begin(31250) on hardware UART (D0/D1) for DIN MIDI.
-  //   - pinMode setup for keypad, faders, switches, tap button,
-  //     tempo LED, mic trigger.
-  //   - Initialize tempo tracker (external-pending until first clock).
+    midi_io::begin();
+    tempo::begin();
+    controls::begin();
 }
 
 void loop() {
-  // TODO:
-  //   - Scan controls, translate to MIDI PC/CC/note.
-  //   - Pump incoming MIDI parser.
-  //   - Update tempo: if external clock arrived this tick, track it;
-  //     if tap was pressed, override; else fall back to last-known.
-  //   - Emit our own 24 PPQN clock byte at the right moments.
-  //   - Emit PC / CC / note as control changes happen.
-  //   - Drive tempo LED on beat.
+    midi_io::tick();   // pump incoming MIDI (triggers handlers in tempo + midi_io)
+    tempo::tick();     // emit our clock on schedule, drive tempo LED
+    controls::tick();  // scan controls, emit MIDI on change
 }
