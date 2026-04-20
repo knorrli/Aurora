@@ -25,9 +25,15 @@ untouched.
       stock ones (`HeatColors_p`, `CloudColors_p`, `OceanColors_p`,
       `ForestColors_p`, `PartyColors_p`, `LavaColors_p` …). Pick what
       suits the band's aesthetic; custom palettes are also trivial to
-      hand-roll in PROGMEM.
-- [ ] **Decide palette numpad layout.** Mood-by-row mirroring the
-      preset grid (warm/neutral/cool)? Or unstructured 9 slots?
+      hand-roll in PROGMEM. Note: palettes are no longer numpad-
+      selected — they're building blocks that scenes compose from.
+- [ ] **Draft 2–3 songs** as the first hardcoded `Song` structs (see
+      DESIGN.md § "Song presets, scenes, and foot-pedal events"). For
+      each, sketch baseline + 2–4 named scenes + which buttons do what.
+      Start with songs whose structure is clearest in the set.
+- [ ] **Decide the initial accent library.** Propose: white flash,
+      bars-up-once, blank-while-held, strip-wide pulse. Add / remove
+      as the band's aesthetic demands.
 
 ---
 
@@ -48,6 +54,16 @@ untouched.
       the LEDs).
 - [ ] **Tap tempo momentary switch** (panel-mount, latching NO
       preferred — for the controller's new D2 function).
+- [ ] **Foot pedal with 4 momentary switches** (extensible to more
+      later). Enclosure, switches, 1/4" or DIN cable back to the
+      controller — pedal is a controller-side peripheral, not a
+      separate MIDI node.
+- [ ] **DMX OUT parts for the brain** (venue fixture color echo):
+    - [ ] MAX485 transceiver *or* ADM2587E (isolated, ~$4 more,
+          nicer for venues).
+    - [ ] 5-pin XLR panel jack × 1.
+    - [ ] Terminating resistor 120 Ω × 1, bias resistors as needed.
+    - [ ] Short DMX test cable.
 
 ---
 
@@ -118,6 +134,57 @@ Depends on Phase 2 and the Phase 0 decisions.
 
 ---
 
+## Phase 4.5 — song presets, scenes, and foot-pedal events
+
+Depends on Phase 4 (palette + sculpt in place, since scenes are
+composed from them). See DESIGN.md § "Song presets, scenes, and
+foot-pedal events" for the full model.
+
+- [ ] **Implement the `Scene` / `Song` / `Button` data model** in
+      the brain. Active-song + active-scene state. Scene-change
+      handler that swaps the active scene on pedal events.
+- [ ] **Hardcode 2–3 songs** in `brain/src/songs.cpp` as the v1
+      authoring path. Validate each song's scenes and button
+      bindings by driving pedal input from a laptop via USB MIDI
+      notes (no hardware pedal required for bring-up).
+- [ ] **Accent overlay system**: library of 3–4 accents that render
+      on top of the active scene without mutating it.
+- [ ] **Wire up the physical foot pedal** (controller-side). 4
+      momentary switches → MIDI notes → brain. Map incoming notes
+      to the active song's per-button config.
+- [ ] **Capture mode (v2 authoring path)**. Hold a pedal button for
+      ~2 s while Aurora is displaying the desired look → bind
+      current state to that button for the active song. Persist to
+      EEPROM or LittleFS.
+- [ ] **Update A/B switch semantics** on the controller: A = song
+      mode (numpad selects `Song`), B = pattern mode (numpad
+      selects raw pattern, today's behaviour). The earlier "B =
+      palette mode" idea is retired.
+
+---
+
+## Phase 4.75 — DMX OUT color echo
+
+Depends on Phase 2 (Teensy brain bring-up). Order-wise it can slot
+in before Phase 5 if you want fixtures at the next gig; functionally
+it's independent of the DIN MIDI input work.
+
+- [ ] **Wire MAX485 / ADM2587E** to a spare Teensy hardware UART TX.
+      5-pin XLR panel jack on the brain enclosure. Circuit in
+      `docs/wiring.md` (to be added).
+- [ ] **Integrate the TeensyDMX library** in `brain/platformio.ini`.
+      Allocate a 513-byte DMX universe buffer.
+- [ ] **Fixture config in firmware** — hardcoded struct for 1–2
+      fixtures (address, channel layout, RGB trim, master scale).
+- [ ] **Render loop hook**: each frame, write `paletteCenter × V ×
+      trim` to each fixture's DMX channels.
+- [ ] **Calibrate per fixture model** at rehearsal (RGB trims +
+      master scale). Commit the tuned values.
+- [ ] **Test at a venue** with one of the house PAR cans before
+      relying on it live.
+
+---
+
 ## Phase 5 — DIN MIDI IN on the brain, controller firmware ready
 
 - [ ] **Build the 6N138 DIN MIDI IN circuit** on the brain's
@@ -130,6 +197,8 @@ Depends on Phase 2 and the Phase 0 decisions.
           `CC_SCULPT_X/Y`, `CC_TOUCH_PRESSURE`, `CC_TOUCH_ACTIVE`.
     - [ ] Wire the new A/B mode switch decoder once the physical
           switch is in.
+- [ ] **Wire the foot-pedal input** on the controller (4 momentary
+      switches, debounced, emit `NOTE_PEDAL_1..4` to the brain).
 - [ ] **Flash the new controller firmware to a spare Nano** (don't
       overwrite the old Aurora Nano until you're ready to lose
       the old single-box setup).
@@ -175,7 +244,18 @@ Only do this when you're ready to retire the old single-box Aurora.
 - [ ] Second LED fixture (backdrop, front-of-stage row, etc.) — cheap
       on Teensy with OctoWS2811.
 - [ ] Audio-reactive FFT from the mic trigger input.
-- [ ] DMX bridge (MAX485 on the brain; only if a venue ever needs it).
+- [ ] **Setlist file + prev/next-song pedal buttons**, if the numpad
+      proves annoying for hands-free song transitions. Requires 2
+      extra pedal switches OR a modifier ("Shift") scheme.
+- [ ] **Laptop companion editor** (v3 song authoring) over USB MIDI
+      SysEx — named songs, named scenes, ramp curves, accent
+      selection, visual timeline. Only once capture mode proves
+      insufficient.
+- [ ] **DMX tempo-synced effects on fixtures** (strobe-on-beat,
+      fade-on-drop) — extend beyond pure color echo. Only if the
+      simple echo proves too quiet to matter.
+- [ ] DMX **input** (console drives Aurora) — separate conversation
+      entirely; not on the roadmap unless a venue demands it.
 - [ ] Import `Aurora_Tempo` sources into `legacy/` once found, for
       archaeological reference.
 
@@ -191,6 +271,8 @@ Only do this when you're ready to retire the old single-box Aurora.
 | Look up what a CC / PC / Note number means        | `shared/aurora_protocol.h` |
 | See the Bars continuous-phase prototype           | `brain/src/P_Movements.cpp` (around line 92) |
 | Check the controller firmware scaffold            | `controller/src/*`         |
+| Read the song-preset / pedal-event design         | `DESIGN.md` § "Song presets, scenes, and foot-pedal events" |
+| Read the DMX-out color-echo design                | `DESIGN.md` § "DMX: not the LED protocol, but useful for venue fixtures" |
 
 ## Key commands
 

@@ -79,19 +79,30 @@ preset alt-mode**: instead of a binary flip between default and
 variant, you get a continuous blend you can sit at 30% of. This is
 the payoff that makes losing the A7 alt-switch worthwhile.
 
-### A/B switch: numpad controls presets *or* palettes
+### A/B switch: numpad controls songs *or* raw patterns
 
 Reuse the current 4-state A7 analog rotary as a simple 2-position
 toggle:
 
-| A7 position | Numpad 1–9        | Numpad 0                   |
-|-------------|-------------------|----------------------------|
-| A           | select preset     | off / mute                 |
-| B           | select palette    | monochrome (no palette)    |
+| A7 position  | Numpad 1–9         | Numpad 0       |
+|--------------|--------------------|----------------|
+| A (perform)  | load song preset   | off / mute     |
+| B (freeform) | select raw pattern | off / mute     |
 
-9 presets × 9 palettes = 81 unique looks from 10 keys and one switch.
-"Numpad 0 in palette mode = no palette, fader HSV only" preserves the
-clean-single-color escape hatch.
+**A = song mode** is the performance path: a song preset bundles a
+baseline look + named scenes + per-button pedal bindings (see the
+"Song presets, scenes, and foot-pedal events" section below).
+Reloading a song returns to its baseline scene.
+
+**B = pattern mode** is the rehearsal / improv / fallback path: the
+numpad picks a raw pattern, faders drive H/S/V directly — basically
+today's behaviour. If nothing is prepared for a song or something
+goes wrong mid-set, this is always available.
+
+An earlier draft of this doc had B as "palette mode" (numpad picks
+one of 9 palettes). That idea is retired — palettes stop being live
+performer choices and become primitives that scenes compose from.
+The S fader still provides live monochrome↔spread control.
 
 Hardware change: swap the current multi-state rotary on A7 for a
 simple two-position toggle. Software change: trivial (one boolean
@@ -109,6 +120,130 @@ let it run" feel breathing rather than looping:
 3. **Breath on brightness** — a ~8–16-beat LFO on overall `value`
    adds a barely-perceptible inhale/exhale.
 
+### Song presets, scenes, and foot-pedal events
+
+The redesign beyond palette and sculpt is about giving each of our
+songs its own structured look — not one pattern+color frozen for
+three minutes, but a *graph* of looks navigated with a foot pedal
+while hands stay on faders and touchpad.
+
+Our songs tend to be long-form (part A / B / C / buildup / D) rather
+than verse-chorus-verse, so the abstraction is explicitly "song as a
+sequence of sections," not "verse with decorations."
+
+**Terminology:**
+
+- **Scene** — atomic snapshot of the full Aurora look:
+  `(pattern, palette, H, S, V, sculpt Y, per-preset params)`.
+- **Song preset** — a baseline scene + up to 4 named scenes
+  (e.g. intro / A / B / buildup / outro) + per-button pedal bindings.
+- **Event** — what happens when a pedal button fires. Two flavors:
+  - **Scene-change event** — jump/blend to one of the song's named
+    scenes. Persists until another scene-change or song reload.
+  - **Accent event** — fires a one-shot overlay from a small fixed
+    library (e.g. white flash, bars-flow-up-once, blank-while-held,
+    strip-wide pulse). Current scene state is untouched.
+
+**Per-button configuration.** Each button's behaviour is set
+per-song, not globally. A button can be:
+
+- **Momentary** — held = active, released = return. Push-for-intensity.
+- **Latching / toggle** — flips state each press. Stable section
+  switches (A → B → A).
+- **One-shot** — fires the bound event once and auto-returns. For
+  accents or briefly-held scene changes.
+- **Cycle** — each press advances through a list of bound events.
+  Example: four successive accent fires for four drum hits.
+
+**Numpad vs pedal division of labour:**
+
+- Numpad (A mode) selects a song. Hands, used between songs.
+- Pedal navigates *within* a song — scene changes and accents.
+  Always accessible without taking hands off faders/touchpad.
+- **No global "prev/next song" pedal buttons in v1.** Keep the pedal
+  100% scene/accent. Extensible later: if a setlist concept proves
+  worth it, bolt on two global buttons (or a Shift chord) then. The
+  numpad is fine for song selection in practice — transitions
+  happen in song gaps.
+
+**Pedal hardware shape:** start at 4 momentary footswitches, all
+configurable — no reserved-role buttons in v1. Extensible to more
+(6–8) if usage proves it necessary.
+
+**Authoring songs — three stages:**
+
+- **v1: hardcoded in firmware.** Songs as C++ structs in a
+  `songs.cpp` file. Rebuild + reflash to change. Cheap and enough
+  for first shows, decouples the song model from a controller-side
+  editing UI we haven't designed yet.
+- **v2: capture mode.** Hold pedal button N for ~2 s while Aurora
+  is displaying the look you want → current state gets bound to
+  that button for the active song. Scene captured; mode defaults to
+  "scene-change, instant." Tweak and recapture as needed. Scenes
+  persist to EEPROM or LittleFS on the Teensy.
+- **v3 (deferred):** laptop companion tool over USB MIDI for
+  named-songs, named-scenes, ramp curves, accent-library selection.
+
+**Accent library (initial, small, fixed):**
+
+- `ACCENT_WHITE_FLASH` — full-bright white across all strips, decays.
+- `ACCENT_BARS_UP_ONCE` — single sweep of bars flowing up.
+- `ACCENT_BLANK_HOLD` — all strips black while button is held
+  (kill switch).
+- `ACCENT_PULSE` — strip-wide brightness pulse on the current scene's
+  color.
+
+Room to add more over time. Accents run *on top of* whatever scene
+is active; the scene state itself isn't perturbed.
+
+**Data model sketch:**
+
+```cpp
+struct Scene {
+    PatternId pattern;
+    PaletteId palette;
+    uint8_t h, s, v;
+    uint8_t sculptY;
+    // plus whatever per-preset params we decide matter
+};
+
+enum ButtonMode { MOMENTARY, LATCHING, ONE_SHOT, CYCLE };
+enum EventKind  { SCENE_CHANGE, ACCENT };
+
+struct Button {
+    ButtonMode mode;
+    EventKind  kind;
+    uint8_t    target;         // scene index or accent id
+    uint8_t    targetList[4];  // for CYCLE: up to 4 items
+    uint16_t   rampMs;         // 0 = instant
+};
+
+struct Song {
+    Scene  baseline;
+    Scene  scenes[4];
+    Button buttons[4];
+};
+
+Song songs[9];  // one per numpad key
+```
+
+Sizing: ~60 B per scene × 5 scenes × 9 songs ≈ 2.7 KB. Plus ~40 B of
+button config per song. Trivial on Teensy 4.0.
+
+**Open questions specific to this section:**
+
+- Starting count: 4 scenes + 4 buttons per song, or push to 6/6 if
+  it proves tight at rehearsal?
+- Ramp behaviour: instant-only first pass, or bake in tempo-synced
+  jumps ("scene changes on next downbeat") from day one? Instant is
+  simpler; tempo-synced is nicer musically.
+- Accent interaction with palette animation + brightness LFO:
+  probably "accent overrides everything below it for its duration"
+  is simplest, confirm when implementing.
+- Pedal → brain transport: MIDI Note-on per button (cleanest) or CC?
+  Likely Note, with the note number identifying the button and
+  velocity carrying optional intensity.
+
 ## Open questions before implementing
 
 1. **Preset alt-mode disposition.** Leaning toward "absorb into
@@ -117,19 +252,18 @@ let it run" feel breathing rather than looping:
    hand-picked palettes in PROGMEM. Memory cost ~432 bytes of flash,
    zero SRAM. FastLED has stock palettes (`HeatColors_p`,
    `CloudColors_p`, `OceanColors_p`, `ForestColors_p`, etc.) that can
-   serve as starting points.
-3. **Palette numpad layout.** Do we want palettes organized by mood
-   to mirror the preset rows (warm / neutral / cool by row)? Or just
-   nine palettes without a grid meaning?
-4. **What does palette mode's "0" key do — monochrome as proposed, or
-   something else (e.g. "last palette used, palette animation off")?**
-5. **Touchpad indicator pixels (the 10-pixel strip at pixels 1–10)** —
-   currently mirrors the five strips. Should it preview the active
-   palette in palette-select mode? Or stay as strip preview always for
-   consistency?
-6. **Sculpt-mode Y-axis resolution.** Should Y be continuous (finer
+   serve as starting points. *Note: palettes are no longer live-
+   selected — they're scene primitives now — but we still need the
+   library of palettes to compose scenes from.*
+3. **Touchpad indicator pixels (the 10-pixel strip at pixels 1–10)**
+   — currently mirrors the five strips. Keep as strip preview in
+   song mode too? Or repurpose to visualise scene/baseline state,
+   pedal button bindings, etc.?
+4. **Sculpt-mode Y-axis resolution.** Should Y be continuous (finer
    control, possibly finicky on stage) or quantized to, say, 4
    positions (reliable thumb placement without looking)?
+5. **Song-preset open questions** — see dedicated list in the
+   "Song presets, scenes, and foot-pedal events" section above.
 
 ## Memory budget check
 
@@ -158,12 +292,26 @@ No budget concerns.
    into a shared module; port the rest.
 4. Implement palette infrastructure (CRGBPalette16 in PROGMEM, active
    palette + animation state, palette-aware color sampling helpers).
-5. Rewire A7 decoder in `helpers.cpp` to the two-position A/B scheme.
+5. Rewire A7 decoder in `helpers.cpp` to the two-position A/B scheme
+   (A = songs, B = raw patterns).
 6. Redo each preset to sample from the palette (start with Row 1).
 7. Implement sculpt-mode touchpad — one preset at a time. This is
    where the actual live-feel lives; worth taking time on.
 8. Add idle-richness (per-strip micro-offset + brightness LFO).
 9. Physical hardware: swap A7 rotary for a 2-position toggle.
+10. **Song-preset data model.** Implement `Scene` / `Song` / `Button`
+    structs, active-song + active-scene state, scene-to-scene blend
+    helper (instant first, ramped later).
+11. **Hardcode 2–3 songs** in `songs.cpp` and play them back via
+    USB-MIDI-simulated pedal input. Validate the scene-change path.
+12. **Accent library.** Build the initial 3–4 overlays. Integrate
+    with active-scene rendering (accent runs *on top* of scene).
+13. **Physical foot pedal.** 4 momentary switches → controller-side
+    → MIDI notes → brain. Map incoming notes to active song's
+    button config.
+14. **Capture mode (v2).** Hold pedal button N for ~2 s → bind
+    current Aurora state to that button for the active song.
+    Persist to EEPROM / LittleFS.
 
 ---
 
@@ -242,9 +390,9 @@ ESP32-S3 would win if we wanted WiFi remote control or BLE-MIDI
 later, but with the explicit DIN-only decision (USB cable length is
 a non-starter on stage) that advantage evaporates.
 
-## Why not DMX
+## DMX: not the LED protocol, but useful for venue fixtures
 
-Briefly considered and discarded for this use case:
+### Why DMX isn't the way we drive the LED strips
 
 - 235 pixels × 3 channels = 705 DMX channels, exceeds one universe.
   Art-Net / sACN solves this but adds a networked device to the rig.
@@ -253,8 +401,62 @@ Briefly considered and discarded for this use case:
 - No one in the band runs a DMX console, and no current venue
   requires one.
 
-Keep two unused Teensy pins reserved for a future MAX485 DMX in/out
-just in case, but don't build it now. Revisit only if a venue asks.
+### DMX OUT for venue fixtures — color echo
+
+We *do* want a minimal DMX **output** path from the brain, though,
+so venues with 1–2 conventional fixtures (RGB/RGBW PAR cans, wash
+lights) can participate in the look without sitting dark or visually
+clashing. Scope is deliberately tiny: **color echo only**, no
+choreography. Every frame, each configured fixture gets the active
+palette's center color × current V. If Aurora is green, the fixtures
+are green.
+
+What we explicitly do NOT build here:
+
+- Per-preset fixture choreography
+- DMX IN (console-driven scenes)
+- Art-Net / sACN
+- Multi-universe
+- Moving-head channels (pan/tilt)
+
+**Hardware:** one MAX485 (or ADM2587E for galvanic isolation, ~$4
+more), a 5-pin XLR panel jack, two resistors. One of Teensy 4.0's
+spare hardware UARTs. Two Teensy pins already reserved for this.
+
+**Firmware:** `TeensyDMX` library — mature, DMA-driven, non-blocking,
+handles correct DMX timing (break / MAB / 44 Hz refresh). Zero
+interrupt conflict with OctoWS2811.
+
+**Fixture config** is hardcoded in firmware:
+
+```cpp
+struct Fixture { uint16_t addr; FixtureType type; RgbTrim trim; };
+Fixture fixtures[2] = {
+    { 1, FIXTURE_RGBW, {1.0, 0.9, 0.85, 1.0} },
+    { 8, FIXTURE_RGB,  {1.0, 1.0, 1.0} },
+};
+// each frame: dmx[addr..] = paletteCenter(H) * V * trim
+```
+
+Change the venue? Edit two lines, reflash. For a band that plays
+mostly the same rooms this is fine; if it becomes annoying we can
+add a USB-MIDI or LittleFS config path later.
+
+**Three things that actually bite when implementing:**
+
+1. **Color calibration.** WS2812s and DMX fixtures have different
+   color response. "Warm amber" on the strips can read as sickly
+   yellow on a PAR can. Per-fixture RGB trims (the `trim` field
+   above) fix it. One-time per fixture model.
+2. **Brightness scaling.** A 50 W PAR at full output dwarfs the
+   strips. Per-fixture master scale handles it.
+3. **Palette spread > 0.** When the S fader is high, the strips
+   show a gradient, not one color. Palette *center* is the honest
+   answer — that's what all the strip colors orbit. Just commit to
+   it and don't overthink.
+
+If a venue later needs a DMX merger or scene recall, that's a whole
+different conversation — not the same project.
 
 ## Why the split is worth the two-device cost
 
@@ -386,10 +588,14 @@ simultaneously; no SoftwareSerial tricks needed on the main stream.
    + jack + Nano TX). Transplant tap-tempo button and mic-trigger
    circuit from the divider Arduino into the controller. Retire the
    divider Arduino.
-7. Stage test with the intended cable length between controller and
-   brain.
-8. Only after all this is rock solid — consider DMX, additional LED
-   fixtures, mic-reactive FFT, etc.
+7. **Add DMX OUT to the brain** (MAX485/ADM2587E + XLR, TeensyDMX
+   library). Hardcode 1–2 fixture profiles. Verify color echo on a
+   borrowed PAR can before a gig.
+8. Stage test with the intended cable length between controller and
+   brain, plus at least one DMX fixture downstream.
+9. Only after all this is rock solid — consider additional LED
+   fixtures, mic-reactive FFT, a setlist file for pedal prev/next,
+   etc.
 
 ## Memory / performance headroom after the move
 
