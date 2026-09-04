@@ -56,31 +56,38 @@ Checked items are confirmed in the components drawer.
       hand, interchangeable here — same 200 mA fast small-signal part,
       75 V reverse instead of 100 V, against a few volts of MIDI.
 - [x] **Small perfboard** for the Teensy brain assembly.
-- [ ] **Small project enclosure** for the brain node (to sit near
-      the LEDs).
 - [x] **Tap tempo momentary switch** — the existing controller already
       has one with a built-in LED; reuse it on D2 rather than buying.
-- [ ] **Foot pedal with 4 momentary switches.** Switches, 1/4" TS
-      jacks and guitar cables all on hand; only the enclosure is
-      still needed. Pedal is a controller-side
+- [x] **Foot pedal with 4 momentary switches.** Switches, 1/4" TS
+      jacks and guitar cables all on hand. Pedal is a controller-side
       peripheral, not a separate MIDI node — the four switches share
       the Nano's one free pin (A3) via a resistor ladder. See
       DESIGN.md § "Foot pedal wiring: four buttons on one analog pin".
-    - [ ] Ladder resistors, **1% tolerance**: 3.3 k (pull-up), 3.9 k,
-          5.6 k, 10 k, 22 k. The 5% pack works only if you meter a few
-          and pick ones near nominal — at 5% about one build in nine
-          puts two codes inside the noise.
+    - [x] Ladder resistors, **1% tolerance**: 1 k (pull-up), 2.2 k,
+          5.1 k, 10 k, 20 k. All five are in the 1% kit on hand — the
+          values were picked by re-running the separation search over
+          what the kit stocks.
 - [ ] **DMX OUT parts for the brain** (venue fixture color echo):
-    - [ ] MAX485 transceiver *or* ADM2587E (isolated, ~$4 more,
-          nicer for venues).
-    - [ ] 5-pin XLR panel jack × 1 — **female**. DMX inverts the audio
-          convention: a device's DMX OUT is female, its DMX IN is male.
-          Only males in the drawer; must be ordered.
-    - [x] Terminating resistor 120 Ω × 1. It belongs at the last
-          fixture in the chain, not on the brain board. No bias
-          resistors needed — Aurora is the only transmitter and
-          never leaves the bus idle.
-    - [ ] Short DMX test cable.
+    - [ ] **M5Stack DMX Unit (U183)**, ~CHF 13. Isolated transceiver,
+          isolated DC-DC, surge protection, switchable 120 Ω and the
+          XLR-3 female socket in one part. Replaces the bare
+          transceiver, the XLR panel jack and the isolation parts.
+    - [ ] Grove→Dupont cable (breadboard) and Grove→Lötpin adapter
+          (perfboard) to reach the Teensy. The unit ships with a
+          Grove-to-Grove cable, which reaches neither.
+    - [ ] DMX cable, XLR 3-pin. A microphone XLR cable is pin-for-pin
+          identical and fine on the bench; buy real 110 Ω DMX cable
+          for stage use.
+    - [x] Terminating resistor 120 Ω × 1. Belongs at the last fixture
+          in the chain, not on the brain board — and on short runs it
+          is usually unnecessary. Deferred until something misbehaves;
+          needs a male XLR-3 plug to build.
+    - [ ] *Deferred:* 3-pin-male → 5-pin-female adapter, for venues
+          with 5-pin fixtures. The band's own BeamZ BCC145 PARs are
+          3-pin.
+- [ ] *Deferred until the breadboard and perfboard stages are done:*
+      project enclosure for the brain node, enclosure for the foot
+      pedal, M3 mounting hardware.
 
 ---
 
@@ -186,8 +193,8 @@ Depends on Phase 2 (Teensy brain bring-up). Order-wise it can slot
 in before Phase 5 if you want fixtures at the next gig; functionally
 it's independent of the DIN MIDI input work.
 
-- [ ] **Wire the RS-485 transceiver** to `Serial4` TX (pin 17), 5-pin
-      XLR female panel jack on the brain enclosure. Circuit in
+- [ ] **Wire the M5Stack DMX Unit** to `Serial4` TX (pin 17) over
+      Grove — three wires, and the XLR is on the module. Wiring in
       `docs/wiring.md` § "DMX OUT".
 - [ ] **Integrate the TeensyDMX library** in `brain/platformio.ini` on
       `Serial4`.

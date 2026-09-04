@@ -209,65 +209,68 @@ See DESIGN.md § "DMX: not the LED protocol, but useful for venue
 fixtures" for why the scope stops there.
 
 DMX is RS-485 at 250 kbaud — a balanced differential pair, so a Teensy
-UART pin cannot drive it directly. A transceiver chip converts the
-single-ended TX line into the A/B pair. That conversion is required
-whether or not the link is isolated.
+UART pin cannot drive it directly. An **M5Stack DMX Unit (U183)** does
+the whole job in one part: a CA-IS3092W isolated transceiver (5 kVrms),
+an on-board isolated DC-DC, surge protection, a switchable 120 Ω, and
+the XLR-3 female socket. Nothing on the brain's perfboard but the Grove
+connector.
 
 **Port: `Serial4`, TX = pin 17.** Serial2, Serial3 and Serial5 all have
 their TX pin inside the OctoWS2811 reservation, so they are unavailable.
 Serial4, Serial6 and Serial7 are clear; 17 is the pick.
 
-Transmit-only means the driver is permanently enabled and the receiver
-permanently off, so `DE`/`RE` are strapped rather than driven. The
-DMX path therefore costs exactly **one** GPIO.
-
 ```
-   Teensy 4.0                MAX485 (DIP-8)           XLR-5 female
-                            ┌────────────┐            (panel, DMX OUT)
-                            │            │
-   pin 17 ─────────────────▶│4 DI    A  6│───────────▶ pin 3  (data +)
-   (Serial4 TX, 3.3 V)      │            │
-                            │        B  7│───────────▶ pin 2  (data −)
-                    ┏━━━━━━▶│3 DE        │
-              +5 V ━┫       │            │    GND ───▶ pin 1  (common)
-                    ┗━━━━━━▶│2 RE        │
-                            │            │            pins 4, 5 unused
-              +5 V ────────▶│8 VCC       │
-                            │            │
-               GND ────────▶│5 GND  RO  1│── not connected
-                            └────────────┘
+   Teensy 4.0                   M5Stack DMX Unit (U183)
+                               ┌──────────────────────┐
+   pin 17 ───── yellow ───────▶│ UART_RX              │
+   (Serial4 TX, 3.3 V)         │                      │    XLR-3 female
+   VIN (5 V) ── red ──────────▶│ 5V                   │──▶ on the module:
+                               │                      │      pin 3  data +
+   GND ──────── black ────────▶│ GND                  │      pin 2  data −
+                               │                      │      pin 1  common
+                               │ UART_TX     (unused) │
+                               └──────────────────────┘
 
-Parts:
-    1 × MAX485 (DIP-8 — MAX485CPA is the through-hole order code)
-    1 × 5-pin XLR panel jack, FEMALE
-    0 × bias resistors  (see below)
-    0 × termination on this board  (see below)
+Grove / PH2.0 4-pin: black = GND, red = 5 V, yellow = UART_RX,
+white = UART_TX. Only three of the four wires are needed.
 ```
 
-**No bias resistors.** Fail-safe biasing holds an *idle* bus at a
-defined level so receivers do not read noise as data. Aurora is the only
-transmitter and never releases the bus, so there is no idle state to
-bias.
+Teensy's `VIN` carries 5 V straight from USB during bench work, so the
+module needs no separate supply. Its logic side expects 3.3 V TTL, which
+Teensy drives directly.
 
-**Termination goes at the far end, not here.** The 120 Ω sits across
-data+/data− at the *last fixture in the chain* — in that fixture's
-terminator switch, or in a plug in its THRU. Nothing terminates on the
-brain's perfboard.
+**There is no DE/RE pin, and that is fine.** The module switches bus
+direction on its own. That normally rules a board out for DMX, because
+every frame opens with an 88 µs BREAK — a long low with no edges — and
+a naive auto-direction circuit releases the driver partway through it,
+truncating the break so fixtures reject every frame. This module is
+built for DMX specifically, and M5Stack's own transmit example passes
+`enablePin = -1`, i.e. no direction control from the host. Treat that as
+the evidence it works; there is no pin for us to strap either way.
 
-**3.3 V driving a 5 V part is fine here.** The MAX485's input threshold
-is ~2.0 V, comfortably under Teensy's 3.3 V high. Run the chip itself
-from +5 V so the differential output sits at proper RS-485 levels.
+**Termination.** The module's own 120 Ω sits at the head of the chain
+and is switch-selectable. What conventionally matters is the *far* end —
+across data+/data− at the last fixture — but on short runs with a
+handful of fixtures an unterminated far end is usually fine. Symptom if
+it is not: intermittent flicker or fixtures jumping to wrong values.
+The fix is a male XLR-3 plug with 120 Ω across pins 2 and 3, pushed into
+the last fixture's DMX OUT.
 
-**Isolation is a separate decision from the transceiver.** The MAX485
-gives no galvanic isolation: the brain's ground bonds to the venue's
-lighting ground through XLR pin 1, and any potential difference between
-the two mains circuits lands on pin 17. Options and trade-offs are still
-open — see TODO.md Phase 1. The circuit above is the non-isolated
-baseline and is what every isolated variant builds on top of.
+**Cable and gender.** Aurora's OUT is female, a fixture's IN is male, and
+a DMX cable is male on one end and female on the other — so it plugs in
+one way round only. A 3-pin XLR microphone cable is pin-for-pin
+identical and fine for bench work; use real 110 Ω DMX cable for anything
+long or permanent.
 
 **Software:** the `TeensyDMX` library on `Serial4`. It handles break /
 mark-after-break / 44 Hz refresh timing over DMA, so it does not fight
 OctoWS2811 for interrupts.
+
+**Two bring-up gotchas.** If nothing happens, swap RX/TX before assuming
+a fault — the Grove labels do not say whose perspective they take. And
+check the fixture itself: PAR cans normally boot into auto or
+sound-active mode and ignore DMX entirely until set to DMX mode with a
+start address.
 
 ---
 

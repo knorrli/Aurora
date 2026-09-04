@@ -305,31 +305,39 @@ crude 4-bit ADC of which buttons are down.
 
 Binary-weighting the conductances (1 : 2 : 4 : 8) is the textbook
 choice, but the divider is non-linear in conductance, which bunches the
-many-buttons-pressed end together. Searching E12 values for the widest
-*minimum* separation instead gives:
+many-buttons-pressed end together. Searching instead for the widest
+*minimum* separation, over the values stocked in the 1% kit on hand,
+gives:
 
 | Resistor | Value  |
 |----------|--------|
-| R_top    | 3.3 kΩ |
-| R1       | 3.9 kΩ |
-| R2       | 5.6 kΩ |
+| R_top    | 1 kΩ   |
+| R1       | 2.2 kΩ |
+| R2       | 5.1 kΩ |
 | R3       | 10 kΩ  |
-| R4       | 22 kΩ  |
+| R4       | 20 kΩ  |
 
-That spreads the sixteen levels between 1.715 V (all four down) and
-5.000 V (none), with the two closest neighbours 88 mV apart — about 18
+That spreads the sixteen levels between 2.777 V (all four down) and
+5.000 V (none), with the two closest neighbours 79 mV apart — about 16
 counts on the Nano's 10-bit ADC. Note the levels are not ordered by
 binary code: `SW3+SW4` sits above `SW2` alone. Decode by nearest match
 against a table of the sixteen levels, never by binary-ordered
 thresholds.
 
-**Tolerance matters more than the values do.** At 1% the worst-case
-build still separates every level. At 5%, roughly one build in nine
-lands with two levels closer than 30 mV, which is inside the noise.
-Either buy five 1% resistors, or measure candidates from the pack with
-a meter and pick ones near nominal — once soldered, the values are
-fixed, so a calibration pass (press each combination once, store the
-observed ADC readings) removes tolerance from the picture entirely and
+A 1 kΩ pull-up also keeps the source impedance the ADC sees low — it
+peaks at R_top with no button pressed — which helps the sample-and-hold
+settle inside one `analogRead()`.
+
+**These values are forgiving of tolerance, which not every set is.**
+Simulating twenty thousand builds, 1% parts never bring two levels
+closer than 78 mV, and even 5% parts hold 55 mV — no build puts two
+codes inside the noise. That is a property of this particular set, not
+of ladders generally: the otherwise-similar 3.3 k / 3.9 k / 5.6 k /
+10 k / 22 k set has a wider nominal gap yet collapses at 5%, with about
+one build in nine landing under 30 mV. If the values are ever
+re-picked, re-run the tolerance check rather than trusting the nominal
+spacing. A calibration pass — press each combination once, store the
+observed ADC readings — removes tolerance from the picture entirely and
 is worth doing regardless.
 
 **Two firmware gotchas.** A press is not instantaneous: while a contact
@@ -523,12 +531,26 @@ What we explicitly do NOT build here:
 - Multi-universe
 - Moving-head channels (pan/tilt)
 
-**Hardware:** one MAX485 (or ADM2587E for galvanic isolation, ~$4
-more), a 5-pin XLR panel jack, two resistors. One of Teensy 4.0's
-spare hardware UARTs — `Serial4`, TX = pin 17, since Serial2/3/5 have
-their TX inside the OctoWS2811 reservation. Transmit-only, so the
-transceiver's enable pins are strapped and the path costs one GPIO.
-Circuit in `docs/wiring.md`.
+**Hardware:** an M5Stack DMX Unit (U183) — one part carrying the
+RS-485 transceiver, the isolation, and the XLR socket. It connects by a
+4-pin Grove/PH2.0 cable to one of Teensy 4.0's spare hardware UARTs:
+`Serial4`, TX = pin 17, since Serial2/3/5 have their TX inside the
+OctoWS2811 reservation. Wiring in `docs/wiring.md`.
+
+**Why an isolated part and not a bare transceiver.** XLR pin 1 ties the
+brain's ground to the venue's lighting ground. Those are usually
+separate mains circuits, sometimes separate phases, and the difference
+between them lands across the transceiver — which tolerates about −7 to
++12 V before it dies. Isolation puts a barrier there instead, so the
+two grounds are never joined by our cable. It also happens to be the
+cheaper route: a module costs less than a bare chip plus a separate XLR
+jack, and needs no surface-mount soldering.
+
+**The socket is XLR-3, not the XLR-5 the standard specifies.** Three-pin
+is what is actually fitted to the PAR cans and washes we expect to meet,
+including the band's own. A 3-pin-male-to-5-pin-female adapter covers
+the venues that go by the book; it is a cable-bag item, not a design
+change.
 
 **Firmware:** `TeensyDMX` library — mature, DMA-driven, non-blocking,
 handles correct DMX timing (break / MAB / 44 Hz refresh). Zero
@@ -695,9 +717,9 @@ simultaneously; no SoftwareSerial tricks needed on the main stream.
    + jack + Nano TX). Transplant tap-tempo button and mic-trigger
    circuit from the divider Arduino into the controller. Retire the
    divider Arduino.
-7. **Add DMX OUT to the brain** (MAX485/ADM2587E + XLR, TeensyDMX
-   library). Hardcode 1–2 fixture profiles. Verify color echo on a
-   borrowed PAR can before a gig.
+7. **Add DMX OUT to the brain** (M5Stack DMX Unit on `Serial4`,
+   TeensyDMX library). Hardcode 1–2 fixture profiles. Verify color echo
+   on the band's own PAR cans before a gig.
 8. Stage test with the intended cable length between controller and
    brain, plus at least one DMX fixture downstream.
 9. Only after all this is rock solid — consider additional LED
