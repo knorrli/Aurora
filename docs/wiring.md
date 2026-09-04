@@ -37,6 +37,7 @@ MIDI circuits. Before moving a wire, move the line here first.
                           │                          │
                           │   WS2812 out on pin 2    │
                           │   MIDI IN on pin 0 (RX1) │
+                          │   DMX OUT on pin 17      │
                           │   (reserves pins for     │
                           │    up to 7 more strips)  │
                           └────────────┬─────────────┘
@@ -71,7 +72,8 @@ for OctoWS2811 expansion, since that library demands a fixed pin order.
 | 14   | RESERVED — OctoWS2811 strip 2          | Same                                             |
 | 20   | RESERVED — OctoWS2811 strip 6          | Same                                             |
 | 21   | RESERVED — OctoWS2811 strip 7          | Same                                             |
-| 3–4, 9–12, 15–19, 22–23, 24+ | FREE                   | Any future brain-side I/O                        |
+| 17   | `Serial4` TX — DMX OUT                 | To RS-485 transceiver `DI`; see DMX OUT section  |
+| 3–4, 9–12, 15–16, 18–19, 22–23, 24+ | FREE    | Any future brain-side I/O                        |
 
 Power: run the Teensy from 5 V into the `VIN` pin (or USB during dev).
 Cut the `VIN`/USB jumper on the Teensy if powering from both USB and an
@@ -196,6 +198,76 @@ side.
 On a Teensy 4.0 (3.3 V logic), swap the MCU-side 220 Ω for a 33 Ω — the
 lower voltage needs lower resistance to hit MIDI's ~5 mA target current.
 ```
+
+---
+
+## DMX OUT — venue fixture colour echo (brain only)
+
+Scope is colour echo, nothing else: every frame the brain writes the
+active palette's centre colour × V to 1–2 hardcoded fixture addresses.
+See DESIGN.md § "DMX: not the LED protocol, but useful for venue
+fixtures" for why the scope stops there.
+
+DMX is RS-485 at 250 kbaud — a balanced differential pair, so a Teensy
+UART pin cannot drive it directly. A transceiver chip converts the
+single-ended TX line into the A/B pair. That conversion is required
+whether or not the link is isolated.
+
+**Port: `Serial4`, TX = pin 17.** Serial2, Serial3 and Serial5 all have
+their TX pin inside the OctoWS2811 reservation, so they are unavailable.
+Serial4, Serial6 and Serial7 are clear; 17 is the pick.
+
+Transmit-only means the driver is permanently enabled and the receiver
+permanently off, so `DE`/`RE` are strapped rather than driven. The
+DMX path therefore costs exactly **one** GPIO.
+
+```
+   Teensy 4.0                MAX485 (DIP-8)           XLR-5 female
+                            ┌────────────┐            (panel, DMX OUT)
+                            │            │
+   pin 17 ─────────────────▶│4 DI    A  6│───────────▶ pin 3  (data +)
+   (Serial4 TX, 3.3 V)      │            │
+                            │        B  7│───────────▶ pin 2  (data −)
+                    ┏━━━━━━▶│3 DE        │
+              +5 V ━┫       │            │    GND ───▶ pin 1  (common)
+                    ┗━━━━━━▶│2 RE        │
+                            │            │            pins 4, 5 unused
+              +5 V ────────▶│8 VCC       │
+                            │            │
+               GND ────────▶│5 GND  RO  1│── not connected
+                            └────────────┘
+
+Parts:
+    1 × MAX485 (DIP-8 — MAX485CPA is the through-hole order code)
+    1 × 5-pin XLR panel jack, FEMALE
+    0 × bias resistors  (see below)
+    0 × termination on this board  (see below)
+```
+
+**No bias resistors.** Fail-safe biasing holds an *idle* bus at a
+defined level so receivers do not read noise as data. Aurora is the only
+transmitter and never releases the bus, so there is no idle state to
+bias.
+
+**Termination goes at the far end, not here.** The 120 Ω sits across
+data+/data− at the *last fixture in the chain* — in that fixture's
+terminator switch, or in a plug in its THRU. Nothing terminates on the
+brain's perfboard.
+
+**3.3 V driving a 5 V part is fine here.** The MAX485's input threshold
+is ~2.0 V, comfortably under Teensy's 3.3 V high. Run the chip itself
+from +5 V so the differential output sits at proper RS-485 levels.
+
+**Isolation is a separate decision from the transceiver.** The MAX485
+gives no galvanic isolation: the brain's ground bonds to the venue's
+lighting ground through XLR pin 1, and any potential difference between
+the two mains circuits lands on pin 17. Options and trade-offs are still
+open — see TODO.md Phase 1. The circuit above is the non-isolated
+baseline and is what every isolated variant builds on top of.
+
+**Software:** the `TeensyDMX` library on `Serial4`. It handles break /
+mark-after-break / 44 Hz refresh timing over DMA, so it does not fight
+OctoWS2811 for interrupts.
 
 ---
 

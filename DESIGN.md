@@ -525,7 +525,10 @@ What we explicitly do NOT build here:
 
 **Hardware:** one MAX485 (or ADM2587E for galvanic isolation, ~$4
 more), a 5-pin XLR panel jack, two resistors. One of Teensy 4.0's
-spare hardware UARTs. Two Teensy pins already reserved for this.
+spare hardware UARTs — `Serial4`, TX = pin 17, since Serial2/3/5 have
+their TX inside the OctoWS2811 reservation. Transmit-only, so the
+transceiver's enable pins are strapped and the path costs one GPIO.
+Circuit in `docs/wiring.md`.
 
 **Firmware:** `TeensyDMX` library — mature, DMA-driven, non-blocking,
 handles correct DMX timing (break / MAB / 44 Hz refresh). Zero

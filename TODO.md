@@ -76,7 +76,10 @@ Checked items are confirmed in the components drawer.
     - [ ] 5-pin XLR panel jack × 1 — **female**. DMX inverts the audio
           convention: a device's DMX OUT is female, its DMX IN is male.
           Only males in the drawer; must be ordered.
-    - [x] Terminating resistor 120 Ω × 1, bias resistors as needed.
+    - [x] Terminating resistor 120 Ω × 1. It belongs at the last
+          fixture in the chain, not on the brain board. No bias
+          resistors needed — Aurora is the only transmitter and
+          never leaves the bus idle.
     - [ ] Short DMX test cable.
 
 ---
@@ -183,10 +186,11 @@ Depends on Phase 2 (Teensy brain bring-up). Order-wise it can slot
 in before Phase 5 if you want fixtures at the next gig; functionally
 it's independent of the DIN MIDI input work.
 
-- [ ] **Wire MAX485 / ADM2587E** to a spare Teensy hardware UART TX.
-      5-pin XLR panel jack on the brain enclosure. Circuit in
-      `docs/wiring.md` (to be added).
-- [ ] **Integrate the TeensyDMX library** in `brain/platformio.ini`.
+- [ ] **Wire the RS-485 transceiver** to `Serial4` TX (pin 17), 5-pin
+      XLR female panel jack on the brain enclosure. Circuit in
+      `docs/wiring.md` § "DMX OUT".
+- [ ] **Integrate the TeensyDMX library** in `brain/platformio.ini` on
+      `Serial4`.
       Allocate a 513-byte DMX universe buffer.
 - [ ] **Fixture config in firmware** — hardcoded struct for 1–2
       fixtures (address, channel layout, RGB trim, master scale).
