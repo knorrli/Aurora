@@ -39,30 +39,44 @@ untouched.
 
 ## Phase 1 — parts to order
 
-- [ ] **Teensy 4.0** (~$24 from pjrc.com or distributor).
-- [ ] **6N138 opto-coupler** (for DIN MIDI IN on the Teensy — 2 pcs
+Checked items are confirmed in the components drawer.
+
+- [x] **Teensy 4.0** (~$24 from pjrc.com or distributor).
+- [x] **6N138 opto-coupler** (for DIN MIDI IN on the Teensy — 2 pcs
       recommended, one for each node).
-- [ ] **5-pin DIN MIDI jacks** (panel-mount, at least 3: one for
+- [x] **5-pin DIN MIDI jacks** (panel-mount, at least 3: one for
       controller IN, one for controller OUT, one for brain IN).
-- [ ] **5-pin DIN MIDI cable** (the link between controller and brain;
-      length = whatever you actually need on stage + slack).
-- [ ] **Resistors**: 220 Ω × 6, 270 Ω × 2, 4.7 kΩ × 2 (standard
+      On hand: >3, all panel-mount.
+- [x] **5-pin DIN MIDI cable** (the link between controller and brain;
+      confirm it actually spans the stage distance + slack).
+- [x] **Resistors**: 220 Ω × 6, 270 Ω × 2, 4.7 kΩ × 2 (standard
       quarter-watt is fine). 33 Ω × 2 if using MIDI out on Teensy.
-- [ ] **1N4148 signal diode** × 2 (protection on MIDI IN).
-- [ ] **Small perfboard** for the Teensy brain assembly.
+      Assorted pack on hand covers every value, 120 Ω included.
+- [x] **1N4148 signal diode** × 2 (protection on MIDI IN). 1N914A on
+      hand, interchangeable here — same 200 mA fast small-signal part,
+      75 V reverse instead of 100 V, against a few volts of MIDI.
+- [x] **Small perfboard** for the Teensy brain assembly.
 - [ ] **Small project enclosure** for the brain node (to sit near
       the LEDs).
-- [ ] **Tap tempo momentary switch** (panel-mount, latching NO
-      preferred — for the controller's new D2 function).
-- [ ] **Foot pedal with 4 momentary switches** (extensible to more
-      later). Enclosure, switches, 1/4" or DIN cable back to the
-      controller — pedal is a controller-side peripheral, not a
-      separate MIDI node.
+- [x] **Tap tempo momentary switch** — the existing controller already
+      has one with a built-in LED; reuse it on D2 rather than buying.
+- [ ] **Foot pedal with 4 momentary switches.** Switches, 1/4" TS
+      jacks and guitar cables all on hand; only the enclosure is
+      still needed. Pedal is a controller-side
+      peripheral, not a separate MIDI node — the four switches share
+      the Nano's one free pin (A3) via a resistor ladder. See
+      DESIGN.md § "Foot pedal wiring: four buttons on one analog pin".
+    - [ ] Ladder resistors, **1% tolerance**: 3.3 k (pull-up), 3.9 k,
+          5.6 k, 10 k, 22 k. The 5% pack works only if you meter a few
+          and pick ones near nominal — at 5% about one build in nine
+          puts two codes inside the noise.
 - [ ] **DMX OUT parts for the brain** (venue fixture color echo):
     - [ ] MAX485 transceiver *or* ADM2587E (isolated, ~$4 more,
           nicer for venues).
-    - [ ] 5-pin XLR panel jack × 1.
-    - [ ] Terminating resistor 120 Ω × 1, bias resistors as needed.
+    - [ ] 5-pin XLR panel jack × 1 — **female**. DMX inverts the audio
+          convention: a device's DMX OUT is female, its DMX IN is male.
+          Only males in the drawer; must be ordered.
+    - [x] Terminating resistor 120 Ω × 1, bias resistors as needed.
     - [ ] Short DMX test cable.
 
 ---

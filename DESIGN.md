@@ -161,10 +161,29 @@ per-song, not globally. A button can be:
 - Pedal navigates *within* a song — scene changes and accents.
   Always accessible without taking hands off faders/touchpad.
 - **No global "prev/next song" pedal buttons in v1.** Keep the pedal
-  100% scene/accent. Extensible later: if a setlist concept proves
-  worth it, bolt on two global buttons (or a Shift chord) then. The
-  numpad is fine for song selection in practice — transitions
-  happen in song gaps.
+  100% scene/accent. Reserving two of four buttons for navigation
+  spends half the pedal on something the numpad already covers, and
+  song changes happen in gaps where hands are free. It also needs a
+  setlist concept that does not exist: songs are indexed by numpad
+  key, so "next" would mean slot order, which is only useful if the
+  set happens to run 1→9.
+
+  Extensible later, in one of two ways. Two dedicated buttons on a
+  larger pedal, or a *modifier convention* — hold one designated
+  button while pressing another, so the second button's meaning
+  changes, the way a synth's Shift button works. The resistor ladder
+  reads every combination of the four switches, so the modifier route
+  costs no extra pins or switches.
+
+  It is not free in firmware, though, and that is the part to check
+  before committing. Recognising two buttons pressed together means
+  waiting after any single press to see whether a second one lands,
+  and that delay then applies to *every* press, accents included. An
+  accent meant to land on a snare hit does not have tens of
+  milliseconds to spare. The way out, if we want this: allow the
+  modifier only on buttons whose plain press is a scene change, since
+  a scene change tolerates latency that an accent does not. That is a
+  constraint on which buttons can participate, not a free upgrade.
 
 **Pedal hardware shape:** start at 4 momentary footswitches, all
 configurable — no reserved-role buttons in v1. Extensible to more
@@ -243,6 +262,91 @@ button config per song. Trivial on Teensy 4.0.
 - Pedal → brain transport: MIDI Note-on per button (cleanest) or CC?
   Likely Note, with the note number identifying the button and
   velocity carrying optional intensity.
+
+### Foot pedal wiring: four buttons on one analog pin
+
+The pedal is a controller-side peripheral — four bare momentary
+switches, no microcontroller. The controller reads them and turns them
+into MIDI for the brain.
+
+**The constraint.** After the split, the Nano has exactly one free pin:
+A3 (see the controller pin map in `docs/wiring.md`). Everything else is
+taken by faders, touchpad, keypad, mode switches, tap tempo, and the
+two UARTs. Four buttons therefore cannot have four inputs, so they
+share A3 through a resistor ladder.
+
+**The connector is 1/4" TS**, i.e. a guitar cable — rugged, and any
+guitarist on stage carries a spare. Deliberately *not* 5-pin DIN, even
+though the conductor count fits and we have the jacks: the controller
+will already carry two DIN jacks that really are MIDI, and a third
+identical one carrying switch contacts is something that gets a MIDI
+cable plugged into it in a dark venue.
+
+**Reading combinations.** Each switch pulls A3 toward ground through
+its own resistor, under a common pull-up:
+
+```
+   +5 V ──[ R_top ]──┬── A3
+                     │
+            ┌────────┼────────┬────────┐
+           SW1      SW2      SW3      SW4
+            │        │        │        │
+          [ R1 ]   [ R2 ]   [ R3 ]   [ R4 ]
+            │        │        │        │
+           GND      GND      GND      GND
+```
+
+Parallel resistors add in *conductance*, not resistance. Each closed
+switch contributes its own 1/R to the total independently of the
+others, so every subset of pressed buttons produces a different total
+conductance, and therefore a different voltage at A3. Sixteen
+combinations, sixteen distinct levels — the divider is acting as a
+crude 4-bit ADC of which buttons are down.
+
+Binary-weighting the conductances (1 : 2 : 4 : 8) is the textbook
+choice, but the divider is non-linear in conductance, which bunches the
+many-buttons-pressed end together. Searching E12 values for the widest
+*minimum* separation instead gives:
+
+| Resistor | Value  |
+|----------|--------|
+| R_top    | 3.3 kΩ |
+| R1       | 3.9 kΩ |
+| R2       | 5.6 kΩ |
+| R3       | 10 kΩ  |
+| R4       | 22 kΩ  |
+
+That spreads the sixteen levels between 1.715 V (all four down) and
+5.000 V (none), with the two closest neighbours 88 mV apart — about 18
+counts on the Nano's 10-bit ADC. Note the levels are not ordered by
+binary code: `SW3+SW4` sits above `SW2` alone. Decode by nearest match
+against a table of the sixteen levels, never by binary-ordered
+thresholds.
+
+**Tolerance matters more than the values do.** At 1% the worst-case
+build still separates every level. At 5%, roughly one build in nine
+lands with two levels closer than 30 mV, which is inside the noise.
+Either buy five 1% resistors, or measure candidates from the pack with
+a meter and pick ones near nominal — once soldered, the values are
+fixed, so a calibration pass (press each combination once, store the
+observed ADC readings) removes tolerance from the picture entirely and
+is worth doing regardless.
+
+**Two firmware gotchas.** A press is not instantaneous: while a contact
+is bouncing or a second foot lands, A3 sweeps through voltages that are
+themselves valid codes, so a naive reader emits phantom button events.
+Require several consecutive agreeing samples before accepting a code
+change. And a reading that matches nothing within tolerance should be
+discarded rather than snapped to the nearest level — that is what an
+unplugged cable or a dirty contact looks like, and on stage it should
+do nothing rather than fire a random scene change.
+
+**This tops out at four buttons.** Adding a fifth roughly halves the
+spacing and pushes it under what 10-bit sampling can separate reliably.
+If the pedal ever grows, the ladder is the wrong tool — put a shift
+register or an I²C expander in the pedal enclosure and spend a real
+digital pin on it, or accept single-press-only detection, which has far
+wider margins because it only needs five levels instead of sixteen.
 
 ## Open questions before implementing
 
