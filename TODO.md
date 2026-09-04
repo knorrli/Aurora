@@ -68,16 +68,17 @@ Checked items are confirmed in the components drawer.
           values were picked by re-running the separation search over
           what the kit stocks.
 - [ ] **DMX OUT parts for the brain** (venue fixture color echo):
-    - [ ] **M5Stack DMX Unit (U183)**, ~CHF 13. Isolated transceiver,
+    - [x] **M5Stack DMX Unit (U183)**, ~CHF 13. Isolated transceiver,
           isolated DC-DC, surge protection, switchable 120 Ω and the
           XLR-3 female socket in one part. Replaces the bare
           transceiver, the XLR panel jack and the isolation parts.
-    - [ ] Grove→Dupont cable (breadboard) and Grove→Lötpin adapter
-          (perfboard) to reach the Teensy. The unit ships with a
-          Grove-to-Grove cable, which reaches neither.
-    - [ ] DMX cable, XLR 3-pin. A microphone XLR cable is pin-for-pin
-          identical and fine on the bench; buy real 110 Ω DMX cable
-          for stage use.
+    - [x] Grove→Dupont cable (breadboard) — on hand and proven. The
+          unit's own Grove-to-Grove cable reaches neither breadboard nor
+          Teensy.
+    - [ ] Grove→Lötpin adapter, for the perfboard build. Not needed
+          while the brain is on a breadboard.
+    - [x] DMX cable, XLR 3-pin — on hand and working on the bench.
+          Buy real 110 Ω DMX cable for stage use.
     - [x] Terminating resistor 120 Ω × 1. Belongs at the last fixture
           in the chain, not on the brain board — and on short runs it
           is usually unnecessary. Deferred until something misbehaves;
@@ -193,14 +194,18 @@ Depends on Phase 2 (Teensy brain bring-up). Order-wise it can slot
 in before Phase 5 if you want fixtures at the next gig; functionally
 it's independent of the DIN MIDI input work.
 
-- [ ] **Wire the M5Stack DMX Unit** to `Serial4` TX (pin 17) over
+- [x] **Wire the M5Stack DMX Unit** to `Serial4` TX (pin 17) over
       Grove — three wires, and the XLR is on the module. Wiring in
-      `docs/wiring.md` § "DMX OUT".
+      `docs/wiring.md` § "DMX OUT". Done on the breadboard and proven
+      end to end against a BCC145: pin 17 goes to **white / `TXD`**, not
+      yellow. Re-test any time with `bench/dmx_bringup/`.
 - [ ] **Integrate the TeensyDMX library** in `brain/platformio.ini` on
       `Serial4`.
       Allocate a 513-byte DMX universe buffer.
 - [ ] **Fixture config in firmware** — hardcoded struct for 1–2
-      fixtures (address, channel layout, RGB trim, master scale).
+      fixtures (address, channel layout, RGB trim, master scale). The
+      BCC145 layout is settled: 4-channel mode (`D001`), RGBW, no
+      master dimmer. See `docs/wiring.md` § "Fixture profile".
 - [ ] **Render loop hook**: each frame, write `paletteCenter × V ×
       trim` to each fixture's DMX channels.
 - [ ] **Calibrate per fixture model** at rehearsal (RGB trims +
@@ -278,7 +283,9 @@ Only do this when you're ready to retire the old single-box Aurora.
       insufficient.
 - [ ] **DMX tempo-synced effects on fixtures** (strobe-on-beat,
       fade-on-drop) — extend beyond pure color echo. Only if the
-      simple echo proves too quiet to matter.
+      simple echo proves too quiet to matter. Note this moves the
+      BCC145 to its 8-channel mode (`Axxx`), which is also where its
+      master dimmer lives; see `docs/wiring.md` § "Fixture profile".
 - [ ] DMX **input** (console drives Aurora) — separate conversation
       entirely; not on the roadmap unless a venue demands it.
 - [ ] Import `Aurora_Tempo` sources into `legacy/` once found, for

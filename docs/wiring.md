@@ -222,18 +222,26 @@ Serial4, Serial6 and Serial7 are clear; 17 is the pick.
 ```
    Teensy 4.0                   M5Stack DMX Unit (U183)
                                ┌──────────────────────┐
-   pin 17 ───── yellow ───────▶│ UART_RX              │
+   pin 17 ───── white ────────▶│ TXD                  │
    (Serial4 TX, 3.3 V)         │                      │    XLR-3 female
    VIN (5 V) ── red ──────────▶│ 5V                   │──▶ on the module:
                                │                      │      pin 3  data +
    GND ──────── black ────────▶│ GND                  │      pin 2  data −
                                │                      │      pin 1  common
-                               │ UART_TX     (unused) │
+                               │ RXD         (unused) │
                                └──────────────────────┘
 
-Grove / PH2.0 4-pin: black = GND, red = 5 V, yellow = UART_RX,
-white = UART_TX. Only three of the four wires are needed.
+Grove / PH2.0 4-pin: black = GND, red = 5 V, yellow = pin 1,
+white = pin 2. Only three of the four wires are needed.
 ```
+
+**The module's `RXD` / `TXD` silkscreen is written from the host's point
+of view, not the module's**, so the Teensy transmits on `TXD` / white.
+Verified on the bench: yellow leaves the fixture dark, white lights it.
+The labels follow M5Stack's Port C convention, where Grove pin 1 is the
+host's RXD and pin 2 the host's TXD — a unit labelling its own receiver
+`RXD` on pin 1 would face the host's receiver and could never work
+plugged into a Port C.
 
 Teensy's `VIN` carries 5 V straight from USB during bench work, so the
 module needs no separate supply. Its logic side expects 3.3 V TTL, which
@@ -266,11 +274,70 @@ long or permanent.
 mark-after-break / 44 Hz refresh timing over DMA, so it does not fight
 OctoWS2811 for interrupts.
 
-**Two bring-up gotchas.** If nothing happens, swap RX/TX before assuming
-a fault — the Grove labels do not say whose perspective they take. And
-check the fixture itself: PAR cans normally boot into auto or
+**A bring-up gotcha.** If nothing happens, check the fixture before
+suspecting the circuit: PAR cans normally boot into auto or
 sound-active mode and ignore DMX entirely until set to DMX mode with a
-start address.
+start address. On the BeamZ BCC145 that means a display reading `D001`
+(4-channel mode) rather than `Au` or `SU01`.
+
+### Fixture profile — BeamZ BCC145
+
+The BCC145 has two personalities: `D001`–`D512` is 4-channel,
+`A001`–`A512` is 8-channel. Both are in the manual, and both offsets
+below were also confirmed on the bench with `bench/dmx_channel_map/`.
+
+**4-channel (`Dxxx`) — use this one.**
+
+| Offset | Function |
+|--------|----------|
+| +0     | Red      |
+| +1     | Green    |
+| +2     | Blue     |
+| +3     | White    |
+
+**8-channel (`Axxx`).**
+
+| Offset | Function     | Notes                                      |
+|--------|--------------|--------------------------------------------|
+| +0     | Dimmer       | Master 0–100 %                             |
+| +1     | Strobe       | 0–7 off, 8–255 slow to fast                |
+| +2     | Red          |                                            |
+| +3     | Green        |                                            |
+| +4     | Blue         |                                            |
+| +5     | White        |                                            |
+| +6     | Macro        | ≤50 off; above that fixed colour, jump, pulse, gradient, voice-activated |
+| +7     | Speed        | Macro speed                                |
+
+At `D001` the 4-channel block is channels 1–4, so a second fixture
+starts at 5.
+
+4-channel is right for colour echo: fewer channels, and no macro channel
+to accidentally write a nonzero value into — anything above 50 there
+starts an auto sequence that overrides colour entirely.
+
+**Two reasons 8-channel may earn its place later**, neither of them
+urgent. Its dimmer is a real one, so brightness could come from the
+dimmer channel while RGBW stays at full scale — in 4-channel mode the
+only way to dim is to scale RGBW down, which throws away colour
+resolution exactly where the palette is dimmest and will band on slow
+fades. And its strobe channel is what the deferred tempo-synced fixture
+effects would need; there is no way to strobe from the 4-channel block
+except by toggling values frame to frame.
+
+Full scale is far brighter than the strips — 255 on all four is hard to
+look at directly, and the per-fixture master scale in DESIGN.md's
+`Fixture` struct exists for this.
+
+### Bench tools
+
+Two standalone PlatformIO projects, independent of `brain/`, kept for
+re-testing the link after any change:
+
+- `bench/dmx_bringup/` — blinks the fixture on and off once a second
+  with the onboard LED in sync. If the PAR follows the LED, the whole
+  path works.
+- `bench/dmx_channel_map/` — walks one channel at a time, announcing
+  each with that many blinks of the onboard LED.
 
 ---
 
