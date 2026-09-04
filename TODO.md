@@ -97,27 +97,77 @@ Checked items are confirmed in the components drawer.
 Goal: validate every preset + every MIDI message on the desk before
 touching the existing Aurora or the controller.
 
-- [ ] **Teensy on perfboard**, pin 2 broken out to a WS2812 data
-      header, common ground with the LED power supply.
-- [ ] **Port the brain firmware to Teensy**. On `brain/platformio.ini`
-      the `teensy40` env is already defined. Work needed:
-    - [ ] Swap FastLED's WS2812 output for OctoWS2811 (faster, DMA-
-          driven, doesn't block interrupts during `.show()`).
-    - [ ] Rewrite `readKeypad()` — current code uses `PINB` register
-          tricks specific to the ATmega328. Or skip entirely, since the
-          numpad is moving to the controller.
-    - [ ] Adjust pin numbers in `Aurora.h` to Teensy 4.0 pin
-          assignments (see `docs/wiring.md`).
-    - [ ] Replace the tempo-pulse pin read with a MIDI clock handler.
-    - [ ] Add MIDI Program Change handler → preset selection.
-    - [ ] Add MIDI CC handlers → fader / sculpt / mode values.
+- [x] **Bench-test the USB MIDI path** with `bench/midi_monitor/`.
+      Proved clock, program change, CC, notes and transport all arrive
+      and decode; no ticks dropped at quarter or triplet division; USB
+      jitter under 1 ms; triplets exact; free-run holds the last known
+      tempo. Full findings in DESIGN.md § "What the USB MIDI bench
+      proved". Re-run any time with
+      `cd bench/midi_monitor && pio run -t upload`.
+- [x] **Stay on the breadboard for the whole of Phase 2.** The only new
+      hardware this phase needs is pin 2 → WS2812 data plus a common
+      ground; perfboard buys nothing yet and is blocked on the
+      Grove→Lötpin adapter. Keep LED power off the breadboard entirely
+      — supply straight to the strip, only data and one ground jumper
+      touch the Teensy. Move to perfboard at the start of Phase 5, when
+      the DIN MIDI circuit goes on at the same time.
+- [ ] **Port the brain firmware to Teensy.** Reasoning for each decision
+      is in DESIGN.md; this is the checklist.
+    - [ ] Tag the current commit (e.g. `aurora-nano-final`) before
+          deleting anything, so the old single-box firmware stays
+          reachable — `git show aurora-nano-final:brain/src/R_Touchpad.cpp`
+          and friends.
+    - [ ] Drop the `nano` env from `brain/platformio.ini`. The brain is
+          always a Teensy; that env is the *old* un-split firmware, not
+          a brain target.
+    - [ ] Delete `readKeypad()` and `readPreset()` outright — the numpad
+          moves to the controller. `setBootSettings()` and the `muted`
+          global go with them (preset 0 is the mute, and nothing else
+          reads `muted`).
+    - [ ] Delete the touchpad input half of `R_Touchpad.cpp` — the
+          controller owns the pad. The render half comes back in
+          Phase 5, by which point Phase 4's sculpt work will have
+          reshaped it anyway. `touchpadStripMode`, `touchpadEffectMode`,
+          `holdModeEnabled`, `touchpadVerticalMode` and `touchColor` go
+          with it; grep confirms nothing else reads them.
+    - [ ] Collapse the framebuffer to the 225 strip pixels. The 12 UI
+          pixels sit in the controller box and the brain cannot reach
+          them once it lives at the LEDs; the controller drives its own
+          indicators. `PIXEL_INDEX_STRIP_START` → 0, `pixels`/`strips`
+          collapse into one, `renderColorIndicators()` goes.
+    - [ ] Adjust pin numbers in `Aurora.h` to Teensy 4.0 (see
+          `docs/wiring.md`).
+    - [ ] Tempo module: MIDI clock → the `tempoGate` / `currentTempo` /
+          `lastGateMillis` globals the presets already run on, so no
+          `P_*.cpp` file needs touching. Division from CC 10, tempo
+          clamped to 20–300 BPM, freeze on Stop, free-run after 500 ms
+          of silence. The logic is already proven in
+          `bench/midi_monitor/`.
+    - [ ] Fix the Bars phase glitch while restructuring the loop:
+          `lastGateMillis` is currently updated *after* `render()`, so
+          on every gate frame Bars renders a full beat ahead and snaps
+          back. Computing the gate before `render()` fixes it. This is
+          the one deliberate behaviour change in the port.
+    - [ ] MIDI Program Change → preset selection (keep the existing
+          tempo-quantized swap: the preset changes on the next gate,
+          not mid-bar).
+    - [ ] MIDI CC 20 / 21 / 22 → hue / saturation / value.
+    - [ ] Note 60 → trigger flash, replacing the `digitalRead` in
+          `IR_Trigger.cpp`.
+    - [ ] *Open:* whether to swap FastLED's WS2812 output for
+          OctoWS2811. The stated reason — `.show()` blocking interrupts
+          — is ATmega behaviour; on Teensy 4 FastLED defaults to
+          re-enabling interrupts between pixels, so a MIDI byte cannot
+          be lost to it. Not needed until a second LED fixture lands,
+          and note the FastLED Octo controller reads 8 lanes' worth of
+          pixels, so the framebuffer must be sized for 8 strips.
 - [ ] **Validate over USB MIDI** with a laptop and a DAW / MIDI Monitor:
     - [ ] Clock drives the phase-based presets correctly.
     - [ ] PC 0–9 selects presets.
     - [ ] CC 20/21/22 drive hue/saturation/value as expected.
-    - [ ] `FastLED.show()` no longer blocks interrupts (verify by
-          sending clock continuously and watching for drops — there
-          shouldn't be any).
+    - [ ] Frame time: measure `FastLED.show()` with `micros()` and
+          print it. Watching for dropped clock over USB proves nothing
+          — USB buffers in hardware, so bytes survive regardless.
 
 ---
 

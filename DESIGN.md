@@ -454,6 +454,7 @@ Brain at the LEDs, controller wherever the performer stands, one DIN
 MIDI cable between them (reliable up to ~15 m):
 
 **Brain node** (near LEDs)
+
 - Teensy 4.0.
 - WS2812 output(s). With OctoWS2811 we can drive up to 8 strips in
   parallel via DMA, so adding fixtures later costs nothing in
@@ -470,6 +471,7 @@ MIDI cable between them (reliable up to ~15 m):
   programming/testing convenience only.
 
 **Controller node** (near performer)
+
 - Can stay on an existing Nano. The controller's job is pure I/O →
   MIDI encoding: no LED rendering, no interrupt pressure, no SRAM
   anxiety.
@@ -638,6 +640,32 @@ path is the same either way.
 Net effect: the brain can be fully validated before the controller
 is touched at all.
 
+### What the USB MIDI bench proved
+
+`bench/midi_monitor/` is a standalone Teensy sketch that prints incoming
+MIDI and turns clock into the tempo pulse, reporting for each pulse how
+many ticks it counted and the tightest / widest spacing between them.
+Run on 2026-09-05, driving it from `sendmidi` on the laptop:
+
+- **No ticks are lost.** Every pulse counted its full quota, at both
+  quarter and triplet division.
+- **USB adds under a millisecond of jitter.** Ticks nominally 17.86 ms
+  apart (140 BPM) arrived 17.0–18.1 ms apart. USB does not clump MIDI
+  badly enough to matter here — which was the open worry, since USB
+  moves data in scheduled frames rather than preserving the spacing a
+  DIN cable would.
+- **Triplets are exact.** See the tempo division section below.
+- **Program change, CC, notes and transport all arrive** and decode
+  against `shared/aurora_protocol.h`.
+- **Free-running on clock loss works**, and holds the last known tempo
+  rather than snapping back to a default.
+
+One caution for future bench work: `sendmidi`'s `clock` command is not a
+precision reference. It dumps a burst of 24 ticks the instant it starts,
+and when looped its 2-beat chunks double a tick at each seam. Both show
+up in the monitor as a `0.0 ms` minimum tick gap. Reach for a DAW when
+timing accuracy is itself what's under test.
+
 ## Clock routing: controller is the MIDI source to the brain
 
 The controller's tempo LED must flash in sync with whatever tempo
@@ -682,6 +710,50 @@ Why Option A over a true MIDI THRU merge:
   to the brain — the controller keeps emitting at last-known tempo.
 - Debugging is easier: one clock source arriving at the brain,
   always.
+
+### Tempo division: the clock stays honest, the brain divides
+
+The controller carries a rotary switch for subdivisions — half time,
+triplets, sixteenths — inherited from the timing Arduino it replaces.
+The tempting way to honour it is to have the controller emit clock at
+the divided rate. That is wrong: the brain would then believe a 120 BPM
+song was running at 60, and anything that later cares about real musical
+time inherits the lie.
+
+So the controller always emits true 24-PPQN clock, and reports the rotary
+position separately on `CC_TEMPO_DIVISION` (CC 10). The brain counts ticks
+and fires its tempo pulse every N of them.
+
+This works cleanly because 24 divides exactly by 1, 2, 3, 4, 6, 8, 12 and
+24 — which is why 24 PPQN was picked in the first place. Triplets land on
+whole tick counts with no rounding, confirmed on the bench: at 140 BPM,
+triplet-eighths measured 142.9–143.1 ms against an ideal 142.857, with no
+drift across the run. Had the controller pre-divided instead, triplets
+would have been the case that broke.
+
+The division list lives in `shared/aurora_protocol.h`. It currently holds
+bar / half / quarter / eighth / eighth-triplet / sixteenth, which is a
+guess at what the rotary actually offers — match it to the real switch
+positions once the controller is to hand. `TEMPO_DIV_QUARTER` is numbered
+0 deliberately, so a controller that has not sent the CC yet, or that
+sends 0 on connect, lands on ordinary one-pulse-per-beat behaviour rather
+than something exotic mid-song.
+
+### Tempo sanity: clamp what arrives
+
+A burst of clock ticks — a misbehaving sender, a transport start, a USB
+reconnect — makes a naive beat measurement report an absurd tempo. On the
+bench a 24-tick burst produced readings of 148.8 BPM and 0.5 BPM.
+
+The brain therefore clamps a measured tempo to the same 20–300 BPM range
+the controller already enforces in `controller/src/tempo.cpp`, and ignores
+anything outside it rather than acting on it.
+
+A burst also fires several tempo pulses in the same instant. Presets that
+advance a step counter per pulse jump visibly when that happens; presets
+that compute position from elapsed time — the continuous-phase style Bars
+already uses — glide through untouched. That is an argument for the
+Phase 3 port beyond it merely looking smoother.
 
 ### Controller-side Nano load after the split
 
@@ -729,6 +801,7 @@ simultaneously; no SoftwareSerial tricks needed on the main stream.
 ## Memory / performance headroom after the move
 
 Teensy 4.0 vs current Nano:
+
 - Flash: 1 MB vs 32 KB (~32×)
 - SRAM: 1 MB vs 2 KB (~500×)
 - Clock: 600 MHz vs 16 MHz (~38×)

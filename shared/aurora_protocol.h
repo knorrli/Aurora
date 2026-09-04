@@ -101,7 +101,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //
 // Layout:
 //      0 –   9 : AVOID (standard MIDI: bank select, modulation, etc.)
-//     10 –  19 : RESERVED for future transport / meta control
+//     10 –  19 : transport / meta control
 //     20 –  29 : colour / palette
 //     30 –  39 : touchpad / sculpt mode
 //     40 –  49 : mode flags & switches
@@ -114,6 +114,11 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // ---------------------------------------------------------------------------
 
 enum AuroraCC : uint8_t {
+    // 10–19 — transport / meta
+    CC_TEMPO_DIVISION      = 10, // note value one tempo pulse stands for;
+                                 // value is an AuroraTempoDivision index
+    // 11–19 reserved (transport / meta)
+
     // 20–29 — colour / palette
     CC_HUE                 = 20, // palette hue center / H fader
     CC_SATURATION          = 21, // palette spread / S fader
@@ -157,6 +162,46 @@ enum AuroraCC : uint8_t {
     // 80–89 reserved (band / song-specific automation)
     // 90–119 reserved
 };
+
+// ---------------------------------------------------------------------------
+// Tempo division (carried on CC_TEMPO_DIVISION)
+// ---------------------------------------------------------------------------
+//
+// The controller always emits true 24-PPQN clock — never a pre-divided
+// rate — so the brain always knows the real tempo. This value says how
+// often the brain should turn those ticks into a tempo pulse.
+//
+// Every division below is a whole number of ticks, so triplets are exact.
+//
+// QUARTER is 0 so that a controller which has not yet sent this CC, or
+// which sends 0 on connect, lands on the ordinary one-pulse-per-beat
+// behaviour rather than something exotic. The order here is therefore not
+// musical; the controller maps its rotary positions onto it.
+//
+// ---------------------------------------------------------------------------
+
+enum AuroraTempoDivision : uint8_t {
+    TEMPO_DIV_QUARTER        = 0, // 24 ticks — one pulse per beat
+    TEMPO_DIV_BAR            = 1, // 96 ticks — one pulse per 4/4 bar
+    TEMPO_DIV_HALF           = 2, // 48 ticks
+    TEMPO_DIV_EIGHTH         = 3, // 12 ticks
+    TEMPO_DIV_EIGHTH_TRIPLET = 4, //  8 ticks
+    TEMPO_DIV_SIXTEENTH      = 5, //  6 ticks
+    TEMPO_DIV_COUNT          = 6,
+};
+
+static const uint16_t AURORA_TICKS_PER_BEAT = 24;
+
+static inline uint16_t aurora_ticks_per_gate(uint8_t division) {
+    switch (division) {
+        case TEMPO_DIV_BAR:            return 96;
+        case TEMPO_DIV_HALF:           return 48;
+        case TEMPO_DIV_EIGHTH:         return 12;
+        case TEMPO_DIV_EIGHTH_TRIPLET: return 8;
+        case TEMPO_DIV_SIXTEENTH:      return 6;
+        default:                       return AURORA_TICKS_PER_BEAT;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Mode flag bitfield (carried on CC_MODE_FLAGS)
@@ -237,6 +282,6 @@ enum AuroraNote : uint8_t {
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 1
+#define AURORA_PROTOCOL_VERSION_MINOR 2
 
 #endif // AURORA_PROTOCOL_H
