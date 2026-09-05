@@ -1,8 +1,8 @@
 # Aurora wiring reference
 
 Target hardware for the split architecture: **Teensy 4.0** (brain) +
-**Arduino Nano ATmega328** (controller), connected by a single DIN MIDI
-cable. This document is the source of truth for pin assignments and the
+**a second Teensy 4.0** (controller, replacing the Arduino Nano as of
+2026-09-05), connected by a single DIN MIDI cable. This document is the source of truth for pin assignments and the
 MIDI circuits. Before moving a wire, move the line here first.
 
 ## System block diagram
@@ -95,6 +95,14 @@ alone.
 ---
 
 ## Controller pin map — Arduino Nano
+
+> **Superseded 2026-09-05.** The controller is becoming a second Teensy
+> 4.0 — see `DESIGN.md` § "The controller is a second Teensy, not the
+> Nano". The Teensy map is a fresh assignment and wants drawing at the
+> bench with the box open; it must also find a home for the 12-position
+> rotary, which no map has ever listed. Keep the table below until that
+> exists: it is the wiring in the box today, and it is the fallback if
+> the Teensy is ruled out.
 
 Mostly inherited from the current Aurora wiring. The only moves are:
 

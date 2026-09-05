@@ -57,34 +57,104 @@ slowly rotates through the color wheel" as a modifier on everything.
 Subtle by default, doesn't call attention to itself, fixes the
 "looping feels dead" problem.
 
-### Touchpad gets two contextual modes
+### Touchpad: one rule for X, one rule for Y
 
-Existing `PIN_TOUCHPAD_EFFECT_MODE` (D4) switches between:
+The pad has two jobs, selected by `PIN_TOUCHPAD_EFFECT_MODE` (D4).
+Across both of them the axes keep the same meaning, which is the whole
+point — there is one sentence to hold in your head in the dark:
 
-- **Paint mode (today's behaviour):** X selects strip(s), Y modulates
-  the painted color. Fill or invert on touch.
-- **Sculpt mode (new):** X still selects strips. Y becomes a
-  **per-preset parameter axis** — a live modulation knob whose meaning
-  depends on the active preset. Suggested mappings:
-  - Breathe/Wave: Y blends between breathe (Y=0) and wave (Y=max).
-  - PulseFill/Bars: Y controls pulse amplitude / bar speed.
-  - Plasma/Aurora: Y controls noise scale.
-  - RainFall/Storm: Y controls fall speed and lightning chance.
-  - StripByStrip/Comet: Y blends between sequencer (Y=0) and comet (Y=max).
-  - Strobe/Stutter: Y controls strobe duty cycle.
-  - Chaos/Glitch: Y blends between Chaos and Glitch density.
+- **X — which strips you are affecting.** Always. The single /
+  mirrored / all switch qualifies it, exactly as it does today.
+- **Y — what you are doing to them.** Colour in paint mode; distance
+  toward the preset's second variant in sculpt mode.
 
-The sculpt-mode Y-axis is the natural home for **what used to be
-preset alt-mode**: instead of a binary flip between default and
-variant, you get a continuous blend you can sit at 30% of. This is
-the payoff that makes losing the A7 alt-switch worthwhile.
+**Paint mode** is today's behaviour: Y modulates the painted colour and
+a touch fills or inverts the selected strips.
+
+**Sculpt mode** is new. Y is how far the selected strips have moved
+from the preset's default toward its variant. Bottom of the pad is the
+first pattern, top is the second, anywhere between is a real mixture.
+
+Because X still selects strips, the blend is **per strip, not global**:
+four strips breathing together while one waves, three solid and two
+twinkling, strips 2 and 4 stuttering at half height while the rest
+strobe full. The uniform case is still there — put the strip-mode
+switch on "all" first.
+
+#### Y absorbs what used to be preset alt-mode
+
+This replaces the alt switch outright. Instead of flipping all nine
+presets to their variant at once, each strip sits wherever you put it.
+Seven of the nine pairs blend as a single number moving rather than as
+a crossfade between two renderers:
+
+| Preset | What Y physically changes |
+|--------|---------------------------|
+| Fill → Starfield | Gaps open between lit pixels; twinkle depth rises from zero |
+| Breathe → Wave | How far the phase spreads along the strip. At zero the wall breathes in unison; wound up, the breath becomes a travelling wave. Literally one number. |
+| Plasma → Aurora | Mixes the two hue sources — stacked sines into Perlin noise |
+| Pulse → Bars | A crossfade. The one pair with nothing structural in common |
+| Sweep → CrossSweep | Odd strips drift out of step with the even ones until they run opposite |
+| Rain → Storm | Lightning probability, zero to full |
+| Chase → Comet | Tail length shrinks from a whole strip down to a comet's tail |
+| Strobe → Stutter | How much of the wall each flash covers, from all of it down to half — the alternating half only becomes visible as you wind it in |
+| Chaos → Glitch | Blocks shrink, update faster, and white creeps in |
+
+Two of these describe a relationship *between* strips rather than
+something each strip does on its own — Sweep → CrossSweep is precisely
+"the odd strips run opposite to the even ones", and Chase → Comet moves
+across strips in sequence. A per-strip blend is computable for both,
+but blending one strip alone may read as a fault rather than an effect.
+Build them and look before deciding.
+
+**"Mirrored exclusive" in sculpt mode is a guess.** In paint mode it
+means the selected pair keeps the colour and everything else inverts,
+the intent being to make that pair stand out hard. The proposed sculpt
+reading is that the touched strips take your Y and every other strip
+snaps to the opposite end, giving a hard split down the wall. Nobody
+has seen this yet.
+
+#### The pad springs back
+
+The sculpt value returns to the active scene's value when you lift off.
+The pad is something you lean on while your thumb is down, not a
+setting you leave behind.
+
+That is not a stylistic preference. An absolute control holding a value
+while nothing touches it has to answer what happens when your thumb
+lands somewhere else next time, and every answer is bad: jump to the
+new position and accept a lurch mid-song, or refuse to move until your
+thumb crosses the old value, which makes the first part of every
+gesture do nothing. Springing back removes the question — there is no
+stored position left to disagree with.
+
+The **hold switch is the deliberate exception** and keeps the meaning
+it has today: it latches the last touch. Because flipping it is a
+conscious act, the mismatch stops being a surprise.
+
+Consequence: no thumb-position indicator is needed anywhere. While you
+are touching the pad you can feel where your thumb is and watch the
+wall respond; when you are not touching it there is nothing to show.
+
+#### X is fully spent
+
+There is no free axis left for a second per-preset knob — noise scale,
+fall speed and strobe duty as knobs in their own right. That is the
+trade, and it is the right way round: one axis with one clear meaning
+is playable, two is something to grow into. Several of those parameters
+survive inside the blends anyway — Strobe's duty *is* what its blend is
+made of, and Rain's fall speed sits close to the Rain → Storm axis.
+
+If a second knob is ever genuinely wanted it needs a control we have
+not spent yet, not an axis of the pad. The Teensy controller will have
+pins going spare.
 
 ### A/B switch: numpad controls songs *or* raw patterns
 
-Reuse the current 4-state A7 analog rotary as a simple 2-position
+Reuse the current 4-state analog rotary as a simple 2-position
 toggle:
 
-| A7 position  | Numpad 1–9         | Numpad 0       |
+| Switch position | Numpad 1–9      | Numpad 0       |
 |--------------|--------------------|----------------|
 | A (perform)  | load song preset   | off / mute     |
 | B (freeform) | select raw pattern | off / mute     |
@@ -104,9 +174,10 @@ one of 9 palettes). That idea is retired — palettes stop being live
 performer choices and become primitives that scenes compose from.
 The S fader still provides live monochrome↔spread control.
 
-Hardware change: swap the current multi-state rotary on A7 for a
-simple two-position toggle. Software change: trivial (one boolean
-derived from `analogRead(PIN_FADER_AND_PRESET_MODE)`).
+Hardware change: swap the current multi-state rotary for a simple
+two-position toggle. Software change: trivial — one boolean from one
+pin. The pin itself is assigned when the Teensy controller map is
+drawn.
 
 ### Idle richness — three cheap tricks layered over everything
 
@@ -249,13 +320,42 @@ Song songs[9];  // one per numpad key
 Sizing: ~60 B per scene × 5 scenes × 9 songs ≈ 2.7 KB. Plus ~40 B of
 button config per song. Trivial on Teensy 4.0.
 
-**Open questions specific to this section:**
+**Timing: scene changes wait, accents do not.**
 
-- Starting count: 4 scenes + 4 buttons per song, or push to 6/6 if
-  it proves tight at rehearsal?
-- Ramp behaviour: instant-only first pass, or bake in tempo-synced
-  jumps ("scene changes on next downbeat") from day one? Instant is
-  simpler; tempo-synced is nicer musically.
+A scene change lands on the next beat rather than the instant the
+switch closes, so section changes arrive in time with the music. On the
+next *beat*, not the next bar — a change can therefore arrive on beat 4
+of a bar, which is accepted as the price of staying responsive.
+
+Accents are the opposite and fire immediately. An accent bound to a
+snare hit does not have half a beat to spare. This is not a tunable;
+it is what separates the two kinds of event.
+
+*Deferred:* which beat a scene waits for could become a per-scene
+property — this one on the next beat, that one on the next bar. A
+couple of bytes in `Scene` and one comparison. Add it the day a song
+wants it, not before.
+
+**Room to grow, and what each half costs.**
+
+Four scenes and four switches per song is the starting count. The two
+halves are not symmetric:
+
+- **Four scenes → six scenes is pure software.** One number in a
+  struct, ~60 bytes per scene, on a chip with megabytes free.
+- **Four switches → six switches is not.** The ladder reads all sixteen
+  combinations of four switches, and a fifth roughly halves the spacing
+  between levels, pushing it under what 10-bit sampling separates
+  reliably.
+
+The trade, whenever it comes up: **if only one switch is ever read at a
+time, the same single wire carries six to eight switches comfortably** —
+five or nine levels to separate instead of sixteen, so far more margin.
+Chords cost switch count; switch count costs chords. One guitar cable
+cannot have both.
+
+**Still to decide here:**
+
 - Accent interaction with palette animation + brightness LFO:
   probably "accent overrides everything below it for its duration"
   is simplest, confirm when implementing.
@@ -356,26 +456,55 @@ register or an I²C expander in the pedal enclosure and spend a real
 digital pin on it, or accept single-press-only detection, which has far
 wider margins because it only needs five levels instead of sixteen.
 
-## Open questions before implementing
+## Decisions settled — 2026-09-05
 
-1. **Preset alt-mode disposition.** Leaning toward "absorb into
-   sculpt-mode Y-axis" (option 2 above). Confirmed?
-2. **Curated palettes vs. all-procedural.** Tentatively curated — 9
-   hand-picked palettes in PROGMEM. Memory cost ~432 bytes of flash,
-   zero SRAM. FastLED has stock palettes (`HeatColors_p`,
-   `CloudColors_p`, `OceanColors_p`, `ForestColors_p`, etc.) that can
-   serve as starting points. *Note: palettes are no longer live-
-   selected — they're scene primitives now — but we still need the
-   library of palettes to compose scenes from.*
-3. **Touchpad indicator pixels (the 10-pixel strip at pixels 1–10)**
-   — currently mirrors the five strips. Keep as strip preview in
-   song mode too? Or repurpose to visualise scene/baseline state,
-   pedal button bindings, etc.?
-4. **Sculpt-mode Y-axis resolution.** Should Y be continuous (finer
-   control, possibly finicky on stage) or quantized to, say, 4
-   positions (reliable thumb placement without looking)?
-5. **Song-preset open questions** — see dedicated list in the
-   "Song presets, scenes, and foot-pedal events" section above.
+These were the Phase 0 blockers. They are decided; the reasoning sits
+in the sections above and below.
+
+1. **Preset alt-mode is retired.** The alt switch goes and the variant
+   becomes the top of the touchpad's Y axis, per strip. See "Touchpad:
+   one rule for X, one rule for Y".
+2. **Sculpt Y is continuous**, not quantized to thumb positions.
+3. **X keeps meaning "which strips" in both modes**, qualified by the
+   single / mirrored / all switch — so the blend is per strip.
+4. **The sculpt value springs back** to the active scene's value on
+   release; the hold switch is the deliberate exception.
+5. **Four scenes and four pedal switches per song.** Growing the scenes
+   is pure software; growing the switches is not. See "Room to grow,
+   and what each half costs".
+6. **Scene changes land on the next beat.** A change may therefore
+   arrive on beat 4 of a bar; accepted.
+7. **Accents do not quantize** — they fire the instant the switch
+   closes. The quantize rule applies to scene changes only.
+8. **The indicator pixels keep showing the wall**, by a simplified
+   mechanism, and both single indicators keep their existing jobs. See
+   "The controller's indicator pixels".
+9. **The controller becomes a second Teensy 4.0.** See "The controller
+   is a second Teensy, not the Nano".
+
+## Still open
+
+1. **Which nine palettes.** Curated rather than procedural — 9
+   hand-picked ramps in PROGMEM, ~450 B flash, zero SRAM. FastLED's
+   stock palettes (`HeatColors_p`, `CloudColors_p`, `OceanColors_p`,
+   `ForestColors_p`) are starting points. Palettes are not live
+   performer choices; they are primitives that scenes compose from.
+   Wants the band's aesthetic, not analysis.
+2. **The initial accent library.** Proposed: white flash,
+   bars-up-once, blank-while-held, strip-wide pulse. Confirm or
+   replace.
+3. **Which two or three songs go first**, and what their sections are.
+4. **Where the 12-position rotary lands** on the Teensy controller once
+   the timing Arduino is retired. It carries the tempo subdivisions,
+   three tap-tempo positions (half / regular / double) and
+   mic-as-stepper, and it has never appeared in any pin map. A resistor
+   chain on one analog pin is the obvious answer — one contact closes
+   at a time, so the twelve levels sit roughly 400 mV apart, which is
+   comfortable.
+5. **What "mirrored exclusive" means in sculpt mode.**
+6. **Whether a per-strip blend reads as an effect or as a fault** on
+   Sweep → CrossSweep and Chase → Comet, the two pairs that describe a
+   relationship between strips.
 
 ## Memory budget check
 
@@ -396,7 +525,8 @@ No budget concerns.
 
 ## Suggested order when resuming the UX redesign
 
-1. Decide the open questions above (esp. #1 — preset alt-mode).
+1. Answer what is left in "Still open" — the palettes, the accent
+   library and the first songs are the ones that gate code.
 2. Test the Bars continuous-phase prototype at practice; decide
    whether to port the other tempo-based presets (PulseFill, Sweep,
    CrossSweep, MovingBlocks, Comet, Rain) to the same helper.
@@ -404,13 +534,15 @@ No budget concerns.
    into a shared module; port the rest.
 4. Implement palette infrastructure (CRGBPalette16 in PROGMEM, active
    palette + animation state, palette-aware color sampling helpers).
-5. Rewire A7 decoder in `helpers.cpp` to the two-position A/B scheme
-   (A = songs, B = raw patterns).
+5. Rewire the A/B switch decoder in `helpers.cpp` to the two-position
+   scheme (A = songs, B = raw patterns).
 6. Redo each preset to sample from the palette (start with Row 1).
 7. Implement sculpt-mode touchpad — one preset at a time. This is
    where the actual live-feel lives; worth taking time on.
 8. Add idle-richness (per-strip micro-offset + brightness LFO).
-9. Physical hardware: swap A7 rotary for a 2-position toggle.
+9. Physical hardware: draw the Teensy controller pin map, then swap
+   the alt rotary for a 2-position toggle and find a home for the
+   12-position rotary.
 10. **Song-preset data model.** Implement `Scene` / `Song` / `Button`
     structs, active-song + active-scene state, scene-to-scene blend
     helper (instant first, ramped later).
@@ -503,6 +635,154 @@ We have both parts on hand. For stage use Teensy wins:
 ESP32-S3 would win if we wanted WiFi remote control or BLE-MIDI
 later, but with the explicit DIN-only decision (USB cable length is
 a non-starter on stage) that advantage evaporates.
+
+## The controller is a second Teensy, not the Nano
+
+Decided 2026-09-05, superseding the Nano assumption in the earlier half
+of this document and in `docs/wiring.md`.
+
+A Nano solution does exist and was worked out in full. The salvaged
+phone keypad is a static parallel code on D9–D12 rather than a scanned
+matrix, so it collapses onto one analog pin, freeing D8–D12; moving the
+two mode switches off A6/A7 onto freed digital pins then buys back the
+analog pins the ladders need:
+
+| Pin | Role |
+|-----|------|
+| A6 | keypad ladder |
+| A7 | 12-position rotary ladder |
+| D8, D9 | touchpad strip mode (3-way, as two lines) |
+| D10 | A/B switch |
+| D11 | WS2812 data — the 12 indicator pixels |
+| D12 | spare |
+
+It closes, with exactly one pin spare and no headroom after.
+
+**What tipped it to the Teensy is the rendering load, not the pin
+count.** Deciding that the indicator pixels keep showing the wall (see
+below) puts pattern work, palette maths and FastLED on the controller,
+on top of MIDI in and out, a touchpad, three faders, two ladders and
+debouncing — inside 2 KB of SRAM and 30 KB of flash. It would probably
+fit. The failure mode is discovering that it does not, late. Secondary
+reasons: the budget above ends at one spare pin, the box needs
+substantial rewiring either way, and one part with one toolchain across
+both nodes means `shared/` compiles for both and a single spare board
+in the gig bag covers either failure.
+
+What the move actually costs:
+
+- **Everything passive comes across unchanged.** The resistor ladders
+  are voltage dividers, so they are ratios — levels scale with the
+  supply and the ADC reference together, and the decode table is
+  untouched at 3.3 V.
+- **Two real items.** The mic envelope follower is an analog circuit
+  built for 5 V and needs re-referencing or re-powering. Driving 5 V
+  WS2812 data from a 3.3 V pin is marginal and wants a level shifter —
+  a problem the brain already has with 225 pixels, so it gets solved
+  once and reused.
+- **The keypad ladder leaves the plan.** Five pins is nothing on a
+  40-pin part, so the keypad keeps its existing wiring and the
+  breadboard session that was going to prove the ladder is no longer
+  needed. The **foot-pedal** ladder survives regardless — it exists
+  because a 1/4" TS cable carries two conductors, not because of pin
+  count.
+- Not 5 V tolerant, so a wiring mistake is fatal to the board.
+
+The Teensy controller pin map is not written yet. It is a fresh
+assignment rather than a translation of the Nano map, and it wants
+doing at the bench with the box open.
+
+## The controller's indicator pixels
+
+The 12 pixels — one touch-colour indicator, a 5×2 grid under the
+touchpad, one preset-colour indicator — sit physically in the
+controller box. After the split the brain cannot reach them, so the
+controller drives them.
+
+**They keep showing the wall.** An earlier working note concluded the
+strip preview had to be dropped. It weighed one way of keeping it —
+streaming strip data back over the MIDI link — and rejected it
+correctly, as exactly the traffic the split exists to avoid. What it
+did not consider is that the controller can *recompute* the picture
+rather than receive it.
+
+Why that matters more than it sounds: **the performer cannot see the
+wall.** The strips stand behind the band or face away, spread out. You
+can see one strip's colour; you cannot see the pattern. The grid is not
+a redundant copy of something already in your eyeline — it is the only
+place the whole wall exists at once. It is a monitor. It is also the
+best-looking thing on the box, which on stage gear is a real
+requirement and not a tiebreaker.
+
+**What it renders is character, not shape.** Not the real pattern
+renderers: a small table maps each preset to one of about five cheap
+motion primitives — still, pulse, chase across strips, strobe, vertical
+travel — driven by the clock the controller already generates and the
+colour it already computes.
+
+Running the real renderers was considered and rejected for two reasons:
+
+- Every pattern would have to become resolution-independent, written as
+  brightness against normalised position rather than against pixel N,
+  so both boxes could sample one function at different densities. That
+  is a permanent tax on how patterns get written, and it does not work
+  at all for Starfield's individual stars or Glitch's random pixels.
+- The controller would have to duplicate the brain's whole performance
+  state — scenes, the next-beat quantize rule, accent overlays running
+  on top. Miss any of it and the box shows a confident lie, which is
+  worse than showing nothing. Two boxes that must agree, with no
+  mechanism to resync when they drift.
+
+What the primitives lose is smaller than it sounds. On the five slots
+that are already per-strip — chase, strobe, stutter, chaos, sweep — the
+primitive is not an approximation, it is exact. On the vertical
+patterns, upper-then-lower carries the motion, which is all the old
+45-into-2 averaging was really showing anyway. Rain survives well: its
+streak is nearly half a strip, so the two cells genuinely alternate,
+and the stagger between the five droplets shows across the five
+columns.
+
+Three patterns are genuinely unrepresentable, for one shared reason:
+**their average brightness barely changes, and everything interesting
+is in hue or in individual pixels.** Plasma and Aurora are lit
+flat-out, so averaging any chunk gives "on" while the hue variation
+averages back to the centre colour. Starfield's stars pulse hard, but
+eleven per half-strip all out of phase average to a steady middle grey.
+For those three the honest primitive is a soft glow in the current
+colour — "something slow is happening", which is true.
+
+**Interaction feedback costs nothing.** The controller is the *source*
+of every interaction: it reads the touchpad and it reads the pedal. So
+touch feedback and foot-event feedback are local and need no knowledge
+of the brain at all — the grid lights at the moment the message is
+sent, not in response to anything coming back.
+
+**Per-strip sculpt shows exactly.** Five columns, five per-strip blend
+values. A per-strip sculpt gesture is represented precisely rather than
+approximately.
+
+**Both single indicators keep their jobs.** The surface is organised by
+hand, not by function — colour on the left with the faders and the
+colour dot, pattern in the centre with the phone, touch on the right
+with the pad and its dot. Each dot previews what its own hand is doing,
+which is why the box is legible in the dark: you look at the region
+your hand is already in, rather than hunting for a light. Repurposing
+one to show scene state breaks that rule, and scene state does not need
+a label anyway — a scene *is* a look, and the look is already moving in
+the grid. Labelling which pedal switch does what is a text problem
+rather than a light problem: tape on the pedal until proven
+insufficient.
+
+**The song table moves to `shared/`.** Compiled into both nodes, so the
+controller knows which preset is active at every moment without a byte
+coming back — it is the thing that selected it. Reflash both from the
+one repo.
+
+**Timing.** Drawing 12 pixels on the old Nano blocked interrupts for
+~360 µs against a UART tolerance of ~640 µs, which is the measurement
+that made any of this viable; driving all 237 would have blocked
+~7.1 ms and been hopeless. Moot on a Teensy, recorded because it is
+what ruled the alternatives out.
 
 ## DMX: not the LED protocol, but useful for venue fixtures
 

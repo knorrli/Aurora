@@ -17,10 +17,13 @@ untouched.
       before. Looking for: smoother glide, no 1-pixel stutter, tempo
       changes don't cause speed jumps.
       Build/flash: `cd brain && pio run -e nano -t upload`
-- [ ] **Decide: retire preset alt-mode in favour of touchpad sculpt-Y?**
-      This is the blocker for the UX rewrite. See "Open questions" in
-      `DESIGN.md`. Short version: alt variants become the "far end"
-      of the touchpad's Y-axis per preset, giving a continuous blend.
+- [x] **Decide: retire preset alt-mode in favour of touchpad sculpt-Y?**
+      **Yes.** Settled 2026-09-05 along with eight related questions —
+      see `DESIGN.md` § "Decisions settled". The alt switch goes; Y is
+      a continuous blend from default to variant, applied **per strip**
+      because X keeps meaning "which strips" in both pad modes, and the
+      value springs back to the scene on release. What remains open is
+      listed in `DESIGN.md` § "Still open".
 - [ ] **Curate 9 palettes for the palette system.** FastLED ships
       stock ones (`HeatColors_p`, `CloudColors_p`, `OceanColors_p`,
       `ForestColors_p`, `PartyColors_p`, `LavaColors_p` …). Pick what
@@ -220,15 +223,27 @@ Depends on Phase 2 and the Phase 0 decisions.
 - [ ] **Rewire faders**: H = palette hue center, S = palette spread,
       V = brightness. (Already wired via CC in the controller; this is
       brain-side interpretation.)
-- [ ] **Rewire A7 on the controller**: swap the multi-state rotary for
-      a simple 2-position toggle — preset vs. palette select.
-      Firmware-side the logic is already in `controls.cpp`.
+- [ ] **Rewire the A/B switch on the controller**: swap the multi-state
+      rotary for a simple 2-position toggle — song vs. raw pattern.
+      Firmware-side the logic is already in `controls.cpp`; the pin is
+      assigned when the Teensy controller map is drawn.
 - [ ] **Re-do each preset to sample the palette** instead of using a
       single color. Start with Row 1 (ambient).
-- [ ] **Implement sculpt-mode touchpad Y-axis**, one preset at a time:
-      each preset gets a per-preset parameter that continuously blends
-      between default and alt variant (or tunes another axis: fall
-      speed, noise scale, etc.).
+- [ ] **Implement sculpt-mode touchpad Y-axis**, one preset at a time.
+      Y is always "how far from default toward the variant", never a
+      free-standing parameter, and it is held **per strip** (X selects
+      which, qualified by the single / mirrored / all switch). The
+      blend for each of the nine pairs is tabulated in `DESIGN.md`
+      § "Y absorbs what used to be preset alt-mode".
+    - [ ] Sweep → CrossSweep and Chase → Comet describe a relationship
+          *between* strips. Build them and look at whether a per-strip
+          blend reads as an effect or as a fault.
+    - [ ] Settle what "mirrored exclusive" means in sculpt mode. Guess
+          on the table: touched strips take Y, every other strip snaps
+          to the opposite end.
+- [ ] **Spring-back on release** — the sculpt value returns to the
+      active scene's value when the thumb lifts. The hold switch stays
+      the deliberate exception and latches the last touch.
 - [ ] **Idle-richness**: add per-strip micro-offset (±5° hue) and a
       slow brightness LFO layered over every preset.
 
@@ -241,9 +256,15 @@ composed from them). See DESIGN.md § "Song presets, scenes, and
 foot-pedal events" for the full model.
 
 - [ ] **Implement the `Scene` / `Song` / `Button` data model** in
-      the brain. Active-song + active-scene state. Scene-change
-      handler that swaps the active scene on pedal events.
-- [ ] **Hardcode 2–3 songs** in `brain/src/songs.cpp` as the v1
+      **`shared/`**, not in the brain — the controller needs the same
+      table to know which preset is active for its indicator pixels.
+      Active-song + active-scene state, and a scene-change handler that
+      swaps the active scene on pedal events.
+    - [ ] Scene changes land on the **next beat**; accents fire
+          **immediately**. See `DESIGN.md` § "Timing: scene changes
+          wait, accents do not".
+    - [ ] Four scenes and four buttons per song.
+- [ ] **Hardcode 2–3 songs** in `shared/songs.cpp` as the v1
       authoring path. Validate each song's scenes and button
       bindings by driving pedal input from a laptop via USB MIDI
       notes (no hardware pedal required for bring-up).
@@ -311,13 +332,18 @@ it's independent of the DIN MIDI input work.
 - [ ] **Fully flesh out controller `controls.cpp`**:
     - [ ] Port the touchpad reader (Adafruit TouchScreen) → emit
           `CC_SCULPT_X/Y`, `CC_TOUCH_PRESSURE`, `CC_TOUCH_ACTIVE`.
+          X carries strip selection in both pad modes; Y carries colour
+          in paint mode and the blend in sculpt mode.
     - [ ] Wire the new A/B mode switch decoder once the physical
           switch is in.
 - [ ] **Wire the foot-pedal input** on the controller (4 momentary
       switches, debounced, emit `NOTE_PEDAL_1..4` to the brain).
-- [ ] **Flash the new controller firmware to a spare Nano** (don't
-      overwrite the old Aurora Nano until you're ready to lose
-      the old single-box setup).
+- [ ] **Flash the new controller firmware to a bench Teensy** (don't
+      touch the old Aurora Nano until you're ready to lose the old
+      single-box setup).
+- [ ] **Render the 12 indicator pixels on the bench**, driven only by
+      the controller's own inputs plus the shared song table. Confirm
+      the character primitives read as the pattern they stand for.
 
 ---
 
@@ -325,8 +351,26 @@ it's independent of the DIN MIDI input work.
 
 Only do this when you're ready to retire the old single-box Aurora.
 
-- [ ] **Move WS2812 data lead out of the controller box** — LEDs
-      now go directly to the brain, which sits near them.
+**The controller is a second Teensy 4.0, not the Nano** (decided
+2026-09-05 — see `DESIGN.md` § "The controller is a second Teensy, not
+the Nano"). The keypad resistor-ladder conversion is therefore *not*
+needed: five pins is nothing on a 40-pin part and the keypad keeps its
+existing wiring. The foot-pedal ladder still applies.
+
+- [ ] **Draw the Teensy controller pin map** in `docs/wiring.md`. A
+      fresh assignment, not a translation of the Nano map. Must find a
+      home for the **12-position rotary** (tempo subdivisions, three
+      tap-tempo positions, mic-as-stepper) — it has never appeared in
+      any pin map, and a resistor chain on one analog pin is the
+      obvious answer since only one contact closes at a time.
+- [ ] **Re-reference the two 5 V-dependent circuits.** The mic envelope
+      follower needs re-powering or a divider; WS2812 data from a 3.3 V
+      pin wants a level shifter — the same problem the brain has, so
+      solve it once. Everything passive (faders, contacts, ladders)
+      comes across unchanged, since a divider is a ratio.
+- [ ] **Move WS2812 data lead out of the controller box** — the five
+      strips now go directly to the brain, which sits near them. The 12
+      indicator pixels stay in the box and become the controller's.
 - [ ] **Wire tap tempo button + LED** to D2.
 - [ ] **Transplant the mic envelope follower** from the timing
       Arduino onto D3. Verify trigger still fires.
@@ -336,8 +380,11 @@ Only do this when you're ready to retire the old single-box Aurora.
       DIN jack).
 - [ ] **Retire the timing Arduino**. Its tempo-divider logic is now
       in the controller's `tempo.cpp`.
-- [ ] **Replace A7 rotary with a 2-position toggle** for A/B mode
+- [ ] **Replace the alt rotary with a 2-position toggle** for A/B mode
       select.
+- [ ] **Drive the 12 indicator pixels** from the controller. Character
+      primitives rather than the real renderers — see `DESIGN.md`
+      § "The controller's indicator pixels".
 - [ ] **Flash the controller firmware** to the modified box.
 
 ---
