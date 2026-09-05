@@ -46,10 +46,14 @@ MIDI circuits. Before moving a wire, move the line here first.
                                        ▼
                           ┌──────────────────────────┐
                           │ 5 × 45-pixel LED strips  │
-                          │ (+ 10 touchpad feedback  │
-                          │  + 2 colour indicators,  │
-                          │  235 pixels total)       │
+                          │ (225 pixels)             │
                           └──────────────────────────┘
+
+The 12 UI pixels — 10 touchpad feedback + 2 colour indicators — used to
+sit at the head of this same chain. They live in the controller box, which
+the brain can no longer reach once it stands at the LEDs, so they are the
+controller's to drive. It has no pin free for them yet; see "Reserved
+room, by category" below.
 ```
 
 ---
@@ -68,12 +72,17 @@ for OctoWS2811 expansion, since that library demands a fixed pin order.
 |  6   | RESERVED — OctoWS2811 strip 5          | Same                                             |
 |  7   | RESERVED — OctoWS2811 strip 3          | Same                                             |
 |  8   | RESERVED — OctoWS2811 strip 4          | Same                                             |
-| 13   | Onboard LED                            | Boot / status / heartbeat                        |
+| 13   | Onboard LED                            | Flashes on each tempo pulse                      |
 | 14   | RESERVED — OctoWS2811 strip 2          | Same                                             |
 | 20   | RESERVED — OctoWS2811 strip 6          | Same                                             |
 | 21   | RESERVED — OctoWS2811 strip 7          | Same                                             |
 | 17   | `Serial4` TX — DMX OUT                 | To RS-485 transceiver `DI`; see DMX OUT section  |
 | 3–4, 9–12, 15–16, 18–19, 22–23, 24+ | FREE    | Any future brain-side I/O                        |
+
+The brain has **no local inputs**. Everything the old single-box Aurora
+read from pins — numpad, faders, touchpad, mode switches, tempo, trigger —
+now arrives as MIDI. The only local signal is the emergency fallback
+switch, if that ever gets built.
 
 Power: run the Teensy from 5 V into the `VIN` pin (or USB during dev).
 Cut the `VIN`/USB jumper on the Teensy if powering from both USB and an
@@ -105,20 +114,33 @@ Mostly inherited from the current Aurora wiring. The only moves are:
 |  D5  | Hold mode switch                           | in        | unchanged                              |
 |  D6  | Touchpad XP                                | I/O       | 4-wire resistive, unchanged            |
 |  D7  | Touchpad YM                                | I/O       | 4-wire resistive, unchanged            |
-|  D8  | Keypad column 0                            | in        | Read as PINB bit 0                     |
-|  D9  | Keypad column 1                            | in        | Read as PINB bit 1                     |
-|  D10 | Keypad column 2                            | in        | Read as PINB bit 2                     |
-|  D11 | Keypad row 0                               | in        | Read as PINB bit 3                     |
-|  D12 | Keypad row 1                               | in        | Read as PINB bit 4                     |
+|  D8  | Keypad line 0 — probably switch common     | in        | PINB bit 0; high in every code, incl. no-press |
+|  D9  | Keypad line 1                              | in        | PINB bit 1                             |
+|  D10 | Keypad line 2                              | in        | PINB bit 2                             |
+|  D11 | Keypad line 3                              | in        | PINB bit 3                             |
+|  D12 | Keypad line 4                              | in        | PINB bit 4                             |
 |  D13 | Tempo LED                                  | out       | Onboard LED; flashes on beat           |
 |  A0  | Saturation fader                           | analog    | 0–1023 → 0–127 MIDI                    |
 |  A1  | Hue fader                                  | analog    | same                                   |
 |  A2  | Value (brightness) fader                   | analog    | same                                   |
-|  A3  | RESERVED                                   | —         | Free for future expansion              |
+|  A3  | Foot pedal — 4 switches on a resistor ladder | analog  | See DESIGN.md § "Foot pedal wiring: four buttons on one analog pin" |
 |  A4  | Touchpad YP (also I²C SDA)                 | analog    | 4-wire resistive, unchanged            |
 |  A5  | Touchpad XM (also I²C SCL)                 | analog    | 4-wire resistive, unchanged            |
 |  A6  | Touchpad strip mode switch                 | analog    | 3-state analog rotary                  |
 |  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; to be simplified to 2-state per DESIGN.md |
+
+**The keypad is not a scanned matrix.** Despite the five lines, nothing
+drives columns low and reads rows back: the salvaged telephone keypad
+presents a **static parallel code**, and the firmware took a single `PINB`
+read and matched it against a table of thirteen values. D8 reads high in
+every one of those codes including no-press, so it carries no information
+and is most likely the switch common. All the data is on D9–D12.
+
+That shape is what makes the keypad a candidate for the same
+resistor-ladder treatment as the foot pedal, which would free D8–D12 and
+give the controller a pin for its indicator pixels. Meter the lines before
+building anything: confirm D8 really is common, and that the lines are
+passive contacts rather than driven outputs.
 
 ---
 
@@ -345,14 +367,19 @@ re-testing the link after any change:
 
 When you've got the Teensy in hand:
 
-1. Teensy 4.0 on a perfboard with **pin 2** broken out to a WS2812 data
-   header and a common ground with the existing LED power supply.
-   Verify: `FastLED.show()` lights the current strips via Teensy before
-   touching MIDI.
-2. DIN MIDI IN circuit on the same perfboard, fed by a USB-MIDI or
-   DAW-MIDI source during bench bring-up. Verify: clock bytes
-   parse on the brain.
-3. Mount in enclosure. Add a labeled 5-pin DIN jack.
+1. **Breadboard**, not perfboard. Pin 2 to a WS2812 data lead and a
+   common ground with the LED supply. Run the LED supply straight to the
+   strip — never through the breadboard, which has no business carrying
+   the ~14 A that 225 pixels draw at full white. Turn `MAX_BRIGHTNESS`
+   down for the first power-up. Verify: `FastLED.show()` lights the
+   strips from the Teensy.
+2. Perfboard comes at the start of Phase 5, when the DIN MIDI IN circuit
+   goes on at the same time and the Grove→Lötpin adapter for the DMX unit
+   has arrived. Building it earlier means soldering it twice.
+3. DIN MIDI IN circuit, fed by a USB-MIDI or DAW-MIDI source during bench
+   bring-up. Verify: clock parses on the brain. (USB MIDI already works
+   and needs none of this — see `bench/midi_monitor/`.)
+4. Mount in enclosure. Add a labeled 5-pin DIN jack.
 
 Controller modifications (later, after brain is validated):
 
@@ -376,7 +403,7 @@ rather than squeezing new items into existing ranges.
 |---------------------------|--------|----------|--------------------------------|
 | Brain GPIO                |    3   |   7      | Pins 5/6/7/8/14/20/21 for OctoWS2811 strips 2–8 |
 | Controller GPIO (digital) |   14   |   0      | D0–D13 all allocated           |
-| Controller GPIO (analog)  |    7   |   1      | A3 free                        |
+| Controller GPIO (analog)  |    8   |   0      | A3 now the foot-pedal ladder   |
 | Aurora Program Change     |   19   |  108     | 0–9 presets + 64–72 palettes   |
 | Aurora Control Change     |   23   |  ~90     | In the ~70 reserved slots      |
 | Aurora Note On            |    6   |  ~50     | In the reserved trigger/preset-event slots |
