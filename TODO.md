@@ -24,19 +24,27 @@ untouched.
       because X keeps meaning "which strips" in both pad modes, and the
       value springs back to the scene on release. What remains open is
       listed in `DESIGN.md` § "Still open".
-- [ ] **Curate 9 palettes for the palette system.** FastLED ships
-      stock ones (`HeatColors_p`, `CloudColors_p`, `OceanColors_p`,
-      `ForestColors_p`, `PartyColors_p`, `LavaColors_p` …). Pick what
-      suits the band's aesthetic; custom palettes are also trivial to
-      hand-roll in PROGMEM. Note: palettes are no longer numpad-
-      selected — they're building blocks that scenes compose from.
-- [ ] **Draft 2–3 songs** as the first hardcoded `Song` structs (see
-      DESIGN.md § "Song presets, scenes, and foot-pedal events"). For
-      each, sketch baseline + 2–4 named scenes + which buttons do what.
-      Start with songs whose structure is clearest in the set.
-- [ ] **Decide the initial accent library.** Propose: white flash,
-      bars-up-once, blank-while-held, strip-wide pulse. Add / remove
-      as the band's aesthetic demands.
+- [x] **Curate 9 palettes for the palette system.** Settled
+      2026-09-05: Flat, Narrow, Wide, Two-pole, Ember, Haze, Deep,
+      Banded, Spark. They are *shapes*, not colours — the H fader
+      already covers the wheel, so each palette carries spread, travel
+      shape, and whether saturation and brightness move with the hue.
+      Stored as offsets from the centre so rotation is free. All nine
+      rotate with H; S scales every kind of deviation. Table and
+      reasoning in `DESIGN.md` § "The nine palettes".
+- [ ] **Draft one song** as the first hardcoded `Song` struct (see
+      DESIGN.md § "Song presets, scenes, and foot-pedal events"). One,
+      not three — choosing looks without being able to see them is
+      guessing. Two halves, only one of which is blocked:
+    - [ ] *Desk work, unblocked:* the structure — how many sections,
+          which switch jumps where, momentary versus latching. This is
+          what tells us whether four scenes and four switches is enough
+          for a real song.
+    - [ ] *Blocked on strips:* the actual look for each scene. Waits on
+          "Light the strips" in Phase 2.
+- [x] **Decide the initial accent library.** Confirmed 2026-09-05 at
+      the four proposed: white flash, bars-up-once, blank-while-held,
+      strip-wide pulse. The library is designed to grow.
 
 ---
 
@@ -217,9 +225,14 @@ Once the brain is on Teensy, generalise the Bars prototype:
 
 Depends on Phase 2 and the Phase 0 decisions.
 
-- [ ] **Implement palette infrastructure**: `CRGBPalette16` array in
-      PROGMEM, active-palette state, palette-aware color sampling
-      helpers. See `DESIGN.md` § "Faders pick a palette, not a point".
+- [ ] **Implement palette infrastructure**: the nine palettes in
+      PROGMEM, active-palette state, palette-aware colour sampling
+      helpers. See `DESIGN.md` §§ "Faders pick a palette, not a point"
+      and "The nine palettes".
+      Note the entries are `(hue offset, saturation, value)` relative
+      to the H fader's centre, **not** absolute colours, so a plain
+      `CRGBPalette16` is the wrong container — rotation by H and
+      scaling by S both happen at sample time.
 - [ ] **Rewire faders**: H = palette hue center, S = palette spread,
       V = brightness. (Already wired via CC in the controller; this is
       brain-side interpretation.)

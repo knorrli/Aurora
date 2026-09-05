@@ -50,6 +50,52 @@ up and every preset gets a family of colors instead of one. Each
 preset decides how to sample the palette (by position, by time, by
 strip, by noise — depending on what fits the preset).
 
+### The nine palettes
+
+**A palette is a shape, not a colour.** The H fader already covers the
+colour wheel, so a library of "a blue one, a green one, an orange one"
+would be nine ways of duplicating a control we already have. What a
+palette carries is everything H cannot: how wide the spread is, what
+shape it travels, whether brightness and saturation move along with the
+hue, and whether it is a smooth gradient or hard steps.
+
+They are therefore stored as *offsets* from the centre — hue offset,
+saturation and value per entry — rather than as absolute colours, so
+rotating one costs nothing at sample time.
+
+Names below describe behaviour rather than scenery. Calling one "Lava"
+would be a lie the moment the H fader turns it blue.
+
+| # | Name | What it does |
+|---|------|--------------|
+| 1 | **Flat** | No variation at all. Today's monochrome, as a palette a scene can commit to. |
+| 2 | **Narrow** | About ±15° around the centre, full saturation, even brightness. One colour with depth. The everyday one. |
+| 3 | **Wide** | About ±60°. A real gradient, still one family — blue through purple into magenta, wherever it is placed. |
+| 4 | **Two-pole** | The centre hue and its opposite, transitioning fast rather than blending through the muddy middle. |
+| 5 | **Ember** | Hue barely moves; brightness and saturation do. Dark and deep at one end, bright and near-white at the other. Gives comet tails and rain trails real colour instead of just dimming. |
+| 6 | **Haze** | Saturation falls away toward white while brightness stays up. Airy and pale — made for the ambient row. |
+| 7 | **Deep** | Full saturation throughout, brightness falling to near-dark at one end. The opposite move to Ember. |
+| 8 | **Banded** | Four hard steps instead of a smooth ramp. Reads as stripes and blocks — for Bars, chase and moving blocks, where a gradient turns to mush at speed. |
+| 9 | **Spark** | Mostly the base colour with a small hot accent of the opposite hue. Pops and glints without becoming a rainbow. |
+
+Two rules, both chosen for simplicity and both easy to revisit:
+
+- **S scales everything**, not just the hue spread — hue, saturation
+  and value deviation together. One rule: S is "how far from flat".
+  The consequence to watch is that Ember and Deep lose their dark ends
+  at low S, which is either correct or annoying depending on how they
+  read on the wall.
+- **All nine rotate with H.** None are anchored to a fixed hue. That is
+  what makes them shapes rather than colours; the cost is that Ember
+  placed on blue is a cold thing that no longer reads as fire. Add an
+  anchor flag only if a palette turns out to need one.
+
+*Considered and left out:* a **Triad** (centre plus ±120°) as a
+deliberately loud option for a peak. It sits closest to the
+rainbow-across-the-stage look we are trying to avoid, and it covers
+similar ground to Wide more aggressively. It is the obvious tenth if
+one is wanted.
+
 ### Fader alt-mode → palette animation
 
 Retire the current hue-oscillation alt-mode. Replace with "palette
@@ -274,7 +320,7 @@ configurable — no reserved-role buttons in v1. Extensible to more
 - **v3 (deferred):** laptop companion tool over USB MIDI for
   named-songs, named-scenes, ramp curves, accent-library selection.
 
-**Accent library (initial, small, fixed):**
+**Accent library (confirmed 2026-09-05 — initial, small, fixed):**
 
 - `ACCENT_WHITE_FLASH` — full-bright white across all strips, decays.
 - `ACCENT_BARS_UP_ONCE` — single sweep of bars flowing up.
@@ -481,28 +527,29 @@ in the sections above and below.
    "The controller's indicator pixels".
 9. **The controller becomes a second Teensy 4.0.** See "The controller
    is a second Teensy, not the Nano".
+10. **The nine palettes are shapes, not colours**, curated rather than
+    procedural, all rotating with H, with S scaling every kind of
+    deviation. See "The nine palettes".
+11. **The accent library starts at four** — white flash, bars-up-once,
+    blank-while-held, strip-wide pulse.
 
 ## Still open
 
-1. **Which nine palettes.** Curated rather than procedural — 9
-   hand-picked ramps in PROGMEM, ~450 B flash, zero SRAM. FastLED's
-   stock palettes (`HeatColors_p`, `CloudColors_p`, `OceanColors_p`,
-   `ForestColors_p`) are starting points. Palettes are not live
-   performer choices; they are primitives that scenes compose from.
-   Wants the band's aesthetic, not analysis.
-2. **The initial accent library.** Proposed: white flash,
-   bars-up-once, blank-while-held, strip-wide pulse. Confirm or
-   replace.
-3. **Which two or three songs go first**, and what their sections are.
-4. **Where the 12-position rotary lands** on the Teensy controller once
+1. **The first song.** One, not three — drafting scenes without being
+   able to look at them is guessing. Split in two: the *structure*
+   (how many sections, which switch jumps where, momentary versus
+   latching) is desk work needing no light, and it is what will tell
+   us whether four scenes and four switches is enough for a real song.
+   The *looks* for each scene need the strips up on the bench.
+2. **Where the 12-position rotary lands** on the Teensy controller once
    the timing Arduino is retired. It carries the tempo subdivisions,
    three tap-tempo positions (half / regular / double) and
    mic-as-stepper, and it has never appeared in any pin map. A resistor
    chain on one analog pin is the obvious answer — one contact closes
    at a time, so the twelve levels sit roughly 400 mV apart, which is
    comfortable.
-5. **What "mirrored exclusive" means in sculpt mode.**
-6. **Whether a per-strip blend reads as an effect or as a fault** on
+3. **What "mirrored exclusive" means in sculpt mode.**
+4. **Whether a per-strip blend reads as an effect or as a fault** on
    Sweep → CrossSweep and Chase → Comet, the two pairs that describe a
    relationship between strips.
 
