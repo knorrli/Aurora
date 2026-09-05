@@ -89,8 +89,9 @@ void reportState()
 {
   if (!tempoGate) return;
 
-  Serial.printf("pulse  %.1f BPM  beat %.2f  preset %u  hsv %u/%u/%u  frame %lu ms%s\n",
-                tempo::bpm(), tempo::beats(), currentPreset,
+  Serial.printf("pulse  %.1f BPM  %u tk/beat  beat %.2f  preset %u%s  hsv %u/%u/%u  frame %lu ms%s\n",
+                tempo::bpm(), tempo::ticksPerAnimationBeat(), tempo::beats(),
+                currentPreset, presetAltModeEnabled ? " alt" : "",
                 presetColor.hue, presetColor.saturation, presetColor.value,
                 elapsedLoopTime, tempo::running() ? "" : "  [stopped]");
 }

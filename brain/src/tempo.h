@@ -36,6 +36,7 @@ bool pulsed();
 
 float bpm();
 uint32_t beatLengthMs();
+uint16_t ticksPerAnimationBeat();
 bool running();
 
 // --- Notifications from midi_in ---------------------------------------------

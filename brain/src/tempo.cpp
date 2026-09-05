@@ -129,6 +129,7 @@ float cyclePosition(float lengthInBeats) {
 bool pulsed() { return pulsedThisFrame; }
 float bpm() { return 60000000.0f / (float)(usPerTick * AURORA_TICKS_PER_BEAT); }
 uint32_t beatLengthMs() { return (uint32_t)usPerTick * ticksPerPulse / 1000; }
+uint16_t ticksPerAnimationBeat() { return ticksPerPulse; }
 bool running() { return isRunning; }
 
 } // namespace tempo

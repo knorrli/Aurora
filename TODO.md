@@ -168,13 +168,24 @@ touching the existing Aurora or the controller.
       `MAX_BRIGHTNESS` low for the first power-up — bare NeoPixels drawing
       from the Teensy's own supply will brown it out long before full
       white — and confirm on a handful of pixels before wiring the array.
-- [ ] **Validate over USB MIDI** with a laptop and a DAW / MIDI Monitor:
-    - [ ] Clock drives the phase-based presets correctly.
-    - [ ] PC 0–9 selects presets.
-    - [ ] CC 20/21/22 drive hue/saturation/value as expected.
-    - [ ] Frame time: measure `FastLED.show()` with `micros()` and
-          print it. Watching for dropped clock over USB proves nothing
-          — USB buffers in hardware, so bytes survive regardless.
+- [ ] **Validate over USB MIDI** with a laptop. Everything checkable
+      without strips is done; the rest needs them on the bench.
+    - [x] PC 0–9 selects presets, and the swap lands on the next pulse
+          rather than the instant the message arrives.
+    - [x] CC 20/21/22 drive hue / saturation / value, correctly scaled
+          from the 0–127 MIDI range.
+    - [x] CC 10 switches tempo division live. Triplets measured at
+          exactly three pulses per musical beat, with BPM unchanged.
+    - [x] CC 40 alt flag reaches all nine alt variants.
+    - [x] All 18 preset / alt combinations render without hanging.
+    - [x] Frame time a steady 7–8 ms for every preset — almost all of it
+          FastLED pushing 225 pixels. Ample headroom.
+    - [x] Tempo changes and clock loss move the position smoothly; it
+          only ever jumps at a deliberate division change.
+    - [ ] Clock drives the phase-based presets correctly *to the eye*.
+    - [ ] Trigger note 60 produces the flash.
+    - [ ] Drop `-D AURORA_DEBUG` from `brain/platformio.ini` once the
+          strips are the thing being read instead of the console.
 
 ---
 
