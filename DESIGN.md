@@ -140,18 +140,18 @@ a crossfade between two renderers:
 | Breathe → Wave | How far the phase spreads along the strip. At zero the wall breathes in unison; wound up, the breath becomes a travelling wave. Literally one number. |
 | Plasma → Aurora | Mixes the two hue sources — stacked sines into Perlin noise |
 | Pulse → Bars | A crossfade. The one pair with nothing structural in common |
-| Sweep → CrossSweep | Odd strips drift out of step with the even ones until they run opposite |
-| Rain → Storm | Lightning probability, zero to full |
+| Sweep → Rain | How far the strips run out of step, and the tail fade with it. At zero, hard-edged blocks scrolling in lockstep; wound up, staggered comets. |
+| CrossSweep → ? | Undecided. Alternating direction is the default; the variant has to vary something continuous. |
 | Chase → Comet | Tail length shrinks from a whole strip down to a comet's tail |
 | Strobe → Stutter | How much of the wall each flash covers, from all of it down to half — the alternating half only becomes visible as you wind it in |
 | Chaos → Glitch | Blocks shrink, update faster, and white creeps in |
 
-Two of these describe a relationship *between* strips rather than
-something each strip does on its own — Sweep → CrossSweep is precisely
-"the odd strips run opposite to the even ones", and Chase → Comet moves
-across strips in sequence. A per-strip blend is computable for both,
-but blending one strip alone may read as a fault rather than an effect.
-Build them and look before deciding.
+One of these still describes a relationship *between* strips rather
+than something each strip does on its own — Chase → Comet moves across
+strips in sequence. A per-strip blend is computable, but blending one
+strip alone may read as a fault rather than an effect. Build it and look
+before deciding. Sweep → CrossSweep used to be the other; the Row 2
+restructure dissolved it.
 
 **"Mirrored exclusive" in sculpt mode is a guess.** In paint mode it
 means the selected pair keeps the colour and everything else inverts,
@@ -502,6 +502,126 @@ register or an I²C expander in the pedal enclosure and spend a real
 digital pin on it, or accept single-press-only detection, which has far
 wider margins because it only needs five levels instead of sixteen.
 
+## What the first LED bench proved
+
+2026-09-05, the first time the strips and the Teensy were in the same
+room. Brain on a breadboard, USB-powered from a laptop running on
+battery, all five strips on their own supplies and driven through the
+existing strip boxes. Presets driven by `sendmidi` over USB MIDI, tempo
+free-running at 120 BPM.
+
+### The data link works at 3.3 V, but only just
+
+The Teensy drives 3.3 V into WS2812s that want about 3.5 V. The result
+renders correctly much of the time and corrupts under any disturbance.
+The symptoms, in the order they became clear:
+
+- Random red, green and blue pixels, occasionally white, appearing and
+  clearing continuously.
+- Worse with **busier data**. A solid fill is nearly clean; Starfield and
+  Plasma speckle heavily. Varied bytes mean more bit transitions, and
+  every transition is an edge a marginal threshold can misjudge.
+- Worse with **dimmer pixels**, worst against **black**. A 1 bit is a
+  long pulse and a 0 bit a short one, and short pulses are hardest to
+  catch when the edges are already slowed by the 470 Ω and the cable. A
+  dark strip is 135 consecutive zero bytes.
+- **Proximity-dependent.** Moving a hand toward the laptop starts the
+  flicker; moving away stops it. On battery the laptop floats free of
+  earth, a body near it couples that reference toward earth, and the
+  strips' mains-referenced supplies do not move with it. A two-prong
+  charger made it worse still — unusable.
+
+Corruption at the first pixel poisons the entire wall, because all 225
+pixels' data enters through strip 1 and is re-transmitted from there.
+Every link downstream is electrically clean and logically wrong.
+
+The fix is the level shifter in `docs/wiring.md` § "3.3 V data and the
+level shifter". A short dedicated ground bond from the Teensy to strip
+1's supply negative is the other half of the problem and would help on
+its own; it was not tried because it needs soldering inside a strip box.
+
+### Two firmware findings
+
+**Plasma had a wrap discontinuity, now fixed.** Its half-speed phase was
+derived as `t >> 1` from an already-truncated `uint8_t` time base, so it
+ramped 0–127 and snapped back rather than wrapping cleanly at 256 — half
+a sine cycle, jumped every two seconds. Strip 1 was the one strip where
+it was invisible, because its offset sits exactly on the sine's midpoint
+where the discontinuity cancels; that asymmetry is what made it findable
+by eye. The rule it teaches: derive each phase from `millis()` at the
+shift you want, never by shifting a value already truncated to 8 bits.
+No other preset does this.
+
+**Bars' continuous-phase rewrite is half confirmed.** Its turning points
+land on the beat with no jump-and-return, which is exactly what the old
+`lastGateMillis` ordering bug produced, so that fix is good. The
+sub-pixel edge rendering also demonstrably works: shown side by side
+against Sweep on adjacent strips, Bars read as visibly smoother while
+travelling more than twice as fast. Whether the glide is smooth enough
+at real viewing distance is still open — a bench flatters it.
+
+### What the pass could not settle
+
+All nine presets and all nine variants rendered. The decisions that came
+out of the pass are in "Row 2's third slot"; the questions it opened are
+in "Still open".
+
+Three limits are worth recording, because they bound how much the
+session is worth:
+
+- **Nothing was judged against music.** The tempo free-ran at 120 BPM in
+  a quiet room, so "does this lock convincingly to a song" — the whole
+  point of Row 2 — remains untested.
+- **Bench distance flatters everything.** Sub-pixel smoothness, the
+  Plasma/Aurora distinction and the per-strip Stutter idea all need
+  seeing from across a room.
+- **Glitch cannot be reviewed on this link at all.** A preset that is
+  random noise by construction is indistinguishable from a corrupted
+  data stream.
+
+## Row 2's third slot: Sweep, Rain, and retiring Storm
+
+Decided 2026-09-05 at the bench, the first time all five strips were lit.
+Supersedes the `Sweep/CrossSweep` and `RainFall/Storm` pairing listed in
+"Where the branch stands".
+
+**Rain is mechanically the fanned-out version of Sweep.** Both scroll a
+block along every strip, same direction, same speed, same four steps per
+beat. Sweep holds every strip at the same position; Rain holds them at
+fixed per-strip offsets of 20, 28, 34, 28, 20 and gives each block a
+fading tail. Nothing else separates them.
+
+That makes Sweep → Rain a single number — how far out of step the strips
+run — which is the shape sculpt-Y wants, and the same shape as
+Breathe → Wave. The axis moves the fan-out and the tail fade together: at
+zero the wall scrolls in lockstep with hard-edged blocks, wound up it
+becomes staggered comets. Rain's present offsets become the maximum fan
+and the axis scales toward zero.
+
+**That frees CrossSweep from a pairing it could never satisfy.** What
+makes it interesting is that direction alternates strip by strip, and
+direction has no midpoint — half of "runs opposite" is not a state.
+Phase offset has a midpoint; direction does not. So CrossSweep becomes a
+default in its own right, and its variant is free to vary anything
+continuous: tail length, block length, a speed difference between the
+two groups. Which one is still open.
+
+**Storm is retired.** Its rain half is identical to RainFall — both call
+the shared helper in wrapping mode — so its only distinguishing feature
+is a full-wall white flash on a 12.5%-per-beat dice roll. That
+duplicates `ACCENT_WHITE_FLASH` from the accent library, fired at random
+instead of from the pedal. It is also wrong for the slot: Rain is for
+downtempo and calm sections, and random flashes across a calm wall read
+as jarring rather than atmospheric.
+
+Auto-firing lightning is still a reasonable thing to want, since a
+performer with both hands busy cannot play it from the pedal. If it
+returns it belongs in the accent system as a rate parameter on one of
+the reserved `CC_PRESET_PARAM_*` slots, not as a preset slot of its own.
+
+RainBounce stays parked in `P_Retired.cpp`. It is the only caller that
+passes the shared rain helper's `changeDirectionOnEnds` branch.
+
 ## Decisions settled — 2026-09-05
 
 These were the Phase 0 blockers. They are decided; the reasoning sits
@@ -532,6 +652,9 @@ in the sections above and below.
     deviation. See "The nine palettes".
 11. **The accent library starts at four** — white flash, bars-up-once,
     blank-while-held, strip-wide pulse.
+12. **Row 2's third slot is restructured.** Sweep → Rain becomes the
+    pair, CrossSweep takes a slot of its own, and Storm is retired. See
+    "Row 2's third slot: Sweep, Rain, and retiring Storm".
 
 ## Still open
 
@@ -550,8 +673,40 @@ in the sections above and below.
    comfortable.
 3. **What "mirrored exclusive" means in sculpt mode.**
 4. **Whether a per-strip blend reads as an effect or as a fault** on
-   Sweep → CrossSweep and Chase → Comet, the two pairs that describe a
-   relationship between strips.
+   Chase → Comet, now the only pair describing a relationship between
+   strips. Watching it on the wall made this harder rather than easier:
+   the two ends differ in tail length (45 pixels vs 15), speed (45 vs 6
+   pixels per beat) and strip order (3,4,5,1,2 vs 1,3,5,2,4). Tail and
+   speed would blend together on one knob, the way Sweep → Rain now
+   does, but the two orders have no midpoint — one of them would have to
+   be used at both ends. Comet earns its place on looks alone; whether
+   the *pair* survives is the open part.
+5. **What CrossSweep's variant should be**, now that it holds a slot of
+   its own and no longer has to be reachable from Sweep.
+6. **Whether Stutter's halves should alternate per strip.** Tried on the
+   bench 2026-09-05 against the current all-strips-in-sync version and
+   preferred: odd strips take the opposite half from even ones, so the
+   wall reads as a checkerboard inverting on the beat rather than one
+   horizontal line sliding up and down. The in-sync version was judged
+   too static to hold interest.
+
+   Sweeping coverage from full down to half confirmed the axis behaves:
+   at full coverage the alternation is invisible, and as it winds down,
+   dark wedges enter from opposite ends on neighbouring strips until the
+   permanently-lit middle band vanishes and the hard checkerboard is all
+   that remains. Needs a second look at proper viewing distance, and on
+   a clean data link, before it replaces the current behaviour.
+7. **Glitch, unreviewed.** It rendered and it was liked, but a preset
+   that is random white-and-colour noise by design cannot be told apart
+   from a corrupted data link. Its two constants — 12 pixels per frame
+   and a 30% white share — are therefore untested, as is whether running
+   free of tempo suits a slot in the intensity row when every other
+   preset there is rhythmic. Look again once the level shifter is in.
+8. **StrobeStrips' duty cycle.** Currently a flash of one quarter of the
+   beat — `currentTempo / 4`, clamped to 20–200 ms, so 125 ms at 120
+   BPM. Flagged on the bench as wanting adjustment; a shorter flash
+   reads as more percussive, a longer one as more of a pulse. It is one
+   constant and only the wall can settle it.
 
 ## Memory budget check
 

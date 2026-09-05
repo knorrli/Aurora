@@ -97,6 +97,20 @@ Checked items are confirmed in the components drawer.
     - [ ] *Deferred:* 3-pin-male → 5-pin-female adapter, for venues
           with 5-pin fixtures. The band's own BeamZ BCC145 PARs are
           3-pin.
+- [ ] **74AHCT125 level shifter × 2** — one for the brain, one for the
+      controller's indicator pixels later. The Teensy drives 3.3 V and a
+      5 V WS2812 wants about 3.5 V; proven marginal on the bench
+      2026-09-05. Must be **HCT** or **AHCT**: plain HC or AHC has the
+      same threshold as the pixels and fixes nothing while looking
+      identical on the shelf. 74HCT245, 74HCT244 and 74HCT04 do the same
+      job, so searching a supplier for "74HCT" rather than one exact part
+      number widens the options considerably.
+    - [ ] Bastelgarage stocks nothing suitable. Its level-converter range
+          is BSS138 boards and TXS0108E/TXS0104E boards, both built for
+          slow bidirectional buses, plus optocoupler 12 V boards — none
+          fast enough for WS2812's 800 kHz.
+    - [ ] Barrel pigtails for the strip data connectors are on hand
+          (two spare), so the shifters are the only blocker.
 - [ ] *Deferred until the breadboard and perfboard stages are done:*
       project enclosure for the brain node, enclosure for the foot
       pedal, M3 mounting hardware.
@@ -159,8 +173,9 @@ touching the existing Aurora or the controller.
     - [x] Fix the Bars phase glitch: `lastGateMillis` used to be updated
           *after* `render()`, so on every gate frame Bars rendered a full
           beat ahead and snapped back. The gate is now computed before
-          `render()`. The one deliberate behaviour change in the port,
-          and still unconfirmed by eye — check it when the strips arrive.
+          `render()`. The one deliberate behaviour change in the port.
+          Confirmed by eye 2026-09-05: no jump-and-return on the beat,
+          and the block's turning points land on the tempo LED.
     - [x] MIDI Program Change → preset selection (keep the existing
           tempo-quantized swap: the preset changes on the next gate,
           not mid-bar).
@@ -174,11 +189,13 @@ touching the existing Aurora or the controller.
           be lost to it. Not needed until a second LED fixture lands,
           and note the FastLED Octo controller reads 8 lanes' worth of
           pixels, so the framebuffer must be sized for 8 strips.
-- [ ] **Light the strips.** Pin 2 → data, common ground, LED supply
-      straight to the strip and *not* through the breadboard. Set
-      `MAX_BRIGHTNESS` low for the first power-up — bare NeoPixels drawing
-      from the Teensy's own supply will brown it out long before full
-      white — and confirm on a handful of pixels before wiring the array.
+- [x] **Light the strips.** Done 2026-09-05. All five strips driven from
+      pin 2 through the existing strip boxes, each strip on its own 5 V
+      supply. The brown-out worry in the original note never applied —
+      no strip has ever drawn from the Teensy — so `MAX_BRIGHTNESS` is
+      back at 255. Data works at 3.3 V but is marginal; see DESIGN.md
+      § "What the first LED bench proved" and docs/wiring.md § "WS2812
+      strips — strip boxes and the data chain".
 - [ ] **Validate over USB MIDI** with a laptop. Everything checkable
       without strips is done; the rest needs them on the bench.
     - [x] PC 0–9 selects presets, and the swap lands on the next pulse
@@ -193,7 +210,10 @@ touching the existing Aurora or the controller.
           FastLED pushing 225 pixels. Ample headroom.
     - [x] Tempo changes and clock loss move the position smoothly; it
           only ever jumps at a deliberate division change.
-    - [ ] Clock drives the phase-based presets correctly *to the eye*.
+    - [x] Clock drives the phase-based presets correctly *to the eye*.
+          All 18 preset/variant combinations walked on the wall
+          2026-09-05. One bug found and fixed (Plasma's wrap
+          discontinuity); everything else rendered as designed.
     - [ ] Trigger note 60 produces the flash.
     - [ ] Drop `-D AURORA_DEBUG` from `brain/platformio.ini` once the
           strips are the thing being read instead of the console.

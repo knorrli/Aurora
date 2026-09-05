@@ -52,10 +52,14 @@ void Wave(CHSV color) {
 /////////////////////////////////
 void Plasma(CHSV color) {
   uint8_t t = (uint8_t)(millis() >> 3);
+  // The half-speed phase has to come from millis() directly: halving the
+  // already-truncated t ramps it 0-127 and snaps back, which is a
+  // half-cycle discontinuity in sin8 instead of a seamless 256 wrap.
+  uint8_t tHalf = (uint8_t)(millis() >> 4);
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
       uint8_t wave1 = sin8((uint8_t)(pixelIndex * 8) + t);
-      uint8_t wave2 = sin8((uint8_t)(stripIndex * 40) + (uint8_t)(t >> 1));
+      uint8_t wave2 = sin8((uint8_t)(stripIndex * 40) + tHalf);
       uint8_t hueShift = ((uint16_t)wave1 + (uint16_t)wave2) >> 2;
       strip[stripIndex][pixelIndex] = CHSV(color.hue + hueShift - 64, color.saturation, color.value);
     }

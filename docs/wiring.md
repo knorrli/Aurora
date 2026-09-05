@@ -94,6 +94,106 @@ alone.
 
 ---
 
+## WS2812 strips — strip boxes and the data chain
+
+Five strips of 45 pixels. Each strip has a small hand-built junction box
+at its head, holding the connectors and the standard NeoPixel protection
+circuit. The boxes predate the split and were built around the 5 V Nano.
+
+### Inside a box
+
+Nothing active — two passive parts:
+
+- **1000 µF** electrolytic across +5 V and GND, absorbing the current
+  surge when the strip switches on.
+- **470 Ω 1 %** in series with the data line, between the data-in
+  connector and the first pixel's `DIN`. Damps ringing on the long
+  cable and protects that input.
+
+Do not add a second series resistor at the brain. 470 Ω already sits at
+the top of the 300–500 Ω window this circuit wants, and stacking another
+starts rounding off the signal edges.
+
+### Connectors
+
+Three barrel jacks per box. **The two data jacks use a wider centre pin
+than the power jack**, so a power plug cannot be forced into a data
+socket.
+
+| Jack       | Carries                                             |
+|------------|-----------------------------------------------------|
+| Power      | +5 V and GND, from that strip's own PSU             |
+| Data in    | Data and GND, from the brain or the previous strip  |
+| Data thru  | Data and GND, on to the next strip                  |
+
+Every strip has **its own 5 V supply**. Ground is common across the
+whole network: the data cables tie the separate supplies' grounds
+together, and that is also how the brain picks up its ground reference
+to the strips.
+
+### The chain
+
+```
+   Teensy pin 2                 ~2.5 m           ~2.5 m
+        │                          │                │
+        ▼                          ▼                ▼
+   ┌─────────┐              ┌─────────┐       ┌─────────┐
+   │ strip 1 │─────thru────▶│ strip 2 │──────▶│ strip 3 │──▶ 4 ──▶ 5
+   │  box    │              │  box    │       │  box    │
+   └────┬────┘              └────┬────┘       └────┬────┘
+        │                        │                 │
+      5 V PSU                  5 V PSU           5 V PSU
+```
+
+**Only the first hop runs at the brain's logic level.** A WS2812 does
+not pass data through — it reads its own 24 bits and re-transmits the
+remainder from its own 5 V supply. Every 2.5 m link between strips is
+therefore driven at 5 V by the previous strip's last pixel, whatever the
+brain is. Those runs are proven in the field over hundreds of gigs, and
+the split does not touch them.
+
+What the split does change is that one first hop, which the Nano drove
+at 5 V and the Teensy drives at 3.3 V.
+
+### 3.3 V data and the level shifter
+
+A WS2812 on a 5 V supply wants about 3.5 V (0.7 × VDD) to read a
+reliable "high". Teensy 4.0 outputs 3.3 V, which is under that. It
+often works in practice, especially on a short first cable, but it is
+out of spec and drifts with temperature.
+
+The failure is all-or-nothing rather than gradual: if the first pixel
+misreads its bits it forwards garbage, so the entire wall goes wrong at
+once. Fine to gamble with on the bench, not on stage.
+
+**Fix: a 74AHCT125 quad buffer between pin 2 and the strip 1 data
+cable.** It takes 3.3 V in and drives 5 V out, restoring exactly the
+signal the Nano produced.
+
+| Chip pin      | To                                              |
+|---------------|-------------------------------------------------|
+| 14 `VCC`      | 5 V — `VIN` on the bench, which carries USB 5 V |
+| 7  `GND`      | common ground                                   |
+| 1  `1OE`      | GND — enables the channel                       |
+| 2  `1A`       | Teensy pin 2                                    |
+| 3  `1Y`       | data-in pigtail, centre pin                     |
+| 5, 9, 12      | GND — unused inputs, never leave them floating  |
+
+The part must be **HCT** or **AHCT**. Plain HC or AHC has the same
+3.5 V threshold as the pixels themselves and fixes nothing, while
+looking identical on the shelf.
+
+Three of the four channels stay spare, which covers the OctoWS2811
+expansion pins reserved above. The controller needs the same part for
+its indicator pixels, so buy two.
+
+The chip also sits between the Teensy and a connector that gets plugged
+and unplugged in the dark. A barrel plug shorts centre to sleeve as it
+slides in, so whatever drives that line is briefly shorted to ground —
+better a one-franc buffer than the Teensy.
+
+---
+
 ## Controller pin map — Arduino Nano
 
 > **Superseded 2026-09-05.** The controller is becoming a second Teensy
