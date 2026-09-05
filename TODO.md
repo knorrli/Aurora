@@ -111,48 +111,50 @@ touching the existing Aurora or the controller.
       — supply straight to the strip, only data and one ground jumper
       touch the Teensy. Move to perfboard at the start of Phase 5, when
       the DIN MIDI circuit goes on at the same time.
-- [ ] **Port the brain firmware to Teensy.** Reasoning for each decision
-      is in DESIGN.md; this is the checklist.
-    - [ ] Tag the current commit (e.g. `aurora-nano-final`) before
+- [x] **Port the brain firmware to Teensy.** Builds clean; flash 65 KB of
+      2 MB. Untested on LEDs — no strips on the bench yet. Reasoning for
+      each decision is in DESIGN.md.
+    - [x] Tag the current commit (e.g. `aurora-nano-final`) before
           deleting anything, so the old single-box firmware stays
           reachable — `git show aurora-nano-final:brain/src/R_Touchpad.cpp`
           and friends.
-    - [ ] Drop the `nano` env from `brain/platformio.ini`. The brain is
+    - [x] Drop the `nano` env from `brain/platformio.ini`. The brain is
           always a Teensy; that env is the *old* un-split firmware, not
           a brain target.
-    - [ ] Delete `readKeypad()` and `readPreset()` outright — the numpad
+    - [x] Delete `readKeypad()` and `readPreset()` outright — the numpad
           moves to the controller. `setBootSettings()` and the `muted`
           global go with them (preset 0 is the mute, and nothing else
           reads `muted`).
-    - [ ] Delete the touchpad input half of `R_Touchpad.cpp` — the
+    - [x] Delete the touchpad input half of `R_Touchpad.cpp` — the
           controller owns the pad. The render half comes back in
           Phase 5, by which point Phase 4's sculpt work will have
           reshaped it anyway. `touchpadStripMode`, `touchpadEffectMode`,
           `holdModeEnabled`, `touchpadVerticalMode` and `touchColor` go
           with it; grep confirms nothing else reads them.
-    - [ ] Collapse the framebuffer to the 225 strip pixels. The 12 UI
+    - [x] Collapse the framebuffer to the 225 strip pixels. The 12 UI
           pixels sit in the controller box and the brain cannot reach
           them once it lives at the LEDs; the controller drives its own
           indicators. `PIXEL_INDEX_STRIP_START` → 0, `pixels`/`strips`
           collapse into one, `renderColorIndicators()` goes.
-    - [ ] Adjust pin numbers in `Aurora.h` to Teensy 4.0 (see
+    - [x] Adjust pin numbers in `Aurora.h` to Teensy 4.0 (see
           `docs/wiring.md`).
-    - [ ] Tempo module: MIDI clock → the `tempoGate` / `currentTempo` /
-          `lastGateMillis` globals the presets already run on, so no
-          `P_*.cpp` file needs touching. Division from CC 10, tempo
-          clamped to 20–300 BPM, freeze on Stop, free-run after 500 ms
-          of silence. The logic is already proven in
-          `bench/midi_monitor/`.
-    - [ ] Fix the Bars phase glitch while restructuring the loop:
-          `lastGateMillis` is currently updated *after* `render()`, so
-          on every gate frame Bars renders a full beat ahead and snaps
-          back. Computing the gate before `render()` fixes it. This is
-          the one deliberate behaviour change in the port.
-    - [ ] MIDI Program Change → preset selection (keep the existing
+    - [x] Tempo module (`brain/src/tempo.cpp`): a monotonic musical
+          position in fractional beats, not a pulse. Division from CC 10,
+          tempo clamped to 20–300 BPM, freeze on Stop, free-run after
+          500 ms of silence. The old `tempoGate` / `currentTempo` /
+          `lastGateMillis` are published from it by the main loop, so no
+          `P_*.cpp` file needed touching. See DESIGN.md § "Musical
+          position, not tempo pulses".
+    - [x] Fix the Bars phase glitch: `lastGateMillis` used to be updated
+          *after* `render()`, so on every gate frame Bars rendered a full
+          beat ahead and snapped back. The gate is now computed before
+          `render()`. The one deliberate behaviour change in the port,
+          and still unconfirmed by eye — check it when the strips arrive.
+    - [x] MIDI Program Change → preset selection (keep the existing
           tempo-quantized swap: the preset changes on the next gate,
           not mid-bar).
-    - [ ] MIDI CC 20 / 21 / 22 → hue / saturation / value.
-    - [ ] Note 60 → trigger flash, replacing the `digitalRead` in
+    - [x] MIDI CC 20 / 21 / 22 → hue / saturation / value.
+    - [x] Note 60 → trigger flash, replacing the `digitalRead` in
           `IR_Trigger.cpp`.
     - [ ] *Open:* whether to swap FastLED's WS2812 output for
           OctoWS2811. The stated reason — `.show()` blocking interrupts
@@ -161,6 +163,11 @@ touching the existing Aurora or the controller.
           be lost to it. Not needed until a second LED fixture lands,
           and note the FastLED Octo controller reads 8 lanes' worth of
           pixels, so the framebuffer must be sized for 8 strips.
+- [ ] **Light the strips.** Pin 2 → data, common ground, LED supply
+      straight to the strip and *not* through the breadboard. Set
+      `MAX_BRIGHTNESS` low for the first power-up — bare NeoPixels drawing
+      from the Teensy's own supply will brown it out long before full
+      white — and confirm on a handful of pixels before wiring the array.
 - [ ] **Validate over USB MIDI** with a laptop and a DAW / MIDI Monitor:
     - [ ] Clock drives the phase-based presets correctly.
     - [ ] PC 0–9 selects presets.
@@ -175,9 +182,16 @@ touching the existing Aurora or the controller.
 
 Once the brain is on Teensy, generalise the Bars prototype:
 
-- [ ] **Extract a shared tempo-phase helper.** Currently the logic is
-      inlined in `Bars`; lift to something like `phaseInBar()` plus a
-      `drawBlockSubpixel()` draw helper.
+- [ ] **Convert the twelve tempo-dependent presets** to
+      `tempo::cyclePosition()`: PulseFill, MovingBlocks, CrossSweep, Bars,
+      Rain, Storm, Comet, StripByStrip, StrobeStrips, StrobeUpDown,
+      Stutter, Chaos. One at a time, each checked on the wall — deciding
+      whether a cycle is two beats or four is a judgement you can only
+      make by looking. A `drawBlockSubpixel()` helper lifted out of Bars
+      covers most of the drawing.
+- [ ] **Delete the compatibility layer** once the last preset is
+      converted: the three assignments in `loop()` and the `tempoGate` /
+      `currentTempo` / `lastGateMillis` / `elapsedLoopTime` globals.
 - [ ] **Port PulseFill, Sweep, CrossSweep, MovingBlocks, Comet,
       Rain** to use the helper. Kill the discrete-step boilerplate in
       each.

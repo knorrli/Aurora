@@ -755,6 +755,56 @@ that compute position from elapsed time — the continuous-phase style Bars
 already uses — glide through untouched. That is an argument for the
 Phase 3 port beyond it merely looking smoother.
 
+### Musical position, not tempo pulses
+
+The old brain learned about tempo through a single wire carrying one edge
+per beat, so `tempoGate` / `currentTempo` / `lastGateMillis` was all it
+could know: *a beat just happened, and the last one was this long ago*.
+Every animation reconstructed motion from that, and nine of them carry the
+same block of boilerplate — chop the beat into N slices, advance one pixel
+per slice.
+
+That model has four problems, all of them visible on stage. Position is
+accumulated, so a frame that runs long leaves the animation permanently
+behind the music with nothing to pull it back. A tempo change alters the
+slice length but not the position already accumulated, so motion jumps.
+The `- elapsedLoopTime / 2` term in every one of those blocks is a fudge
+factor for loop latency, tuned by feel. And motion is quantised to whole
+slices, which is the stutter that prompted the Bars rewrite.
+
+MIDI clock supplies what the wire could not: a steadily advancing count.
+So `tempo::` exposes a monotonic musical position in fractional beats,
+interpolated between ticks, and presets ask where the music *is*:
+
+```c
+void Bars(CHSV color) {
+    float cycle = tempo::cyclePosition(8);              // 0..1 over 8 beats
+    float travel = cycle < 0.5f ? cycle * 2 : (1 - cycle) * 2;
+    drawBlock(travel * (PIXELS_PER_STRIP - BARS_BAR_LENGTH), BARS_BAR_LENGTH, color);
+}
+```
+
+Position is recomputed from elapsed time every frame rather than
+accumulated, so a late frame lands where the music actually is. Tempo
+changes need no handling. Clock loss is the position continuing at the
+last known rate, and Stop is it not advancing — neither of which any
+preset has to know about. Presets that want an event rather than a
+position (strobe on the beat, Chaos reshuffling) still get `pulsed()`,
+derived from the position rather than being the foundation.
+
+Fractional maths would have been painful on the ATmega328; the Teensy has
+hardware for it.
+
+**Migration.** The three old variables are still published, by the main
+loop, from the position the module already computes — three assignments,
+not a second implementation. Every existing preset therefore runs
+unchanged, so the first time the strips light up they are driven by code
+already proven on stage, and anything wrong is the port rather than one of
+twelve fresh guesses. Phase 3 converts the twelve tempo-dependent presets
+one at a time with the wall in view, since "is this cycle two beats or
+four" is a judgement you can only make by looking. The three assignments
+go with the last of them.
+
 ### Controller-side Nano load after the split
 
 The controller no longer drives LEDs, so no FastLED interrupt

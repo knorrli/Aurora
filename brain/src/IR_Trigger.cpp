@@ -7,30 +7,32 @@
 
 static unsigned long lastTriggerMillis = 0;
 static CHSV triggerLedColor = CHSV(0, 0, 255);
-static bool triggerGate = LOW;
+static bool triggerPending = false;
+
+void fireTrigger()
+{
+  triggerPending = true;
+}
+
+static void readTrigger()
+{
+  if (!triggerPending) return;
+  triggerPending = false;
+
+  if (currentMillis - lastTriggerMillis <= TRIGGER_DEBOUNCE_DELAY) return;
+
+  lastTriggerMillis = currentMillis;
+  triggerLedColor = CHSV(presetColor.hue, 0, 255);
+}
 
 void renderTrigger()
 {
   readTrigger();
 
-  if (triggerGate || ((currentMillis - lastTriggerMillis) < TRIGGER_EFFECT_DURATION))
+  if ((currentMillis - lastTriggerMillis) < TRIGGER_EFFECT_DURATION)
   {
     strips.fill_solid(triggerLedColor);
     triggerLedColor.saturation = min(triggerLedColor.saturation + TRIGGER_FADE_STEP, 255);
     triggerLedColor.value = max(triggerLedColor.value - TRIGGER_FADE_STEP, 0);
   }
-}
-
-bool readTrigger()
-{
-  if (!triggerGate && (currentMillis - lastTriggerMillis > TRIGGER_DEBOUNCE_DELAY))
-  {
-    if (digitalRead(PIN_TRIGGER_INPUT))
-    {
-      lastTriggerMillis = currentMillis;
-      triggerLedColor = CHSV(presetColor.hue, 0, 255);
-      return HIGH;
-    }
-  }
-  return LOW;
 }
