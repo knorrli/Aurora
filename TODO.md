@@ -52,7 +52,21 @@ untouched.
 
 Checked items are confirmed in the components drawer.
 
-- [x] **Teensy 4.0** (~$24 from pjrc.com or distributor).
+- [x] **Teensy 4.0 × 2** — one for the brain (on hand), one for the
+      controller, ordered 2026-09-05. The original entry said "Teensy
+      4.0" singular and was ticked before the decision to move the
+      controller off the Nano; that is how the second one went missing.
+    - [ ] *Deliberately skipped:* a third as a gig-bag spare. DESIGN.md
+          cites "a single spare board in the gig bag covers either
+          failure" as a reason for choosing the Teensy, so that argument
+          is currently unfunded. At CHF 51 in Swiss retail it was judged
+          too expensive; revisit via pjrc.com, Play-Zone or Pi-Shop.
+- [ ] **Header pins.** Teensy 4.0 ships bare. Male 1×40, 2.54 mm ordered
+      2026-09-05; female sockets on hand. Long-pin male headers fit
+      standard sockets fine — same pitch, same 0.64 mm pin, only the
+      length differs. **Socket both Teensys rather than soldering them
+      down**: a spare board only helps if a dead one can be swapped
+      without a soldering iron at the venue.
 - [x] **6N138 opto-coupler** (for DIN MIDI IN on the Teensy — 2 pcs
       recommended, one for each node).
 - [x] **5-pin DIN MIDI jacks** (panel-mount, at least 3: one for
@@ -67,6 +81,8 @@ Checked items are confirmed in the components drawer.
       hand, interchangeable here — same 200 mA fast small-signal part,
       75 V reverse instead of 100 V, against a few volts of MIDI.
 - [x] **Small perfboard** for the Teensy brain assembly.
+- [x] **Second perfboard** for the controller Teensy assembly — enough
+      perfboard on hand.
 - [x] **Tap tempo momentary switch** — the existing controller already
       has one with a built-in LED; reuse it on D2 rather than buying.
 - [x] **Foot pedal with 4 momentary switches.** Switches, 1/4" TS
@@ -86,8 +102,12 @@ Checked items are confirmed in the components drawer.
     - [x] Grove→Dupont cable (breadboard) — on hand and proven. The
           unit's own Grove-to-Grove cable reaches neither breadboard nor
           Teensy.
-    - [ ] Grove→Lötpin adapter, for the perfboard build. Not needed
-          while the brain is on a breadboard.
+    - [x] Grove→Lötpin adapter not needed. The Grove→Dupont cable
+          already on hand gets its Dupont ends stripped and soldered
+          straight to the perfboard — fewer connectors, and the module
+          still unplugs at its own Grove socket, which is the end that
+          matters for swapping it at a venue. Leave slack and strain
+          relief where the cable leaves the board.
     - [x] DMX cable, XLR 3-pin — on hand and working on the bench.
           Buy real 110 Ω DMX cable for stage use.
     - [x] Terminating resistor 120 Ω × 1. Belongs at the last fixture
@@ -109,8 +129,19 @@ Checked items are confirmed in the components drawer.
           is BSS138 boards and TXS0108E/TXS0104E boards, both built for
           slow bidirectional buses, plus optocoupler 12 V boards — none
           fast enough for WS2812's 800 kHz.
+    - [x] Ordered 2026-09-05 from Digitec. The listing title reads
+          "74AHC125" without the T, but its Herstellernr is **ada-1787**
+          — Adafruit's 74AHCT125 — and the description states it lifts
+          3 V logic to 5 V for NeoPixels, which a plain AHC cannot do.
+          Check the silkscreen on arrival regardless.
     - [ ] Barrel pigtails for the strip data connectors are on hand
           (two spare), so the shifters are the only blocker.
+- [x] **12-position rotary ladder resistors** — 1% resistors on hand.
+      The chain wants roughly twelve of one value, one contact closing at
+      a time; confirm the count when the ladder is actually built.
+- [ ] *Deferred:* **mic envelope follower rework.** Built for 5 V, needs
+      re-referencing or re-powering for the Teensy's 3.3 V. Parts unknown
+      until the circuit is opened up; deferred 2026-09-05.
 - [ ] *Deferred until the breadboard and perfboard stages are done:*
       project enclosure for the brain node, enclosure for the foot
       pedal, M3 mounting hardware.
