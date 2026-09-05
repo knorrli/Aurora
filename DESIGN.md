@@ -573,7 +573,7 @@ Change the venue? Edit two lines, reflash. For a band that plays
 mostly the same rooms this is fine; if it becomes annoying we can
 add a USB-MIDI or LittleFS config path later.
 
-**Three things that actually bite when implementing:**
+**Four things that actually bite when implementing:**
 
 1. **Color calibration.** WS2812s and DMX fixtures have different
    color response. "Warm amber" on the strips can read as sickly
@@ -585,6 +585,18 @@ add a USB-MIDI or LittleFS config path later.
    show a gradient, not one color. Palette *center* is the honest
    answer — that's what all the strip colors orbit. Just commit to
    it and don't overthink.
+4. **The brightness curve comes along for the ride.** FastLED's
+   `hsv2rgb_rainbow` squares the value before scaling — `val =
+   scale8_video(val, val)` — so a CHSV value of 80 leaves as RGB 26.
+   That is a perceptual dimming curve for LEDs, and the echo inherits
+   it because it converts the same CHSV the strips do. Whether a PAR
+   wants it is unknown: if the fixture already bends its own response,
+   we would be applying the curve twice and the bottom of the fade
+   collapses into nothing. Settle it at calibration with a strip and a
+   PAR lit side by side, stepping **evenly spaced** values — an uneven
+   ramp makes any curve look uneven and proves nothing. If it turns out
+   to be doubled, take the colour before FastLED's conversion instead
+   of after.
 
 If a venue later needs a DMX merger or scene recall, that's a whole
 different conversation — not the same project.

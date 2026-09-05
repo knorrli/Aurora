@@ -274,19 +274,30 @@ it's independent of the DIN MIDI input work.
       `docs/wiring.md` § "DMX OUT". Done on the breadboard and proven
       end to end against a BCC145: pin 17 goes to **white / `TXD`**, not
       yellow. Re-test any time with `bench/dmx_bringup/`.
-- [ ] **Integrate the TeensyDMX library** in `brain/platformio.ini` on
-      `Serial4`.
-      Allocate a 513-byte DMX universe buffer.
-- [ ] **Fixture config in firmware** — hardcoded struct for 1–2
-      fixtures (address, channel layout, RGB trim, master scale). The
-      BCC145 layout is settled: 4-channel mode (`D001`), RGBW, no
-      master dimmer. See `docs/wiring.md` § "Fixture profile".
-- [ ] **Render loop hook**: each frame, write `paletteCenter × V ×
-      trim` to each fixture's DMX channels.
-- [ ] **Calibrate per fixture model** at rehearsal (RGB trims +
-      master scale). Commit the tuned values.
-- [ ] **Test at a venue** with one of the house PAR cans before
-      relying on it live.
+- [x] **Integrate the TeensyDMX library** in `brain/platformio.ini` on
+      `Serial4`, in `brain/src/dmx_out.cpp`.
+- [x] **Fixture config in firmware** — four BCC145 of our own in
+      4-channel mode at `D001` / `D005` / `D009` / `D013`, each with RGBW
+      trims and a master scale. A fixture that is not connected simply
+      ignores its channels, so the table is safe with fewer plugged in.
+- [x] **Render loop hook**: each frame every fixture gets the colour the
+      strips are showing, with the common component pulled into the white
+      channel rather than mixed from RGB. Confirmed on one BCC145: the
+      hue walk reads correctly and desaturating gives a clean
+      `0/0/0/255`.
+- [ ] **Calibrate per fixture model** at rehearsal (RGB trims + master
+      scale), with a strip and a PAR lit side by side. Two things to
+      settle:
+    - [ ] RGB trims — green is the usual offender.
+    - [ ] Whether FastLED's brightness curve suits the fixture. Step
+          **evenly spaced** values (127, 109, 91, 73, 54, 36, 18, 0) and
+          ask whether the perceived steps are even. A first pass on
+          2026-09-05 used an uneven ramp and so proved nothing. See
+          DESIGN.md § "DMX OUT for venue fixtures", point 4.
+- [ ] **Test at a venue** before relying on it live. Note this means our
+      own fixtures: DMX carries no channel semantics, so an unknown
+      fixture cannot be driven correctly without knowing its layout —
+      see the note under Phase 8 on profiles.
 
 ---
 
@@ -361,6 +372,17 @@ Only do this when you're ready to retire the old single-box Aurora.
       simple echo proves too quiet to matter. Note this moves the
       BCC145 to its 8-channel mode (`Axxx`), which is also where its
       master dimmer lives; see `docs/wiring.md` § "Fixture profile".
+- [ ] **DMX fixture profiles + addressing without a reflash.** DMX
+      carries no semantics — nothing says "channel 1 is red", and a
+      dimmer-first fixture fed RGB produces nonsense rather than an
+      approximation. RDM solves this properly by letting fixtures
+      describe themselves, but cheap fixtures rarely implement it and
+      our auto-direction M5Stack module is probably unsuitable for its
+      bus turnaround. The cheap 90% is a handful of named profiles
+      (RGB, RGBW, Dim+RGB, Dim+Strobe+RGBW) plus live profile and
+      address selection, turning load-in into "walk the channels with
+      `bench/dmx_channel_map`, pick a profile, set an address". Only
+      worth it if we start driving fixtures we do not own.
 - [ ] DMX **input** (console drives Aurora) — separate conversation
       entirely; not on the roadmap unless a venue demands it.
 - [ ] Import `Aurora_Tempo` sources into `legacy/` once found, for

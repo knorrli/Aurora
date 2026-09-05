@@ -1,5 +1,6 @@
 #include "aurora.h"
 
+#include "dmx_out.h"
 #include "midi_in.h"
 #include "tempo.h"
 
@@ -39,6 +40,7 @@ void setup()
 
   midi_in::begin();
   tempo::begin();
+  dmx_out::begin();
 
   showBootIndicatorReady();
 }
@@ -82,6 +84,7 @@ void render()
 
   FastLED.show();
   renderTempo();
+  dmx_out::tick();
 }
 
 #ifdef AURORA_DEBUG
@@ -94,5 +97,7 @@ void reportState()
                 currentPreset, presetAltModeEnabled ? " alt" : "",
                 presetColor.hue, presetColor.saturation, presetColor.value,
                 elapsedLoopTime, tempo::running() ? "" : "  [stopped]");
+  const uint8_t *dmx = dmx_out::lastValues();
+  Serial.printf("       dmx %u/%u/%u/%u\n", dmx[0], dmx[1], dmx[2], dmx[3]);
 }
 #endif
