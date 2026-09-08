@@ -117,7 +117,7 @@ Checked items are confirmed in the components drawer.
     - [ ] *Deferred:* 3-pin-male → 5-pin-female adapter, for venues
           with 5-pin fixtures. The band's own BeamZ BCC145 PARs are
           3-pin.
-- [ ] **74AHCT125 level shifter × 2** — one for the brain, one for the
+- [x] **74AHCT125 level shifter × 2** — one for the brain, one for the
       controller's indicator pixels later. The Teensy drives 3.3 V and a
       5 V WS2812 wants about 3.5 V; proven marginal on the bench
       2026-09-05. Must be **HCT** or **AHCT**: plain HC or AHC has the
@@ -125,7 +125,13 @@ Checked items are confirmed in the components drawer.
       identical on the shelf. 74HCT245, 74HCT244 and 74HCT04 do the same
       job, so searching a supplier for "74HCT" rather than one exact part
       number widens the options considerably.
-    - [ ] Bastelgarage stocks nothing suitable. Its level-converter range
+    - [x] Arrived 2026-09-09 as bare DIP-14, not the breakout the part
+          number suggested. Both chips read `SN74AHCT125N` — correct
+          part despite the listing title. Fitted to the brain breadboard
+          the same day and the 3.3 V data problem is fully resolved; see
+          `DESIGN.md` § "What the first LED bench proved". The second
+          chip is spare for the controller's indicator pixels.
+    - [x] Bastelgarage stocks nothing suitable. Its level-converter range
           is BSS138 boards and TXS0108E/TXS0104E boards, both built for
           slow bidirectional buses, plus optocoupler 12 V boards — none
           fast enough for WS2812's 800 kHz.
@@ -134,8 +140,8 @@ Checked items are confirmed in the components drawer.
           — Adafruit's 74AHCT125 — and the description states it lifts
           3 V logic to 5 V for NeoPixels, which a plain AHC cannot do.
           Check the silkscreen on arrival regardless.
-    - [ ] Barrel pigtails for the strip data connectors are on hand
-          (two spare), so the shifters are the only blocker.
+    - [x] Barrel pigtails for the strip data connectors are on hand
+          (two spare).
 - [x] **12-position rotary ladder resistors** — 1% resistors on hand.
       The chain wants roughly twelve of one value, one contact closing at
       a time; confirm the count when the ladder is actually built.
@@ -224,9 +230,9 @@ touching the existing Aurora or the controller.
       pin 2 through the existing strip boxes, each strip on its own 5 V
       supply. The brown-out worry in the original note never applied —
       no strip has ever drawn from the Teensy — so `MAX_BRIGHTNESS` is
-      back at 255. Data works at 3.3 V but is marginal; see DESIGN.md
-      § "What the first LED bench proved" and docs/wiring.md § "WS2812
-      strips — strip boxes and the data chain".
+      back at 255. Data at 3.3 V was marginal and is now buffered by a
+      74AHCT125; see DESIGN.md § "What the first LED bench proved" and
+      docs/wiring.md § "WS2812 strips — strip boxes and the data chain".
 - [ ] **Validate over USB MIDI** with a laptop. Everything checkable
       without strips is done; the rest needs them on the bench.
     - [x] PC 0–9 selects presets, and the swap lands on the next pulse
@@ -245,7 +251,9 @@ touching the existing Aurora or the controller.
           All 18 preset/variant combinations walked on the wall
           2026-09-05. One bug found and fixed (Plasma's wrap
           discontinuity); everything else rendered as designed.
-    - [ ] Trigger note 60 produces the flash.
+    - [x] Trigger note 60 produces the flash. Confirmed 2026-09-09:
+          white flash, a fade through the preset hue, a black phase,
+          then the preset returns.
     - [ ] Drop `-D AURORA_DEBUG` from `brain/platformio.ini` once the
           strips are the thing being read instead of the console.
 
@@ -285,8 +293,24 @@ Depends on Phase 2 and the Phase 0 decisions.
       `CRGBPalette16` is the wrong container — rotation by H and
       scaling by S both happen at sample time.
 - [ ] **Rewire faders**: H = palette hue center, S = palette spread,
-      V = brightness. (Already wired via CC in the controller; this is
-      brain-side interpretation.)
+      third fader = **energy**. Brightness leaves the faders and becomes
+      a soundcheck trim on the rotary or a dedicated pot. Needs a
+      `CC_ENERGY` in `shared/aurora_protocol.h`; `CC_VALUE` survives but
+      becomes a rarely-sent trim. See `DESIGN.md` § "The energy axis".
+- [ ] **Implement the energy axis** — one 0–255 value every pattern
+      reads and interprets in its own terms: density, height, speed,
+      tail length, flash probability, brightness. Do it in the same pass
+      as the palette rewrite, preset by preset, so each pattern gains a
+      palette sample and an energy reading together.
+    - [ ] **Per-strip offset from the pad**:
+          `strip_energy[i] = global_energy + pad_offset[i]`, pad centre
+          meaning no change, springing back to zero on release. Up
+          boosts a strip, down ducks it.
+    - [ ] **Foot ramp** — a pedal switch that ramps energy over N beats
+          while held and releases back. Lands with Phase 4.5.
+    - [ ] **Mic offset** — the envelope follower feeds energy and
+          nothing else. Deferred to Phase 8, but the axis has to exist
+          first.
 - [ ] **Rewire the A/B switch on the controller**: swap the multi-state
       rotary for a simple 2-position toggle — song vs. raw pattern.
       Firmware-side the logic is already in `controls.cpp`; the pin is
@@ -348,7 +372,7 @@ foot-pedal events" for the full model.
 
 ---
 
-## Phase 4.75 — DMX OUT color echo
+## Phase 4.75 — DMX OUT: the washes as part of the instrument
 
 Depends on Phase 2 (Teensy brain bring-up). Order-wise it can slot
 in before Phase 5 if you want fixtures at the next gig; functionally
@@ -383,6 +407,51 @@ it's independent of the DIN MIDI input work.
       own fixtures: DMX carries no channel semantics, so an unknown
       fixture cannot be driven correctly without knowing its layout —
       see the note under Phase 8 on profiles.
+
+**Off pure colour echo** — decided 2026-09-06, see `DESIGN.md`
+§ "The washes stop being an echo". The four items already ticked above
+stand as history; this is where the scope changed.
+
+- [x] **Switch the fixtures to 8-channel mode (`Axxx`).** Done
+      2026-09-09. `dmx_out.cpp` writes eight channels at 1/9/17/25,
+      brightness on the dimmer at +0 with RGBW at full scale, and macro
+      and speed pinned at zero. The channel map in `docs/wiring.md` was
+      already bench-confirmed, so no re-run of `bench/dmx_channel_map/`
+      was needed. Verified with one fixture at `A001`: an orange held
+      its shade down to 5 % dimmer, which 4-channel could not have done.
+    - [ ] Set the other three fixtures to `A009`, `A017` and `A025` when
+          they are next to hand. Only one was connected on the bench.
+- [ ] **Per-fixture master scale set by eye** at soundcheck, so
+      washes-at-full read as equal *weight* to strips-at-full. A
+      separate number from the RGBW trims: those correct hue, this one
+      caps authority.
+- [ ] **Wash hue offset** — one byte, so the washes can sit
+      complementary or desaturated against the strips instead of
+      matching them. The real departure from echo.
+- [ ] **Per-pattern wash behaviour** — a small enum plus a level per
+      pattern: follow, antiphase, step across on the beat, hold dark,
+      flash only. The vocabulary itself is still open; see `DESIGN.md`
+      § "Still open — added 2026-09-06", item 12.
+- [ ] **Decide whether the washes follow the trigger flash.** Observed
+      2026-09-09: they do not. `dmx_out::tick()` reads `presetColor`,
+      the preset's base colour, while the trigger renders from its own
+      colour — so a kick-driven flash fires on the strips while the PARs
+      hold steady. Coupling them naively is worse, not better: the flash
+      ends in a black phase, and at kick rate that makes the whole room
+      strobe white-to-black about twice a second. The option worth
+      designing is the accent without the blackout — washes brighten on
+      the hit and fall back to the preset colour without ever going
+      dark. Belongs in the behaviour enum above rather than bolted on.
+- [ ] **Energy split** — washes carry the bottom of the energy range and
+      the strips the top, so the two never peak together. Depends on
+      Phase 4's energy axis.
+- [ ] **Scene override** — level offset, hue offset, behaviour, roughly
+      three bytes in `Scene`. Lands with Phase 4.5.
+- [ ] **One wash-only pedal switch** — blackout under a running pattern.
+      Lands with Phase 4.5.
+- [ ] **Check every look with zero washes connected.** The strips must
+      carry the look alone; the washes are always additive. This is what
+      keeps the songs portable to rooms where they cannot be rigged.
 
 ---
 
@@ -470,7 +539,13 @@ existing wiring. The foot-pedal ladder still applies.
 
 - [ ] Second LED fixture (backdrop, front-of-stage row, etc.) — cheap
       on Teensy with OctoWS2811.
-- [ ] Audio-reactive FFT from the mic trigger input.
+- [ ] **Beat detection from the mic** — DJ Mode's tempo source, and its
+      weakest link, since there is no MIDI clock to lean on there. Worth
+      more than the FFT work below. See `DESIGN.md` § "Where Aurora gets
+      used — Band Mode and DJ Mode".
+- [ ] Audio-reactive FFT from the mic trigger input. Whatever it
+      produces feeds the energy axis and nothing else — never colour,
+      never pattern.
 - [ ] **Setlist file + prev/next-song pedal buttons**, if the numpad
       proves annoying for hands-free song transitions. Requires 2
       extra pedal switches OR a modifier ("Shift") scheme.
@@ -478,11 +553,10 @@ existing wiring. The foot-pedal ladder still applies.
       SysEx — named songs, named scenes, ramp curves, accent
       selection, visual timeline. Only once capture mode proves
       insufficient.
-- [ ] **DMX tempo-synced effects on fixtures** (strobe-on-beat,
-      fade-on-drop) — extend beyond pure color echo. Only if the
-      simple echo proves too quiet to matter. Note this moves the
-      BCC145 to its 8-channel mode (`Axxx`), which is also where its
-      master dimmer lives; see `docs/wiring.md` § "Fixture profile".
+- [ ] **DMX strobe-on-beat and fade-on-drop.** The move to 8-channel
+      mode is promoted into Phase 4.75, so the strobe channel is there
+      already; what is left here is whether tempo-synced strobing on the
+      washes earns its place beside the strips' own intensity row.
 - [ ] **DMX fixture profiles + addressing without a reflash.** DMX
       carries no semantics — nothing says "channel 1 is red", and a
       dimmer-first fixture fed RGB produces nonsense rather than an

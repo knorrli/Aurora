@@ -536,9 +536,18 @@ pixels' data enters through strip 1 and is re-transmitted from there.
 Every link downstream is electrically clean and logically wrong.
 
 The fix is the level shifter in `docs/wiring.md` § "3.3 V data and the
-level shifter". A short dedicated ground bond from the Teensy to strip
-1's supply negative is the other half of the problem and would help on
-its own; it was not tried because it needs soldering inside a strip box.
+level shifter", and it turned out to be the entire fix. Fitted
+2026-09-09 with an `SN74AHCT125N`: solid fill and Starfield against
+black both render cleanly, and the proximity flicker is gone — including
+on the two-prong charger that had been unusable. The marginal threshold
+was therefore causing the grounding symptom too, rather than sitting
+alongside a second independent fault.
+
+The dedicated ground bond from the Teensy to strip 1's supply negative
+stays unbuilt, and remains the first thing to try if flicker ever
+reappears. Bench mains are not venue mains, and the original symptom was
+about how the laptop's reference floats relative to the strips'
+supplies. Building it means soldering inside a strip box.
 
 ### Two firmware findings
 
@@ -708,6 +717,304 @@ in the sections above and below.
    reads as more percussive, a longer one as more of a pulse. It is one
    constant and only the wall can settle it.
 
+## Where Aurora gets used — Band Mode and DJ Mode
+
+Two uses, and they are different instruments sharing one box. Naming
+them matters because several controls want different assignments in
+each, and because a feature can be essential in one and pointless in
+the other.
+
+**Band Mode** is stage lighting for the band's own set — roughly 70%
+lighting, 30% decoration. Hands are almost never free, so the design
+target is that a whole song is playable with the foot pedal alone.
+Songs are queued over MIDI where the band's rig can send it, rather
+than by numpad, which leaves the numpad nearly idle and makes it the
+fallback path rather than the primary one. The pedal is loaded per song
+with the things that fit that song.
+
+**DJ Mode** is Aurora at a party or a concert with nothing else to do.
+Hands are on everything. There are no prepared songs because the music
+is not known in advance, so the work is reacting to what is playing and
+anticipating what is about to happen. The pedal cannot be preloaded
+with song knowledge; it carries generic dynamics instead — things that
+complement or contrast each other.
+
+| | Band Mode | DJ Mode |
+|---|---|---|
+| Song / scene source | prepared per song | none |
+| Primary control | foot pedal | hands, all of it |
+| Numpad | fallback, mostly idle | primary pattern select |
+| Tempo | real MIDI clock | tap, or the mic |
+| Faders | trim on top of a scene | the whole colour performance |
+
+Two consequences worth stating plainly.
+
+**DJ Mode's verbs are transitions, not scenes** — build, drop, hold,
+break. A drop is a build followed by a *release*, which means a
+momentary pedal switch needs a release action and not only a hold
+action. That is where the impact lands, and nothing in the pedal model
+above provides it.
+
+**DJ Mode's weakest link is tempo.** Every tempo-locked pattern in Row 2
+is only as convincing as a tap. Beat detection from the mic is
+therefore a DJ Mode feature specifically rather than a general
+nice-to-have, and it is worth more than the FFT work parked behind it
+in Phase 8.
+
+## The energy axis
+
+**The problem.** Aurora expresses intensity by *switching pattern* — the
+three rows are a discrete ladder climbed by picking a slot. Music does
+not build in three steps. There is no number anywhere in the system
+meaning "the wall is at 30% right now", and no way to move it to 80%
+over eight bars.
+
+"Idle richness" above was the earlier answer to "nothing evolves". It
+solves *looping*. It does not solve *dynamics*, because it is
+autonomous: the wall varies on its own but the performer still cannot
+play it. Both are wanted; they are not the same thing.
+
+**Energy is one value, 0–255, that every pattern reads and interprets in
+its own terms** — density, height, speed, tail length, flash
+probability, brightness. Nine patterns each covering a range rather
+than sitting at a point.
+
+**It lives on the third fader.** Brightness comes off the faders and
+becomes a soundcheck trim on the rotary or a dedicated pot, because
+absolute brightness is set once per room and energy scales it anyway.
+Brightness is the crudest version of the thing actually wanted.
+
+Three sources feed it, and they compose:
+
+- **Hand** — the fader, which sets the base value.
+- **Foot** — a pedal switch that ramps it over N beats while held and
+  releases back. A build played without hands.
+- **Ear** — the mic envelope, as an offset. The discipline is that audio
+  drives *only* this, never colour and never pattern. That is the
+  difference between lights running during a song and lights playing
+  it, without the flickering-visualiser look.
+
+**The pad supplies a per-strip offset, not the value.**
+`strip_energy[i] = global_energy + pad_offset[i]`, with the offset
+springing back to zero on release and pad centre meaning no change — so
+up boosts a strip and down ducks it, and one gesture covers both
+"highlight the soloist" and "drop that strip out".
+
+**Why energy is not the pad's primary home.** The pad springs back, and
+that is settled and right. Energy must hold: a build that collapses
+when a thumb lifts is worthless, and a foot or the mic has to be able
+to keep moving it while the hands are elsewhere. Sculpt is the exact
+opposite and was deliberately designed as a lean-on-it control. Putting
+energy on the pad and the sculpt blend on a fader swaps both onto the
+wrong control.
+
+**Why energy on a "colour" fader is not a category error.** The left
+region of the box is level and colour, and energy is the grown-up
+version of V, which already lives there. Sculpt on a fader would be the
+real break, because sculpt is a shape control and shape lives in the
+centre and right of the surface.
+
+**Protocol implication.** A `CC_ENERGY` is needed — the 20–29 colour
+block has room — and `CC_VALUE` becomes a rarely-sent trim rather than a
+live fader. Not yet added to `shared/aurora_protocol.h`.
+
+## The washes stop being an echo
+
+Decided 2026-09-06. Supersedes the "colour echo only, no choreography"
+scope in "DMX OUT for venue fixtures"; the reasons that section gives
+for *not* driving the strips over DMX are unaffected.
+
+**8-channel mode (`Axxx`) from the start**, not as a deferred upgrade.
+The strategy below keeps the washes habitually low, and 4-channel
+mode's only way to dim is to scale RGBW down — losing colour resolution
+at exactly the levels the design now lives at, and banding on slow
+fades. The real dimmer is at offset +0 of the 8-channel block and the
+strobe channel comes with it. The cost is the macro channel at +6,
+which must be held below 50 or it starts an auto sequence that
+overrides colour entirely. Channel map in `docs/wiring.md` § "Fixture
+profile — BeamZ BCC145".
+
+**They are first-class as a class, agnostic about the count.** The
+firmware always models a wash group; four, two or zero connected is
+config, and an absent fixture simply ignores its channels.
+
+**Hard constraint: the strips must carry the look alone.** A scene whose
+character depends on the washes is a scene that cannot be played in a
+room where they could not be rigged, or when one dies mid-set. Every
+wash contribution is additive. This is what keeps the songs portable
+across venues, and it is a rule rather than a preference.
+
+**Each pattern says what the washes do.** A small enum plus a level, per
+pattern — follow, antiphase, step across on the beat, hold dark, flash
+only. This is what "per-preset fixture choreography" was ruled out as,
+but that argument was made by analogy with driving 705 addressable
+channels over DMX. A wash has two meaningful parameters, level and
+colour; choreographing two numbers is a different-sized problem.
+
+**Scenes override it** — level offset, hue offset, behaviour, about
+three bytes in `Scene`. This is where a song says "washes dark through
+the whole verse".
+
+**One pedal switch is washes-only.** A wash blackout under a running
+pattern is the cheapest drop in the rig.
+
+### Keeping the washes from overpowering the strips
+
+In order of effect:
+
+1. **Aim them off the strips.** A wash falling on the surface the strips
+   are mounted on lights the background of the graphic and collapses
+   its contrast. Point them at the band, across the stage, or at the
+   audience. Free, and most of the problem.
+2. **Set a ceiling by eye, once, in the room.** Per-fixture master scale
+   set at soundcheck so washes-at-full read as equal *weight* to
+   strips-at-full, and never exceeded afterwards. A separate number
+   from the RGBW trims: those correct hue, this one caps authority.
+3. **Different colour, not the same colour.** Two fixtures on one hue
+   means the brighter wins and the dimmer disappears. Strips saturated,
+   washes low and desaturated or complementary, and they read as two
+   layers rather than one thing plus glare. One byte of hue offset buys
+   this, and it is the real departure from pure echo.
+4. **Split the energy range between them.** Washes own the bottom, strips
+   own the top: low energy is a warm room with the strips ticking over,
+   and as energy climbs the strips take over while the washes retreat to
+   accents. They never both peak, so overpowering cannot happen by
+   construction — and the rig changes character as it builds rather than
+   just getting brighter.
+5. **Dark is a state.** The most effective thing a wash does is usually
+   be off until it matters.
+
+## The touchpad, enumerated
+
+Written down because the combinatorics had never been listed in one
+place, and because the gaps are the interesting part. Four switches
+qualify the pad: **effect** (3-way, `CC_TOUCHPAD_EFFECT`), **strip
+mode** (3-way, `CC_TOUCHPAD_STRIP_MODE`), **hold** (2-way), **vertical**
+(2-way, boot-time only).
+
+Note the protocol already defines effect as three positions — 0
+paint/fill, 64 paint/invert, 127 sculpt — while `controls.cpp` still
+reads it as a digital two-state. The switch itself has not been
+replaced yet.
+
+| Effect mode | X means | Y means | On touch | On release |
+|---|---|---|---|---|
+| paint / fill | which strips | painted colour: saturation or hue, per vertical mode | selected strips filled with `touchColor` | paint stops; hold latches the last touch |
+| paint / invert | which strips | same | each LED on the selected strips toggles black ↔ `touchColor` | same |
+| sculpt | which strips | blend from pattern default toward variant, **per strip** | selected strips move along their blend axis | springs back to the scene's value; hold latches |
+
+Strip mode qualifies X in all three:
+
+| Strip mode | Selected | Everyone else |
+|---|---|---|
+| mirrored | strip N and strip 4−N | untouched, keeps running the pattern |
+| all | all five | — |
+| mirrored-exclusive | strip N and 4−N | forced to the opposite state — inverted to `touchColor` or black |
+
+Vertical mode applies only to the two paint modes and is chosen by
+holding key `0` at boot. That gives 3 × 3 × 2 = 18 live states, ×2 for
+vertical inside the paint modes, so 30 distinct behaviours. **None of
+them touches the washes.**
+
+Three things the enumeration exposes:
+
+- **Vertical mode is a boot-time setting**, so it cannot be changed
+  during a gig. That makes it either a constant nobody has committed to
+  or a control wanting a real switch.
+- **The effect switch mixes two levels of hierarchy.** paint-versus-
+  sculpt changes what the pad fundamentally *is*; fill-versus-invert is
+  a small look variation. They sit at the same level on the same
+  switch, which is why the middle position feels arbitrary.
+- **Strip mode is secretly two controls** — how wide the selection is,
+  and whether the unselected strips get forced to the opposite state.
+  That second job, "what happens to everything you did not touch", is
+  the natural slot for any future scope question.
+
+## Considered and rejected — 2026-09-06
+
+**Touchpad X as stage position rather than strip index.** Each fixture
+would carry a normalised 0–1 position and a gesture would affect
+whatever stands near that point, washes included. Mirroring survives
+this — it mirrors about the centre line rather than about strip index
+2, which under uneven spacing is more symmetric, not less. Rejected
+because it gives the washes *co-located* behaviour and never
+independent behaviour: a softer tie to the strips, but still a tie, and
+the question was how to do more than mirroring. Worth revisiting for
+its other benefit, which is that patterns written against position
+survive uneven strip spacing — the one-strip-per-player arrangement
+stops costing the geometric patterns. Note this is not the
+resolution-independent rewrite rejected in "The controller's indicator
+pixels"; that was about vertical resolution, this is five horizontal
+constants.
+
+**Splitting the pad vertically**, upper half strips and lower half
+washes. X carries identity, Y carries quantity. Splitting Y spends the
+only continuous axis on an identity question, halves the resolution of
+both halves, and puts the boundary in the middle of the pad where it
+cannot be felt in the dark. Identity questions belong on switches.
+
+**The pad as energy's primary home.** See "The energy axis".
+
+**Any dependency on haze.** Most venues forbid it and the practice room
+cannot take it. A hazer stays worth owning for the rooms that allow it,
+but nothing in the design may assume air. Its two benefits are
+partially recoverable without it: beams pointed at people land without
+visible air, which is why blinders work in haze-free rooms, and depth
+comes from fixtures at different distances rather than all in one
+plane.
+
+If the pad ever must reach the washes, the cheap version that breaks
+nothing: **washes follow the pad's Y and ignore its X**, taking the
+average or the peak of the gesture. One meaning for the pad, a share
+for the washes, and no 5-into-4 mapping to invent.
+
+## Decisions settled — 2026-09-06
+
+Continuing the numbering from 2026-09-05.
+
+13. **Two named use modes, Band and DJ.** They differ in control
+    assignment and in what is worth building, and features are judged
+    against a named mode rather than against "Aurora" in general.
+14. **The energy axis exists**, is read by every pattern, and lives on
+    the third fader. Brightness becomes a soundcheck trim.
+15. **Energy is base plus a springy per-strip pad offset**, not a pad
+    value.
+16. **Audio drives energy only** — never colour, never pattern.
+17. **Momentary pedal switches get a release action**, not only a hold
+    action, because that is where a drop lands.
+18. **The washes move to 8-channel mode from the start**, for the real
+    dimmer and the strobe channel.
+19. **The washes are first-class as a class**, and the strips must carry
+    every look alone.
+20. **Wash behaviour is per pattern**, overridable per scene, with one
+    wash-only pedal switch.
+21. **The wash restraint rules** — aim off the strips, ceiling by eye,
+    contrasting colour, split energy range.
+
+## Still open — added 2026-09-06
+
+9. **Vertical mode: keep it or delete it.** A setting that cannot be
+   reached during a gig is either a constant or a missing switch. Pick
+   one; deleting it frees a boot key, a CC and a branch.
+10. **Whether the effect switch should stop mixing hierarchy levels** —
+    fill-versus-invert is a much smaller distinction than
+    paint-versus-sculpt and probably does not deserve equal billing.
+11. **Which of the 30 touchpad states actually get used.** The ones
+    never visited are the honest answer to what the pad should be. This
+    needs a gig, not a bench.
+12. **The wash behaviour vocabulary** — what the enum's members actually
+    are, and which one each of the nine patterns gets. Needs the
+    fixtures and the strips lit together.
+13. **How energy is divided between fader, pedal and mic in each
+    mode.** Band Mode probably wants the pedal ramp to dominate; DJ
+    Mode probably wants the fader. Untested either way.
+14. **Beat detection from the mic** — algorithm, and whether the
+    existing envelope follower is enough or whether it needs
+    re-designing. DJ Mode depends on it.
+15. **The DJ Mode pedal loadout.** Four generic switches with no song
+    knowledge: build, kill, accent, and one more. What the fourth is,
+    and whether any of them should be a cycle.
+
 ## Memory budget check
 
 After the preset redesign commit:
@@ -758,6 +1065,20 @@ No budget concerns.
 14. **Capture mode (v2).** Hold pedal button N for ~2 s → bind
     current Aurora state to that button for the active song.
     Persist to EEPROM / LittleFS.
+
+Amended 2026-09-06. The changes are additions and one reordering:
+
+- **Energy rides along with step 6.** Each preset gains a palette sample
+  and an energy reading in the same pass — doing them separately means
+  touching all nine patterns twice.
+- **Accents come before scenes**, so step 12 moves ahead of steps 10 and
+  11. Accents are immediate, hands-busy and testable at a single
+  rehearsal. Scenes, capture mode and persistence are the largest block
+  of work in this document and their payoff scales with how much state
+  the rig has — which today is five strips and four washes. Build the
+  half that pays now.
+- **The wash work is its own track**, Phase 4.75 in `TODO.md`. Only its
+  scene override and its pedal switch depend on step 10.
 
 ---
 

@@ -170,18 +170,35 @@ once. Fine to gamble with on the bench, not on stage.
 cable.** It takes 3.3 V in and drives 5 V out, restoring exactly the
 signal the Nano produced.
 
-| Chip pin      | To                                              |
-|---------------|-------------------------------------------------|
-| 14 `VCC`      | 5 V — `VIN` on the bench, which carries USB 5 V |
-| 7  `GND`      | common ground                                   |
-| 1  `1OE`      | GND — enables the channel                       |
-| 2  `1A`       | Teensy pin 2                                    |
-| 3  `1Y`       | data-in pigtail, centre pin                     |
-| 5, 9, 12      | GND — unused inputs, never leave them floating  |
+DIP-14 numbering runs counter-clockwise seen from above. With the notch
+at the left end, pin 1 is **bottom**-left and the bottom row counts 1–7
+left to right; the top row is 8–14 counting right to left, so pin 14
+sits directly above pin 1. Some packages also carry a round divot, which
+may be a moulding mark rather than a pin-1 dot — trust the notch.
+
+| Chip pin  | To                                                    |
+|-----------|-------------------------------------------------------|
+| 14 `VCC`  | 5 V — `VIN` on the bench, which carries USB 5 V        |
+| 7 `GND`   | common ground                                         |
+| 1 `1OE`   | GND — enables the channel                             |
+| 2 `1A`    | Teensy pin 2                                          |
+| 3 `1Y`    | data-in pigtail, centre pin                           |
+| 5, 9, 12  | GND — unused inputs, never leave them floating        |
+| 4, 10, 13 | VCC — unused output-enables, floating just as badly   |
+| 14 ↔ 7    | 0.1 µF ceramic, short leads, at the chip body          |
+
+The 0.1 µF earns its place: AHCT edges are a couple of nanoseconds, and
+the breadboard rail back to the Teensy has enough inductance that it
+cannot supply a current spike that fast. Without a local reservoir the
+chip's own supply rings — which is the exact defect the buffer is here
+to remove.
 
 The part must be **HCT** or **AHCT**. Plain HC or AHC has the same
 3.5 V threshold as the pixels themselves and fixes nothing, while
-looking identical on the shelf.
+looking identical on the shelf. A DC bench check will not separate them
+either: an AHC part typically switches near 2.5 V despite guaranteeing
+only 3.5 V, so it passes a multimeter and fails on stage. Read the
+marking on the chip body — `AHCT` or `HCT` between the prefix and `125`.
 
 Three of the four channels stay spare, which covers the OctoWS2811
 expansion pins reserved above. The controller needs the same part for
@@ -191,6 +208,10 @@ The chip also sits between the Teensy and a connector that gets plugged
 and unplugged in the dark. A barrel plug shorts centre to sleeve as it
 slides in, so whatever drives that line is briefly shorted to ground —
 better a one-franc buffer than the Teensy.
+
+**Built and verified 2026-09-09** on the breadboard with an
+`SN74AHCT125N`. Solid fill and Starfield-against-black both render
+cleanly, and the proximity flicker is gone, two-prong charger included.
 
 ---
 
@@ -416,7 +437,7 @@ The BCC145 has two personalities: `D001`–`D512` is 4-channel,
 `A001`–`A512` is 8-channel. Both are in the manual, and both offsets
 below were also confirmed on the bench with `bench/dmx_channel_map/`.
 
-**4-channel (`Dxxx`) — use this one.**
+**4-channel (`Dxxx`) — superseded, kept for reference.**
 
 | Offset | Function |
 |--------|----------|
@@ -441,22 +462,26 @@ below were also confirmed on the bench with `bench/dmx_channel_map/`.
 At `D001` the 4-channel block is channels 1–4, so a second fixture
 starts at 5.
 
-4-channel is right for colour echo: fewer channels, and no macro channel
-to accidentally write a nonzero value into — anything above 50 there
-starts an auto sequence that overrides colour entirely.
+**8-channel is what the brain drives**, as of 2026-09-09. Brightness
+comes from the dimmer at +0 while RGBW stays at full scale; the strobe
+channel also comes with it, which is what any tempo-synced fixture
+effect would need. The cost is the macro channel at +6, which must be
+held below 50 or the fixture starts an auto sequence that overrides
+colour entirely — `dmx_out.cpp` pins it and its speed channel at zero.
 
-**Two reasons 8-channel may earn its place later**, neither of them
-urgent. Its dimmer is a real one, so brightness could come from the
-dimmer channel while RGBW stays at full scale — in 4-channel mode the
-only way to dim is to scale RGBW down, which throws away colour
-resolution exactly where the palette is dimmest and will band on slow
-fades. And its strobe channel is what the deferred tempo-synced fixture
-effects would need; there is no way to strobe from the 4-channel block
-except by toggling values frame to frame.
+Verified on the bench 2026-09-09 with one fixture at `A001`. An orange
+of red 255 / green 85 held its shade all the way down to 5 % dimmer,
+with only a slight loss of yellow that is as easily the eye as the
+fixture. Dimming the same colour in 4-channel mode would have left
+green with four levels of resolution — one step is a 25 % change in
+green against an 8 % change in red, which is the hue drift and banding
+the switch was made to avoid.
 
 Full scale is far brighter than the strips — 255 on all four is hard to
 look at directly, and the per-fixture master scale in DESIGN.md's
-`Fixture` struct exists for this.
+`Fixture` struct exists for this. Bench comparison 2026-09-09 confirmed
+the gap is wide: at matching settings the PAR clearly overpowers the
+strips, so master is a number that has to be set in the room.
 
 ### Bench tools
 
