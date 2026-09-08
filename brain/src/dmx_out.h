@@ -17,7 +17,8 @@ namespace dmx_out {
 void begin();
 void tick();
 
-// Channel values last written to the first fixture, for the debug line.
+// The eight channel values last written to the first fixture, for the
+// debug line.
 const uint8_t *lastValues();
 
 } // namespace dmx_out

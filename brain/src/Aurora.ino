@@ -98,6 +98,7 @@ void reportState()
                 presetColor.hue, presetColor.saturation, presetColor.value,
                 elapsedLoopTime, tempo::running() ? "" : "  [stopped]");
   const uint8_t *dmx = dmx_out::lastValues();
-  Serial.printf("       dmx %u/%u/%u/%u\n", dmx[0], dmx[1], dmx[2], dmx[3]);
+  Serial.printf("       dmx dim %u  rgbw %u/%u/%u/%u\n",
+                dmx[0], dmx[2], dmx[3], dmx[4], dmx[5]);
 }
 #endif

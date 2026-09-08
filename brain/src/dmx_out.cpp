@@ -12,23 +12,24 @@ static teensydmx::Sender dmx{Serial4};
 struct Fixture {
     uint16_t address;
     bool hasWhite;
-    uint8_t trim[4];   // R, G, B, W — 255 is unity
-    uint8_t master;    // overall output scale; a PAR at full dwarfs the strips
+    uint8_t trim[4];   // R, G, B, W colour balance — 255 is unity
+    uint8_t master;    // scales the dimmer; a PAR at full dwarfs the strips
 };
 
 // Four BeamZ BCC145 of our own, chained alongside the strips, each in its
-// 4-channel mode — so the blocks are D001, D005, D009, D013. Trims and
-// master are unity until calibrated against the strips at rehearsal. A
-// fixture that is not plugged in simply ignores its channels, so this
-// table is safe to run with fewer connected.
+// 8-channel mode — so the blocks are A001, A009, A017, A025. Channel
+// layout is in docs/wiring.md § "Fixture profile — BeamZ BCC145". Trims
+// and master are unity until calibrated against the strips. A fixture
+// that is not plugged in simply ignores its channels, so this table is
+// safe to run with fewer connected.
 static Fixture fixtures[] = {
     {  1, true, { 255, 255, 255, 255 }, 255 },
-    {  5, true, { 255, 255, 255, 255 }, 255 },
     {  9, true, { 255, 255, 255, 255 }, 255 },
-    { 13, true, { 255, 255, 255, 255 }, 255 },
+    { 17, true, { 255, 255, 255, 255 }, 255 },
+    { 25, true, { 255, 255, 255, 255 }, 255 },
 };
 
-static uint8_t lastWritten[4] = { 0, 0, 0, 0 };
+static uint8_t lastWritten[8] = { 0 };
 
 namespace dmx_out {
 
@@ -37,10 +38,17 @@ void begin() {
 }
 
 void tick() {
-    CRGB rgb = CRGB::Black;
-    if (currentPreset != PRESET_OFF) {
-        hsv2rgb_rainbow(presetColor, rgb);
-    }
+    // Colour is converted at full value and brightness is carried by the
+    // fixture's own dimmer, so the emitters stay near full scale where
+    // they have the most resolution. Scaling RGBW down instead — the only
+    // option the 4-channel personality offers — bands on slow fades at
+    // the low levels the washes normally sit at.
+    CHSV hsv = presetColor;
+    const uint8_t level = (currentPreset == PRESET_OFF) ? 0 : hsv.value;
+    hsv.value = 255;
+
+    CRGB rgb;
+    hsv2rgb_rainbow(hsv, rgb);
 
     // Pull the common component out into the white channel: an RGBW
     // fixture mixing white from its colour emitters is dimmer than its
@@ -50,14 +58,20 @@ void tick() {
     for (uint8_t i = 0; i < sizeof(fixtures) / sizeof(fixtures[0]); i++) {
         const Fixture &fixture = fixtures[i];
         const uint8_t white = fixture.hasWhite ? common : 0;
-        uint8_t values[4] = {
-            scale8(scale8(rgb.r - white, fixture.trim[0]), fixture.master),
-            scale8(scale8(rgb.g - white, fixture.trim[1]), fixture.master),
-            scale8(scale8(rgb.b - white, fixture.trim[2]), fixture.master),
-            scale8(scale8(white,         fixture.trim[3]), fixture.master),
+        uint8_t values[8] = {
+            scale8(level, fixture.master),
+            0,
+            scale8(rgb.r - white, fixture.trim[0]),
+            scale8(rgb.g - white, fixture.trim[1]),
+            scale8(rgb.b - white, fixture.trim[2]),
+            scale8(white,         fixture.trim[3]),
+            // Macro above 50 starts an auto sequence that overrides
+            // colour entirely, so it and its speed channel stay at zero.
+            0,
+            0,
         };
 
-        dmx.set(fixture.address, values, fixture.hasWhite ? 4 : 3);
+        dmx.set(fixture.address, values, 8);
 
         if (i == 0) memcpy(lastWritten, values, sizeof(lastWritten));
     }
