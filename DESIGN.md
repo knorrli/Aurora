@@ -705,12 +705,22 @@ in the sections above and below.
    permanently-lit middle band vanishes and the hard checkerboard is all
    that remains. Needs a second look at proper viewing distance, and on
    a clean data link, before it replaces the current behaviour.
-7. **Glitch, unreviewed.** It rendered and it was liked, but a preset
-   that is random white-and-colour noise by design cannot be told apart
-   from a corrupted data link. Its two constants — 12 pixels per frame
-   and a 30% white share — are therefore untested, as is whether running
-   free of tempo suits a slot in the intensity row when every other
-   preset there is rhythmic. Look again once the level shifter is in.
+7. **Glitch, reviewed 2026-09-09** on a clean data link. It holds up:
+   12 pixels per frame reads as a dense, fast shimmer rather than
+   countable dots, and it works across the whole colour wheel, best
+   between cyan and magenta — but that is taste, not a reason to
+   restrict the range. Running free of tempo was not felt as wrong in
+   the intensity row.
+
+   One real defect found. Its white pixels are a flat `CRGB::White`
+   while its coloured pixels are `CHSV(hue, sat, value)`, and
+   `FastLED.setBrightness()` is fixed at `MAX_BRIGHTNESS` and never
+   follows the V fader. So white ignores brightness entirely: at a
+   fifth of full V the whites are already about twenty times the
+   coloured pixels and the preset collapses into white noise. The
+   documented 30 % white share is therefore only true at full V, which
+   is why the constant could never be judged. Fix before the share
+   itself is worth tuning.
 8. **StrobeStrips' duty cycle.** Currently a flash of one quarter of the
    beat — `currentTempo / 4`, clamped to 20–200 ms, so 125 ms at 120
    BPM. Flagged on the bench as wanting adjustment; a shorter flash
@@ -854,6 +864,18 @@ colour; choreographing two numbers is a different-sized problem.
 **Scenes override it** — level offset, hue offset, behaviour, about
 three bytes in `Scene`. This is where a song says "washes dark through
 the whole verse".
+
+**Two of these controls exist as of 2026-09-09**, built on the bench
+because a demo needed them: `CC_WASH_LEVEL` is a wash master
+independent of the strips and of `PRESET_OFF`, and `CC_WASH_HUE_OFFSET`
+rotates the washes off the strips' hue. Together they cover the wash
+blackout and the complementary-colour case. Holding the washes a half
+turn off the strips is the single change that most stops the rig
+reading as one light source — worth more than it looks on paper. The
+cost of the first is that `PRESET_OFF` alone no longer darkens the
+washes: the controller's "off" key has to send `PC 0` and
+`CC_WASH_LEVEL` 0 together, and that contract lives only in the
+protocol header and here.
 
 **One pedal switch is washes-only.** A wash blackout under a running
 pattern is the cheapest drop in the rig.

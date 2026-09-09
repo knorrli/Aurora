@@ -32,6 +32,12 @@ untouched.
       Stored as offsets from the centre so rotation is free. All nine
       rotate with H; S scales every kind of deviation. Table and
       reasoning in `DESIGN.md` § "The nine palettes".
+- [ ] **Fix Glitch's white pixels ignoring the V fader.** Found
+      2026-09-09. `CRGB::White` is written at full scale while the
+      coloured pixels scale with V, and `FastLED.setBrightness()` never
+      follows the fader — so below full brightness Glitch collapses into
+      white noise. The 30 % white share cannot be tuned until this is
+      fixed. See `DESIGN.md` § "Still open", item 7.
 - [ ] **Draft one song** as the first hardcoded `Song` struct (see
       DESIGN.md § "Song presets, scenes, and foot-pedal events"). One,
       not three — choosing looks without being able to see them is
@@ -425,9 +431,17 @@ stand as history; this is where the scope changed.
       washes-at-full read as equal *weight* to strips-at-full. A
       separate number from the RGBW trims: those correct hue, this one
       caps authority.
-- [ ] **Wash hue offset** — one byte, so the washes can sit
-      complementary or desaturated against the strips instead of
-      matching them. The real departure from echo.
+- [x] **Wash hue offset** — done 2026-09-09 as `CC_WASH_HUE_OFFSET`
+      (CC 61). Rotates the washes off the strips' hue; 0 matches, 64 of
+      127 is the opposite side of the wheel. Proven on the bench with
+      strips and PAR trading complementary colours.
+- [x] **Wash level** — done 2026-09-09 as `CC_WASH_LEVEL` (CC 60). A
+      wash master independent of the strips *and* of `PRESET_OFF`, which
+      is what makes a wash blackout under a running pattern possible.
+      The brain half of the wash-only pedal switch below. **Consequence:
+      `PRESET_OFF` alone no longer darkens the washes** — the
+      controller's "off" key must send `PC 0` and `CC_WASH_LEVEL` 0
+      together or a blackout leaves the PARs lit.
 - [ ] **Per-pattern wash behaviour** — a small enum plus a level per
       pattern: follow, antiphase, step across on the beat, hold dark,
       flash only. The vocabulary itself is still open; see `DESIGN.md`

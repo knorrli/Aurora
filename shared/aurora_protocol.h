@@ -106,7 +106,8 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     30 –  39 : touchpad / sculpt mode
 //     40 –  49 : mode flags & switches
 //     50 –  59 : per-preset parameter slots (interpretation is per preset)
-//     60 –  79 : RESERVED for future continuous parameters
+//     60 –  69 : washes / DMX fixtures
+//     70 –  79 : RESERVED for future continuous parameters
 //     80 –  89 : RESERVED for band / song-specific automation
 //     90 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
@@ -158,7 +159,22 @@ enum AuroraCC : uint8_t {
     CC_PRESET_PARAM_H      = 57,
     CC_PRESET_PARAM_I      = 58,
     CC_PRESET_PARAM_J      = 59,
-    // 60–79 reserved (future continuous parameters)
+
+    // 60–69 — washes / DMX fixtures
+    CC_WASH_LEVEL          = 60, // wash master. Independent of the strips
+                                 // and of PRESET_OFF, so the washes can be
+                                 // blacked out under a running pattern.
+                                 // The controller's "off" key must send
+                                 // PC 0 and this at 0 together, or a
+                                 // blackout leaves the washes lit.
+    CC_WASH_HUE_OFFSET     = 61, // rotates the washes off the strips' hue,
+                                 // so they can sit complementary or merely
+                                 // adjacent instead of matching. 0 matches;
+                                 // 64 of 127 is the opposite side of the
+                                 // wheel.
+    // 62–69 reserved (washes)
+
+    // 70–79 reserved (future continuous parameters)
     // 80–89 reserved (band / song-specific automation)
     // 90–119 reserved
 };
@@ -282,6 +298,6 @@ enum AuroraNote : uint8_t {
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 2
+#define AURORA_PROTOCOL_VERSION_MINOR 4
 
 #endif // AURORA_PROTOCOL_H

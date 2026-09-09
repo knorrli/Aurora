@@ -1,5 +1,7 @@
 #include "midi_in.h"
 
+#include "dmx_out.h"
+
 #include "aurora.h"
 #include "tempo.h"
 
@@ -25,6 +27,12 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
             break;
         case CC_VALUE:
             setValueFromCC(value);
+            break;
+        case CC_WASH_LEVEL:
+            dmx_out::setLevel(map(value, 0, 127, 0, 255));
+            break;
+        case CC_WASH_HUE_OFFSET:
+            dmx_out::setHueOffset(map(value, 0, 127, 0, 255));
             break;
         case CC_MODE_FLAGS:
             faderAltModeEnabled = value & MODE_BIT_FADER_ALT;
