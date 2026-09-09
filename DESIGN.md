@@ -1036,6 +1036,18 @@ Continuing the numbering from 2026-09-05.
 15. **The DJ Mode pedal loadout.** Four generic switches with no song
     knowledge: build, kill, accent, and one more. What the fourth is,
     and whether any of them should be a cycle.
+16. **Whether the washes belong under the touchpad** — raised
+    2026-09-09, after the bench session where the washes first got their
+    own level and hue and stopped merely echoing the strips. They read
+    as a second instrument rather than stage backlight, and leaving them
+    out of the pad wastes that. The problem is that X already means
+    "which strips", so there is no obvious room: are the washes a sixth
+    zone on the same axis, a separate region of the pad, something the
+    pad reaches only in one of its modes, or something the pad never
+    touches because their two parameters belong on the pedal instead?
+    Answering this decides whether the wash behaviour enum in item 12 is
+    the whole story or only the per-pattern default that a pad then
+    overrides live.
 
 ## Memory budget check
 
