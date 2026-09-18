@@ -18,3 +18,7 @@ build/
 .DS_Store
 *.swp
 .claude/
+
+# Photos of the rig — kept locally, too large for the repo.
+# Force one in with `git add -f` if a specific image is worth keeping.
+images/

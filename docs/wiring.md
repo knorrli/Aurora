@@ -217,13 +217,12 @@ cleanly, and the proximity flicker is gone, two-prong charger included.
 
 ## Controller pin map — Arduino Nano
 
-> **Superseded 2026-09-05.** The controller is becoming a second Teensy
-> 4.0 — see `DESIGN.md` § "The controller is a second Teensy, not the
-> Nano". The Teensy map is a fresh assignment and wants drawing at the
-> bench with the box open; it must also find a home for the 12-position
-> rotary, which no map has ever listed. Keep the table below until that
-> exists: it is the wiring in the box today, and it is the fallback if
-> the Teensy is ruled out.
+> **This is the wiring in the box today**, and it is the only record of
+> it. The controller is being rebuilt around a second Teensy 4.0 — see
+> `docs/architecture.md` § "Why Teensy 4.0" — and that map is a fresh
+> assignment rather than a translation of this one. It must find a home
+> for the 12-position rotary, which no map has ever listed. Keep this
+> table until the Teensy map exists and the box is rewired.
 
 Mostly inherited from the current Aurora wiring. The only moves are:
 
@@ -252,11 +251,11 @@ Mostly inherited from the current Aurora wiring. The only moves are:
 |  A0  | Saturation fader                           | analog    | 0–1023 → 0–127 MIDI                    |
 |  A1  | Hue fader                                  | analog    | same                                   |
 |  A2  | Value (brightness) fader                   | analog    | same                                   |
-|  A3  | Foot pedal — 4 switches on a resistor ladder | analog  | See DESIGN.md § "Foot pedal wiring: four buttons on one analog pin" |
+|  A3  | Foot pedal — 4 switches on a resistor ladder | analog  | See § "Foot pedal" in this file                                     |
 |  A4  | Touchpad YP (also I²C SDA)                 | analog    | 4-wire resistive, unchanged            |
 |  A5  | Touchpad XM (also I²C SCL)                 | analog    | 4-wire resistive, unchanged            |
 |  A6  | Touchpad strip mode switch                 | analog    | 3-state analog rotary                  |
-|  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; to be simplified to 2-state per DESIGN.md |
+|  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; read as 2-state in firmware today        |
 
 **The keypad is not a scanned matrix.** Despite the five lines, nothing
 drives columns low and reads rows back: the salvaged telephone keypad
@@ -270,6 +269,96 @@ resistor-ladder treatment as the foot pedal, which would free D8–D12 and
 give the controller a pin for its indicator pixels. Meter the lines before
 building anything: confirm D8 really is common, and that the lines are
 passive contacts rather than driven outputs.
+
+---
+
+## Foot pedal — four switches on one analog line
+
+The pedal is a controller-side peripheral: bare momentary switches, no
+microcontroller. The controller reads them and turns them into MIDI.
+
+**The connector carries two conductors today**, which is why the
+switches share one analog line instead of taking a pin each. The
+original reason was the Nano's single free pin; that reason is gone, and
+**the connector itself is currently an open question** — a stereo jack
+would add a second line without adding power to the pedal.
+
+Each switch pulls the line toward ground through its own resistor, under
+a common pull-up. The pull-up sits at the controller; the four ladder
+resistors sit in the pedal.
+
+```
+   +5 V ──[ R_top ]──┬── analog in
+                     │
+            ┌────────┼────────┬────────┐
+           SW1      SW2      SW3      SW4
+            │        │        │        │
+          [ R1 ]   [ R2 ]   [ R3 ]   [ R4 ]
+            │        │        │        │
+           GND      GND      GND      GND
+```
+
+| Resistor | Value  |
+|----------|--------|
+| R_top    | 1 kΩ   |
+| R1       | 2.2 kΩ |
+| R2       | 5.1 kΩ |
+| R3       | 10 kΩ  |
+| R4       | 20 kΩ  |
+
+**Why every combination is readable.** Parallel resistors add in
+*conductance*, not resistance. Each closed switch contributes its own
+1/R independently of the others, so every subset produces a different
+total conductance and therefore a different voltage — sixteen
+combinations, sixteen levels. The divider is acting as a crude 4-bit ADC
+of which buttons are down.
+
+Binary-weighting the conductances is the textbook choice, but the
+divider is non-linear in conductance, which bunches the
+many-buttons-pressed end together. The values above were found by
+searching for the widest *minimum* separation over the 1 % kit on hand.
+They spread the sixteen levels between 2.777 V (all four down) and
+5.000 V (none), with the closest neighbours 79 mV apart — about 16
+counts on a 10-bit ADC.
+
+**Decode by nearest match against a table of the sixteen levels, never
+by binary-ordered thresholds.** The levels are not ordered by binary
+code: `SW3+SW4` sits above `SW2` alone.
+
+A 1 kΩ pull-up also keeps the source impedance low — it peaks at R_top
+with nothing pressed — which helps the sample-and-hold settle inside one
+read.
+
+**These values are forgiving of tolerance, which not every set is.**
+Simulating twenty thousand builds, 1 % parts never bring two levels
+closer than 78 mV, and even 5 % parts hold 55 mV. That is a property of
+this particular set, not of ladders generally: the otherwise-similar
+3.3k / 3.9k / 5.6k / 10k / 22k set has a wider nominal gap yet collapses
+at 5 %, with about one build in nine landing under 30 mV. **If the values
+are ever re-picked, re-run the tolerance check rather than trusting
+nominal spacing.**
+
+A calibration pass — press each combination once, store the readings —
+removes tolerance from the picture entirely and is worth doing
+regardless.
+
+**Two firmware gotchas.**
+
+- A press is not instantaneous. While a contact bounces or a second foot
+  lands, the line sweeps through voltages that are themselves valid
+  codes, so a naive reader emits phantom events. Require several
+  consecutive agreeing samples before accepting a change.
+- A reading that matches nothing within tolerance should be **discarded,
+  not snapped to the nearest level.** That is what an unplugged cable or
+  a dirty contact looks like, and on stage it should do nothing rather
+  than fire something random.
+
+**One line tops out at four switches.** A fifth roughly halves the
+spacing and pushes it under what 10-bit sampling separates reliably. The
+escape, if more are wanted on one line: if only one switch is ever read
+at a time, five levels instead of sixteen gives far more margin and the
+same wire carries six to eight comfortably. Chords cost switch count;
+switch count costs chords.
 
 ---
 
@@ -356,8 +445,8 @@ lower voltage needs lower resistance to hit MIDI's ~5 mA target current.
 
 Scope is colour echo, nothing else: every frame the brain writes the
 active palette's centre colour × V to 1–2 hardcoded fixture addresses.
-See DESIGN.md § "DMX: not the LED protocol, but useful for venue
-fixtures" for why the scope stops there.
+See `docs/architecture.md` § "DMX is for the wash fixtures, never for
+the strips" for why the strips are not driven this way.
 
 DMX is RS-485 at 250 kbaud — a balanced differential pair, so a Teensy
 UART pin cannot drive it directly. An **M5Stack DMX Unit (U183)** does
@@ -478,8 +567,8 @@ green against an 8 % change in red, which is the hue drift and banding
 the switch was made to avoid.
 
 Full scale is far brighter than the strips — 255 on all four is hard to
-look at directly, and the per-fixture master scale in DESIGN.md's
-`Fixture` struct exists for this. Bench comparison 2026-09-09 confirmed
+look at directly, and the per-fixture master scale in the `Fixture`
+struct exists for this. Bench comparison 2026-09-09 confirmed
 the gap is wide: at matching settings the PAR clearly overpowers the
 strips, so master is a number that has to be set in the room.
 

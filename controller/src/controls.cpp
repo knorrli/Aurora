@@ -111,9 +111,8 @@ static void scan_faders() {
 // ---------------------------------------------------------------------------
 
 static bool is_palette_mode() {
-    // A7 as a 2-state toggle (DESIGN.md target). Until the hardware is
-    // actually a simple toggle we accept anything below the midpoint as
-    // A (preset mode) and anything above as B (palette mode).
+    // The hardware is still the multi-state analog rotary, so anything
+    // below the midpoint reads as A and anything above as B.
     const uint16_t v = analogRead(PIN_MODE_AB);
     return v > 512;
 }

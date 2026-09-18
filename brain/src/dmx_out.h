@@ -1,8 +1,10 @@
-// dmx_out — colour echo to venue fixtures.
+// dmx_out — drives the wash fixtures.
 //
-// Scope is deliberately tiny: every frame, each configured fixture gets
-// the colour the strips are showing. No choreography, no per-preset
-// behaviour. See DESIGN.md § "DMX OUT for venue fixtures — color echo".
+// Every frame each configured fixture gets the colour the strips are
+// showing, rotated by CC_WASH_HUE_OFFSET and scaled by CC_WASH_LEVEL,
+// written as 8 channels with brightness on the fixture's own dimmer.
+// The macro channel must stay below 50 or the fixture starts an auto
+// sequence that overrides colour entirely.
 //
 // Fixture addresses and calibration are hardcoded below; changing venue
 // means editing the table and reflashing.
