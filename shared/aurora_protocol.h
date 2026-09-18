@@ -17,7 +17,8 @@
 //   * Note On is used for TRANSIENT events (trigger flash, tap tempo
 //     informational edges). Note Off is currently unused.
 //   * MIDI clock (0xF8) drives tempo. The brain never sees external clock
-//     directly — the controller always re-emits (Option A in DESIGN.md).
+//     directly — the controller always re-emits. See
+//     docs/architecture.md § "Clock routing: the controller is the source".
 //
 // ---------------------------------------------------------------------------
 // Growing the protocol over time
@@ -33,7 +34,7 @@
 //   1. Pick the next free slot in the right range.
 //   2. Add an enum entry AND a short comment describing what the message
 //      does.
-//   3. If it changes behaviour: update DESIGN.md too.
+//   3. If it changes behaviour: update the matching doc under docs/.
 //   4. Implement on both controller (emit) and brain (consume).
 //
 // ===========================================================================
@@ -55,7 +56,9 @@ static const uint8_t AURORA_MIDI_CHANNEL = 1;
 //
 // Layout:
 //      0 –   9 : preset select (0 = off, 1–9 = preset slots)
-//     10 –  63 : RESERVED for preset expansion (more slots, banks)
+//           10 : the parametric generator (experiment; see P_Generator.cpp)
+//           11 : strip-order rigging aid
+//     11 –  63 : RESERVED for preset expansion (more slots, banks)
 //     64 –  72 : palette select (palettes 0–8)
 //     73 – 126 : RESERVED for palette expansion / future discrete states
 //          127 : RESERVED — interpreted by the brain as "no palette,
@@ -77,7 +80,14 @@ enum AuroraPreset : uint8_t {
     PRESET_STRIP_OR_COMET    = 7,
     PRESET_STROBE_OR_STUTTER = 8,
     PRESET_CHAOS_OR_GLITCH   = 9,
-    // 10–63 reserved
+    // One pattern whose shape comes entirely from CC 70–79 rather than
+    // from a hand-written renderer. Under evaluation; it does not replace
+    // any slot above.
+    PRESET_GENERATOR         = 10,
+    // Rigging aid rather than a look: each strip a flat hue, so the order of
+    // the data chain can be read off the wall while the strips are being hung.
+    PRESET_STRIP_ORDER       = 11,
+    // 12–63 reserved
 };
 
 static const uint8_t AURORA_PC_PALETTE_BASE      = 64;
@@ -86,7 +96,7 @@ static const uint8_t AURORA_PC_PALETTE_MONOCHROME = 127; // "no palette"
 
 // Helpers
 
-static inline bool aurora_pc_is_preset(uint8_t pc)  { return pc <= 9;  }
+static inline bool aurora_pc_is_preset(uint8_t pc)  { return pc <= PRESET_STRIP_ORDER; }
 static inline bool aurora_pc_is_palette(uint8_t pc) {
     return pc >= AURORA_PC_PALETTE_BASE
         && pc <  AURORA_PC_PALETTE_BASE + AURORA_PC_PALETTE_COUNT;
@@ -107,8 +117,9 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     40 –  49 : mode flags & switches
 //     50 –  59 : per-preset parameter slots (interpretation is per preset)
 //     60 –  69 : washes / DMX fixtures
-//     70 –  79 : RESERVED for future continuous parameters
-//     80 –  89 : RESERVED for band / song-specific automation
+//     70 –  79 : generator shape parameters
+//           80 : generator pulse shape
+//     81 –  89 : RESERVED for band / song-specific automation
 //     90 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
 //
@@ -174,8 +185,20 @@ enum AuroraCC : uint8_t {
                                  // wheel.
     // 62–69 reserved (washes)
 
-    // 70–79 reserved (future continuous parameters)
-    // 80–89 reserved (band / song-specific automation)
+    // 70–79 — generator shape. Only read while PRESET_GENERATOR is active.
+    CC_GEN_WIDTH           = 70, // how much of one cell the shape covers
+    CC_GEN_COUNT           = 71, // how many shapes along the strip, 1–20
+    CC_GEN_EDGE            = 72, // symmetric softness at both ends
+    CC_GEN_TAIL            = 73, // asymmetric fade behind the shape only
+    CC_GEN_SPEED           = 74, // bipolar: 64 is still, either side travels
+    CC_GEN_FAN             = 75, // how far the five strips run out of step
+    CC_GEN_JITTER          = 76, // randomness in position and brightness
+    CC_GEN_PULSE_DEPTH     = 77, // how hard the shape swells in place
+    CC_GEN_PULSE_RATE      = 78, // beats per swell, 16 down to 0.25
+    CC_GEN_FLAGS           = 79, // bit-packed, see AuroraGeneratorBits
+    CC_GEN_PULSE_SHAPE     = 80, // 0 = hard on/off square, 127 = smooth sine
+
+    // 81–89 reserved (band / song-specific automation)
     // 90–119 reserved
 };
 
@@ -218,6 +241,19 @@ static inline uint16_t aurora_ticks_per_gate(uint8_t division) {
         default:                       return AURORA_TICKS_PER_BEAT;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Generator flag bitfield (carried on CC_GEN_FLAGS)
+//
+// These two are switches rather than knobs because neither has a middle:
+// half of "runs opposite" is not a state, and neither is half of "turns
+// around at the end".
+// ---------------------------------------------------------------------------
+
+enum AuroraGeneratorBits : uint8_t {
+    GEN_FLAG_ALTERNATE = 1 << 0, // odd strips travel against the even ones
+    GEN_FLAG_BOUNCE    = 1 << 1, // reverse at the strip end instead of wrapping
+};
 
 // ---------------------------------------------------------------------------
 // Mode flag bitfield (carried on CC_MODE_FLAGS)

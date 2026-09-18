@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 CHSV randomColor() {
   return CHSV(random8(), 255, 255);
@@ -26,4 +26,17 @@ void showBootIndicatorReady() {
 
 uint8_t mirroredStrip(uint8_t stripIndex) {
   return (NUMBER_OF_STRIPS - 1) - stripIndex;
+}
+
+// Paints each strip one flat hue so the data-chain order can be read off the
+// wall while rigging. Hues run red → blue in index order, spaced widely
+// enough to stay distinguishable at a distance and through a phone camera.
+void ShowStripOrder() {
+  static const uint8_t hues[NUMBER_OF_STRIPS] = { 0, 40, 96, 130, 165 };
+
+  for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
+    for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
+      strip[stripIndex][pixelIndex] = CHSV(hues[stripIndex], 255, 200);
+    }
+  }
 }

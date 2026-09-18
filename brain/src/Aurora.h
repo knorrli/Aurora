@@ -65,6 +65,7 @@ struct PositionColor {
 extern CHSV randomColor();
 extern void showBootIndicatorReady();
 extern uint8_t mirroredStrip(uint8_t stripIndex);
+extern void ShowStripOrder();
 
 // --- INPUT Colour
 extern void setCurrentColor();
@@ -112,6 +113,19 @@ extern void resetStutter();
 extern void Chaos(CHSV color);
 extern void resetChaos();
 extern void Glitch(CHSV color);
+// The parametric generator — shape comes from CC 70–79, not from here
+extern void Generator(CHSV color);
+extern void setGeneratorWidth(uint8_t value);
+extern void setGeneratorCount(uint8_t value);
+extern void setGeneratorEdge(uint8_t value);
+extern void setGeneratorTail(uint8_t value);
+extern void setGeneratorSpeed(uint8_t value);
+extern void setGeneratorFan(uint8_t value);
+extern void setGeneratorJitter(uint8_t value);
+extern void setGeneratorPulseDepth(uint8_t value);
+extern void setGeneratorPulseRate(uint8_t value);
+extern void setGeneratorPulseShape(uint8_t value);
+extern void setGeneratorFlags(uint8_t value);
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 uint8_t selectedPreset = 0;
 uint8_t previousPreset = 0;
@@ -82,6 +82,12 @@ void renderPreset(uint8_t preset) {
         Chaos(presetColor);
       }
       break;
+    case PRESET_GENERATOR:
+      Generator(presetColor);
+      break;
+    case PRESET_STRIP_ORDER:
+      ShowStripOrder();
+      break;
   }
 }
 
@@ -137,5 +143,9 @@ void resetPreset(uint8_t preset) {
         resetChaos();
       }
       break;
+    // Both derive everything they show from scratch each frame.
+    case PRESET_GENERATOR:
+    case PRESET_STRIP_ORDER:
+      return;
   }
 }

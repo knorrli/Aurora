@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora Generator Bench</title>
+<style>
+  :root {
+    --bg: #14151a; --panel: #1c1e26; --line: #2c2f3a;
+    --text: #e6e7ec; --dim: #8b8fa3; --accent: #d98c3f; --ok: #4a9e6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px; background: var(--bg); color: var(--text);
+    font: 14px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  h1 { font-size: 15px; margin: 0 0 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  h2 { font-size: 12px; margin: 0 0 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .grid { display: grid; grid-template-columns: minmax(420px, 2fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-bottom: 16px; }
+  .row { display: grid; grid-template-columns: 110px 1fr 84px; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .row label { color: var(--text); }
+  .row .cc { color: var(--dim); font-size: 11px; }
+  .row output { text-align: right; color: var(--accent); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 26px; }
+  button {
+    background: #262934; color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.on { background: var(--accent); color: #14151a; border-color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button { flex: 0 0 auto; }
+  select { background: #262934; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 6px; font: inherit; width: 100%; }
+  .status { font-size: 12px; color: var(--dim); margin-bottom: 10px; }
+  .status b { color: var(--ok); font-weight: normal; }
+  .status b.bad { color: #c9524a; }
+  .note { font-size: 11px; color: var(--dim); margin-top: 10px; line-height: 1.5; }
+  .inline { display: flex; gap: 8px; align-items: center; }
+  .inline input[type=number] { width: 70px; background: #262934; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 6px; font: inherit; }
+</style>
+</head>
+<body>
+
+<h1>Aurora — generator bench</h1>
+
+<div class="panel">
+  <div class="status">MIDI: <b id="midiState" class="bad">not connected</b></div>
+  <select id="port"></select>
+  <div class="note">Chrome or Edge only — Safari and Firefox have no Web MIDI. The Teensy shows up once it is plugged in and running USB MIDI.</div>
+</div>
+
+<div class="grid">
+  <div>
+    <div class="panel">
+      <h2>Shape</h2>
+      <div id="shape"></div>
+      <div class="chips" style="margin-top:12px">
+        <button id="flagAlternate">alternate direction</button>
+        <button id="flagBounce">bounce</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Colour</h2>
+      <div id="colour"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Pattern</h2>
+      <div class="chips">
+        <button id="presetGen" class="on">generator (PC 10)</button>
+        <button id="presetOff">blackout (PC 0)</button>
+        <button id="presetStripOrder">strip order (PC 11)</button>
+      </div>
+      <div class="note">Strip order paints each strip one flat colour in data-chain order: red, orange, green, cyan, blue.</div>
+      <div class="note">The brain free-runs at 120 BPM with no clock, so the wall animates as soon as the generator is selected.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Clock</h2>
+      <div class="inline">
+        <button id="clockToggle">send clock</button>
+        <input type="number" id="bpm" value="120" min="40" max="200" step="1">
+        <span class="cc">BPM</span>
+      </div>
+      <div class="note">Browser timing, so it drifts a little. Fine for judging motion; use a DAW if the tempo itself is what you are testing.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Known looks</h2>
+      <div class="chips" id="anchors"></div>
+      <div class="note">Starting points, not finished settings — they are my guesses at where each pattern sits. Dial them in, then save.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Morph</h2>
+      <div class="chips" style="margin-bottom:10px">
+        <button id="grabA">capture A</button>
+        <button id="grabB">capture B</button>
+      </div>
+      <input type="range" id="morph" min="0" max="1000" value="0">
+      <div class="row" style="grid-template-columns:1fr auto; margin-top:8px">
+        <div class="inline">
+          <button id="autoMorph">run</button>
+          <input type="number" id="morphSeconds" value="8" min="1" max="120" step="1">
+          <span class="cc">seconds</span>
+        </div>
+        <output id="morphReadout">A</output>
+      </div>
+      <div class="note">Capture two patches, then slide between them. Everything continuous interpolates; the two switches snap at the halfway point because neither has a middle.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Your patches</h2>
+      <div class="inline" style="margin-bottom:10px">
+        <button id="save">save current</button>
+        <button id="sendAll">re-send all</button>
+      </div>
+      <div class="chips" id="patches"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CC = {
+  width: 70, count: 71, edge: 72, tail: 73, speed: 74,
+  fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, flags: 79, pulseShape: 80,
+  hue: 20, saturation: 21, value: 22,
+};
+
+// Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
+// readouts lie until they are changed to match.
+const DERIVED = {
+  width:      v => (v / 127 * 100).toFixed(0) + '% of cell',
+  count:      v => (1 + Math.floor(v * 19 / 127)) + ' shapes',
+  edge:       v => (v / 127 * 100).toFixed(0) + '% into gap',
+  tail:       v => (v / 127 * 100).toFixed(0) + '% of gap',
+  speed:      v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
+                     return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
+  fan:        v => (v / 127 * 100).toFixed(0) + '% spread',
+  jitter:     v => (v / 127 * 100).toFixed(0) + '%',
+  pulseDepth: v => (v / 127 * 100).toFixed(0) + '%',
+  pulseRate:  v => (16 * Math.pow(0.5, v / 127 * 6)).toFixed(2) + ' beats',
+  pulseShape: v => v < 20 ? 'square' : v > 110 ? 'sine' : (v / 127 * 100).toFixed(0) + '% soft',
+  hue:        v => Math.round(v / 127 * 250) + '/255',
+  saturation: v => (v / 127 * 100).toFixed(0) + '%',
+  value:      v => (v / 127 * 100).toFixed(0) + '%',
+};
+
+const SHAPE = [
+  ['width',      'Width',       'the solid core, as a proportion of one cell'],
+  ['count',      'Count',       'how many shapes along the strip, 1–20'],
+  ['edge',       'Edge',        'how far the glow reaches into the gap'],
+  ['tail',       'Tail',        'how far the trail reaches behind, into the gap'],
+  ['speed',      'Speed',       'centre is still; either side travels'],
+  ['fan',        'Fan',         'how far the five strips run out of step'],
+  ['jitter',     'Jitter',      'randomness in position and brightness'],
+  ['pulseDepth', 'Pulse depth', 'how hard the shape swells in place'],
+  ['pulseRate',  'Pulse rate',  '16 beats per swell → a quarter beat'],
+  ['pulseShape', 'Pulse shape', 'hard on/off square → smooth sine'],
+];
+
+const COLOUR = [
+  ['hue',        'Hue',         ''],
+  ['saturation', 'Spread',      ''],
+  ['value',      'Brightness',  ''],
+];
+
+const ANCHORS = {
+  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
+  Sweep:      { width:40,  count:0,   edge: 18,  tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
+  Rain:       { width:40,  count:0,   edge: 18,  tail: 74, speed:80, fan:90,  jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
+  CrossSweep: { width:40,  count:0,   edge: 18,  tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:1, pulseShape:127 },
+  Bars:       { width:25,  count:0,   edge: 15,  tail:0,  speed:88, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:2, pulseShape:127 },
+  Breathe:    { width: 127, count:0,   edge:  0, tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:100,  pulseRate:30,  flags:0, pulseShape:127 },
+  Wave:       { width: 127, count:0,   edge:  0, tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100,  pulseRate:30,  flags:0, pulseShape:127 },
+  Chase:      { width: 127, count:0,   edge:  0, tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  flags:0, pulseShape:80 },
+  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0, pulseRate:55,  flags:0, pulseShape:127 },
+  Starfield:  { width:4,   count:110, edge: 60,  tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  flags:0, pulseShape:127 },
+  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, flags:0, pulseShape:0 },
+  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, flags:1, pulseShape:0 },
+  Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:0 },
+};
+
+const state = { ...ANCHORS.Sweep, hue: 20, saturation: 100, value: 100 };
+
+let output = null;
+const controls = {};
+
+function send(bytes, at) { if (output) output.send(bytes, at); }
+function sendCC(cc, value) { send([0xB0, cc, Math.max(0, Math.min(127, value | 0))]); }
+function sendParam(name) { sendCC(CC[name], state[name]); }
+
+function sendAll() {
+  for (const name of Object.keys(CC)) if (name in state) sendCC(CC[name], state[name]);
+}
+
+function buildRows(host, defs) {
+  for (const [name, label, hint] of defs) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<label title="${hint}">${label}<br><span class="cc">CC ${CC[name]}</span></label>`;
+
+    const slider = document.createElement('input');
+    slider.type = 'range'; slider.min = 0; slider.max = 127; slider.value = state[name];
+
+    const out = document.createElement('output');
+    const readout = () => {
+      const real = DERIVED[name] ? DERIVED[name](state[name]) : '';
+      out.innerHTML = `${state[name]}<br><span class="cc">${real}</span>`;
+    };
+    readout();
+
+    slider.addEventListener('input', () => {
+      state[name] = +slider.value;
+      readout();
+      sendParam(name);
+    });
+
+    row.appendChild(slider); row.appendChild(out);
+    host.appendChild(row);
+    controls[name] = { slider, out, readout };
+  }
+}
+
+function applyPatch(patch) {
+  for (const [name, value] of Object.entries(patch)) {
+    state[name] = value;
+    if (controls[name]) {
+      controls[name].slider.value = value;
+      controls[name].readout();
+    }
+  }
+  syncFlagButtons();
+  sendAll();
+}
+
+function syncFlagButtons() {
+  flagAlternate.classList.toggle('on', !!(state.flags & 1));
+  flagBounce.classList.toggle('on', !!(state.flags & 2));
+}
+
+function toggleFlag(bit) {
+  state.flags ^= bit;
+  syncFlagButtons();
+  sendParam('flags');
+}
+
+// --- patches ---------------------------------------------------------------
+
+const STORE = 'aurora.generator.patches';
+function loadPatches() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
+function savePatches(p) { try { localStorage.setItem(STORE, JSON.stringify(p)); } catch {} }
+
+function renderPatches() {
+  const host = document.getElementById('patches');
+  host.innerHTML = '';
+  const all = loadPatches();
+  const names = Object.keys(all);
+  if (!names.length) { host.innerHTML = '<span class="cc">nothing saved yet</span>'; return; }
+  for (const name of names) {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.addEventListener('click', () => applyPatch(all[name]));
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (!confirm(`Delete patch "${name}"?`)) return;
+      const next = loadPatches(); delete next[name]; savePatches(next); renderPatches();
+    });
+    b.title = 'click to recall, right-click to delete';
+    host.appendChild(b);
+  }
+}
+
+// --- morph -----------------------------------------------------------------
+
+const CONTINUOUS = Object.keys(CC).filter(name => name !== 'flags');
+let morphA = null, morphB = null, morphRaf = null;
+
+function applyMorph(position) {
+  if (!morphA || !morphB) return;
+  for (const name of CONTINUOUS) {
+    const value = Math.round(morphA[name] + (morphB[name] - morphA[name]) * position);
+    if (value === state[name]) continue;
+    state[name] = value;
+    if (controls[name]) { controls[name].slider.value = value; controls[name].readout(); }
+    sendCC(CC[name], value);
+  }
+  const flags = position < 0.5 ? morphA.flags : morphB.flags;
+  if (flags !== state.flags) { state.flags = flags; syncFlagButtons(); sendParam('flags'); }
+
+  const label = position <= 0 ? 'A' : position >= 1 ? 'B' : (position * 100).toFixed(0) + '%';
+  document.getElementById('morphReadout').textContent = label;
+}
+
+function capture(which) {
+  const snapshot = { ...state };
+  if (which === 'A') { morphA = snapshot; grabA.classList.add('on'); }
+  else { morphB = snapshot; grabB.classList.add('on'); }
+}
+
+function runMorph() {
+  if (!morphA || !morphB) { alert('Capture A and B first.'); return; }
+  if (morphRaf) { cancelAnimationFrame(morphRaf); morphRaf = null; autoMorph.classList.remove('on'); return; }
+
+  const slider = document.getElementById('morph');
+  const durationMs = (+document.getElementById('morphSeconds').value || 8) * 1000;
+  const from = +slider.value / 1000;
+  const to = from > 0.5 ? 0 : 1;
+  const startedAt = performance.now();
+  autoMorph.classList.add('on');
+
+  const step = (now) => {
+    const k = Math.min(1, (now - startedAt) / durationMs);
+    const position = from + (to - from) * k;
+    slider.value = Math.round(position * 1000);
+    applyMorph(position);
+    if (k < 1) { morphRaf = requestAnimationFrame(step); }
+    else { morphRaf = null; autoMorph.classList.remove('on'); }
+  };
+  morphRaf = requestAnimationFrame(step);
+}
+
+// --- clock -----------------------------------------------------------------
+
+let clockOn = false, clockTimer = null, nextTickAt = 0;
+const LOOKAHEAD_MS = 250, SCHEDULE_EVERY_MS = 100;
+
+function pumpClock() {
+  const msPerTick = 60000 / (+document.getElementById('bpm').value || 120) / 24;
+  const now = performance.now();
+  if (nextTickAt < now) nextTickAt = now;
+  while (nextTickAt < now + LOOKAHEAD_MS) {
+    send([0xF8], nextTickAt);
+    nextTickAt += msPerTick;
+  }
+}
+
+function setClock(on) {
+  clockOn = on;
+  document.getElementById('clockToggle').classList.toggle('on', on);
+  if (on) { nextTickAt = performance.now(); pumpClock(); clockTimer = setInterval(pumpClock, SCHEDULE_EVERY_MS); }
+  else { clearInterval(clockTimer); clockTimer = null; }
+}
+
+// --- midi ------------------------------------------------------------------
+
+async function initMidi() {
+  const stateEl = document.getElementById('midiState');
+  if (!navigator.requestMIDIAccess) {
+    stateEl.textContent = 'Web MIDI unavailable — use Chrome or Edge';
+    return;
+  }
+  let access;
+  try { access = await navigator.requestMIDIAccess(); }
+  catch (e) { stateEl.textContent = 'permission denied'; return; }
+
+  const sel = document.getElementById('port');
+  const refresh = () => {
+    const outs = [...access.outputs.values()];
+    sel.innerHTML = '';
+    outs.forEach((o, i) => {
+      const opt = document.createElement('option');
+      opt.value = o.id; opt.textContent = o.name;
+      sel.appendChild(opt);
+      if (!output && /teensy|aurora/i.test(o.name)) { sel.value = o.id; }
+    });
+    if (!outs.length) {
+      stateEl.textContent = 'no MIDI outputs found';
+      stateEl.className = 'bad';
+      output = null;
+      return;
+    }
+    output = access.outputs.get(sel.value || outs[0].id);
+    sel.value = output.id;
+    stateEl.textContent = 'connected to ' + output.name;
+    stateEl.className = '';
+    sendAll();
+  };
+
+  sel.addEventListener('change', () => {
+    output = access.outputs.get(sel.value);
+    stateEl.textContent = 'connected to ' + output.name;
+    sendAll();
+  });
+  access.onstatechange = refresh;
+  refresh();
+}
+
+// --- wire up ---------------------------------------------------------------
+
+buildRows(document.getElementById('shape'), SHAPE);
+buildRows(document.getElementById('colour'), COLOUR);
+syncFlagButtons();
+
+document.getElementById('flagAlternate').addEventListener('click', () => toggleFlag(1));
+document.getElementById('flagBounce').addEventListener('click', () => toggleFlag(2));
+document.getElementById('presetGen').addEventListener('click', () => { send([0xC0, 10]); sendAll(); });
+document.getElementById('presetOff').addEventListener('click', () => send([0xC0, 0]));
+document.getElementById('presetStripOrder').addEventListener('click', () => send([0xC0, 11]));
+document.getElementById('clockToggle').addEventListener('click', () => setClock(!clockOn));
+document.getElementById('sendAll').addEventListener('click', sendAll);
+document.getElementById('grabA').addEventListener('click', () => capture('A'));
+document.getElementById('grabB').addEventListener('click', () => capture('B'));
+document.getElementById('autoMorph').addEventListener('click', runMorph);
+document.getElementById('morph').addEventListener('input', (e) => applyMorph(+e.target.value / 1000));
+
+document.getElementById('save').addEventListener('click', () => {
+  const name = prompt('Name this patch:');
+  if (!name) return;
+  const all = loadPatches();
+  all[name] = { ...state };
+  savePatches(all);
+  renderPatches();
+});
+
+const anchorHost = document.getElementById('anchors');
+for (const [name, patch] of Object.entries(ANCHORS)) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.addEventListener('click', () => applyPatch(patch));
+  anchorHost.appendChild(b);
+}
+
+renderPatches();
+initMidi();
+</script>
+</body>
+</html>
