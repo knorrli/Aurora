@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 #define MOD_SLOW_FACTOR 2
 #define MIN_COLOR_MOD_INTERVAL 1

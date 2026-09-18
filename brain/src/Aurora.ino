@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 #include "dmx_out.h"
 #include "midi_in.h"

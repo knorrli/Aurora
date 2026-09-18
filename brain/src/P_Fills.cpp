@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 /////////////////////////////////
 // FILL_STRIPS

@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 #define TRIGGER_DEBOUNCE_DELAY 300
 #define TRIGGER_EFFECT_DURATION 700

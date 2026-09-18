@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 /////////////////////////////////
 // MOVE_FILL — shared helper for block scrolling
@@ -8,7 +8,7 @@ static int8_t movePosition = 0;
 static uint8_t moveGateCounter = 0;
 static unsigned long lastMoveGate = 0;
 
-void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP) {
+void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction) {
   if (tempoGate) {
     moveGateCounter = 0;
   }

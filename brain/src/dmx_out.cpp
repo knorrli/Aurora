@@ -1,6 +1,6 @@
 #include "dmx_out.h"
 
-#include "aurora.h"
+#include "Aurora.h"
 #include <TeensyDMX.h>
 
 namespace teensydmx = ::qindesign::teensydmx;

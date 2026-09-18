@@ -1,4 +1,4 @@
-#include "aurora.h"
+#include "Aurora.h"
 
 static unsigned long lastStrobeTrigger = 0;
 
@@ -51,8 +51,8 @@ void resetStripByStrip() {
 /////////////////////////////////
 #define STROBE_SPEED 1
 #define STROBE_TEMPO_FACTOR 4 // how long per tempo step
-#define MINIMUM_STROBE_LENGTH 20
-#define MAXIMUM_STROBE_LENGTH 200
+#define MINIMUM_STROBE_LENGTH 20UL
+#define MAXIMUM_STROBE_LENGTH 200UL
 void StrobeStrips(CHSV color) {
   if (tempoGate) {
     lastStrobeTrigger = currentMillis;
