@@ -1049,6 +1049,382 @@ Continuing the numbering from 2026-09-05.
     the whole story or only the per-pattern default that a pad then
     overrides live.
 
+## Scope and the foot pedal — 2026-09-09, evening
+
+A resumption point rather than a set of decisions. Almost everything
+below is still open; the pedal vocabulary in particular is being slept
+on before anything is settled.
+
+### Scope, corrected
+
+**The band backdrop is the target and stays the target.** The session
+took a detour through "what would it take for a promoter to ask who
+that guy with the lighting system was", and that framing is retired.
+It produced one observation worth keeping — a rig that can drive
+whatever is already hanging in a room reads as production, while a rig
+that only brings its own five strips reads as a band member with LEDs —
+but it is not what Aurora is for. The Teensy's headroom and the DMX
+output are capability, not direction, and mistaking the two is how the
+last few sessions grew a feature list nobody asked for.
+
+The goals for the next phases, stated plainly:
+
+1. **Patterns that look good**, replacing the ones that did not pull
+   their weight. Done.
+2. **A better touch mode.** No dead controls: in almost any state of the
+   system, every fader, switch and pad press should do something.
+3. **Song mode.** Patterns, colours, accents and transitions saved
+   together as a song, with things assignable to the four pedal buttons
+   so a whole song is playable without hands.
+4. **Songs switchable over MIDI Program Change**, so the band's rig can
+   drive them.
+
+DJ mode stays secondary, with two goals that pull harder than band mode
+does: a touch surface intuitive enough to add and remove intensity and
+cue a drop without thinking, and enough variety that an hour does not
+become the same nine patterns on a loop. The washes matter more there
+than anywhere — as first-class material for the patterns, and as
+something the hands can reach.
+
+### Goal 2 is really two goals
+
+They pull in opposite directions and want different answers:
+
+- **No dead controls** — there is never a state where a fader or a
+  switch does nothing. Cheap, unambiguously good, band mode included.
+- **Poking randomly produces something good** — a forgiving, generative
+  surface. That is a DJ mode goal. In band mode you are not exploring,
+  you are hitting a known look at a known moment, and the property you
+  want is the opposite: nothing you touch can wreck the running look.
+
+Same hardware, two different promises. The generative behaviour is what
+the surface does when no song is loaded.
+
+### The washes, at band scale
+
+The first run of strips and one BCC145 together produced three effects
+worth naming, because all three are *relationships between two light
+sources* rather than one source adding to another:
+
+- a soft, dim, complementary wash against saturated strips
+- alternating quickly between broad wash and strip accents
+- the strips holding a fixed colour or white while the wash changes
+  underneath them
+
+That last one is the interesting one: the colour performance moves off
+the strips entirely and they become pure shape. It is also the cheapest
+source of variety over a long set, because a wash changing colour under
+a running pattern re-reads the whole wall without touching the pattern.
+
+Note this cuts against the earlier rule that every wash contribution
+must be additive and the strips must carry every look alone. Under that
+rule none of the three effects above are buildable. At band scale the
+rule is also solving the wrong problem: the fixtures are ours and the
+rooms are the same rooms, so the realistic failure is *one died* or
+*no time to rig them tonight* — degrade by count, not degrade to zero.
+
+**Minimal version that makes the washes a tool rather than a setting**,
+and nothing more than this in the near phases:
+
+1. Wash colour independent of strip colour. Exists — `CC_WASH_HUE_OFFSET`.
+2. Something on the box that actually moves wash level and hue. Nothing
+   emits `CC_WASH_LEVEL` or `CC_WASH_HUE_OFFSET` today; the brain
+   consumes both but they only move from a laptop. One knob and one
+   fader, not a touchpad redesign.
+3. A song stores its wash state along with everything else.
+
+Deferred, deliberately: per-pattern wash choreography, the washes under
+the touchpad, wash-only pedal moves.
+
+### The foot pedal
+
+Where the model got to. Four buttons, and the shape is a small
+vocabulary of actions assignable per song rather than fixed roles in
+firmware:
+
+- **advance** — next scene in the song's sequence
+- **reverse** — previous scene
+- **jump** — go to a named scene
+- **hold** — show a target while the button is down
+- **toggle** — latch a target on and off
+
+Any four of those, on any of the four buttons, per song. Fixed roles in
+firmware were argued for and dropped: the discipline belongs with the
+performer, not baked into a one-person instrument.
+
+**New songs inherit a default loadout.** This is what makes per-song
+assignment safe rather than a trap — a personal convention such as
+"button 1 is always advance" then holds on every song for free, and a
+song deviates only deliberately.
+
+**Navigation and override are two layers, not one variable.** advance,
+reverse and jump move *where you are* in the song. hold and toggle show
+something else *without* moving where you are. Sharing one "current
+scene" value produces a whole class of wrong behaviour — release an
+accent after advancing and you land on the pre-advance scene; latch an
+accent and advance and nothing says whether it survives. Keeping a
+position and an override on top of it costs one variable, and it
+answers "what does releasing return to" without a history stack: always
+whatever the position currently says.
+
+**Open: is an accent a scene, or a layer over one?** A whole-scene swap
+reads as a cut — the running pattern stops, which is right for "kill to
+a strobe" and wrong for flicking in a highlight. A layer keeps the
+pattern running underneath and adds to it. Both are probably wanted, and
+the cheap shape is that the five verbs stay as they are while the
+*target* of hold, toggle and jump can be either a scene or an accent.
+Deciding this decides what a "fixed scene" target means.
+
+Smaller things to pin when the vocabulary settles:
+
+- **End of sequence.** advance past the last scene should probably stop
+  dead rather than wrap; wrapping mid-song because the singer talked
+  longer than expected is worse than nothing happening.
+- **reverse is "go to scene N−1", not "undo".** If scenes do anything on
+  arrival, arriving backwards re-fires it.
+- **Scenes per song** becomes a memory question rather than a UX one,
+  since four buttons no longer cap it.
+
+**Consequence: tape on the pedal stops being sufficient.** Per-song
+loadouts make the labels right for most songs and silently wrong for
+the ones that deviate — which are exactly the songs that will go wrong
+under pressure. The cheap fix uses hardware already planned: show the
+four current bindings on the controller's pixels for a few seconds when
+a song loads, then return to being the wall monitor. Check it during
+the count-in.
+
+### Transitions as a pedal action — idea, 2026-09-09
+
+Raised at the very end of the session and not yet worked through. Two
+shapes, both for the same button:
+
+- **Held** — the button advances toward the next section and the
+  transition *stays active while the foot is down*; releasing lands it
+  and the next section starts. The transition becomes somewhere you can
+  stay rather than an event that happens to you, which is what riding a
+  build actually is.
+- **Timed** — the button advances via a named transition over a fixed
+  span, say two bars, and runs on its own.
+
+Three things this exposes, all open:
+
+1. **Only some transitions are holdable.** A held transition needs a
+   renderable middle: the system has to sit at part of the way from A to
+   B indefinitely and have it look deliberate. A crossfade has one; a
+   wipe has one, with the edge frozen partway; a cut on the downbeat has
+   none. So transitions divide into those with a scrubbable middle and
+   those that are instantaneous, and only the first family can go on a
+   held button.
+2. **A transition with a middle is the same shape as the sculpt blend** —
+   two looks and a position between them. That suggests transitions are
+   not a new subsystem but that blend with different things driving the
+   position: a foot by hand, the clock over N bars, or a jump for a cut.
+   One mechanism, three sources, which is the version worth aiming at.
+3. **Release has two musical meanings.** Release-completes lands the
+   next section; release-aborts falls back to where it started, which is
+   the fake drop and one of the better tricks available. Both are real,
+   so release probably cannot have one fixed rule — either it is part of
+   the button's configuration or a short release is distinguished from a
+   long one. Related and unsettled: releasing mid-bar either lands
+   immediately, which is sloppy, or waits for the next downbeat, which
+   is tight but feels late under the foot. Only the wall can settle it.
+
+Transitions want their own session rather than a sub-item of song mode.
+They matter as much in DJ mode as in band mode — arguably more, since a
+DJ set is transitions rather than sections.
+
+### Program Change songs — two traps
+
+- **Song IDs must be stable and explicit**, not slot order. Once the
+  band's backing track has PC 7 saved for a song, reordering the song
+  list silently breaks a gig.
+- **A PC arriving mid-song should not take effect mid-song.** Cheapest
+  version: the PC loads and arms the song, and it does not jump to that
+  song's home scene until the next advance.
+
+Also unresolved: songs need their own PC range, since 0–9 is preset
+select today, and if the message arrives at the controller's MIDI IN
+then the controller is the node that has to translate it.
+
+### Open when we resume
+
+Roughly in the order they block work:
+
+1. **The accent fork above** — scene swap, layer, or both.
+2. **Transitions.** Their own session, not a sub-item of song mode — see the idea recorded above. Named as part of song mode and never designed. When
+   a pedal press changes the look, does it cut, crossfade, or wait for
+   the next downbeat? Snapping on the beat is most of the difference
+   between a change that reads as played and one that reads as a switch
+   being flipped, and the clock to do it is already there. Likely a
+   property of the change, per song, defaulting to quantised to the bar.
+3. **A blackout reachable blind** — one known-safe state that works
+   regardless of mode, song, or what the pad last did. Under the pedal
+   vocabulary this is just a jump at a blackout scene, provided every
+   song has one.
+4. **What the rig does between songs** — banter, tuning, a broken
+   string. A real fraction of a set with nothing specified for it.
+5. **Where wash level and hue live physically**, given the box was built
+   for five strips and the fader row is already spoken for.
+
+## Press vs hold, and what a scene actually is — 2026-09-10
+
+Started as a narrow question — can the four momentary footswitches tell
+a press from a hold without losing timing accuracy — and turned into the
+foundational one underneath it. The discussion is unfinished; this
+records where it got to.
+
+### Detection is not the bottleneck
+
+Foot down to light changing, on the hardware as it stands:
+
+| Stage | Cost |
+|---|---|
+| Switch bounce plus several agreeing ladder samples | ~2–10 ms |
+| Three-byte MIDI note, controller → brain at 31250 baud | ~1 ms |
+| Brain frame — 225 px of WS2812 output plus render | ~7–8 ms |
+
+Ten to twenty milliseconds against a sixteenth note of 125 ms at
+120 BPM. Nothing in the reading chain is worth optimising.
+
+**The hold threshold is the only real cost.** A foot needs roughly
+250–350 ms before "still down" reliably means "deliberately held" —
+feet are slower than fingers, and under pressure stomps get shorter,
+not longer. So the question is what has to be delayed to tell the two
+apart:
+
+- **Press and hold as different actions** — the press action must wait
+  the full threshold, because you cannot fire it and then discover the
+  foot stayed down. Visibly late on an accent.
+- **Hold as a continuation of press** — fire on contact close, and if
+  the foot is still down at the threshold the hold behaviour starts on
+  top. Costs nothing.
+
+The same escape that applies to the two-button modifier applies here,
+and more cheaply: a scene change already waits for the next beat, so on
+a scene-change button even the exclusive form is free — the decision
+fits inside the beat the change was going to wait for anyway. Unlike
+the modifier it needs no second foot and no sixteen-level decoding.
+Caveat: at 160 BPM a beat is 375 ms and a 300 ms threshold nearly fills
+it, so the change can slip a beat. Quantising to the bar removes that.
+
+Release needs debouncing too, since a hold *ends* on release. About
+20 ms, inaudible.
+
+### The word "scene" is doing two jobs
+
+This is where the confusion lives. It is being used for both:
+
+- **a destination** — somewhere the wall goes and stays, left only by
+  going somewhere else
+- **something that happens** — it starts, it runs, it is over
+
+The one-line test that separates them is not scene-versus-effect-versus-
+transition. It is **does this thing terminate?** Plasma never says done.
+"Black out, white fills in from both ends, they touch" does, and that
+"done" is the whole difference.
+
+It matters because **the moment something terminates, holding it needs a
+definition, and a destination never needed one.** "The effect continues
+until I release" is ambiguous once the effect has already finished.
+Three different answers, all real:
+
+- **freeze** — stall part-way, two white bars closing in and stuck
+- **loop** — run it again, and again
+- **sustain the end** — arrive at all-white and stay there until release
+
+For that fill-from-the-ends effect, freeze is a build you can ride and
+sustain-the-end is a flash you are stretching. They look nothing alike
+and neither is more correct; it depends on the song.
+
+### Most "effects" are not a new kind of object
+
+Running the accent library through "is this a look plus a number
+moving":
+
+| Accent | As a number moving |
+|---|---|
+| White flash | current look → white, fast up, slow down |
+| Blank while held | current look → black, pinned at 1 while the foot is down |
+| Strip pulse | current look → brighter version, driven by an LFO |
+| White fills from the ends | black → white, the pattern's own shape being "fill inward" |
+| Bars flow up once | **does not fit** |
+
+Four of five are the mechanism sculpt Y already needs: two looks and a
+position between them. The one that breaks is not a position between
+two looks at all — it is the bars pattern's own animation played
+through once instead of looping.
+
+### The foundational split: two numbers, three sources
+
+There are **two different values between 0 and 1**, and calling both of
+them "transition" is what made the model feel unfinished:
+
+1. **Blend position** — how far between look A and look B. Sculpt Y is
+   this. Crossfades are this. The white-fill is this.
+2. **Playhead** — how far through one look's own animation. Tempo drives
+   this today, for every pattern, all the time.
+
+Either can be driven by the same three sources: the clock (free-running,
+or once over N bars), a foot (while held), or a jump (instant).
+
+**Two numbers, three sources** is the proposed foundation. Under it
+there is exactly one kind of saved object — a look — and everything else
+is a binding saying which number a button drives and from where. A
+transition is therefore not a shorter scene; it is two looks and a
+number. So is most of the accent library.
+
+### What this does to press versus hold
+
+It stops being per-button configuration and becomes a choice of source:
+
+- **press** → the clock drives the number, once, over N beats
+- **hold** → the foot drives the number; release hands it back to the clock
+
+The button's meaning does not change between the two, and nothing has to
+be configured anywhere to get the behaviour that started this
+discussion.
+
+### The gap: a footswitch has no position
+
+The touchpad can scrub — a thumb is somewhere, so the number is
+somewhere. A stomp switch reports only elapsed time, so "hold to ride
+the build" is a ramp at a fixed rate that you start and stop, not a
+scrub.
+
+That forces a question the model does not answer yet: **what happens if
+the foot stays down past the end of the ramp?** Reaching 1.0 while the
+foot is still down means the arrival already happened and releasing does
+nothing musically. The alternative is a ramp that stalls short of the
+end — say 85% — so the landing is always still ahead of the foot no
+matter how long the singer talks.
+
+The stall is the better bet, with the ramp rate tempo-relative (two
+bars, not 1500 ms) so it feels the same in every song. Only the wall can
+confirm it.
+
+### The entanglement, and which way it runs
+
+This felt tangled with "what does a song actually save", and it is — but
+the dependency runs the opposite way to how it feels. Settling what a
+song saves is not a prerequisite for the model above. The model above
+decides what a song saves: if it holds, a song stores looks and
+bindings, one kind of object and one kind of pointer. If effects and
+transitions really are separate nouns, a song stores three kinds of
+object and needs an editor that understands all three.
+
+### Open when we resume
+
+- **Which of freeze / loop / sustain-the-end** a held terminating look
+  does, and whether that is a property of the look or of the binding.
+- **The stall point and ramp rate** for a foot-driven blend.
+- **Whether the playhead is worth having at all in v1**, or whether the
+  one accent that needs it can be dropped until the blend model is
+  standing.
+- The whole presets-versus-songs discussion, deferred: does a song store
+  a frozen snapshot that overrides the faders on load, or a set of
+  choices the hands still ride on top of?
+
+
 ## Memory budget check
 
 After the preset redesign commit:
