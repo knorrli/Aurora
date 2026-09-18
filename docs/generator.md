@@ -176,8 +176,15 @@ rather than answering it.
 
 1. **Fan is a linear staircase, and the roster's Rain is a chevron.** Its
    per-strip offsets are 20, 28, 34, 28, 20 — symmetric, peaking on the
-   centre strip. The generator can only make a diagonal. Wants its own
-   control: a fan *shape*, from diagonal through to symmetric.
+   centre strip. The generator computes `fan × strip_index / 5`, which is
+   purely linear and can only make a diagonal.
+
+   The likely answer, worked out 2026-09-18 but not built: generalise to
+   `amount × f(strip − centre)` and make the **centre** a parameter that
+   may range beyond the five strips. A centre at strip 2 gives the
+   chevron; a centre outside the span leaves you on one side of it only,
+   which is a diagonal. So centre alone interpolates between the two, and
+   inverted chevrons come free. Two parameters cover the whole family.
 2. **Is a strip a loop or a line?** The maths treats it as a loop — the
    pattern repeats with a period of one cell, so at count 1 a tail falling
    off one end reappears at the other. Consistent, but not what a strip

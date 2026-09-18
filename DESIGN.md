@@ -56,6 +56,46 @@ layers should be built knowing this is available, because the old model —
 nine finished looks and a colour knob — is what made "what is a scene"
 unanswerable in the first place.
 
+## Parked: what the numpad is for — 2026-09-18
+
+Layer-5 material that arrived early, recorded so it is not lost and
+deliberately **not** promoted to a decision. The layers above it still
+have to be worked through first.
+
+The generator has more parameters than the box has controls, and some of
+them are families rather than single values — fan wants a centre and an
+amount, pulse wants depth, rate and shape. Two ideas came up for what the
+numpad could do about that, and they turn out not to compete:
+
+- **Page select.** The numpad picks which parameter group is live and the
+  touchpad's two axes edit it. This is how a synth with more parameters
+  than knobs has always worked, and it gives the numpad a real job — today
+  it is the visual centre of the instrument and its least-used control.
+- **Patch select.** The numpad picks one of nine saved patches and the pad
+  morphs toward it, as far as you push. This builds directly on the morph
+  result and needs no mode indicator at all.
+
+**They belong to different activities**, which is why both can exist: page
+select is for dialling a patch in, patch select is for playing. That split
+is not offline versus onstage — at a party you would do both continuously
+— and the A/B switch already exists to carry it.
+
+Three things that need answering before any of it is real:
+
+1. **The pad springs back, deliberately.** That is settled and
+   well-reasoned: an absolute control that holds its value has to answer
+   what happens when your thumb next lands somewhere else, and every
+   answer is bad. But a pad that springs back cannot *set* anything. As an
+   editor it has to hold, so spring-back probably becomes a property of
+   which activity you are in rather than of the pad.
+2. **Nothing shows which page is live.** No display, no wall visibility,
+   and the numpad keys do not light. A mis-selected page means a gesture
+   silently does something else, and unlike a synth you cannot hear the
+   mistake.
+3. **Two axes is not always two parameters.** Pulse is three. Either pages
+   cap at two, or the faders become the rest of the page — which costs
+   having hue and brightness always to hand.
+
 ## The rule that keeps this from circling
 
 Every question gets sorted, the moment it appears, into one of two piles:
