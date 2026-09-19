@@ -102,6 +102,44 @@ Checked items are confirmed in the drawer.
       `docs/bench-facts.md`.
 - [ ] **Per-fixture master scale by eye** at soundcheck, so
       washes-at-full read as equal weight to strips-at-full.
+- [ ] **Aim each PAR at the wall between two strips**, not at a strip.
+      They stand on the floor and uplight the back wall, so this is what
+      keeps their pools out of the strips' background while filling the
+      gaps. See `DESIGN.md` § "The PAR cans".
+- [ ] **Measure how fast a PAR can be played.** The one number the PAR
+      design leans on: the shortest dimmer flash that still reads as a
+      flash, and whether the fixture lags or smooths between values.
+
+      The wire is not the limit. Four fixtures are 32 channels, and
+      `TeensyDMX`'s `setPacketSize()` puts a frame at roughly 1.5 ms —
+      some 600 a second, against 44 for the full 512-slot frame it sends
+      by default. Everything that matters is fixture-side, and none of it
+      is published: a BCC145 has no datasheet behind its manual, so this
+      is a measurement rather than a search.
+
+      *The test:* flash the dimmer channel full to black with a strip
+      beside it on the same clock, stepping the flash length down —
+      200, 100, 50, 25, 12 ms.
+
+      *Expect:* clean and simultaneous with the strip at 200 and 100 ms.
+      Between 50 and 25, one of two things, and they mean different
+      problems — flashes that go **dimmer but stay in time** are the
+      fixture smoothing between values, and flashes that stay full but
+      land **late by the same amount at every rate** are input latency.
+      At 12 ms expect a continuous dim glow, or an irregular stutter if
+      the fixture samples slower than it is sent.
+
+      *Why the difference decides something:* latency is fixable and
+      smoothing is not. Everything renders from musical position, which
+      is predictable, so a fixed lag is corrected by sampling the PARs
+      that far ahead. Smoothing is a hard floor on flash length that
+      nothing in software gets under.
+- [ ] **Look at whether a pool bridges a gap.** With the PARs interleaved
+      between the strips, a window sliding across should hand over
+      through a pool rather than jump from strip to strip. Whether a soft
+      pool on a wall reads as continuous with a bar of pixels, or as a
+      separate thing blinking in turn, cannot be argued. One slow sweep
+      and one fast one, narrow window.
 - [ ] **Find out what two keys at once do.** Needs no rewiring — press
       two keys on the box as it stands and watch the wall. The per-key
       codes were measured key by key and have run stably for over a year,

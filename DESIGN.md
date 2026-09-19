@@ -324,21 +324,137 @@ is a pair, so the wired-OR reading above is inference from the shape of
 the codes rather than observation. Pressing two keys on the box as it
 stands settles it; see `TODO.md`.
 
+## The PAR cans — 2026-09-19
+
+Worked out in discussion the same day as the surfaces above.
+`docs/visual-design.md` is the settled word on what a wash *looks* like;
+this is what plays them. **Nothing here has been seen with four fixtures
+lit — only one has ever been connected at once.**
+
+### Where they stand, which decides everything else
+
+Four BeamZ BCC145 on the stage floor, pointing at the back wall to light
+the stage frame. **They will never be rigged or ceiling-mounted**: there
+is no time and no crew for it at the gigs this band plays, so this is a
+constraint rather than a starting point.
+
+- They already have a **horizontal position** across the stage, so they
+  can be addressed by position alongside the strips without arranging
+  anything.
+- They can only ever make a **low, soft pool on a vertical surface**. No
+  beams, nothing in the air, nothing above head height.
+
+**Aim each one at the wall between two strips, not at a strip.** That is
+what "aim them off the strips" becomes for a floor fixture — the strips
+stay against dark wall, so nothing collapses the contrast of the
+graphic, and the pool lands in a gap that is metres wide.
+
+### A PAR is a position, not a second machine
+
+The generator is already a function of where you are on the wall. A strip
+is a line of positions; a PAR is one position with no length. So the same
+machine renders both, and every noun above covers them for free — a patch
+holds them, a morph carries them, a shift rotates them, the numpad
+selects them. There is no wash page and no second saved thing.
+
+That splits along the two layers the generator already has:
+
+- **The colour field is what a one-pixel fixture can render.** Sampled at
+  each PAR's position, the field's spread included, so the four of them
+  differ from each other and from the strips instead of being four copies
+  of one hue. `dmx_out::tick()` reads one flat `presetColor` for all four
+  today.
+- **The shape layer cannot reach them, except the pulse**, which is
+  brightness over time and needs no length. So a PAR follows a swell, a
+  strobe and a breathe, and ignores a sweep. Slow and broad on the PARs,
+  fast and fine on the strips, by construction rather than by discipline.
+
+**The pulse drives the dimmer channel, never the fixture's strobe
+channel.** That channel is a free-running internal rate with nothing to
+lock it to the beat, so it cannot play in time; `docs/wiring.md` calls it
+what a tempo-synced fixture effect would need, and that is wrong. It
+stays available as an unsynced shimmer.
+
+### What a patch holds for them
+
+Level, hue offset from the strips' hue, and how much of the pulse reaches
+them. All of it relative to what the strips are doing — a relationship,
+not a second look.
+
+**Whether they match the strips or contrast against them is per-patch,
+and it lives on the faders.** Each fader's far end already covers the
+whole parameter set, so pushing Colour hot can take the PARs from
+matching the strips to sitting a half turn off them, as one gesture, with
+no switch and no new control. What it costs is that the relationship
+cannot be changed without also moving energy — consistent with the
+division above, where a sideways move at constant energy is a patch
+change.
+
+It also retires one of the five anti-overpowering rules in
+`docs/visual-design.md` as a *rule*: washes owning the bottom of the
+energy range and strips the top becomes one shape among others that a far
+end can be dialled to. That file already marks its control statements
+provisional.
+
+### On the pad: nine positions, not two zones
+
+The four PARs fill exactly the four gaps between five strips, so the
+window's X axis runs over nine alternating positions rather than five.
+
+- **Width re-reads on the 3-way rocker** as one position, three, or all
+  nine. The middle setting becomes one strip plus the two PARs flanking
+  it, which is better than what it means with strips alone: a lit strip
+  with shoulders in the room.
+- **Mirror is unaffected.** Nine positions are still symmetric about
+  strip 3.
+- **The PARs can bridge the gaps the strips cannot**, so a window sliding
+  across hands over through a pool instead of jumping from strip to
+  strip. This is the strongest reason to interleave and it is *unproven*
+  — a soft pool on a wall may read as continuous with a bar of pixels, or
+  as a separate thing blinking in turn. Settle by looking; see `TODO.md`.
+
+**Above some travel speed the PARs stop tracking position and hold the
+patch's colour.** They carry the movement while it reads and fall back to
+being the colour layer when it does not, which degrades into something
+good rather than into a stutter. The speed comes from the measurement in
+`TODO.md`; the rule itself is one comparison.
+
+### Rejected
+
+- **Match against contrast on the fourth rocker.** It is one continuous
+  number — how far round the PARs sit from the strips — and a switch is
+  for things with no middle state. Matching the strips' hue is also the
+  half already rejected on the wall, on 2026-09-06, for making the rig
+  read as one light source. And it is a character move sitting on the
+  energy surface, which would make it a global mode changing what every
+  patch means.
+- **Splitting the pad vertically** — strips above, PARs below, both at
+  the centre. Three zones on a continuous axis is the same mistake as the
+  old five-way strip selection, one axis over; it takes Y away from
+  scrubbing the transition; and it collides with X addressing the PARs by
+  position, since a window centred on a PAR with the thumb in the strip
+  half is two contradictory instructions.
+
 ## Open
 
 - **What the fourth rocker does.** Three of the four switches are spoken
   for — overlay/exclusive, mirror, and width on the 3-way. Two jobs are
   left chasing one switch: latching the pad, which was a deliberate
   exception to spring-back, and anything the pad's destination scheme
-  turns out to need. If mirror is permanently on, the pressure disappears.
+  turns out to need. If mirror is permanently on, the pressure
+  disappears. PAR match against contrast was considered for it and
+  rejected, above.
 - **Where jitter belongs**, above. Settle by looking.
 - **Everything else on the box.** The tempo button, the mic trigger, the
   two indicator pixels, the ten pixels under the pad. The 12-position
   rotary stays the tempo control; whether tempo division deserves a
   dedicated knob is a separate question.
-- **The PAR cans.** Every word above assumes the strips are the whole
-  wall. There are four fixtures that should be played, and nothing has
-  been said about how.
+- **How fast the PARs can be played.** The section above is settled
+  except for the one number it leans on: the shortest dimmer flash that
+  still reads as a flash, and whether the fixture lags or smooths. It
+  sets the speed at which the PARs drop out of carrying movement, and it
+  is a bench measurement rather than a search — see `TODO.md`.
+- **Whether a pool bridges a gap**, above. Settle by looking.
 - **Patches have nowhere to live.** They are in the browser's local
   storage today, which survives nothing. Getting them into the brain is
   unscoped work, and reading them back needs the brain's USB MIDI send
