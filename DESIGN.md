@@ -137,74 +137,227 @@ What it costs is rewriting a patch in the room. Shifts cover adapting one;
 they do not cover rebuilding one. That is judged the right thing to lose.
 
 
-## The surfaces, so far — 2026-09-19
+## The surfaces — 2026-09-19
 
-Decided in discussion, none of it built or played yet.
+Worked out in discussion across two sessions. **None of it has been
+played, and none of it has been seen on the wall.** Where something is a
+judgement about how a thing reads rather than a consequence of the
+constraints, it says so.
 
-**The numpad selects patches, and that is its only job.** A press switches
-instantly — no waiting to find out whether it was a tap or a hold, because
-a patch change must never be late.
+### The division everything else hangs on
 
-**Keeping the key held** pushes that patch toward its hold target and
-releases back to it. Both halves of the same rule: *press* means go to
-this patch, *hold* means push this patch toward its extreme. No key is
-ever dead — holding the key you are already on is how you accent the
-patch you are playing.
+**The faders move energy. The numpad moves character.**
 
-What that gives up is peeking at another patch and falling back, since
-after a press you are *on* the patch you pressed. The keypad decode
-already carries an unused **centre-key combo for "return to previous"**,
-which covers it with one gesture that works from anywhere.
+Not every control affects intensity — rotating hue from red to blue does
+not, and neither does reversing direction. But everything you reach for
+*mid-song* does, because mid-song you are following the music. The
+sideways moves, where the wall changes character at the same energy, are
+what you make between sections.
 
-**The touchpad plays two morph targets, one per axis, defined per patch.**
-It never sets anything, so springing back on release is now correct
-rather than a problem to solve.
+So each surface gets one direction, and the momentary controls are the
+short version of the sustained one above them:
 
-**The three faders hold their position.** Each carries one fixed *concept*
-that does not change between patches — how it is realised is the patch's
-business. "Intensity" means something different for Strobe than for
-Starfield; it means the same *thing* on the fader either way. What the
-three concepts should be is open.
+|  | Sustained | Momentary |
+|---|---|---|
+| **Up / down** | the three faders | holding a key |
+| **Sideways** | the numpad | the touchpad |
 
-Which gives, per patch and with nothing to arm: three faders, two pad
-axes, one key-hold.
+This is a discipline rather than something the box enforces — a fader and
+a pad axis run on identical machinery. It earns its keep by making each
+surface predictable without having to remember which patch you are on.
 
-**Ramp time belongs to the target**, in beats. Zero is a stab — there on
-press, gone on release. Sixteen is a build that arrives if you hold long
-enough and collapses when you let go. One number, so an accent and a
-build stop being two features. One time serves both directions until
-something needs otherwise.
+### The three faders are three routes to "more"
 
-**One key at a time is a hardware fact, not a rule.** The keypad is a
-static parallel code whose table decodes single keys and two combos;
-two arbitrary keys together read as nothing.
+Not three concepts. Three answers to *what carries the increase*, mixed
+against each other so one chorus reads hot and sparse and the next dense
+and cool:
+
+- **Colour** — more means hotter, toward white.
+- **Extent** — more means more of the wall lit.
+- **Motion** — more means faster, harder, more agitated.
+
+Each is a per-patch morph target: the far end is dialled in and judged for
+that patch. A route may be weak or absent on a patch with nothing to do
+with it, and that is fine. A fader that does little is safe; a fader that
+does something unexpected is not.
+
+**Motion needs a real toolkit or it collapses into the other two.** Speed,
+pulse rate and pulse shape are the obvious material, and fan spread is
+already in the generator. A travel *easing* — linear through to slow at
+the ends and fast through the middle, so a shape reads as a bouncing ball
+— does not exist and would have to be built.
+
+**Where jitter belongs is unsettled, and it is a settle-by-looking
+question.** Scattering a clean strobe into a chaotic one could be a lift
+or a character change. *The test:* with music, notice which one you reach
+for it to do. If it raises a chorus it is motion and it is a fader. If it
+changes the feel of one, it belongs on the pad.
+
+### Which strips — a window, not a selection
+
+The old controller selected strips with the pad's X axis, in three modes.
+It was expressive and it wasted the axis: a continuous control with
+hundreds of positions was acting as a five-way switch, so sliding felt
+like stepping.
+
+**Replace selection with a window.** The effect has a *centre* and a
+*width*, with soft edges, and the centre may travel past both ends of the
+wall. Each strip's share is how much of the window falls on it, so X
+slides a soft region across the stage instead of snapping between strips.
+"Affect all strips" stops being a mode and becomes the width control at
+maximum.
+
+The share is **how far that strip has travelled toward the destination,
+not how bright it is.** A strip inside a narrow window leaning toward
+Glitch is partly glitchy; the strips outside it are untouched and at full
+brightness. Nothing dims.
+
+The same number is already needed elsewhere: `docs/generator.md` open
+question 1 wants fan generalised to `amount × f(strip − centre)` with the
+centre allowed outside the five strips, so that chevron and diagonal
+become one family. One parameter serves both.
+
+**Width lands on the 3-way rocker** — one strip, three strips, all five.
+With five strips there is no fourth useful setting. Width is also what
+trades snap against slide: narrow hands over between strips in a short
+crossfade, wide moves several together.
+
+**Mirror survives untouched.** Two windows rather than one — yours, and
+its reflection about the middle of the wall — with each strip taking
+whichever is larger. It works at every width. It has no middle state, so
+it costs a 2-way rocker, *unless* it turns out to be something that is
+simply always on, in which case it costs nothing.
+
+**Overlay versus exclusive is a 2-way rocker.** Whether the pad's effect
+lays on top of what the patch is already doing, or the affected strips
+take it alone, has no middle state — so it costs a switch, not an axis.
+
+### Changing patch
+
+**Ground rule: a patch change arrives on the next beat.** Section changes
+land in time with the music. Measured latency in the reading chain is
+10–20 ms against 125 ms for a sixteenth at 120 BPM, so nothing else in
+the path matters.
+
+Underneath the three gestures there is **one mechanism**:
+
+> From wherever you are, toward whatever key you last pressed, at
+> whatever rate the driver says.
+
+| Driver | What it gives |
+|---|---|
+| Nothing | A cut, on the beat |
+| Time, while the key is held | A morph you stretch by holding |
+| The touchpad | A transition you scrub by hand |
+
+A cut is that mechanism with zero time. These are not three features
+competing for the numpad — they are one thing with three drivers, which
+is also why **nothing needs arming**: if the numpad always names a
+destination, the pad can always be driving toward it.
+
+**The start is always a snapshot of the live values, never a patch
+number.** Press 3 when you are 40 % of the way to 7 and the "from" end
+becomes what is on the wall at that instant. Otherwise re-targeting
+lurches. One copy of the parameter set per destination change, which
+costs nothing and has to be deliberate.
+
+That makes abandoning a transition a non-feature: you change your mind by
+naming where you came from. There is no "go back" gesture and none is
+needed on the hand controls.
+
+**One rule covers every release:**
+
+> Release means settle at the patch you pressed.
+
+- Tap — you are there on the beat. A cut.
+- Hold, then release partway — the morph finishes at its ramp rate. You
+  arrive; holding only stretched the journey.
+- Hold past arrival — you are pushing into that patch's morph target, and
+  release falls back to the patch. The accent.
+
+So holding is a journey first and an accent second, and you can never be
+stranded in an unnamed blend between two patches with no key that leads
+anywhere.
+
+**Ramp time belongs to the patch**, in beats: the rate the journey runs at
+when nothing is driving it, and the rate a release finishes at.
+
+**Telling a tap from a hold must not use a fixed threshold.** The obvious
+scheme — still holding when the beat arrives? — fails worst when you play
+well, because playing in time means pressing slightly *ahead* of the
+beat, so an intended cut reads as a hold. **Snap the press to the nearest
+beat, not the next one**, and judge the hold a fixed short time after
+that beat. Fingers are much faster than the 250–350 ms a foot needs, so
+the window is cheap. The exact figure is unmeasured.
+
+### Blackout has two forms
+
+**Key 0 is the musical blackout** — a patch like any other, so press cuts
+to black on the beat and hold fades to black over the ramp. It needs no
+special case, which is the argument for leaving key 0 alone rather than
+giving it a second job.
+
+**The telephone hook switch is the master kill.** A hook is a maintained
+state rather than an event: hang up and the wall is out until the handset
+is lifted. It works regardless of patch, it is unmistakable by feel, and
+it cannot be left wrong without noticing — which is what the old
+document wanted from "a blackout reachable blind" and never solved.
+
+### What the keypad actually is
+
+**Ten keys: 1–9 for patches, 0 for blackout.** The two unlabelled black
+inlays flanking 0 do not press.
+
+**Two keys at once do not read as nothing.** Each key shorts the common
+line to a subset of four data lines, so a pair reads as the OR of their
+patterns — and most pairs collide with a real key. `2+3` reads as key 0,
+`3+4` as key 6, `3+7` as key 9. A fumbled press therefore selects a wrong
+patch silently, and in one case blacks the wall out. The firmware should
+reject a code that appears within a few tens of milliseconds of another.
+
+Only `4+7` produces a pattern no single key makes. That is one extra
+gesture against a real hazard, and it is not worth building on.
+
+**The per-key codes are not in doubt** — they were measured key by key
+and the decode has run stably for over a year. What has never been tried
+is a pair, so the wired-OR reading above is inference from the shape of
+the codes rather than observation. Pressing two keys on the box as it
+stands settles it; see `TODO.md`.
 
 ## Open
 
-- **What the three fader concepts are.** The one thing blocking the
-  faders being usable.
-- **Whether the numpad may also arm pad gestures.** A key would choose
-  which of ten gestures the pad performs, rather than the patch deciding.
-  Parked, not rejected: it reaches further than one pad assignment per
-  patch, and it costs the thing that killed page-select — nothing shows
-  what is armed, and a wrong guess misfires on stage where the wall
-  cannot be seen. The ten pixels under the pad and the ten numpad keys
-  are the same number, which is the obvious way to pay that cost off.
-- **Everything else on the box.** The 12-step tempo rotary, the rocker
-  switches, the tempo button, the telephone hook switch, the two
-  indicator pixels, and which of the touchpad switches survive at all.
-  Several now have no job, because the mode they were carrying is gone.
+- **What the fourth rocker does.** Three of the four switches are spoken
+  for — overlay/exclusive, mirror, and width on the 3-way. Two jobs are
+  left chasing one switch: latching the pad, which was a deliberate
+  exception to spring-back, and anything the pad's destination scheme
+  turns out to need. If mirror is permanently on, the pressure disappears.
+- **Where jitter belongs**, above. Settle by looking.
+- **Everything else on the box.** The tempo button, the mic trigger, the
+  two indicator pixels, the ten pixels under the pad. The 12-position
+  rotary stays the tempo control; whether tempo division deserves a
+  dedicated knob is a separate question.
 - **The PAR cans.** Every word above assumes the strips are the whole
   wall. There are four fixtures that should be played, and nothing has
   been said about how.
-- **Cut or morph on a patch change**, and who decides — the patch, the
-  key, or a control. Sits underneath all of the above.
 - **Patches have nowhere to live.** They are in the browser's local
   storage today, which survives nothing. Getting them into the brain is
   unscoped work, and reading them back needs the brain's USB MIDI send
   path, which exists and has never been used. Not urgent: what is at risk
   is the storage mechanism, not the patches themselves, which are cheap
   to rebuild once there is a tool for making them.
+
+### Dissolved rather than answered
+
+- **Whether the numpad may also arm pad gestures.** It does not need to.
+  The numpad always names a destination and the pad always drives toward
+  it, so there is nothing to arm and no hidden state to misread.
+- **Cut or morph on a patch change.** Both, from one mechanism, chosen by
+  the gesture rather than by a setting.
+- **"Return to previous" as a keypad gesture.** The claim that the decode
+  carried a spare centre-key combo for it was an inherited comment, not a
+  fact; there is no centre key. Re-pressing the patch you came from does
+  the same job, and if the gesture is ever wanted it belongs on the foot
+  controller, which is where it lived historically.
 
 ## The rule that keeps this from circling
 

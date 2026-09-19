@@ -102,6 +102,20 @@ Checked items are confirmed in the drawer.
       `docs/bench-facts.md`.
 - [ ] **Per-fixture master scale by eye** at soundcheck, so
       washes-at-full read as equal weight to strips-at-full.
+- [ ] **Find out what two keys at once do.** Needs no rewiring — press
+      two keys on the box as it stands and watch the wall. The per-key
+      codes were measured key by key and have run stably for over a year,
+      so they are not in doubt; what has never been tried is a *pair*.
+      The codes have the shape of a wired-OR, and if that is what it is,
+      `2+3` selects key 0 and a fumble blacks the wall out, `3+4` reads
+      as 6, and `3+7` as 9. If it turns out to be real, the firmware
+      should reject a code arriving within a few tens of milliseconds of
+      another.
+- [ ] *Deferred to the controller rebuild:* confirming what idle reads
+      and what produces `0b00111111` and `0b00111101`. Both are curiosity
+      rather than risk, and getting at the lines means desoldering
+      brittle keypad wiring, so they wait until the pad is off the box
+      anyway.
 
 ## Generator, next
 
@@ -122,6 +136,19 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       perceptible difference of character at this resolution, judged
       2026-09-19. That frees CC 27 and brings the field's Edge control
       back from the CC 90 overflow into the colour block.
+- [ ] **Test the touchpad window from the laptop, before any rewire.**
+      The brain renders and `tools/index.html` already drives it over USB
+      MIDI, so the controller is not needed — an XY pad in the page, a
+      width selector, a mirror toggle and a destination picker are enough
+      for a real test on the real wall. Answers the three things the
+      interaction model is guessing at: whether arbitrary patch pairs
+      morph through anything worth seeing, whether a continuous window
+      reads as a sweep or as a smear, and whether a strip caught halfway
+      between two patches looks deliberate or broken. What it cannot
+      answer is feel — thumb travel and spring-back need the hardware.
+- [ ] **Travel easing.** Linear through to slow at the ends and fast
+      through the middle, so a shape reads as a bouncing ball. Wanted by
+      the Motion fader in `DESIGN.md`; does not exist.
 - [ ] **Decide the field's usable ranges.** A hard edge with deep
       darkening and a wide hue swing is three strong things at once and
       easy to make ugly. Open question 6 in `docs/generator.md`; the

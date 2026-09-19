@@ -223,6 +223,10 @@ cleanly, and the proximity flicker is gone, two-prong charger included.
 > assignment rather than a translation of this one. It must find a home
 > for the 12-position rotary, which no map has ever listed. Keep this
 > table until the Teensy map exists and the box is rewired.
+>
+> It was never listed because it was never on this board: it sat on a
+> *second* Nano that did the tempo calculation and emitted a clock signal
+> to the primary. See § "12-position rotary" below.
 
 Mostly inherited from the current Aurora wiring. The only moves are:
 
@@ -254,8 +258,12 @@ Mostly inherited from the current Aurora wiring. The only moves are:
 |  A3  | Foot pedal — 4 switches on a resistor ladder | analog  | See § "Foot pedal" in this file                                     |
 |  A4  | Touchpad YP (also I²C SDA)                 | analog    | 4-wire resistive, unchanged            |
 |  A5  | Touchpad XM (also I²C SCL)                 | analog    | 4-wire resistive, unchanged            |
-|  A6  | Touchpad strip mode switch                 | analog    | 3-state analog rotary                  |
+|  A6  | Touchpad strip mode switch                 | analog    | 3-way rocker (left / centre / right)   |
 |  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; read as 2-state in firmware today        |
+
+**There is exactly one rotary in the rig** — the 12-position tempo
+switch. Everything else is a rocker: D4, D5 and A7 are 2-way, A6 is
+3-way.
 
 **The keypad is not a scanned matrix.** Despite the five lines, nothing
 drives columns low and reads rows back: the salvaged telephone keypad
@@ -359,6 +367,51 @@ escape, if more are wanted on one line: if only one switch is ever read
 at a time, five levels instead of sixteen gives far more margin and the
 same wire carries six to eight comfortably. Chords cost switch count;
 switch count costs chords.
+
+---
+
+## 12-position rotary — tempo division on one analog line
+
+Twelve poles into one analog pin, the same trick as the foot pedal and a
+much easier version of it: a rotary closes exactly **one** position at a
+time, so there are no combinations to separate. Equal resistors, evenly
+spaced levels, no value search.
+
+Chain twelve equal resistors across the supply and tap every junction:
+
+```
+  3V3 ──[1k]──┬──[1k]──┬── ... ──[1k]──┬── GND
+              │        │               │
+            pos 12   pos 11          pos 1
+
+  wiper ──┬──→ analog in
+          │
+       [100k]
+          │
+         GND
+```
+
+| Part | Value | Count |
+|------|-------|-------|
+| Ladder resistors | 1 kΩ | 12 |
+| Pull-down | 100 kΩ | 1 |
+
+Twelve 1 kΩ draws about 275 µA and puts the taps 0.275 V apart — around
+85 counts on a 10-bit ADC and 340 on the Teensy's 12-bit, roughly five
+times the foot pedal's margin. Tolerance is a non-issue here.
+
+**The pull-down is not optional.** Rotary switches are break-before-make:
+between detents the wiper connects to nothing and the line floats at
+whatever charge was left on it, which can read as a valid position on the
+way past. 100 kΩ is large enough against the 1 kΩ taps to shift them by a
+few percent against 8 % spacing, and it gives a floating wiper a defined
+zero — a level no detent produces, so it is discardable rather than
+ambiguous.
+
+**Decode by nearest match and require agreement**, as for the pedal: two
+or three consecutive samples on the same tap before accepting a change,
+and a reading matching no tap gets discarded rather than snapped. A knob
+turned by hand leaves milliseconds to spare.
 
 ---
 
