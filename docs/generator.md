@@ -172,6 +172,58 @@ That dissolves a question that had been open and blocking for weeks —
 whether a transition is a scene, an effect, or a third kind of thing —
 rather than answering it.
 
+## The colour field, added 2026-09-19
+
+A second field, sampled per pixel and applied to whatever the shape above
+has lit. At zero depth it does nothing and the wall is one flat colour.
+
+It exists because Plasma and Aurora turned out to be **the same three
+lines** — take a number from where you are and when it is, add it to the
+hue — separated only by where the number comes from and by four constants
+each had hardcoded. Those constants are now the parameters.
+
+| CC | Control | Meaning |
+|----|---------|---------|
+| 23 | Drift | how fast the field moves. Bipolar; centre is frozen |
+| 24 | Hue depth | how far hue swings from the fader's centre |
+| 25 | Grain | blob size along a strip |
+| 26 | Spread | how far the five strips differ |
+| 27 | Source | stacked sines through to Perlin noise |
+| 28 | To white | saturation falls where the field is high |
+| 29 | To dark | brightness falls where the field is low |
+| 90 | Edge | hard-edged regions through to a smooth ramp |
+
+What the wall settled, with the detail in `docs/bench-facts.md`:
+
+- **To white works and is the safe one.** Desaturation happens at full
+  brightness, where the LED has all its resolution. Red at about half
+  depth was judged a usable backdrop.
+- **To dark needed both a floor and an edge to be worth having.** It
+  reaches 2 % rather than 0, on a geometric taper so the whole knob does
+  something, and it only became legible once the field could be
+  steepened.
+- **Edge is what made the field readable at all.** Same problem and same
+  fix as the pulse's shape control.
+- **Source does not earn its place.** No perceptible difference of
+  character at this resolution.
+
+Three of the nine palettes in `docs/visual-design.md` — Ember, Deep, and
+what Two-pole implies — are defined by brightness falling at one end, and
+therefore have the hardware problem above. Haze, which falls toward white
+instead, is the one with evidence behind it.
+
+### The unsettled part: this looks like the shape generator again
+
+Grain is count. Drift is speed. Spread is fan. Edge is edge. Each was
+arrived at separately, because the wall asked for it, and every one
+landed on a parameter the shape generator already has.
+
+Which suggests the two are one machine pointed at different destinations
+rather than two machines that resemble each other — the same extension
+the pulse note above predicts when it says a modulation destination is
+the obvious next step. **Not decided.** It is recorded here because the
+colour discussion is being restarted from it.
+
 ## Open
 
 1. **Fan is a linear staircase, and the roster's Rain is a chevron.** Its
@@ -206,7 +258,12 @@ rather than answering it.
 5. **The pulse shape taper** was spread geometrically across the fader on
    a guess. Where the midpoint should sit is a feel judgement nobody has
    made with music playing.
-6. **Whether the roster survives at all**, or becomes a set of named
+6. **Where the field's controls should stop.** Combinations that look bad
+   are easy to reach — a hard edge with deep darkening and a wide hue
+   swing is three strong things at once. Whether that wants narrower
+   ranges or just practice is a judgement nobody has made with music
+   playing. The test is a set, not a bench.
+7. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
 
 ## Tools

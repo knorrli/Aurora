@@ -112,7 +112,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // Layout:
 //      0 –   9 : AVOID (standard MIDI: bank select, modulation, etc.)
 //     10 –  19 : transport / meta control
-//     20 –  29 : colour / palette
+//     20 –  29 : colour — three faders plus the colour field
 //     30 –  39 : touchpad / sculpt mode
 //     40 –  49 : mode flags & switches
 //     50 –  59 : per-preset parameter slots (interpretation is per preset)
@@ -120,6 +120,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     70 –  79 : generator shape parameters
 //           80 : generator pulse shape
 //     81 –  89 : RESERVED for band / song-specific automation
+//     90 –  99 : colour field overflow (the colour block is full)
 //     90 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
 //
@@ -131,13 +132,25 @@ enum AuroraCC : uint8_t {
                                  // value is an AuroraTempoDivision index
     // 11–19 reserved (transport / meta)
 
-    // 20–29 — colour / palette
-    CC_HUE                 = 20, // palette hue center / H fader
-    CC_SATURATION          = 21, // palette spread / S fader
+    // 20–29 — colour. 20–22 are the three faders; 23–29 are the colour
+    // field, which varies colour across the wall and over time rather than
+    // holding one colour everywhere. See P_Generator.cpp.
+    //
+    // This fills the category. A further colour parameter needs a decision
+    // about where the range grows, not a slot crammed in elsewhere.
+    CC_HUE                 = 20, // hue centre / H fader
+    CC_SATURATION          = 21, // saturation / S fader
     CC_VALUE               = 22, // brightness / V fader
-    CC_PALETTE_ANIM_RATE   = 23, // how fast palette rotates (0 = static)
-    CC_PALETTE_ANIM_DEPTH  = 24, // how far palette drifts from center
-    // 25–29 reserved (colour / palette)
+    CC_FIELD_RATE          = 23, // field drift. Bipolar: 64 is frozen
+    CC_FIELD_HUE_DEPTH     = 24, // how far hue swings from the centre
+    CC_FIELD_GRAIN         = 25, // blob size along a strip, 2–96 units/pixel
+    CC_FIELD_SPREAD        = 26, // how far the five strips differ. 0 = all
+                                 // strips identical
+    CC_FIELD_SOURCE        = 27, // 0 = stacked sines, 127 = Perlin noise
+    CC_FIELD_SAT_DEPTH     = 28, // how far saturation falls toward white
+                                 // where the field is high
+    CC_FIELD_VAL_DEPTH     = 29, // how far brightness falls toward dark
+                                 // where the field is low
 
     // 30–39 — touchpad / sculpt
     CC_SCULPT_Y            = 30, // touchpad Y in sculpt mode (per-preset axis)
@@ -199,7 +212,14 @@ enum AuroraCC : uint8_t {
     CC_GEN_PULSE_SHAPE     = 80, // 0 = hard on/off square, 127 = smooth sine
 
     // 81–89 reserved (band / song-specific automation)
-    // 90–119 reserved
+
+    // 90–99 — colour field, continued. The colour category above is full, and
+    // this is the overflow rather than a second home for it: colour lives in
+    // two blocks until the redesign decides what it keeps, at which point it
+    // should come back to one.
+    CC_FIELD_EDGE          = 90, // 0 = hard-edged regions, 127 = smooth ramp
+
+    // 100–119 reserved
 };
 
 // ---------------------------------------------------------------------------
@@ -334,6 +354,6 @@ enum AuroraNote : uint8_t {
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 4
+#define AURORA_PROTOCOL_VERSION_MINOR 6
 
 #endif // AURORA_PROTOCOL_H

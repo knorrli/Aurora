@@ -87,6 +87,114 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
   return (uint8_t)h;
 }
 
+// ---------------------------------------------------------------------------
+// The colour field
+//
+// Plasma and Aurora were the same three lines: take a number from where you
+// are and when it is, add it to the hue. The only thing separating them was
+// where the number came from — two stacked sines, or Perlin noise — plus four
+// scaling constants each had hardcoded. Those are the parameters below.
+//
+// The field is sampled per pixel and applied to whatever the shape above has
+// lit, so a full-width fill with the field wound up is Plasma, and the same
+// field under a travelling shape colours the shape as it moves through it.
+// At zero depth it costs nothing and the wall is one flat colour.
+// ---------------------------------------------------------------------------
+
+#define FIELD_MIN_GRAIN 2.0f
+#define FIELD_GRAIN_RANGE 48.0f   // 2 units per pixel at one end, 96 at the other
+#define FIELD_MAX_SPREAD 51.0f          // five strips across one sine cycle
+#define FIELD_NOISE_SPREAD_SCALE 6.5f   // ...and 1.3 noise cells per strip
+#define FIELD_MAX_CYCLES_PER_BEAT 1.0f
+
+// How dark the field pulls a trough at full depth, as a fraction of what the
+// pixel would otherwise be — and the knob reaches it geometrically, so each
+// equal step is an equal ratio of light rather than an equal subtraction.
+// Mapped linearly, nearly the whole travel was imperceptible and everything
+// worth having sat in the last three steps.
+//
+// It stops short of zero because a WS2812 has eight linear bits and no gamma:
+// at the bottom one step is a third of the light, so brightness quantises into
+// lurches, and pixels crossing to zero pop out entirely.
+#define FIELD_MIN_LEVEL 0.02f
+
+static float fieldGrain = 8.0f;
+static float fieldSpread = 40.0f;
+static float fieldRate = 0.0f;
+static float fieldHueDepth = 0.0f;
+static float fieldSatDepth = 0.0f;
+static float fieldValDepth = 0.0f;
+static float fieldSource = 0.0f;
+static float fieldSoftness = 1.0f;
+
+static PhaseTracker fieldPhase = { 0.0f, 0.0f };
+
+// inoise8 adds 64 to the raw gradient and doubles it, which is calibrated for
+// the +-64 a single gradient can theoretically reach. The value returned is a
+// trilinear blend of eight of them, and blending pulls the result toward the
+// middle, so the output never arrives at either end. Doubling again about the
+// centre gives noise the same authority as the sines, which do fill the range.
+static inline uint8_t expandFromCentre(uint8_t value) {
+  const int16_t swung = 128 + ((int16_t)value - 128) * 2;
+  if (swung < 0) return 0;
+  if (swung > 255) return 255;
+  return (uint8_t)swung;
+}
+
+// Five strips is five samples, against forty-five along a strip, so the across
+// axis needs a far coarser step to show anything — and the two sources need
+// different steps for the same reason they are different sources.
+//
+// Spread fans the strips out from the middle one rather than from the first,
+// so winding it up opens the wall symmetrically instead of pinning strip 1 and
+// leaving the last strip to do all the moving.
+static uint8_t fieldAt(uint8_t stripIndex, uint8_t pixelIndex, uint16_t z) {
+  const float fromCentre = (float)stripIndex - (float)(NUMBER_OF_STRIPS - 1) * 0.5f;
+  const int32_t across = (int32_t)(fromCentre * fieldSpread);
+
+  // Spread displaces the field ALONG the strip rather than shifting its level.
+  // Shifting the level leaves every strip with its blobs at the same pixels
+  // and only their colour differing, which reads as one striped pattern rather
+  // than as a field with any depth in it.
+  const int32_t along = (int32_t)((float)pixelIndex * fieldGrain) + across;
+
+  // Each term drifts at its own fraction of the rate so they never settle into
+  // a visible period. The halving has to happen on the wide counter and the
+  // truncation afterwards: halving an already-truncated byte ramps it 0-127
+  // and snaps back, which is a discontinuity in the middle of a sine.
+  const uint8_t sines = (uint8_t)(((uint16_t)sin8((uint8_t)(along + z))
+                                 + (uint16_t)sin8((uint8_t)((along >> 1) + (z >> 1)))
+                                 + (uint16_t)sin8((uint8_t)(across + (z >> 2)))) / 3);
+
+  // Perlin noise returns exactly its midpoint wherever the input lands on the
+  // integer lattice, and FastLED's cells are 256 units wide. Stepping the
+  // strips by a whole number of cells puts every one of them on the same
+  // lattice line, and they come out sharing features however far apart they
+  // are. So the step is deliberately not a multiple of 256, and the bias keeps
+  // the middle strip off the lattice as well.
+  const uint16_t noiseAcross =
+      (uint16_t)(4200 + (int32_t)(fromCentre * fieldSpread * FIELD_NOISE_SPREAD_SCALE));
+  const uint8_t noise = expandFromCentre(inoise8((uint16_t)(along + 4200), noiseAcross, z));
+
+  return (uint8_t)((float)sines + ((float)noise - (float)sines) * fieldSource);
+}
+
+static CHSV fieldColor(CHSV base, uint8_t sample) {
+  // A smooth ramp of brightness has no edge anywhere for the eye to catch, so
+  // even a 50:1 range reads as barely there. Steepening the field toward a
+  // hard boundary is the same move that makes a strobe reachable from a sine,
+  // and it is what turns the field's regions into things you can see as
+  // regions rather than as a general unevenness.
+  float unit = ((float)sample / 255.0f - 0.5f) / fieldSoftness + 0.5f;
+  if (unit < 0.0f) unit = 0.0f;
+  else if (unit > 1.0f) unit = 1.0f;
+
+  const float trough = powf(FIELD_MIN_LEVEL, fieldValDepth);
+  return CHSV((uint8_t)(base.hue + (int16_t)((unit - 0.5f) * 256.0f * fieldHueDepth)),
+              (uint8_t)((float)base.saturation * (1.0f - fieldSatDepth * unit)),
+              (uint8_t)((float)base.value * (trough + (1.0f - trough) * unit)));
+}
+
 // `d` is distance behind the head within one cell, 0..1.
 //
 // `width` is the solid core. `edge` and `tail` both reach outward from it
@@ -149,6 +257,16 @@ void Generator(CHSV color) {
 
   const float pulse = trackedPhase(pulsePhase, beats, 1.0f / genPulseBeats);
 
+  const bool fieldActive = fieldHueDepth > 0.0001f
+                        || fieldSatDepth > 0.0001f
+                        || fieldValDepth > 0.0001f;
+  // inoise8 takes a uint16 z and noise has no period, so the drift jumps once
+  // every 256 cycles where the counter wraps. Wrapping in float first keeps
+  // the conversion in range; a float past UINT16_MAX converts to nothing
+  // defined.
+  const float fieldCycles = trackedPhase(fieldPhase, beats, fieldRate);
+  const uint16_t fieldZ = (uint16_t)(fract(fieldCycles * (1.0f / 256.0f)) * 65536.0f);
+
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     const float stripPhase = genFan * ((float)stripIndex / (float)NUMBER_OF_STRIPS);
 
@@ -199,9 +317,11 @@ void Generator(CHSV color) {
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
       // where it was set: converting at a low value lets a channel truncate to
       // zero before its neighbour, which is what turns a dim yellow red.
-      CRGB lit = CHSV(color.hue, color.saturation, 255);
+      const CHSV tint =
+          fieldActive ? fieldColor(color, fieldAt(stripIndex, pixelIndex, fieldZ)) : color;
+      CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =
-          lit.nscale8_video((uint8_t)((float)color.value * brightness));
+          lit.nscale8_video((uint8_t)((float)tint.value * brightness));
     }
   }
 }
@@ -232,4 +352,23 @@ void setGeneratorPulseRate(uint8_t value) {
 void setGeneratorFlags(uint8_t value) {
   genAlternate = value & GEN_FLAG_ALTERNATE;
   genBounce = value & GEN_FLAG_BOUNCE;
+}
+
+void setFieldGrain(uint8_t value)    { fieldGrain = FIELD_MIN_GRAIN * powf(FIELD_GRAIN_RANGE, ccUnit(value)); }
+void setFieldSpread(uint8_t value)   { fieldSpread = ccUnit(value) * FIELD_MAX_SPREAD; }
+void setFieldHueDepth(uint8_t value) { fieldHueDepth = ccUnit(value); }
+void setFieldSatDepth(uint8_t value) { fieldSatDepth = ccUnit(value); }
+void setFieldValDepth(uint8_t value) { fieldValDepth = ccUnit(value); }
+void setFieldSource(uint8_t value)   { fieldSource = ccUnit(value); }
+
+// Precomputed on receipt rather than per pixel: powf on every one of the 225
+// would cost more than the whole rest of the field.
+void setFieldEdge(uint8_t value) { fieldSoftness = 0.02f * powf(50.0f, ccUnit(value)); }
+
+// Bipolar around 64 like the travel speed, and squared for the same reason:
+// the slow end is where a colour field that reads as depth rather than as an
+// effect actually lives.
+void setFieldRate(uint8_t value) {
+  const float x = ((float)value - 64.0f) / 63.0f;
+  fieldRate = (x < 0.0f ? -1.0f : 1.0f) * x * x * FIELD_MAX_CYCLES_PER_BEAT;
 }

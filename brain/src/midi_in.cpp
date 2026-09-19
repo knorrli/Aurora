@@ -34,6 +34,14 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_WASH_HUE_OFFSET:
             dmx_out::setHueOffset(map(value, 0, 127, 0, 255));
             break;
+        case CC_FIELD_RATE:      setFieldRate(value); break;
+        case CC_FIELD_HUE_DEPTH: setFieldHueDepth(value); break;
+        case CC_FIELD_GRAIN:     setFieldGrain(value); break;
+        case CC_FIELD_SPREAD:    setFieldSpread(value); break;
+        case CC_FIELD_SOURCE:    setFieldSource(value); break;
+        case CC_FIELD_SAT_DEPTH: setFieldSatDepth(value); break;
+        case CC_FIELD_VAL_DEPTH: setFieldValDepth(value); break;
+        case CC_FIELD_EDGE:      setFieldEdge(value); break;
         case CC_GEN_WIDTH:       setGeneratorWidth(value); break;
         case CC_GEN_COUNT:       setGeneratorCount(value); break;
         case CC_GEN_EDGE:        setGeneratorEdge(value); break;

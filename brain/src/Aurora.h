@@ -126,6 +126,16 @@ extern void setGeneratorPulseDepth(uint8_t value);
 extern void setGeneratorPulseRate(uint8_t value);
 extern void setGeneratorPulseShape(uint8_t value);
 extern void setGeneratorFlags(uint8_t value);
+// The colour field — CC 23–29. Varies colour across the wall and over time
+// instead of holding one colour everywhere; at zero depth it does nothing.
+extern void setFieldRate(uint8_t value);
+extern void setFieldHueDepth(uint8_t value);
+extern void setFieldGrain(uint8_t value);
+extern void setFieldSpread(uint8_t value);
+extern void setFieldSource(uint8_t value);
+extern void setFieldSatDepth(uint8_t value);
+extern void setFieldValDepth(uint8_t value);
+extern void setFieldEdge(uint8_t value);
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

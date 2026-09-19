@@ -65,6 +65,12 @@
       <h2>Colour</h2>
       <div id="colour"></div>
     </div>
+
+    <div class="panel">
+      <h2>Colour field</h2>
+      <div id="field"></div>
+      <div class="note">Colour that varies across the wall and over time instead of one colour everywhere. Hue depth at 0 switches the whole thing off. Plasma and Aurora are two points in here — under &ldquo;known looks&rdquo;.</div>
+    </div>
   </div>
 
   <div>
@@ -72,9 +78,13 @@
       <h2>Pattern</h2>
       <div class="chips">
         <button id="presetGen" class="on">generator (PC 10)</button>
+        <button id="presetHand">hand-written Plasma (PC 3)</button>
+        <button id="presetAlt">alt variant</button>
         <button id="presetOff">blackout (PC 0)</button>
         <button id="presetStripOrder">strip order (PC 11)</button>
       </div>
+      <div class="note">The lit button is what the brain is actually running. Recalling a patch or a known look switches back to the generator by itself.</div>
+      <div class="note">PC 3 is the original hand-written pair, for comparing against the field: alt off is Plasma, alt on is Aurora. The alt toggle applies to every hand-written slot, not just this one.</div>
       <div class="note">Strip order paints each strip one flat colour in data-chain order: red, orange, green, cyan, blue.</div>
       <div class="note">The brain free-runs at 120 BPM with no clock, so the wall animates as soon as the generator is selected.</div>
     </div>
@@ -129,7 +139,16 @@ const CC = {
   width: 70, count: 71, edge: 72, tail: 73, speed: 74,
   fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, flags: 79, pulseShape: 80,
   hue: 20, saturation: 21, value: 22,
+  fieldRate: 23, fieldHueDepth: 24, fieldGrain: 25, fieldSpread: 26,
+  fieldSource: 27, fieldSatDepth: 28, fieldValDepth: 29, fieldEdge: 90,
 };
+
+// Plasma's and Aurora's hardcoded constants, converted to slider positions:
+// grain 45 is 8 units per pixel, 98 is 40; spread 32 is 40 across the strips,
+// 64 is 80; the rates are what millis()>>3 and >>4 came to at 120 BPM.
+const FIELD_OFF = { fieldRate: 64, fieldHueDepth: 0, fieldGrain: 45,
+                    fieldSpread: 60, fieldSource: 0, fieldSatDepth: 0,
+                    fieldValDepth: 0, fieldEdge: 127 };
 
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
 // readouts lie until they are changed to match.
@@ -148,6 +167,16 @@ const DERIVED = {
   hue:        v => Math.round(v / 127 * 250) + '/255',
   saturation: v => (v / 127 * 100).toFixed(0) + '%',
   value:      v => (v / 127 * 100).toFixed(0) + '%',
+  fieldHueDepth: v => v === 0 ? 'flat' : '\u00b1' + Math.round(v / 127 * 128) + ' of 255',
+  fieldGrain:    v => (2 * Math.pow(48, v / 127)).toFixed(1) + ' units/px',
+  fieldSpread:   v => v === 0 ? 'strips identical' : (v / 127 * 100).toFixed(0) + '% apart',
+  fieldRate:     v => { const x = (v - 64) / 63; const r = Math.sign(x) * x * x;
+                        if (Math.abs(r) < 0.0005) return 'frozen';
+                        return (1 / Math.abs(r)).toFixed(0) + ' beats/cycle' + (r < 0 ? ' back' : ''); },
+  fieldSource:   v => v < 10 ? 'sines' : v > 117 ? 'noise' : (v / 127 * 100).toFixed(0) + '% noise',
+  fieldSatDepth: v => (v / 127 * 100).toFixed(0) + '%',
+  fieldEdge:     v => v < 8 ? 'hard' : v > 119 ? 'smooth' : (100 - v / 127 * 100).toFixed(0) + '% steepened',
+  fieldValDepth: v => v === 0 ? 'off' : 'down to ' + (100 * Math.pow(0.02, v / 127)).toFixed(1) + '%',
 };
 
 const SHAPE = [
@@ -169,6 +198,17 @@ const COLOUR = [
   ['value',      'Brightness',  ''],
 ];
 
+const FIELD = [
+  ['fieldHueDepth', 'Hue depth',  'how far hue swings either side of the centre. 0 is one flat colour'],
+  ['fieldGrain',    'Grain',      'blob size along a strip — broad washes through to fine speckle'],
+  ['fieldSpread',   'Spread',     'blob size across the five strips. 0 means all five are identical'],
+  ['fieldRate',     'Drift',      'centre is frozen; either side drifts, one way or the other'],
+  ['fieldSource',   'Source',     'stacked sines through to Perlin noise'],
+  ['fieldEdge',     'Edge',       'hard-edged regions through to a smooth ramp'],
+  ['fieldSatDepth', 'To white',   'how far saturation falls where the field is high'],
+  ['fieldValDepth', 'To dark',    'how far brightness falls where the field is low'],
+];
+
 const ANCHORS = {
   Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
   Sweep:      { width:40,  count:0,   edge: 18,  tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
@@ -184,6 +224,20 @@ const ANCHORS = {
   Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, flags:1, pulseShape:0 },
   Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:0 },
 };
+
+// A full still fill with the colour field doing all the work — which is what
+// the two hand-written ones always were.
+const FIELD_ANCHORS = {
+  Plasma: { width:127, count:0, edge:0, tail:0, speed:64, fan:0, jitter:0, pulseDepth:0, pulseRate:64, flags:0, pulseShape:127,
+            fieldRate:95, fieldHueDepth:64, fieldGrain:45, fieldSpread:100, fieldSource:0,   fieldSatDepth:0, fieldValDepth:0, fieldEdge:127 },
+  Aurora: { width:127, count:0, edge:0, tail:0, speed:64, fan:0, jitter:0, pulseDepth:0, pulseRate:64, flags:0, pulseShape:127,
+            fieldRate:86, fieldHueDepth:64, fieldGrain:98, fieldSpread:40, fieldSource:127, fieldSatDepth:0, fieldValDepth:0, fieldEdge:127 },
+};
+
+// Every anchor carries a full field setting, so clicking one is a whole look
+// rather than a shape laid over whatever the field was left at.
+for (const name of Object.keys(ANCHORS)) ANCHORS[name] = { ...FIELD_OFF, ...ANCHORS[name] };
+Object.assign(ANCHORS, FIELD_ANCHORS);
 
 const state = { ...ANCHORS.Sweep, hue: 20, saturation: 100, value: 100 };
 
@@ -226,7 +280,23 @@ function buildRows(host, defs) {
   }
 }
 
+// Every saved patch and every anchor is a generator setting, so recalling one
+// has to put the brain back on the generator. Without that, a recall silently
+// sends parameters to whichever preset happens to be selected, and the ones it
+// does not understand are dropped with no sign that anything was ignored.
+const PRESET_BUTTONS = { presetGen: 10, presetHand: 3, presetOff: 0, presetStripOrder: 11 };
+let activePreset = 10;
+
+function setPreset(pc) {
+  activePreset = pc;
+  send([0xC0, pc]);
+  for (const [id, number] of Object.entries(PRESET_BUTTONS)) {
+    document.getElementById(id).classList.toggle('on', number === pc);
+  }
+}
+
 function applyPatch(patch) {
+  if (activePreset !== 10) setPreset(10);
   for (const [name, value] of Object.entries(patch)) {
     state[name] = value;
     if (controls[name]) {
@@ -394,13 +464,22 @@ async function initMidi() {
 
 buildRows(document.getElementById('shape'), SHAPE);
 buildRows(document.getElementById('colour'), COLOUR);
+buildRows(document.getElementById('field'), FIELD);
 syncFlagButtons();
 
 document.getElementById('flagAlternate').addEventListener('click', () => toggleFlag(1));
 document.getElementById('flagBounce').addEventListener('click', () => toggleFlag(2));
-document.getElementById('presetGen').addEventListener('click', () => { send([0xC0, 10]); sendAll(); });
-document.getElementById('presetOff').addEventListener('click', () => send([0xC0, 0]));
-document.getElementById('presetStripOrder').addEventListener('click', () => send([0xC0, 11]));
+document.getElementById('presetGen').addEventListener('click', () => { setPreset(10); sendAll(); });
+document.getElementById('presetHand').addEventListener('click', () => { setPreset(3); sendAll(); });
+
+let altOn = false;
+document.getElementById('presetAlt').addEventListener('click', () => {
+  altOn = !altOn;
+  document.getElementById('presetAlt').classList.toggle('on', altOn);
+  sendCC(40, altOn ? 2 : 0);
+});
+document.getElementById('presetOff').addEventListener('click', () => setPreset(0));
+document.getElementById('presetStripOrder').addEventListener('click', () => setPreset(11));
 document.getElementById('clockToggle').addEventListener('click', () => setClock(!clockOn));
 document.getElementById('sendAll').addEventListener('click', sendAll);
 document.getElementById('grabA').addEventListener('click', () => capture('A'));

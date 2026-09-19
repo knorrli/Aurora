@@ -11,7 +11,7 @@ untouched.
 
 ## What is built and proven
 
-- **Brain on Teensy 4.0.** Builds clean, 65 KB of 2 MB. All nine
+- **Brain on Teensy 4.0.** Builds clean, 76 KB of 2 MB. All nine
   patterns and all nine variants render on the wall.
 - **All five strips lit** from pin 2 through the strip boxes, each strip
   on its own supply, buffered by a 74AHCT125.
@@ -23,6 +23,12 @@ untouched.
   control in `tools/index.html`. Proven on the wall 2026-09-18: it reaches
   most of the roster, the space between settings is playable, and morphing
   between two patches works. See `docs/generator.md`.
+- **The colour field**, layered into the generator 2026-09-19. Plasma and
+  Aurora turned out to be the same function with different constants, so
+  those constants are parameters now. A morph from a field-driven look to
+  a shape-driven one — Plasma-with-dark-sections to Bars — was judged to
+  work flawlessly, which is the first time a morph has crossed both
+  layers at once.
 - **A strip-order rigging aid** on PC 11 — each strip a flat colour in
   data-chain order.
 
@@ -112,8 +118,14 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
 - [ ] **Fan shape** — diagonal through to symmetric, so the chevron
       arrangement the roster's Rain uses becomes reachable.
 - [ ] **Count should double rather than add** across a morph.
-- [ ] Decide whether Plasma and Aurora get a second generator or stay
-      hand-written.
+- [ ] **Cut the field's Source control** and the sine path with it. No
+      perceptible difference of character at this resolution, judged
+      2026-09-19. That frees CC 27 and brings the field's Edge control
+      back from the CC 90 overflow into the colour block.
+- [ ] **Decide the field's usable ranges.** A hard edge with deep
+      darkening and a wide hue swing is three strong things at once and
+      easy to make ugly. Open question 6 in `docs/generator.md`; the
+      test is a set, not a bench.
 
 ## Known defects
 

@@ -225,3 +225,120 @@ Converting at full brightness and scaling the resulting RGB with
 channel from vanishing. The perceptual dimming curve is unaffected.
 
 Worth knowing anywhere colour is scaled, not just in the generator.
+
+## Brightness reads far weaker than saturation, and needs an edge either way
+
+Observed 2026-09-19, sweeping a colour field over a full still fill.
+
+**The same numeric depth on brightness and on saturation are nowhere near
+the same change.** A field spanning 255 down to 135 — a real halving of
+light — was reported as unnoticeable. The equivalent move on saturation
+took a saturated red to a pale rose and read immediately. Halving
+luminance is roughly a quarter less *perceived* brightness, and the
+change was spread as a smooth gradient with no boundary anywhere; a
+saturation shift of the same size crosses what reads as a change of
+colour, which the eye is enormously more sensitive to.
+
+**And a smooth gradient of brightness reads as almost nothing whatever
+its depth.** A field running from full down to 2 % — a 50:1 range — was
+still described as "not extremely visible" while its edges stayed soft.
+Steepening the same field toward a hard boundary, with no change to its
+depth at all, made it "extremely pronounced". Vision detects edges; a
+ramp with no edge in it has nothing to detect.
+
+This is the same finding as the pulse needing a shape control, one level
+up: no amount of depth on a sine produces a boundary.
+
+**Hue depth at full destroys the base colour.** A swing of +-128 is the
+whole wheel, so the hue fader stops meaning anything and the wall becomes
+a spectrum rather than one colour with depth in it. Usable settings
+looked to be roughly a fifth to a half of that. Not a measurement, but
+consistent across several sittings.
+
+## How far a pixel can be darkened before its colour jitters
+
+Measured 2026-09-19, extending the hue-collapse finding below.
+
+Converting at full brightness and scaling the RGB is necessary but not
+sufficient. At very low output the eight linear bits run out: near the
+bottom one step is a third of the light, and the three channels cross
+their steps at different moments. A pixel whose **hue is also moving**
+therefore lurches between colours instead of sliding.
+
+What was observed:
+
+- **A single-channel colour is immune.** Pure red at full saturation is
+  RGB (255, 0, 0); scaled it stays (N, 0, 0), and one channel can only
+  step in brightness. No jitter at any depth. This makes red a useless
+  test case for the problem.
+- **Down to 2 % is clean** with hue depth at about a third of full, on
+  orange and on cyan — both multi-channel — with saturation also being
+  pulled toward white.
+- **Hue depth at full jitters heavily** at the same depth, and pixels
+  crossing to zero pop out entirely.
+
+So the limit is set by how far hue moves at low brightness, not by the
+darkening alone. A floor a little above zero plus a moderate hue swing
+stays inside it.
+
+**The knock-on is bigger than the knob.** These strips have a minimum
+usable brightness below which anything quantises this way, which lands on
+any proposal to express intensity by scaling brightness: a dim wall is a
+wall in the region that falls apart. Untested at rig scale.
+
+## FastLED's inoise8 does not fill its range, and repeats on its lattice
+
+Two properties of `inoise8`, both found 2026-09-19 by reading `noise.cpp`
+after the wall showed the symptoms.
+
+**It never reaches either end.** The implementation is:
+
+```c
+int8_t n = inoise8_raw(x, y, z);  // -64..+64
+n += 64;                          //   0..128
+uint8_t ans = qadd8(n, n);        //   0..255
+```
+
+That correction is calibrated for the +-64 a *single* gradient can
+theoretically reach. What is returned is a trilinear blend of eight of
+them, and blending pulls any result toward the middle, so the output
+clusters around 128 and the ends never arrive. Against stacked sines over
+the same sweep, which fill the range with a gain of 1.04, noise read as
+"a less intense version" with the extreme hues missing. Doubling again
+about the centre gives it comparable authority.
+
+**It returns its midpoint exactly on the integer lattice**, and FastLED's
+cells are 256 units wide. Five strips stepped one whole cell apart
+therefore all sat on the same lattice line and came out sharing features
+— reported as three of the five having the same pronounced blob in the
+same place, at maximum separation. A step that is not a whole number of
+cells fixes it.
+
+## Sines and noise are not tellable apart at this resolution
+
+Judged 2026-09-19, after the sine path was fixed to be fairly comparable.
+
+A control crossfading a colour field between stacked sines and Perlin
+noise produced no perceptible change of character — reported as "I could
+probably achieve the very same effect by just changing the base-hue
+slider". Regular versus irregular needs enough repeats across a strip to
+read as regular, and 45 pixels does not supply them at any grain coarse
+enough to look like anything.
+
+## A field built as along-plus-across is not two-dimensional
+
+Found 2026-09-19.
+
+A field summing a wave along the strip with a wave across the strips is
+separable: the along term is identical on every strip, so it alone
+decides where the features are, and the across term only shifts their
+level. The wall shows the same blobs at the same pixels on all five
+strips, differing only in colour — which is what was observed, and what
+the hand-written Plasma had always done.
+
+Making the across offset **displace the field along the strip** rather
+than shift its level puts the features at different pixels per strip.
+Fanning them from the middle strip rather than from the first also
+matters: from the first, strip 1 never moves and the last does all the
+travelling, which reads as a one-sided ramp rather than the wall opening.
+
