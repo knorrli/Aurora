@@ -551,14 +551,6 @@ do is a judgement for a set, not a bench.
    parameters as an argument, so a second field is a small refactor
    before it is a feature. Doing that refactor is cheaper than the
    argument for deferring it implied it would be.
-11. **The colour layer has never been judged on the wall.** It was
-    designed, dialled and checked in `tools/preview.js` and then ported.
-    Everything above about how a look is *reached* has screen evidence
-    behind it; nothing about how a colour *looks* does. Desaturation
-    needing full brightness, the dark floor and red's resolution are
-    exactly what `docs/bench-facts.md` caught a screen getting wrong
-    before.
-
 ## Tools
 
 - `tools/preview.js` — the wall on screen: five strips and four PARs,

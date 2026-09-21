@@ -124,15 +124,15 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
 
-**The colour layer has never been seen on a wall.** It was designed and
-dialled in `tools/preview.js` and ported unjudged. Everything below it
-here waits on that first look.
+**The colour layer has been seen on a wall and holds up**, and the
+preview it was designed in matches the strips closely enough to keep
+designing there. See `docs/bench-facts.md`.
 
-- [ ] **Judge the colour layer on the wall.** Flat is confirmed —
-      2026-09-21, every control centred gives exactly the faders' colour.
-      Still to look at: `Rainbow` on Fill, and `Comet tail` on Comet. A
-      screen has been wrong before about desaturation, the dark floor and
-      red's resolution. See `docs/bench-facts.md`.
+- [x] **Judge the colour layer on the wall.** Done 2026-09-21. Flat is
+      flat, and the preview matches the strips almost exactly — a touch
+      paler on the wall, which is the diffuser. See `docs/bench-facts.md`
+      § "The colour layer's flat state is flat" and § "The screen and the
+      wall agree".
 - [ ] **Average the placed field across each pixel**, as the shape branch
       already does. It is read once at the pixel centre, so it aliases
       above a region count the grid can carry. Same fault and same fix as

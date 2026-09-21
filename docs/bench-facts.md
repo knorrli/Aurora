@@ -416,7 +416,25 @@ you chose. The previous field could not do this. It never reached its own
 floor, so a colour anchored there appeared nowhere on the wall — asked
 for orange, the wall came back green through cyan to blue.
 
-**Only flat is confirmed.** How a colour *looks* once a push is open —
-desaturation, the dark floor, red's resolution — is still screen evidence
-only, and this file already records three occasions where a screen would
-have got those wrong.
+## The screen and the wall agree, give or take the diffuser
+
+Judged 2026-09-21, playing the colour looks side by side with
+`tools/preview.js` open next to the strips.
+
+**The preview matches the wall almost exactly.** One consistent
+difference: the strips read slightly whiter than the screen, because they
+are behind a diffuser and the screen is not. Judged small enough to leave
+alone rather than compensate for — so when dialling on screen, expect the
+wall to come back a touch paler than what you set.
+
+This retires the question the preview was built under. It was trusted for
+geometry and dialling and explicitly *not* trusted for colour, on the
+strength of three entries in this file where a screen would have got
+colour wrong. Those three were measured at the extremes of the old
+field's controls; at the settings a look actually sits at, the screen is
+good enough to design colour on.
+
+What that does not license is settling a question at the extremes on
+screen — the dark floor and red's resolution are still hardware facts,
+and the diffuser bias is one more reason the wall is the judge of a
+finished look.
