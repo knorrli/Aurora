@@ -201,6 +201,16 @@ The two earlier instances of the same family:
   tempo change altered the step size but not the position already
   accumulated, and motion jumped. That is what `tempo::` exists to fix.
 
+**What the fix costs, noticed 2026-09-21 and not yet dealt with.** Once
+the phase is carried across rate changes, the cycle's zero sits wherever
+the rate was last touched — which is never a bar line. The period is
+right and the landing is arbitrary, so the pulse is in time but not on
+time, and a deep slow swell peaks wherever it happens to. Anchoring the
+phase to the bar is the fix; a retrigger division (every beat, every
+two, every four) is the same fix with a control on it. Worth watching
+for while dialling patches in, since observing it costs nothing and
+turns a suspicion into a measurement.
+
 ## Point-sampling a pattern aliases; averaging it does not
 
 The generator originally read one value at each pixel's centre. Once a

@@ -1,8 +1,13 @@
 # Aurora TODO
 
-Hardware state, parts, and work that does not depend on the interaction
-model. The phase plan that used to live here was built on design
-decisions cleared on 2026-09-18; it is recoverable at commit `33f2d1f`.
+**What this file is for.** The design docs hold the thinking — settled or
+open, with the reasoning. This file holds only the doing: one line per
+item, an action and a pointer, no argument. An open question with no next
+action does not appear here at all; it lives in its doc until someone
+decides to act on it.
+
+The phase plan that used to live here was built on design decisions
+cleared on 2026-09-18; it is recoverable at commit `33f2d1f`.
 
 Everything currently lives on the **`preset-redesign`** branch. `main` is
 untouched.
@@ -11,35 +16,22 @@ untouched.
 
 ## What is built and proven
 
-- **Brain on Teensy 4.0.** Builds clean, 76 KB of 2 MB. All nine
-  patterns and all nine variants render on the wall.
-- **All five strips lit** from pin 2 through the strip boxes, each strip
-  on its own supply, buffered by a 74AHCT125.
+- **Brain on Teensy 4.0.** Builds clean, 76 KB of 2 MB.
+- **All five strips lit**, each on its own supply, through a 74AHCT125.
 - **USB MIDI path validated** — program change, CC, clock, notes,
-  transport. Tempo division live, triplets exact, free-run on clock loss.
-- **DMX out working** end to end against one BCC145 in 8-channel mode,
-  with wash level and wash hue offset as independent controls.
-- **The parametric generator**, on PC 10, with a slider panel and a morph
-  control in `tools/index.html`. Proven on the wall 2026-09-18: it reaches
-  most of the roster, the space between settings is playable, and morphing
-  between two patches works. See `docs/generator.md`.
-- **The colour field**, layered into the generator 2026-09-19. Plasma and
-  Aurora turned out to be the same function with different constants, so
-  those constants are parameters now. A morph from a field-driven look to
-  a shape-driven one — Plasma-with-dark-sections to Bars — was judged to
-  work flawlessly, which is the first time a morph has crossed both
-  layers at once.
+  transport, tempo division, free-run on clock loss.
+- **DMX out working** end to end. Two PARs addressed at `A001` and
+  `A009`, 2026-09-21.
+- **The nine hand-written patterns and all nine variants** render, on
+  PC 1–9. See `docs/visual-design.md`.
+- **The parametric generator** on PC 10, with the colour field layered
+  in. See `docs/generator.md`.
+- **The bench panel** — `tools/index.html`, drawn as the signal flow,
+  with patch save/recall and the morph control.
 - **A strip-order rigging aid** on PC 11 — each strip a flat colour in
   data-chain order.
-- **Two PARs addressed and driven**, 2026-09-21, at `A001` and `A009`,
-  both tracking level, hue offset and the colour faders.
-- **The bench panel redrawn as the signal flow**, 2026-09-21. Two
-  branches off the beat, meeting once per pixel, then the outputs — and
-  the field's Drift, Grain and Spread renamed Speed, Count and Fan, which
-  is what they always were. The PARs' level and hue offset are driveable
-  from the page for the first time. See `docs/generator.md`.
 
-Details and measurements in `docs/bench-facts.md`.
+Measurements in `docs/bench-facts.md`.
 
 ## What is not built
 
@@ -94,122 +86,73 @@ Checked items are confirmed in the drawer.
       on the brain board.
 - **Foot pedal parts.** Switches and guitar cables on hand. Ladder
   resistors (1 k / 2.2 k / 5.1 k / 10 k / 20 k, 1 %) on hand.
-    - [ ] **The connector is open again.** A stereo jack would add a
-          second analog line without putting power in the pedal, which
-          changes how many switches are possible. Settle this before
-          drilling anything — see `docs/wiring.md` § "Foot pedal".
+    - [ ] **The connector is open again.** Settle whether it is mono or
+          stereo before drilling anything — see `docs/wiring.md` §
+          "Foot pedal".
 
 ## Hardware work that does not wait on the design
 
-- [ ] **Set the remaining BCC145 to `A017` and `A025`.** Two are now
-      addressed and proven, at `A001` and `A009`. Watch the personality
-      as well as the number: `Dxxx` is the 4-channel mode and the brain
-      drives 8-channel, so a fixture left on `D` reads the dimmer as its
-      red channel and shows pink instead of the strips' colour.
+- [ ] **Set the remaining two BCC145 to `A017` and `A025`.** Watch the
+      personality as well as the number — see `docs/wiring.md` §
+      "Fixture profile".
 - [ ] **Calibrate the fixtures** at rehearsal — RGB trims, and whether
       FastLED's brightness curve suits the fixture. Step **evenly
-      spaced** values; an uneven ramp proves nothing. See
-      `docs/bench-facts.md`.
-- [ ] **Per-fixture master scale by eye** at soundcheck, so
-      washes-at-full read as equal weight to strips-at-full.
+      spaced** values. See `docs/bench-facts.md`.
+- [ ] **Set the per-fixture master scale by eye** at soundcheck. See
+      `docs/visual-design.md` § "The washes".
 - [ ] **Aim each PAR at the wall between two strips**, not at a strip.
-      They stand on the floor and uplight the back wall, so this is what
-      keeps their pools out of the strips' background while filling the
-      gaps. See `DESIGN.md` § "The PAR cans".
-- [x] **Measure how fast a PAR can be played.** Done 2026-09-21 with
-      `bench/par_flash_speed/`: no latency at any rate, and the fixture
-      stops returning to black below about 25 ms. The floor is between 12
-      and 25; build against 25. That is a 64th note at 120 BPM, so the
-      limit bites on travel rather than on flashing — nine positions at
-      25 ms each is a wall crossing in just under half a beat. Numbers in
-      `docs/bench-facts.md`, the rule it sets in `DESIGN.md`.
-- [ ] **Look at whether a pool bridges a gap.** With the PARs interleaved
-      between the strips, a window sliding across should hand over
-      through a pool rather than jump from strip to strip. Whether a soft
-      pool on a wall reads as continuous with a bar of pixels, or as a
-      separate thing blinking in turn, cannot be argued. One slow sweep
-      and one fast one, narrow window.
-- [ ] **Find out what two keys at once do.** Needs no rewiring — press
-      two keys on the box as it stands and watch the wall. The per-key
-      codes were measured key by key and have run stably for over a year,
-      so they are not in doubt; what has never been tried is a *pair*.
-      The codes have the shape of a wired-OR, and if that is what it is,
-      `2+3` selects key 0 and a fumble blacks the wall out, `3+4` reads
-      as 6, and `3+7` as 9. If it turns out to be real, the firmware
-      should reject a code arriving within a few tens of milliseconds of
-      another.
+      See `DESIGN.md` § "The PAR cans".
+- [ ] **Look at whether a pool bridges a gap.** One slow sweep and one
+      fast one, narrow window. See `DESIGN.md` § "The PAR cans".
+- [ ] **Press two keys at once and watch the wall.** Needs no rewiring.
+      See `DESIGN.md` § "What the keypad actually is".
 - [ ] *Deferred to the controller rebuild:* confirming what idle reads
-      and what produces `0b00111111` and `0b00111101`. Both are curiosity
-      rather than risk, and getting at the lines means desoldering
-      brittle keypad wiring, so they wait until the pad is off the box
-      anyway.
+      and what produces `0b00111111` and `0b00111101`. Getting at the
+      lines means desoldering brittle keypad wiring, so they wait until
+      the pad is off the box anyway.
 
 ## Generator, next
 
 None of this is committed to — it is an experiment that earned a second
 session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
 
-- [ ] **Build the endpoints by eye and save them.** The roster settings in
-      the panel are guesses, several of which were wrong; a morph between
-      two wrong destinations tells you nothing. Five or six looks worth
-      morphing between, dialled in on the wall and saved as patches.
-- [ ] **Decide whether a *wrapping* strip is a loop or a line.** Bounce is
-      settled — it turns when the shape's edge meets the end, so nothing
-      crosses a boundary. Wrapping travel still loops, and a tail falling
-      off one end still reappears at the other. See `docs/generator.md`.
-- [ ] **Fan shape** — diagonal through to symmetric, so the chevron
-      arrangement the roster's Rain uses becomes reachable.
-- [ ] **Count should double rather than add** across a morph.
-- [ ] **Cut the field's Source control** and the sine path with it. No
-      perceptible difference of character at this resolution, judged
-      2026-09-19. That frees CC 27 and brings the field's Edge control
-      back from the CC 90 overflow into the colour block.
+- [ ] **Dial in five or six endpoints by eye and save them.** Nothing
+      else about the morph is worth judging until these exist. See
+      `docs/generator.md` § "The panel's roster settings are guesses".
+- [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
+      centre and a random setting; jitter gains a scale from pixel to
+      cell. Together they are the chaotic strobe. See `docs/generator.md`
+      § Open, "Fan is a linear staircase" and "Jitter has one scale".
+- [ ] **Width as a third pulse destination.** One multiply. See
+      `docs/generator.md` § "The pulse drives brightness only".
+- [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
+      See `docs/generator.md` § "Travel easing is a curve".
+- [ ] **Cut the field's Source control** and the sine path with it. That
+      frees CC 27; move the field's Edge back from the CC 90 overflow
+      into the colour block. See `shared/aurora_protocol.h`.
+- [ ] **Make Count double rather than add across a morph.** See
+      `docs/generator.md` § Open, "Morph moves every parameter in
+      lockstep".
+- [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
+      for bounce, open for wrap. See `docs/generator.md` § Open, "Is a
+      strip a loop or a line?".
+- [ ] **Decide the field's usable ranges.** The test is a set, not a
+      bench. See `docs/generator.md` § Open, "Where the field's controls
+      should stop".
 - [ ] **Test the touchpad window from the laptop, before any rewire.**
-      The brain renders and `tools/index.html` already drives it over USB
-      MIDI, so the controller is not needed — an XY pad in the page, a
-      width selector, a mirror toggle and a destination picker are enough
-      for a real test on the real wall. Answers the three things the
-      interaction model is guessing at: whether arbitrary patch pairs
-      morph through anything worth seeing, whether a continuous window
-      reads as a sweep or as a smear, and whether a strip caught halfway
-      between two patches looks deliberate or broken. What it cannot
-      answer is feel — thumb travel and spring-back need the hardware.
-- [ ] **Travel easing** — linear through to slow at the ends and fast
-      through the middle, so a shape reads as a ball thrown across the
-      wall. It is a **Shape curve in Travel**, beside Speed and Fan, not
-      an LFO pointed at Speed: the rate such an LFO would need falls out
-      of speed, count and width, so no rate anyone can dial is right.
-      It shapes the whole strip, not each cell. Wanted by the Motion
-      fader in `DESIGN.md`; does not exist. Reasoning in
-      `docs/generator.md`.
-- [ ] **Width as a third pulse destination.** Decided 2026-09-21, not
-      built. It was ripped out once for making a swell read as a fill
-      creeping in from one end — which happened because a shape was
-      anchored by its head. It is anchored by its centre now, so it
-      should breathe outward from the middle instead. One multiply, and
-      the wall says within a minute whether the old failure is gone.
-- [ ] **Decide the field's usable ranges.** A hard edge with deep
-      darkening and a wide hue swing is three strong things at once and
-      easy to make ugly. Open question 6 in `docs/generator.md`; the
-      test is a set, not a bench.
+      See `DESIGN.md` § "Which strips — a window, not a selection".
 
 ## Known defects
 
-- [ ] **Glitch's white pixels ignore the V fader.** See
-      `docs/bench-facts.md`. The 30 % white share cannot be tuned until
-      this is fixed.
+- [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
+      cannot be tuned until this is fixed. See `docs/bench-facts.md`.
 - [ ] **`PRESET_OFF` alone no longer darkens the washes.** The
       controller's "off" key must send `PC 0` and `CC_WASH_LEVEL` 0
-      together, or a blackout leaves the PARs lit. This contract lives
-      only in the protocol header.
-- [ ] **The pulse is in time but not on time.** Its phase is carried
-      across rate changes, which means a swell restarts from zero at the
-      moment the rate was last changed — never at a bar line. The period
-      is right and the landing is arbitrary, so a deep slow swell peaks
-      wherever it happens to. Anchor the phase to the bar; a retrigger
-      division (every beat, every 2, every 4) is the same fix with a
-      control on it. Watch for this while building endpoints — it costs
-      nothing to observe and it turns a suspicion into a measurement.
+      together, or a blackout leaves the PARs lit. The contract lives
+      only in `shared/aurora_protocol.h`.
+- [ ] **Anchor the pulse's phase to the bar.** It is in time but not on
+      time. See `docs/bench-facts.md` § "A phase derived from absolute
+      time teleports".
 - [ ] **Drop `-D AURORA_DEBUG`** from `brain/platformio.ini` once the
       strips are what gets read instead of the console.
 
@@ -220,6 +163,7 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
 | Know what we measured | `docs/bench-facts.md` |
 | Know how the system is built | `docs/architecture.md` |
 | Know what the lights do | `docs/visual-design.md` |
+| Know how the generator works | `docs/generator.md` |
 | Look up a pin or a circuit | `docs/wiring.md` |
 | Look up a CC / PC / note number | `shared/aurora_protocol.h` |
 | Work on how it is played | `DESIGN.md` |

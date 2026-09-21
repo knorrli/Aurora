@@ -100,15 +100,19 @@ and tail do nothing. That is consistent rather than broken.
 
 ### The pulse drives brightness only
 
-An earlier version had it drive width as well. Because a shape shrinks
-toward its head, and the head sits at one end of the strip when nothing is
-travelling, a swell read as a fill creeping in from that end. A fast swell
-read as a travelling wipe rather than a flash, which made a strobe
-unreachable.
+Width was a second destination once and was taken out. A shape was
+anchored by its head then, and the head sits at one end of the strip when
+nothing is travelling, so a swell read as a fill creeping in from that
+end and a fast swell read as a travelling wipe rather than a flash. That
+put a strobe out of reach.
 
-Brightness only. Spatial growth is still available by hand on the width
-control, and a **modulation destination** — letting the pulse be routed to
-width, or hue, or speed — is the obvious extension when one is wanted.
+A shape is anchored by its centre now, which removes the cause: growing
+from the middle is a breath outward rather than a wipe from one end. So
+**width is wanted back as a pulse destination** — one multiply, and the
+wall says within a minute whether the old failure is gone. Decided
+2026-09-21, not built.
+
+Spatial growth is meanwhile available by hand on the width control.
 
 A sine can never produce an on/off edge no matter how deep it goes, which
 is why pulse shape exists as a separate control.
@@ -161,6 +165,18 @@ they stay hand-written. Either is fine.
   one shape and a dozen, so three to six shapes is unexplored, and
   high count with a wide edge produces a continuous travelling ripple that
   no existing pattern can make.
+
+### The panel's roster settings are guesses
+
+The roster entries in `tools/index.html` were written by reasoning from
+each look's description, not by dialling it in and comparing. Several
+have since been found wrong on the wall. They are fine as starting
+points to wander from, and they are **not** fit to morph between: a
+morph between two wrong destinations says nothing about the morph.
+
+Five or six looks dialled in by eye and saved as patches is what the
+morph work needs underneath it, and nothing else about the morph is
+worth judging until they exist.
 
 ### What this does to "transition"
 
