@@ -416,8 +416,15 @@ window's X axis runs over nine alternating positions rather than five.
 **Above some travel speed the PARs stop tracking position and hold the
 patch's colour.** They carry the movement while it reads and fall back to
 being the colour layer when it does not, which degrades into something
-good rather than into a stutter. The speed comes from the measurement in
-`TODO.md`; the rule itself is one comparison.
+good rather than into a stutter.
+
+The speed is now measured: a BCC145 stops returning to black below about
+25 ms, and does not lag at any rate. So the comparison is on **how long
+the window dwells on one position** — under 25 ms, hold the colour. That
+is tempo-independent, which is what it has to be. It works out at a
+window crossing all nine positions in under about half a beat at 120 BPM,
+which is faster than a sweep any song has wanted so far. See
+`docs/bench-facts.md`.
 
 ### Rejected
 
@@ -449,11 +456,6 @@ good rather than into a stutter. The speed comes from the measurement in
   two indicator pixels, the ten pixels under the pad. The 12-position
   rotary stays the tempo control; whether tempo division deserves a
   dedicated knob is a separate question.
-- **How fast the PARs can be played.** The section above is settled
-  except for the one number it leans on: the shortest dimmer flash that
-  still reads as a flash, and whether the fixture lags or smooths. It
-  sets the speed at which the PARs drop out of carrying movement, and it
-  is a bench measurement rather than a search — see `TODO.md`.
 - **Whether a pool bridges a gap**, above. Settle by looking.
 - **Patches have nowhere to live.** They are in the browser's local
   storage today, which survives nothing. Getting them into the brain is

@@ -31,6 +31,8 @@ untouched.
   layers at once.
 - **A strip-order rigging aid** on PC 11 — each strip a flat colour in
   data-chain order.
+- **Two PARs addressed and driven**, 2026-09-21, at `A001` and `A009`,
+  both tracking level, hue offset and the colour faders.
 - **The bench panel redrawn as the signal flow**, 2026-09-21. Two
   branches off the beat, meeting once per pixel, then the outputs — and
   the field's Drift, Grain and Spread renamed Speed, Count and Fan, which
@@ -99,8 +101,11 @@ Checked items are confirmed in the drawer.
 
 ## Hardware work that does not wait on the design
 
-- [ ] **Set the other three BCC145 to `A009`, `A017` and `A025`.** Only
-      one has ever been connected.
+- [ ] **Set the remaining BCC145 to `A017` and `A025`.** Two are now
+      addressed and proven, at `A001` and `A009`. Watch the personality
+      as well as the number: `Dxxx` is the 4-channel mode and the brain
+      drives 8-channel, so a fixture left on `D` reads the dimmer as its
+      red channel and shows pink instead of the strips' colour.
 - [ ] **Calibrate the fixtures** at rehearsal — RGB trims, and whether
       FastLED's brightness curve suits the fixture. Step **evenly
       spaced** values; an uneven ramp proves nothing. See
@@ -111,34 +116,13 @@ Checked items are confirmed in the drawer.
       They stand on the floor and uplight the back wall, so this is what
       keeps their pools out of the strips' background while filling the
       gaps. See `DESIGN.md` § "The PAR cans".
-- [ ] **Measure how fast a PAR can be played.** The one number the PAR
-      design leans on: the shortest dimmer flash that still reads as a
-      flash, and whether the fixture lags or smooths between values.
-
-      The wire is not the limit. Four fixtures are 32 channels, and
-      `TeensyDMX`'s `setPacketSize()` puts a frame at roughly 1.5 ms —
-      some 600 a second, against 44 for the full 512-slot frame it sends
-      by default. Everything that matters is fixture-side, and none of it
-      is published: a BCC145 has no datasheet behind its manual, so this
-      is a measurement rather than a search.
-
-      *The test:* flash the dimmer channel full to black with a strip
-      beside it on the same clock, stepping the flash length down —
-      200, 100, 50, 25, 12 ms.
-
-      *Expect:* clean and simultaneous with the strip at 200 and 100 ms.
-      Between 50 and 25, one of two things, and they mean different
-      problems — flashes that go **dimmer but stay in time** are the
-      fixture smoothing between values, and flashes that stay full but
-      land **late by the same amount at every rate** are input latency.
-      At 12 ms expect a continuous dim glow, or an irregular stutter if
-      the fixture samples slower than it is sent.
-
-      *Why the difference decides something:* latency is fixable and
-      smoothing is not. Everything renders from musical position, which
-      is predictable, so a fixed lag is corrected by sampling the PARs
-      that far ahead. Smoothing is a hard floor on flash length that
-      nothing in software gets under.
+- [x] **Measure how fast a PAR can be played.** Done 2026-09-21 with
+      `bench/par_flash_speed/`: no latency at any rate, and the fixture
+      stops returning to black below about 25 ms. The floor is between 12
+      and 25; build against 25. That is a 64th note at 120 BPM, so the
+      limit bites on travel rather than on flashing — nine positions at
+      25 ms each is a wall crossing in just under half a beat. Numbers in
+      `docs/bench-facts.md`, the rule it sets in `DESIGN.md`.
 - [ ] **Look at whether a pool bridges a gap.** With the PARs interleaved
       between the strips, a window sliding across should hand over
       through a pool rather than jump from strip to strip. Whether a soft

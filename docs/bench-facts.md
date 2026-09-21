@@ -342,3 +342,34 @@ Fanning them from the middle strip rather than from the first also
 matters: from the first, strip 1 never moves and the last does all the
 travelling, which reads as a one-sided ramp rather than the wall opening.
 
+## A PAR smooths below about 25 ms, and does not lag
+
+Measured 2026-09-21 with two BeamZ BCC145 at `A001` and `A009`, flashed
+against strip 3 on the same clock by `bench/par_flash_speed/`. Flash
+lengths of 200, 100, 50, 25 and 12 ms, each run for three seconds.
+
+- **No latency at any rate.** Flashes landed with the strip at every
+  step, and the two fixtures stayed in step with each other. The strip is
+  the slower path in that sketch — it blocks some 7 ms transmitting while
+  a DMX frame arrives in about 1.2 — so the PAR is given a head start and
+  would have had to lag by more than that to look late. It did not.
+- **Clean to 25 ms**, perhaps marginally dimmer there.
+- **Broken at 12 ms**: the fixture no longer returns to black between
+  flashes, showing a continuous glow instead. The colour also fell from
+  orange to red, which is the green emitter — at 85 of 255 — dropping
+  below the fixture's resolution as the effective level collapses.
+
+Not reaching black is smoothing rather than latency: a late flash still
+reaches black, just late.
+
+So the floor sits between 12 and 25 ms, and 25 is the number to build
+against. Judged by eye in a lit room, which is enough for a floor and not
+enough for a figure — the sharper version is to watch the pool on the
+wall rather than the fixture's lens, which saturates the eye and hides
+exactly the brightness differences being looked for.
+
+**What it settles:** 25 ms is a 64th note at 120 BPM, so a PAR can play
+any rhythm a band plays. The limit only bites on travel — nine positions
+at 25 ms each puts a window crossing the whole wall in about 225 ms, or
+just under half a beat at 120. Faster than that and the pools smear.
+
