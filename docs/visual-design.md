@@ -60,6 +60,15 @@ the nine pairs, not a crossfade between two renderers:
 | Strobe → Stutter | How much of the wall each flash covers, from all of it down to half. The alternating half only becomes visible as you wind it in |
 | Chaos → Glitch | Blocks shrink, update faster, and white creeps in |
 
+**In the generator, Rain and Comet arrive at the same look.** Found on
+screen 2026-09-21 with `tools/preview.js`. Their anchor settings differ by
+four nudges — width 40 to 30, edge 18 to 30, tail 74 to 99, fan 90 to 127
+— and nothing changes in kind. The cause is the fan: the offsets below are
+a chevron, and the generator's fan is linear, so it can only make a
+diagonal, and a diagonal with a tail is what Comet already is. Rain did
+not survive the move into the generator; it arrived as Comet. The fix is
+`docs/generator.md` § Open, "Fan is a linear staircase".
+
 **Rain is mechanically Sweep fanned out.** Both scroll a block along
 every strip, same direction, same speed, same four steps per beat. Sweep
 holds every strip at the same position; Rain holds them at fixed
@@ -86,12 +95,14 @@ earns its slot on looks alone — whether the *pair* survives is open.
 
 ## Palettes are shapes, not colours
 
-> **None of this is built.** There is no palette in the firmware. The
-> colour field in `docs/generator.md` was built instead, and it decides
-> colour from where a pixel is rather than from how lit it is — which is
-> what most of the nine below actually do. The two have never been
-> reconciled. Read this as a design that is still waiting, not as a
-> description of the rig.
+> **None of this is built as a palette**, and most of it no longer needs
+> to be. The colour layer in `docs/generator.md` decides colour from where
+> a pixel is *and* from how lit it is, which is the split these nine were
+> divided along — Ember, Deep and Two-pole are brightness-driven, Haze and
+> Banded positional. Both are now reachable, and reachable together. What
+> is still missing is the naming: these are settings of that layer, not a
+> roster it has to grow. Read the nine as looks to dial rather than as
+> code to write.
 
 
 A library of "a blue one, a green one, an orange one" would be nine ways

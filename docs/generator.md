@@ -59,8 +59,8 @@ That is the whole thing. Everything below is a parameter of it.
 | 79 | Flags | Bit 0: odd strips run against the even ones. Bit 1: reverse at the strip end instead of wrapping | — |
 | 80 | Pulse shape | Hard on/off square through to smooth sine | — |
 
-Colour stays where it already was, on hue, saturation and brightness, and sits
-downstream of all of this.
+Colour is hue, whiteness and darkness, and sits downstream of all of this —
+this branch decides whether a pixel is lit, never what colour it is.
 
 **The two flags are switches rather than knobs because neither has a
 middle.** Half of "runs opposite" is not a state, and neither is half of
@@ -188,77 +188,152 @@ That dissolves a question that had been open and blocking for weeks —
 whether a transition is a scene, an effect, or a third kind of thing —
 rather than answering it.
 
-## The colour field, added 2026-09-19
+## The colour layer, redesigned 2026-09-21
 
-A second field, sampled per pixel and applied to whatever the shape above
-has lit. At zero depth it does nothing and the wall is one flat colour.
+A colour is **hue, whiteness and darkness**. Everything else is a push on
+those three, measured from the three faders, and the pushes add. With
+every control centred the wall is exactly the colour on the faders — which
+is what makes the dialling order work: set the colour flat, then open a
+push and watch it depart from something you chose.
 
-It exists because Plasma and Aurora turned out to be **the same three
-lines** — take a number from where you are and when it is, add it to the
-hue — separated only by where the number comes from and by four constants
-each had hardcoded. Those constants are now the parameters.
+Three things push, and what separates them is what each is anchored to.
 
-| CC | Control | Meaning |
-|----|---------|---------|
-| 23 | Speed | how fast the field moves. Bipolar; centre is frozen |
-| 24 | Hue | how far round the wheel a patch sits from the fader's hue. Bipolar |
-| 25 | Count | how many blobs along a strip, 0 — flat — to about 16 |
-| 26 | Fan | how far the five strips differ |
-| 27 | Source | stacked sines through to Perlin noise |
-| 28 | Saturation | toward white one way, toward a pure hue the other. Bipolar |
-| 29 | Brightness | toward dark one way, toward full the other. Bipolar |
-| 90 | Edge | hard-edged regions through to a smooth ramp |
+| Source | Anchored to |
+|----|----|
+| The placed field | a position you pick something to measure against |
+| The wander | nothing — it is never in the same place twice |
+| The light level | how lit the shape branch left that pixel |
 
-What the wall settled, with the detail in `docs/bench-facts.md`:
+The layer reads the **shape branch's** light level and never its own.
+Feeding its own darkness back in would make colour depend on colour: pull
+the wall down for a quiet verse and the hue would slide with it.
 
-- **To white works and is the safe one.** Desaturation happens at full
-  brightness, where the LED has all its resolution. Red at about half
-  depth was judged a usable backdrop.
-- **To dark needed both a floor and an edge to be worth having.** It
-  reaches 2 % rather than 0, on a geometric taper so the whole knob does
-  something, and it only became legible once the field could be
-  steepened.
-- **Edge is what made the field readable at all.** Same problem and same
-  fix as the pulse's shape control.
-- **Source does not earn its place.** No perceptible difference of
-  character at this resolution.
+### What you place
 
-Three of the nine palettes in `docs/visual-design.md` — Ember, Deep, and
-what Two-pole implies — are defined by brightness falling at one end, and
-therefore have the hardware problem above. Haze, which falls toward white
-instead, is the one with evidence behind it.
+Two primitives, either of them measured against one of three rulers.
 
-### Settled 2026-09-21: two branches, one vocabulary
+- A **slide** runs one way across its ruler with the base colour at the
+  centre. The amount is how far *one* end departs, so the two ends land
+  twice that far apart.
+- A **region** is a bump — base, departure, back to base — built from the
+  shape branch's own core and fades. Count, width and edge therefore mean
+  the same thing in both branches.
 
-The field's controls were each arrived at separately, because the wall
-asked for them, and every one landed on a parameter the shape generator
-already has. They were called Grain, Drift and Spread; they are Count,
-Speed and Fan, and they now carry those names in the protocol, the
-firmware and the bench panel. Count is the same *unit* in both branches —
-blobs along one strip against shapes along one strip — so a number
-carries across.
+The ruler is **across the five strips**, **along a strip**, or **within a
+shape** — a shape's leading tip through to the end of its tail, travelling
+with it.
 
-What this is **not** is one machine with a routing control. The shape
-branch decides whether a pixel is lit at all, which is what makes gaps
-and darkness; the field only ever modifies a pixel the shape has already
-lit, and at zero depth the wall is one flat colour. That is a fixed order
-in a chain, not two destinations off one source. Collapsing them would
-permit routing the field to lit-or-not, which is the shape branch again
-with fewer controls.
+Six combinations, and every look asked for on the wall lands on exactly
+one of them:
 
-So: two branches from the same beat, meeting exactly once — the last
-statement of `Generator()` multiplies the shape's brightness by the
-field's colour. What is shared is the vocabulary, not the machine.
+| Look | Primitive | Ruler |
+|----|----|----|
+| A rainbow across the five strips | slide | wall |
+| One colour in the middle, mirrored outward | region | wall |
+| Cyan through violet to pink up a strip | slide | strip |
+| A hard green cell at the centre of a strip | region | strip |
+| A bar with a red head and a green tail | slide | shape |
+| A band across the middle of a shape | region | shape |
+
+**Mirroring is a region, not a mode of the slide.** A fold flag on the
+slide was nearly built and would have made the same look reachable two
+ways with different controls. Dropping it, each primitive does one thing
+and the table has no duplicate rows.
+
+### The two sides of a shape are not the same length
+
+A tail reaches far further than an edge fade, so the shape ruler
+normalises its two sides separately: 0 at the leading tip, **0.5 at the
+core's centre**, 1 at the end of the tail.
+
+Normalising the whole span at once put the ruler's middle halfway between
+the two tips, which with a long tail is well behind the core. A region
+asked to sit at the middle of a shape then landed nowhere near the bright
+part. Found on screen before any of it was flashed.
+
+### What lives
+
+Colour never quite the same in two places, with the difference always
+moving. Three controls, each sayable in words before you turn it: **how
+much** for each of the three qualities, **how fast**, and **how big** —
+the whole wall moving as one, down through patches a strip-length across,
+down to individual pixels shimmering.
+
+**Never repeating is built in rather than dialled.** Two terms whose rates
+sit at the golden ratio can never come back into step. An earlier attempt
+put that on a control — how far apart the two speeds sit — which is making
+the performer operate the mechanism rather than the look.
+
+This is the one job the previous field did well and the redesign nearly
+lost. Three superimposed waves looked right on the wall for a year and
+were impossible to reason about; one wave could be reasoned about and
+marched.
+
+### Colour from the light level
+
+Colour read off how lit a pixel already is, so a comet's tail cools
+instead of only dimming. Anchored at the dim end: the faders are what a
+fade runs out to, and the core is the departure. It reads the shape's own
+profile, before jitter and the pulse.
+
+**It is not made redundant by the shape ruler**, and the reason is worth
+keeping. The pulse swells brightness with no spatial component at all, and
+jitter scatters it at random; neither has a position for a ruler to
+measure. Only this source reaches them. Point it at a flashing wall and
+the wall goes hot as it flashes.
+
+The two are also not interchangeable where they overlap. On a comet, hue
+from the light level bunches the whole colour change into the few pixels
+behind the core, because the tail is dim and nearly flat over most of its
+length — there is almost nothing left for colour to follow. A slide within
+a shape measures position instead and spreads evenly the whole way. So a
+white head wants the light level, and colour along the tail wants the
+slide:
+
+| Want | Set |
+|----|----|
+| White head | light level → to white, full |
+| Colour along the tail | slide, within a shape, hue |
+
+### Why the previous field was replaced
+
+Two things it could not do, both asked for on the wall, and both geometry:
+hold a colour still somewhere, and put one colour on each strip.
+
+It was a cloud with a count knob attached. Making it reach a flat floor so
+it could place a colour is the same change that made Plasma and Aurora
+read more regular — geometry was bought with aliveness, because one field
+had to be both. **That is the fault the redesign fixes**, and it is why
+there are two separate things here rather than one with more parameters.
+
+Three smaller findings survive from it, and all three are built in above:
+a colour must have a place of its own or the fader stops reading as a
+thing that sets; darkening wants a geometric taper because it is a ratio
+of light; and steepening an edge is what turns a general unevenness into
+regions you can see.
+
+### Two branches, one vocabulary
+
+The shape branch decides whether a pixel is lit at all, which is what
+makes gaps and darkness. The colour layer only ever decides what colour a
+lit pixel is. That is a fixed order in a chain, not two destinations off
+one source — collapsing them would permit routing colour to lit-or-not,
+which is the shape branch again with fewer controls.
+
+What is shared is the vocabulary. Count, width, edge and speed mean the
+same thing in both, and count is the same *unit*: shapes along one strip
+against regions along one ruler.
 
 Two things follow from drawing it that way, and both are in
 `tools/index.html`:
 
 - **The two branches do not reach the same lights.** A PAR is one pixel,
   so the shape branch cannot reach it — count, width, edge, tail, speed
-  and fan all describe positions along a strip. The colour branch is
-  exactly what a one-pixel fixture can render, which is why the PARs'
+  and fan all describe positions along a strip. The colour layer is
+  largely what a one-pixel fixture can render, which is why the PARs'
   level and hue offset are a relationship to the strips rather than a
-  second look. See `DESIGN.md` § "The PAR cans".
+  second look. See `DESIGN.md` § "The PAR cans". The shape ruler is the
+  exception and does not reach them at all.
 - **The pulse is the exception that crosses.** It sits in the shape
   branch, but it is the one shape-side thing a PAR can show, so it is
   drawn as a send rather than as part of the branch.
@@ -299,8 +374,8 @@ guesses from the word.
 
 ### Modulation, settled 2026-09-21
 
-The pulse is a modulator, and the field's Depth group is a second one: a
-source, a set of destinations, and an **amount** for each. That is the
+The pulse is a modulator, and the wander is a second one: a source, a set
+of destinations, and an **amount** for each. That is the
 synth pattern, and naming it makes a fourth word the two branches share,
 alongside Form, Travel and Shape.
 
@@ -309,7 +384,7 @@ instruments — an amount beside the modulator saying where it goes, or an
 amount beside each target saying what reaches it — and the choice is a
 real one. It goes to the source here because most of Aurora's
 destinations are not controls: the pulse's main target is how lit a pixel
-is, and the field's are what colour it is, and neither is a slider
+is, and the wander's are what colour it is, and neither is a slider
 anywhere. They are the outputs of their branches. Putting amounts at the
 target would mean inventing rows for things that are not controls, purely
 to have somewhere to hang the amount. Width is the one exception, and
@@ -362,144 +437,23 @@ own cell, which is a different look and not the one wanted.
 
 So easing is one more knob in Travel, beside Speed and Fan — and it is
 the third instance of a control the generator already has twice. Pulse
-shape bends a swell from square to sine; field edge bends the field from
-hard regions to a smooth ramp; easing bends a traversal from linear to
+shape bends a swell from square to sine; a region's edge bends it from a
+hard cell to a smooth fade; easing bends a traversal from linear to
 slow-at-the-ends. Same idea every time, which is what makes **Shape** a
 shared word rather than a coincidence.
 
-### Jitter and Source are not the same control
+### The colour layer has no jitter
 
-Both look like randomness and only one is. Jitter is a per-pixel random
-displacement re-rolled four times a beat — it boils, and it breaks the
-regular grid the shape layer otherwise guarantees. Source blends the
-field between stacked sines and Perlin noise, and noise is smooth,
-continuous and fully deterministic; what changes across that control is
-whether the variation is periodic, not whether it is random. The evidence
-agrees: Source was judged to make no perceptible difference, while Jitter
-is among the most visible controls there is. One idea at two strengths
-would not do that.
+Jitter is a per-pixel random displacement re-rolled once per swell: it
+breaks the regular grid the shape layer otherwise guarantees, and it is
+among the most visible controls there is.
 
-What the comparison does turn up is a hole. **The colour branch has no
-jitter** — the field can only ever be smooth, so a grainy, boiling colour
-is unreachable. Whether that serves a band backdrop or is only a thing
-the machine could now do is a judgement for a set, not a bench.
-
-### Where the colour on the faders lives, settled 2026-09-21
-
-The field's three depth controls were each written when the wall asked for
-them, and each ended up anchored somewhere different. Sampling the field
-at a pixel gives a number; hue read the colour on the faders as the
-**middle** of its swing, saturation read it as the **floor**, brightness
-as the **peak**.
-
-Set the faders to a saturated red at full brightness and wind all three
-up. The field's troughs come out dim purple, its peaks pale orange, and
-everything between is a half-dimmed mixture. **There is no red anywhere
-on the wall.** The colour you chose has no place of its own, and the hue
-fader reads as a thing that swings rather than a thing that sets.
-
-All three are anchored at the field's floor now. Where the field is low a
-pixel is exactly what the faders say; the patches are a departure from
-it, and all three controls are bipolar with no departure in the middle.
-
-Two things fall out of the choice, both accepted:
-
-- **A patch can only be dimmer than the background** unless the V fader
-  is left below the top, because there is no headroom above full. Making
-  room is the performer's move, not the machine's.
-- **Half the travel each way.** The brightness taper was spread
-  geometrically so the whole knob did something in one direction; split
-  in two it has half the resolution on each side. Worth finding out on
-  the wall rather than pre-compensating for.
-
-What does *not* change is what the wall can reach. The praised
-dark-sectioned look is the same picture read the other way up —
-background bright, patches dim, rather than troughs dim and blobs bright.
-
-**Count now reaches zero.** A geometric ride bottoms out at its minimum
-and can never arrive at flat, so there was always a gradient along every
-strip. At zero the field holds still along a strip and only Fan separates
-them, which is a colour per strip — asked for on the wall, and previously
-unreachable rather than merely undialled.
-
-### The field was a cloud with a count knob bolted on
-
-Anchoring the faders' colour at the field's floor exposed a fault that had
-been invisible while the colour merely swung about a centre: **the field
-never reached its floor.**
-
-It sampled three sines and averaged them. Three waves at unrelated rates
-almost never line up, so the average huddled around the middle — measured
-at 0.21 to 0.79 of its range on the centre strip, with a count of two.
-Anchor a colour at zero and it appears nowhere on the wall. Asked for
-orange with the hue reach up, the wall came back green at the bottom
-through cyan to blue at the top, with no orange in it.
-
-The same three terms broke the count. Only one ran at the rate the knob
-said: the second ran at half of it and the third did not vary along the
-strip at all. **A count of two produced four humps**, none of them where
-a blob was asked for.
-
-That is a cloud generator with a count knob attached, and the controls
-it shares with the shape branch were sharing a word rather than a
-meaning. The two things asked of it on the wall — two clean regions, and
-one colour per strip — are geometry, and it could do neither.
-
-One term now, turned a quarter cycle so its trough sits at phase zero.
-The range is the full 0 to 1 on every strip, a count of two makes two
-blobs, and the colour on the faders lands at a knowable place: the start
-of a strip, and the centre strip under fan.
-
-Two consequences:
-
-- **Fan became symmetric.** A cosine is even, so strips either side of
-  the middle land on the same value: three colours mirrored across the
-  wall, with the centre strip on the faders' colour. That is what "one
-  colour per strip, base in the middle" means once you write it down.
-  Five distinct colours is the same thing with the fan's centre moved
-  off the middle, which is the parameter § Open, "Fan is a linear
-  staircase" already wants for the chevron.
-- **Plasma and Aurora will read more regular.** The three unrelated
-  rates were what made them look organic. They were already on the list
-  to be re-dialled by eye.
-
-### Colour that follows how lit a pixel is
-
-The field decides colour from **where a pixel is and when**. That is the
-whole of its input. It never asks how lit the pixel already is.
-
-Every shape the generator makes is a brightness ramp — a core, an edge
-fade, a tail. A comet's tail is its head in the same colour with less
-light behind it, which reads as a region being dimmed rather than as an
-object with heat in it. Nothing in the machine can currently make the
-fade *cool* as it goes.
-
-**This is what `docs/visual-design.md` § "Palettes are shapes, not
-colours" was for, and none of it was ever built.** Read what those nine
-do and most are colour as a function of brightness: Ember is "dark and
-deep at one end, bright and near-white at the other … gives comet tails
-and rain trails real colour instead of just dimming"; Deep is the same
-move inverted; Spark is a hot accent in the brightest part. There is no
-palette anywhere in the firmware. The field got built instead, it reads a
-different input, and the two have never been put side by side — the swap
-happened rather than being decided.
-
-So it is on the bench rather than in the design: two controls on the
-per-preset CC slots, 50 and 51, saturation and hue, both anchored at the
-shape's dim end so the faders are what a fade runs out to. It reads the
-shape's own profile, **before** jitter and the pulse, so that a flash does
-not wash the whole strip out and jitter does not scatter colour as well
-as light. Each of those is a separate question and neither should be
-answered by accident here.
-
-If it earns a place it needs a real home, and the colour block is full.
-
-**Three inputs remain unreachable** and are recorded rather than argued:
-which shape you are inside, so ten blobs could take ten colours; where
-the beat is, so a flash could change colour each time; and randomness in
-the colour branch, noted already under jitter. All three sit close to the
-rainbow-across-the-stage look `docs/visual-design.md` says the project is
-trying to avoid, so none is obviously wanted.
+Nothing on the colour side does that. Every push it can make is smooth, so
+a grainy, boiling colour is unreachable — a starfield in hue rather than
+in brightness. Wanted as its own effect rather than folded into the
+wander, which was deliberately given interference instead of randomness.
+Whether it serves a band backdrop or is only a thing the machine could now
+do is a judgement for a set, not a bench.
 
 ## Open
 
@@ -541,6 +495,14 @@ trying to avoid, so none is obviously wanted.
    jitter probably wants a scale, pixel through to cell, rather than a
    second control.
 
+   **Jitter also has only one rate, and it is the pulse's.** Re-rolling
+   once per swell is what makes a flashing shape land somewhere new each
+   time, but it leaves Starfield unable to twinkle: at its anchor the
+   swell is `16 × 0.5^(20/127 × 6)` ≈ 8.3 beats, so the wall jumps between
+   random arrangements about twice a bar. Winding the rate up cannot fix
+   it, because that is the same knob driving the brightness flash. Found
+   on the wall 2026-09-21.
+
    Together with the random fan shape above this is the "chaotic strobe"
    that could not be built out of fan, speed and pulse. Both halves are
    randomness at a scale the machine does not currently have, which is
@@ -554,18 +516,58 @@ trying to avoid, so none is obviously wanted.
 5. **The pulse shape taper** was spread geometrically across the fader on
    a guess. Where the midpoint should sit is a feel judgement nobody has
    made with music playing.
-6. **Where the field's controls should stop.** Combinations that look bad
-   are easy to reach — a hard edge with deep darkening and a wide hue
-   swing is three strong things at once. Whether that wants narrower
+6. **Where the colour layer's controls should stop.** Combinations that
+   look bad are easy to reach — a hard edge with deep darkening and a wide
+   hue swing is three strong things at once. Whether that wants narrower
    ranges or just practice is a judgement nobody has made with music
    playing. The test is a set, not a bench.
 7. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
+8. **A region can only push inward, so one asked-for look is inverted.**
+   "Base colour on the centre strip, the outer ones departing" needs a
+   bump turned inside out — base within the core, the departure outside
+   it. What comes out instead is the complement: the centre strip
+   departing and the outer ones on the base colour.
+
+   One boolean on the region covers it and is not a crutch, since "a
+   place that differs" and "everywhere except a place" are both real
+   descriptions. Not added, because the design conversation was careful
+   about controls arriving without a look behind them, and this one has
+   not been looked at on the wall yet.
+9. **A second placed field was designed for and not built.** Both rulers
+   at once — a strip painted with a slide *and* shapes crossing it
+   carrying their own — was agreed as the thing to leave until wanted,
+   on the argument that the first one would be written so the second cost
+   almost nothing.
+
+   It was not. `placedAt()` reads file statics rather than taking its
+   parameters as an argument, so a second field is a small refactor
+   before it is a feature. Doing that refactor is cheaper than the
+   argument for deferring it implied it would be.
+10. **The colour layer has never been judged on the wall.** It was
+    designed, dialled and checked in `tools/preview.js` and then ported.
+    Everything above about how a look is *reached* has screen evidence
+    behind it; nothing about how a colour *looks* does. Desaturation
+    needing full brightness, the dark floor and red's resolution are
+    exactly what `docs/bench-facts.md` caught a screen getting wrong
+    before.
 
 ## Tools
 
+- `tools/preview.js` — the wall on screen: five strips and four PARs,
+  rendered from a port of `P_Generator.cpp` and `dmx_out.cpp`. The colour
+  layer was designed here before it was flashed, and the constants in the
+  two are meant to stay identical. It diverges deliberately in two places,
+  both written at the top of the file.
+
+  Phase is the one thing it cannot match. `trackedPhase` carries an offset
+  across every rate change so a fader never makes a shape jump, and
+  nothing resets it — the brain's offset comes from its history since
+  boot, the page's from load. Speed, spacing and the relationship between
+  strips compare; where a travelling shape *is* does not.
 - `tools/index.html` — sliders over Web MIDI, patch save and recall, the
-  morph control, and the roster as one-click starting points. Serve it
+  morph control, the roster as one-click starting points, and a row of
+  colour looks that set the colour layer only. Serve it
   with `python3 -m http.server` from `tools/` and open it in Chrome or
   Edge; Safari and Firefox have no Web MIDI. Reload after every flash, as
   that resets the Teensy's USB and the page keeps a dead port.

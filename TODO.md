@@ -24,10 +24,14 @@ untouched.
   `A009`, 2026-09-21.
 - **The nine hand-written patterns and all nine variants** render, on
   PC 1–9. See `docs/visual-design.md`.
-- **The parametric generator** on PC 10, with the colour field layered
-  in. See `docs/generator.md`.
+- **The parametric generator** on PC 10, with the redesigned colour layer
+  in the firmware as of 2026-09-21. See `docs/generator.md`.
 - **The bench panel** — `tools/index.html`, drawn as the signal flow,
-  with patch save/recall and the morph control.
+  with patch save/recall, the morph control and a row of colour looks.
+- **The wall on screen** — `tools/preview.js`, five strips and four PARs
+  rendered from a port of the firmware, so a look can be dialled with
+  nothing plugged in. The colour layer was designed here before it was
+  flashed.
 - **A strip-order rigging aid** on PC 11 — each strip a flat colour in
   data-chain order.
 
@@ -119,43 +123,55 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
 - [ ] **Dial in five or six endpoints by eye and save them.** Nothing
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
-**Colour is being redesigned from scratch**, starting from how it is
-dialled and how it is stored rather than from the field that exists. The
-four items directly below wait on that and may not survive it. What the
-current model taught is in `docs/generator.md`.
 
-- [ ] **Judge colour-that-follows-brightness on the wall.** A comet, on
-      orange or cyan rather than red. CC 50 and 51. See
-      `docs/generator.md` § "Colour that follows how lit a pixel is".
-- [ ] **Average the field across each pixel**, as the shape branch
+**The colour layer has never been seen on a wall.** It was designed and
+dialled in `tools/preview.js` and ported unjudged. Everything below it
+here waits on that first look.
+
+- [ ] **Judge the colour layer on the wall.** Flat first — every control
+      centred should give exactly the faders' colour — then `Rainbow` on
+      Fill, then `Comet tail` on Comet. A screen has been wrong before
+      about desaturation, the dark floor and red's resolution. See
+      `docs/bench-facts.md`.
+- [ ] **Average the placed field across each pixel**, as the shape branch
       already does. It is read once at the pixel centre, so it aliases
-      above a count the grid can carry. Same fault and same fix as
+      above a region count the grid can carry. Same fault and same fix as
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
-- [ ] **Re-dial the two field anchors.** Plasma and Aurora carry guesses
-      converted from the old depth controls, not settings anyone has seen.
+- [ ] **Turn a region inside out.** One boolean, and it is what "base
+      colour on the centre strip, outer ones departing" needs. See
+      `docs/generator.md` § Open, item 8.
+- [ ] **Thread the placed field's parameters as an argument.** A second
+      placed field is a small refactor until this is done, and was
+      designed for on the assumption it would be free. See
+      `docs/generator.md` § Open, item 9.
+- [ ] **Jitter in colour** — a starfield in hue rather than in
+      brightness. The only randomness the colour layer has no way to
+      make. See `docs/generator.md` § "The colour layer has no jitter".
 - [ ] **Give the PARs their own saturation.** CC 62; the wash block has
       room. A scale down from the strips' saturation rather than a setting
       of its own, per `DESIGN.md` § "The PAR cans".
+- [ ] **Reach the PARs with more than a hue offset.** A white flash
+      between strip strobes, and the PARs following a slide with the
+      strips. Both asked for, neither reachable. See `DESIGN.md` § "The
+      PAR cans".
 - [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
       centre and a random setting; jitter gains a scale from pixel to
-      cell. Together they are the chaotic strobe. See `docs/generator.md`
-      § Open, "Fan is a linear staircase" and "Jitter has one scale".
+      cell, and a rate that is not the pulse's. Together they are the
+      chaotic strobe, and the fan half is also why Rain and Comet are the
+      same look. See `docs/generator.md` § Open, "Fan is a linear
+      staircase" and "Jitter has one scale", and `docs/visual-design.md`.
 - [ ] **Width as a third pulse destination.** One multiply. See
       `docs/generator.md` § "The pulse drives brightness only".
 - [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
       See `docs/generator.md` § "Travel easing is a curve".
-- [ ] **Cut the field's Source control** and the sine path with it. That
-      frees CC 27; move the field's Edge back from the CC 90 overflow
-      into the colour block. See `shared/aurora_protocol.h`.
 - [ ] **Make Count double rather than add across a morph.** See
       `docs/generator.md` § Open, "Morph moves every parameter in
       lockstep".
 - [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
       for bounce, open for wrap. See `docs/generator.md` § Open, "Is a
       strip a loop or a line?".
-- [ ] **Decide the field's usable ranges.** The test is a set, not a
-      bench. See `docs/generator.md` § Open, "Where the field's controls
-      should stop".
+- [ ] **Decide the colour layer's usable ranges.** The test is a set, not
+      a bench. See `docs/generator.md` § Open, item 6.
 - [ ] **Test the touchpad window from the laptop, before any rewire.**
       See `DESIGN.md` § "Which strips — a window, not a selection".
 

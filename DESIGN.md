@@ -372,11 +372,16 @@ selects them. There is no wash page and no second saved thing.
 
 That splits along the two layers the generator already has:
 
-- **The colour field is what a one-pixel fixture can render.** Sampled at
-  each PAR's position, the field's spread included, so the four of them
-  differ from each other and from the strips instead of being four copies
-  of one hue. `dmx_out::tick()` reads one flat `presetColor` for all four
-  today.
+- **Most of the colour layer is what a one-pixel fixture can render.**
+  Sampled at each PAR's position, so the four of them differ from each
+  other and from the strips instead of being four copies of one hue. The
+  wander and a slide measured across the strips both reach a PAR; a ruler
+  measured within a shape does not, since a PAR has no shape to be inside.
+  `dmx_out::tick()` reads one flat `presetColor` for all four today.
+
+  Two looks already asked for need more than the hue offset they have: a
+  white flash between strip strobes, and the PARs following a red-to-green
+  slide with the strips.
 - **The shape layer cannot reach them, except the pulse**, which is
   brightness over time and needs no length. So a PAR follows a swell, a
   strobe and a breathe, and ignores a sweep. Slow and broad on the PARs,

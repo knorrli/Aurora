@@ -335,6 +335,10 @@ slider". Regular versus irregular needs enough repeats across a strip to
 read as regular, and 45 pixels does not supply them at any grain coarse
 enough to look like anything.
 
+**The control was cut on this measurement**, and the redesigned colour
+layer never grew a noise path. Where it needs variation that does not
+repeat, it beats two sines against each other instead.
+
 ## A field built as along-plus-across is not two-dimensional
 
 Found 2026-09-19.
@@ -351,6 +355,12 @@ than shift its level puts the features at different pixels per strip.
 Fanning them from the middle strip rather than from the first also
 matters: from the first, strip 1 never moves and the last does all the
 travelling, which reads as a one-sided ramp rather than the wall opening.
+
+Both halves outlived the machine they were measured on. The colour
+layer's wander adds its across term inside the sine rather than to its
+output, and measures it from the middle strip — the second of those was
+got wrong first and fixed by re-reading this entry rather than by looking
+at the wall.
 
 ## A PAR smooths below about 25 ms, and does not lag
 
