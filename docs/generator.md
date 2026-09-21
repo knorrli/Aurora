@@ -53,7 +53,7 @@ That is the whole thing. Everything below is a parameter of it.
 | 73 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
 | 74 | Speed | Travel along the strip. Bipolar — centre is still, either side travels | ±60 px/beat |
 | 75 | Fan | How far the five strips run out of step | 0–100 % of a cell |
-| 76 | Jitter | Randomness in position and brightness | 0–100 % |
+| 76 | Jitter | Randomness in position and brightness, re-rolled once per swell | 0–100 % |
 | 77 | Pulse depth | How hard the brightness swells | 0–100 % |
 | 78 | Pulse rate | How long one swell takes | 16 → 0.25 beats |
 | 79 | Flags | Bit 0: odd strips run against the even ones. Bit 1: reverse at the strip end instead of wrapping | — |
@@ -246,6 +246,40 @@ Two things follow from drawing it that way, and both are in
 - **The pulse is the exception that crosses.** It sits in the shape
   branch, but it is the one shape-side thing a PAR can show, so it is
   drawn as a send rather than as part of the branch.
+
+### What the wall found, 2026-09-21
+
+The first session spent trying to reach a look already in mind, rather
+than exploring for a good one. It turned up three faults, all of which
+made the machine look less capable than it is — worth recording because
+each had been invisible while the space was being wandered rather than
+aimed at.
+
+- **Edge wrapped around the strip's ends under bounce.** The core was
+  clamped to the strip and the fades were not, so a glow leaving one end
+  arrived at the other, and edge could not be used with bounce at all.
+  Which shape lights a pixel is now the strip's business rather than the
+  shape function's: the two images either side of a sample are
+  considered, and under bounce an image standing off the end is not
+  there to be seen.
+- **Alternate never reversed anything.** Travel is one value every strip
+  shares, and the flag only flipped the direction distance was measured
+  in, which mirrors a shape where it stands. That is visible solely on a
+  shape with a tail, which is why Comet was the one place it showed.
+  Odd strips now run the journey backwards. CrossSweep had never worked.
+- **Jitter was clocked against nothing.** It re-rolled four times a beat
+  on a grid of its own, so it could never coincide with a flash and had
+  no job but smearing whatever stood there. It re-rolls once per swell
+  now, at the darkest point of the cycle, which turns it into "the shape
+  appears somewhere new each time" — a look that could not be built out
+  of fan and speed, and the first argument anyone has made for keeping
+  the control.
+
+**Fan's name is wrong.** It reads as "vertical offset between strips" and
+it is really a per-strip phase offset applied to everything cyclic,
+travel and pulse alike. That it turns a pulse into a chase is recorded
+above as evidence the decomposition is real; it is also the part nobody
+guesses from the word.
 
 ### Modulation, settled 2026-09-21
 

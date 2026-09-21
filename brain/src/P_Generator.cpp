@@ -30,7 +30,6 @@
 #define GEN_MAX_SPEED_PIXELS_PER_BEAT 60.0f
 #define GEN_SLOWEST_PULSE_BEATS 16.0f
 #define GEN_PULSE_RATE_OCTAVES 6.0f
-#define GEN_JITTER_REROLLS_PER_BEAT 4.0f
 
 // Each pixel averages this many samples across its own width. Point-sampling
 // at the pixel centre aliases once a cell is only a pixel or two across: the
@@ -197,23 +196,20 @@ static CHSV fieldColor(CHSV base, uint8_t sample) {
               (uint8_t)((float)base.value * (trough + (1.0f - trough) * unit)));
 }
 
-// `d` is distance behind the head within one cell, 0..1.
+// `offset` is the signed distance from the core's centre, in cells, positive
+// on the trailing side. Which shape a pixel is measured against is the
+// caller's business, because that is a question about the strip's ends
+// rather than about the shape.
 //
 // `width` is the solid core. `edge` and `tail` both reach outward from it
 // into the gap rather than eating into it, so softening a shape never makes
 // it smaller. Both are scaled by the gap that is actually available, which
 // means edge at full always closes the gaps to the neighbouring shapes — the
 // two fades meet at zero and never have to be summed.
-static float shapeAt(float d, float width, float edge, float tail) {
+static float shapeAt(float offset, float width, float edge, float tail) {
   const float halfCore = width * 0.5f;
   const float gap = 1.0f - width;
   const float spread = edge * gap * 0.5f;
-
-  // Signed distance from the core's centre, wrapped into one cell, so the
-  // fade is symmetric across the boundary instead of stopping at it.
-  float offset = d - halfCore;
-  if (offset > 0.5f) offset -= 1.0f;
-  else if (offset < -0.5f) offset += 1.0f;
 
   const float distance = fabsf(offset);
   if (distance <= halfCore) return 1.0f;
@@ -242,7 +238,7 @@ static float shapeAt(float d, float width, float edge, float tail) {
 void Generator(CHSV color) {
   const float beats = tempo::beats();
   const float cellLength = (float)PIXELS_PER_STRIP / (float)genCount;
-  const uint8_t jitterBucket = (uint8_t)(beats * GEN_JITTER_REROLLS_PER_BEAT);
+  const float countCells = (float)genCount;
 
   // Where the core's centre sits, measured in cells.
   float centreCells;
@@ -299,9 +295,22 @@ void Generator(CHSV color) {
     const float swell = 1.0f - genPulseDepth + genPulseDepth * shaped;
 
     const float width = genWidth;
-    // `d` is measured behind the head, so the offset that lands the core's
-    // centre on `centreCells` turns with the direction of travel.
-    const float head = fract(centreCells + stripPhase + stripDirection * width * 0.5f);
+
+    // Odd strips run the journey backwards, rather than only mirroring the
+    // shape where it stands. Travel is one value every strip shares, so
+    // flipping the direction alone left the shape moving the same way and
+    // showed up on nothing but the side a tail fell on.
+    const float centreHere =
+        (genAlternate && (stripIndex & 1)) ? (countCells - centreCells) : centreCells;
+
+    // Where the core's centre sits inside a cell.
+    const float coreCentre = fract(centreHere + stripPhase);
+
+    // Jitter re-rolls once per swell, at the point in the cycle where the
+    // pulse is darkest, so a flashing shape lands somewhere new each time
+    // instead of being smeared where it stands. On a grid of its own it
+    // could never coincide with a flash, which is all it used to do.
+    const uint8_t jitterBucket = (uint8_t)floorf(pulse + stripPhase);
 
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
       float jitterOffset = 0.0f;
@@ -317,10 +326,26 @@ void Generator(CHSV color) {
       for (uint8_t sampleIndex = 0; sampleIndex < GEN_SUBSAMPLES; sampleIndex++) {
         const float samplePosition =
             (float)pixelIndex + ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES;
-        const float withinCell = fract(samplePosition / cellLength);
-        const float d = (stripDirection >= 0.0f) ? fract(head - withinCell)
-                                                 : fract(withinCell - head);
-        accumulated += shapeAt(fract(d + jitterOffset), width, genEdge, genTail);
+        const float posCells = samplePosition / cellLength + jitterOffset;
+
+        // The shape repeats once per cell, so the only images that can light
+        // this sample are the two standing either side of it. Under bounce
+        // the strip is a line, and an image off its end is not there to be
+        // seen — which is what stops a fade leaving one end of the strip and
+        // arriving at the other.
+        const float firstImage = coreCentre + floorf(posCells - coreCentre);
+        float nearest = 0.0f;
+        bool lit = false;
+        for (uint8_t image = 0; image < 2; image++) {
+          const float imagePos = firstImage + (float)image;
+          if (genBounce && (imagePos < 0.0f || imagePos > countCells)) continue;
+          const float offset = -stripDirection * (posCells - imagePos);
+          if (!lit || fabsf(offset) < fabsf(nearest)) {
+            nearest = offset;
+            lit = true;
+          }
+        }
+        if (lit) accumulated += shapeAt(nearest, width, genEdge, genTail);
       }
 
       const float brightness =
