@@ -294,6 +294,10 @@ const OFF = 0, ON = 127;
 const isOn = v => v >= 64;
 const band3 = v => (v < 43 ? 0 : v < 86 ? 1 : 2);
 
+// slide | region, across the strips | along a strip | within a shape
+const SLIDE = OFF, REGION = ON;
+const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
+
 
 
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
@@ -438,10 +442,6 @@ const COLOUR_OFF = {
   wanderRate: 20, wanderScale: 20,
   litHue: 64, litWhite: 0, litDark: 64,
 };
-
-// slide | region across the strips | along a strip | within a shape
-const SLIDE = OFF, REGION = ON;
-const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 
 // One row of the table the design landed on, each a colour layer only. Ruler
 // is 0 for the five strips, 64 for along a strip, 127 for within a shape.
