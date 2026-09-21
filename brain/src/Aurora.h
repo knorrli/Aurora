@@ -136,6 +136,11 @@ extern void setFieldSource(uint8_t value);
 extern void setFieldSatDepth(uint8_t value);
 extern void setFieldValDepth(uint8_t value);
 extern void setFieldEdge(uint8_t value);
+
+// Colour that follows how lit a pixel is, rather than where it is. On the
+// per-preset CC slots while it earns or fails to earn a place of its own.
+extern void setLitSatReach(uint8_t value);
+extern void setLitHueReach(uint8_t value);
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

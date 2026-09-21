@@ -119,6 +119,23 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
 - [ ] **Dial in five or six endpoints by eye and save them.** Nothing
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
+**Colour is being redesigned from scratch**, starting from how it is
+dialled and how it is stored rather than from the field that exists. The
+four items directly below wait on that and may not survive it. What the
+current model taught is in `docs/generator.md`.
+
+- [ ] **Judge colour-that-follows-brightness on the wall.** A comet, on
+      orange or cyan rather than red. CC 50 and 51. See
+      `docs/generator.md` § "Colour that follows how lit a pixel is".
+- [ ] **Average the field across each pixel**, as the shape branch
+      already does. It is read once at the pixel centre, so it aliases
+      above a count the grid can carry. Same fault and same fix as
+      `docs/bench-facts.md` § "Point-sampling a pattern aliases".
+- [ ] **Re-dial the two field anchors.** Plasma and Aurora carry guesses
+      converted from the old depth controls, not settings anyone has seen.
+- [ ] **Give the PARs their own saturation.** CC 62; the wash block has
+      room. A scale down from the strips' saturation rather than a setting
+      of its own, per `DESIGN.md` § "The PAR cans".
 - [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
       centre and a random setting; jitter gains a scale from pixel to
       cell. Together they are the chaotic strobe. See `docs/generator.md`

@@ -86,6 +86,14 @@ earns its slot on looks alone — whether the *pair* survives is open.
 
 ## Palettes are shapes, not colours
 
+> **None of this is built.** There is no palette in the firmware. The
+> colour field in `docs/generator.md` was built instead, and it decides
+> colour from where a pixel is rather than from how lit it is — which is
+> what most of the nine below actually do. The two have never been
+> reconciled. Read this as a design that is still waiting, not as a
+> description of the rig.
+
+
 A library of "a blue one, a green one, an orange one" would be nine ways
 of duplicating the hue control we already have. What a palette carries
 is everything hue cannot: how wide the spread is, what shape it travels,

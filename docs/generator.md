@@ -201,12 +201,12 @@ each had hardcoded. Those constants are now the parameters.
 | CC | Control | Meaning |
 |----|---------|---------|
 | 23 | Speed | how fast the field moves. Bipolar; centre is frozen |
-| 24 | Hue depth | how far hue swings from the fader's centre |
-| 25 | Count | how many blobs along a strip, 0.35–17 |
+| 24 | Hue | how far round the wheel a patch sits from the fader's hue. Bipolar |
+| 25 | Count | how many blobs along a strip, 0 — flat — to about 16 |
 | 26 | Fan | how far the five strips differ |
 | 27 | Source | stacked sines through to Perlin noise |
-| 28 | To white | saturation falls where the field is high |
-| 29 | To dark | brightness falls where the field is low |
+| 28 | Saturation | toward white one way, toward a pure hue the other. Bipolar |
+| 29 | Brightness | toward dark one way, toward full the other. Bipolar |
 | 90 | Edge | hard-edged regions through to a smooth ramp |
 
 What the wall settled, with the detail in `docs/bench-facts.md`:
@@ -383,6 +383,123 @@ What the comparison does turn up is a hole. **The colour branch has no
 jitter** — the field can only ever be smooth, so a grainy, boiling colour
 is unreachable. Whether that serves a band backdrop or is only a thing
 the machine could now do is a judgement for a set, not a bench.
+
+### Where the colour on the faders lives, settled 2026-09-21
+
+The field's three depth controls were each written when the wall asked for
+them, and each ended up anchored somewhere different. Sampling the field
+at a pixel gives a number; hue read the colour on the faders as the
+**middle** of its swing, saturation read it as the **floor**, brightness
+as the **peak**.
+
+Set the faders to a saturated red at full brightness and wind all three
+up. The field's troughs come out dim purple, its peaks pale orange, and
+everything between is a half-dimmed mixture. **There is no red anywhere
+on the wall.** The colour you chose has no place of its own, and the hue
+fader reads as a thing that swings rather than a thing that sets.
+
+All three are anchored at the field's floor now. Where the field is low a
+pixel is exactly what the faders say; the patches are a departure from
+it, and all three controls are bipolar with no departure in the middle.
+
+Two things fall out of the choice, both accepted:
+
+- **A patch can only be dimmer than the background** unless the V fader
+  is left below the top, because there is no headroom above full. Making
+  room is the performer's move, not the machine's.
+- **Half the travel each way.** The brightness taper was spread
+  geometrically so the whole knob did something in one direction; split
+  in two it has half the resolution on each side. Worth finding out on
+  the wall rather than pre-compensating for.
+
+What does *not* change is what the wall can reach. The praised
+dark-sectioned look is the same picture read the other way up —
+background bright, patches dim, rather than troughs dim and blobs bright.
+
+**Count now reaches zero.** A geometric ride bottoms out at its minimum
+and can never arrive at flat, so there was always a gradient along every
+strip. At zero the field holds still along a strip and only Fan separates
+them, which is a colour per strip — asked for on the wall, and previously
+unreachable rather than merely undialled.
+
+### The field was a cloud with a count knob bolted on
+
+Anchoring the faders' colour at the field's floor exposed a fault that had
+been invisible while the colour merely swung about a centre: **the field
+never reached its floor.**
+
+It sampled three sines and averaged them. Three waves at unrelated rates
+almost never line up, so the average huddled around the middle — measured
+at 0.21 to 0.79 of its range on the centre strip, with a count of two.
+Anchor a colour at zero and it appears nowhere on the wall. Asked for
+orange with the hue reach up, the wall came back green at the bottom
+through cyan to blue at the top, with no orange in it.
+
+The same three terms broke the count. Only one ran at the rate the knob
+said: the second ran at half of it and the third did not vary along the
+strip at all. **A count of two produced four humps**, none of them where
+a blob was asked for.
+
+That is a cloud generator with a count knob attached, and the controls
+it shares with the shape branch were sharing a word rather than a
+meaning. The two things asked of it on the wall — two clean regions, and
+one colour per strip — are geometry, and it could do neither.
+
+One term now, turned a quarter cycle so its trough sits at phase zero.
+The range is the full 0 to 1 on every strip, a count of two makes two
+blobs, and the colour on the faders lands at a knowable place: the start
+of a strip, and the centre strip under fan.
+
+Two consequences:
+
+- **Fan became symmetric.** A cosine is even, so strips either side of
+  the middle land on the same value: three colours mirrored across the
+  wall, with the centre strip on the faders' colour. That is what "one
+  colour per strip, base in the middle" means once you write it down.
+  Five distinct colours is the same thing with the fan's centre moved
+  off the middle, which is the parameter § Open, "Fan is a linear
+  staircase" already wants for the chevron.
+- **Plasma and Aurora will read more regular.** The three unrelated
+  rates were what made them look organic. They were already on the list
+  to be re-dialled by eye.
+
+### Colour that follows how lit a pixel is
+
+The field decides colour from **where a pixel is and when**. That is the
+whole of its input. It never asks how lit the pixel already is.
+
+Every shape the generator makes is a brightness ramp — a core, an edge
+fade, a tail. A comet's tail is its head in the same colour with less
+light behind it, which reads as a region being dimmed rather than as an
+object with heat in it. Nothing in the machine can currently make the
+fade *cool* as it goes.
+
+**This is what `docs/visual-design.md` § "Palettes are shapes, not
+colours" was for, and none of it was ever built.** Read what those nine
+do and most are colour as a function of brightness: Ember is "dark and
+deep at one end, bright and near-white at the other … gives comet tails
+and rain trails real colour instead of just dimming"; Deep is the same
+move inverted; Spark is a hot accent in the brightest part. There is no
+palette anywhere in the firmware. The field got built instead, it reads a
+different input, and the two have never been put side by side — the swap
+happened rather than being decided.
+
+So it is on the bench rather than in the design: two controls on the
+per-preset CC slots, 50 and 51, saturation and hue, both anchored at the
+shape's dim end so the faders are what a fade runs out to. It reads the
+shape's own profile, **before** jitter and the pulse, so that a flash does
+not wash the whole strip out and jitter does not scatter colour as well
+as light. Each of those is a separate question and neither should be
+answered by accident here.
+
+If it earns a place it needs a real home, and the colour block is full.
+
+**Three inputs remain unreachable** and are recorded rather than argued:
+which shape you are inside, so ten blobs could take ten colours; where
+the beat is, so a flash could change colour each time; and randomness in
+the colour branch, noted already under jitter. All three sit close to the
+rainbow-across-the-stage look `docs/visual-design.md` says the project is
+trying to avoid, so none is obviously wanted.
 
 ## Open
 

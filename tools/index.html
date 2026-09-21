@@ -176,7 +176,12 @@
       <div class="group">
         <h3>Depth</h3>
         <div id="fieldDepth"></div>
-        <div class="note">How much of this branch reaches the output. All three at zero and the wall is one flat colour. The shape branch needs no equivalent, because there it is the output.</div>
+        <div class="note">How far a patch sits from the colour on the faders, and which way. All three centred and the wall is one flat colour — and wherever the field is at its floor it is that colour exactly, which is what makes the faders a background rather than an average.</div>
+      </div>
+      <div class="group">
+        <h3>From the shape <span class="badge">unproven</span></h3>
+        <div id="fieldFromShape"></div>
+        <div class="note">Colour by how lit a pixel is rather than where it is — so a comet’s tail cools instead of only dimming. Anchored at the dim end like Depth above: the faders are what a fade runs out to, and the core is the departure. Reads the shape’s own profile, before jitter and the pulse. The second thing that crosses between the branches, and the only one going this way. On CC 50–51 until it earns a place.</div>
       </div>
     </div>
     <div class="open">
@@ -255,7 +260,7 @@
       <button id="sendAll">re-send all</button>
     </div>
     <div class="chips" id="patches"></div>
-    <div class="note">Local storage only — this survives nothing. Click to recall, right-click to delete.</div>
+    <div class="note">Local storage only — this survives nothing. Click to recall, right-click to delete. Anything saved before the Depth controls were centred comes back with those three flat, because their old values mean something else now.</div>
   </div>
 </div>
 
@@ -267,6 +272,7 @@ const CC = {
   fieldSpeed: 23, fieldHueDepth: 24, fieldCount: 25, fieldFan: 26,
   fieldSource: 27, fieldSatDepth: 28, fieldValDepth: 29, fieldEdge: 90,
   washLevel: 60, washHueOffset: 61,
+  litSat: 50, litHue: 51,
 };
 
 // Patches saved before the field's controls were renamed to match the shape
@@ -276,12 +282,14 @@ const RENAMED = { fieldRate: 'fieldSpeed', fieldGrain: 'fieldCount', fieldSpread
 // Plasma's and Aurora's hardcoded constants, converted to slider positions:
 // count 45 is 1.4 blobs along a strip, 98 is 6.9; fan 32 is 40 across the
 // strips, 64 is 80; the rates are what millis()>>3 and >>4 came to at 120 BPM.
-const FIELD_OFF = { fieldSpeed: 64, fieldHueDepth: 0, fieldCount: 45,
-                    fieldFan: 60, fieldSource: 0, fieldSatDepth: 0,
-                    fieldValDepth: 0, fieldEdge: 127 };
+const FIELD_OFF = { fieldSpeed: 64, fieldHueDepth: 64, fieldCount: 45,
+                    fieldFan: 60, fieldSource: 0, fieldSatDepth: 64,
+                    fieldValDepth: 64, fieldEdge: 127, litSat: 0, litHue: 64 };
 
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
 // readouts lie until they are changed to match.
+const bip = v => v < 64 ? (v - 64) / 64 : (v - 64) / 63;
+
 const DERIVED = {
   width:      v => (v / 127 * 100).toFixed(0) + '% of cell',
   count:      v => (1 + Math.floor(v * 19 / 127)) + ' shapes',
@@ -297,16 +305,26 @@ const DERIVED = {
   hue:        v => Math.round(v / 127 * 250) + '/255',
   saturation: v => (v / 127 * 100).toFixed(0) + '%',
   value:      v => (v / 127 * 100).toFixed(0) + '%',
-  fieldHueDepth: v => v === 0 ? 'flat' : '±' + Math.round(v / 127 * 128) + ' of 255',
-  fieldCount:    v => (0.35 * Math.pow(48, v / 127)).toFixed(2) + ' blobs',
+  fieldHueDepth: v => { const r = Math.round(bip(v) * 128);
+                        return r === 0 ? 'flat' : (r > 0 ? '+' : '') + r + ' of 255'; },
+  fieldCount:    v => { const c = 0.35 * (Math.pow(48, v / 127) - 1);
+                        return c < 0.02 ? 'flat along the strip' : c.toFixed(2) + ' blobs'; },
   fieldFan:      v => v === 0 ? 'strips identical' : (v / 127 * 100).toFixed(0) + '% apart',
   fieldSpeed:    v => { const x = (v - 64) / 63; const r = Math.sign(x) * x * x;
                         if (Math.abs(r) < 0.0005) return 'frozen';
                         return (1 / Math.abs(r)).toFixed(0) + ' beats/cycle' + (r < 0 ? ' back' : ''); },
   fieldSource:   v => v < 10 ? 'sines' : v > 117 ? 'noise' : (v / 127 * 100).toFixed(0) + '% noise',
-  fieldSatDepth: v => (v / 127 * 100).toFixed(0) + '%',
+  fieldSatDepth: v => { const r = bip(v);
+                        if (Math.abs(r) < 0.01) return 'flat';
+                        return (r * 100).toFixed(0) + '% ' + (r > 0 ? 'to white' : 'to pure'); },
   fieldEdge:     v => v < 8 ? 'hard' : v > 119 ? 'smooth' : (100 - v / 127 * 100).toFixed(0) + '% steepened',
-  fieldValDepth: v => v === 0 ? 'off' : 'down to ' + (100 * Math.pow(0.02, v / 127)).toFixed(1) + '%',
+  fieldValDepth: v => { const r = bip(v);
+                        if (Math.abs(r) < 0.01) return 'flat';
+                        return r < 0 ? 'down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
+                                     : (r * 100).toFixed(0) + '% of the way to full'; },
+  litSat:        v => v === 0 ? 'off' : (v / 127 * 100).toFixed(0) + '% white at the core',
+  litHue:        v => { const r = Math.round(bip(v) * 64);
+                        return r === 0 ? 'off' : (r > 0 ? '+' : '') + r + ' at the core'; },
   washLevel:     v => (v / 127 * 100).toFixed(0) + '%',
   washHueOffset: v => v === 0 ? 'matches strips' : '+' + Math.round(v / 127 * 255) + ' of 255',
 };
@@ -344,9 +362,13 @@ const GROUPS = {
     ['fieldFan',   'Fan',         'how far the five strips differ. 0 means all five identical'],
   ],
   fieldDepth: [
-    ['fieldHueDepth', 'Hue',      'how far hue swings either side of the centre'],
-    ['fieldSatDepth', 'To white', 'how far saturation falls where the field is high'],
-    ['fieldValDepth', 'To dark',  'how far brightness falls where the field is low'],
+    ['fieldHueDepth', 'Hue',        'how far round the wheel a patch sits from the fader’s hue'],
+    ['fieldSatDepth', 'Saturation', 'up takes a patch toward white, down toward a pure hue'],
+    ['fieldValDepth', 'Brightness', 'down takes a patch toward dark, up toward full'],
+  ],
+  fieldFromShape: [
+    ['litSat', 'To white', 'how pale the brightest part of a shape goes'],
+    ['litHue', 'Hue',      'how far the brightest part rotates off the fader’s hue'],
   ],
   fieldOpen: [
     ['fieldSource', 'Source',     'stacked sines through to Perlin noise'],
@@ -377,9 +399,9 @@ const ANCHORS = {
 // the two hand-written ones always were.
 const FIELD_ANCHORS = {
   Plasma: { width:127, count:0, edge:0, tail:0, speed:64, fan:0, jitter:0, pulseDepth:0, pulseRate:64, flags:0, pulseShape:127,
-            fieldSpeed:95, fieldHueDepth:64, fieldCount:45, fieldFan:100, fieldSource:0,   fieldSatDepth:0, fieldValDepth:0, fieldEdge:127 },
+            fieldSpeed:95, fieldHueDepth:96, fieldCount:45, fieldFan:100, fieldSource:0,   fieldSatDepth:64, fieldValDepth:64, fieldEdge:127 },
   Aurora: { width:127, count:0, edge:0, tail:0, speed:64, fan:0, jitter:0, pulseDepth:0, pulseRate:64, flags:0, pulseShape:127,
-            fieldSpeed:86, fieldHueDepth:64, fieldCount:98, fieldFan:40, fieldSource:127, fieldSatDepth:0, fieldValDepth:0, fieldEdge:127 },
+            fieldSpeed:86, fieldHueDepth:96, fieldCount:98, fieldFan:40, fieldSource:127, fieldSatDepth:64, fieldValDepth:64, fieldEdge:127 },
 };
 
 // Every anchor carries a full field setting, so clicking one is a whole look
@@ -473,11 +495,19 @@ function toggleFlag(bit) {
 
 const STORE = 'aurora.generator.patches';
 
+// The three Depth controls used to run 0 = off to 127 = full, and now run
+// centred. A patch saved under the old meaning would recall with all three at
+// full reach downward and come back a colour nobody chose, so those three are
+// centred instead and the rest of the patch is kept. Presence of a lit control
+// is what dates a patch, since they arrived in the same change.
+const CENTRED_ON_RECALL = ['fieldHueDepth', 'fieldSatDepth', 'fieldValDepth'];
+
 function migrate(patch) {
   const out = { ...patch };
   for (const [was, now] of Object.entries(RENAMED)) {
     if (was in out) { if (!(now in out)) out[now] = out[was]; delete out[was]; }
   }
+  if (!('litSat' in out)) for (const name of CENTRED_ON_RECALL) if (name in out) out[name] = 64;
   return out;
 }
 

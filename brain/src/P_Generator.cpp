@@ -108,25 +108,33 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 #define FIELD_NOISE_FAN_SCALE 6.5f   // ...and 1.3 noise cells per strip
 #define FIELD_MAX_CYCLES_PER_BEAT 1.0f
 
-// How dark the field pulls a trough at full depth, as a fraction of what the
-// pixel would otherwise be — and the knob reaches it geometrically, so each
-// equal step is an equal ratio of light rather than an equal subtraction.
-// Mapped linearly, nearly the whole travel was imperceptible and everything
-// worth having sat in the last three steps.
+// How dark the field pulls a pixel at full reach, as a fraction of what it
+// would otherwise be — and the knob reaches it geometrically, so each equal
+// step is an equal ratio of light rather than an equal subtraction. Mapped
+// linearly, nearly the whole travel was imperceptible and everything worth
+// having sat in the last three steps.
 //
 // It stops short of zero because a WS2812 has eight linear bits and no gamma:
 // at the bottom one step is a third of the light, so brightness quantises into
 // lurches, and pixels crossing to zero pop out entirely.
 #define FIELD_MIN_LEVEL 0.02f
 
+// Half the wheel each way. Past about half, the hue fader stops meaning
+// anything and the wall becomes a spectrum rather than one colour with depth
+// in it; the bench put usable settings at a fifth to a half of the wheel.
+#define FIELD_MAX_HUE_REACH 128.0f
+
 static float fieldStep = 8.0f;   // units of field per pixel
 static float fieldFan = 40.0f;
 static float fieldSpeed = 0.0f;
-static float fieldHueDepth = 0.0f;
-static float fieldSatDepth = 0.0f;
-static float fieldValDepth = 0.0f;
 static float fieldSource = 0.0f;
 static float fieldSoftness = 1.0f;
+
+// Signed, and all three measured FROM the faders rather than around them. See
+// fieldColor().
+static float fieldHueReach = 0.0f;   // +-FIELD_MAX_HUE_REACH
+static float fieldSatReach = 0.0f;   // +1 to white, -1 to a pure hue
+static float fieldValReach = 0.0f;   // +1 to full, -1 to FIELD_MIN_LEVEL
 
 static PhaseTracker fieldPhase = { 0.0f, 0.0f };
 
@@ -146,6 +154,13 @@ static inline uint8_t expandFromCentre(uint8_t value) {
 // axis needs a far coarser step to show anything — and the two sources need
 // different steps for the same reason they are different sources.
 //
+// Fan is symmetric about the centre strip, because a cosine is even: strips one
+// either side of the middle land on the same value, and so do the outer two. So
+// fan gives three colours mirrored across the wall rather than five distinct
+// ones, with the middle strip on the faders' colour. Five distinct needs the
+// fan centre to move off the middle — the same parameter the shape branch wants
+// for its chevron, in docs/generator.md § Open.
+//
 // Fan opens the strips out from the middle one rather than from the first,
 // so winding it up opens the wall symmetrically instead of pinning strip 1 and
 // leaving the last strip to do all the moving.
@@ -159,13 +174,17 @@ static uint8_t fieldAt(uint8_t stripIndex, uint8_t pixelIndex, uint16_t z) {
   // than as a field with any depth in it.
   const int32_t along = (int32_t)((float)pixelIndex * fieldStep) + across;
 
-  // Each term drifts at its own fraction of the rate so they never settle into
-  // a visible period. The halving has to happen on the wide counter and the
-  // truncation afterwards: halving an already-truncated byte ramps it 0-127
-  // and snaps back, which is a discontinuity in the middle of a sine.
-  const uint8_t sines = (uint8_t)(((uint16_t)sin8((uint8_t)(along + z))
-                                 + (uint16_t)sin8((uint8_t)((along >> 1) + (z >> 1)))
-                                 + (uint16_t)sin8((uint8_t)(across + (z >> 2)))) / 3);
+  // One term, not three. Three sines at unrelated rates never line up, so the
+  // average huddled around the middle instead of spanning its range — measured
+  // at 0.21 to 0.79 on the centre strip, which left no floor for the faders'
+  // colour to sit at and no ceiling for a patch to reach. Two of the three
+  // also ran at the wrong rate: one at half the count and one constant along
+  // the strip, so a count of two produced four humps rather than two.
+  //
+  // The quarter-turn puts the trough at phase zero. Count, fan and speed all
+  // measure from there, which is what makes the start of a strip, and the
+  // centre strip under fan, come out as the colour on the faders exactly.
+  const uint8_t wave = sin8((uint8_t)(along + z + 192));
 
   // Perlin noise returns exactly its midpoint wherever the input lands on the
   // integer lattice, and FastLED's cells are 256 units wide. Stepping the
@@ -177,9 +196,21 @@ static uint8_t fieldAt(uint8_t stripIndex, uint8_t pixelIndex, uint16_t z) {
       (uint16_t)(4200 + (int32_t)(fromCentre * fieldFan * FIELD_NOISE_FAN_SCALE));
   const uint8_t noise = expandFromCentre(inoise8((uint16_t)(along + 4200), noiseAcross, z));
 
-  return (uint8_t)((float)sines + ((float)noise - (float)sines) * fieldSource);
+  // Noise has no trough at phase zero, so winding Source up loosens the anchor
+  // that puts the faders' colour at a knowable place. One more reason it is on
+  // the chopping block.
+  return (uint8_t)((float)wave + ((float)noise - (float)wave) * fieldSource);
 }
 
+// All three reaches are anchored at the SAME end of the field — where the
+// field is at its floor, the pixel is exactly what the three faders say, and
+// the field's patches are a departure from it.
+//
+// They were each anchored somewhere different before, which meant the colour
+// on the faders appeared in three different places at once and, with all
+// three wound up, nowhere at all: hue put it at the field's midpoint, to-white
+// at the floor, to-dark at the peak. A red wall came out dim purple in the
+// troughs and pale orange in the peaks with no red anywhere.
 static CHSV fieldColor(CHSV base, uint8_t sample) {
   // A smooth ramp of brightness has no edge anywhere for the eye to catch, so
   // even a 50:1 range reads as barely there. Steepening the field toward a
@@ -190,10 +221,52 @@ static CHSV fieldColor(CHSV base, uint8_t sample) {
   if (unit < 0.0f) unit = 0.0f;
   else if (unit > 1.0f) unit = 1.0f;
 
-  const float trough = powf(FIELD_MIN_LEVEL, fieldValDepth);
-  return CHSV((uint8_t)(base.hue + (int16_t)((unit - 0.5f) * 256.0f * fieldHueDepth)),
-              (uint8_t)((float)base.saturation * (1.0f - fieldSatDepth * unit)),
-              (uint8_t)((float)base.value * (trough + (1.0f - trough) * unit)));
+  const float satTarget = (fieldSatReach >= 0.0f) ? 0.0f : 255.0f;
+  const float saturation = (float)base.saturation
+      + unit * fabsf(fieldSatReach) * (satTarget - (float)base.saturation);
+
+  // Darkening keeps the geometric taper, because it is a ratio of light and
+  // the eye reads it as one. Brightening is a plain ride to full, and only has
+  // anywhere to go when the V fader is left below the top.
+  float value;
+  if (fieldValReach >= 0.0f) {
+    value = (float)base.value + unit * fieldValReach * (255.0f - (float)base.value);
+  } else {
+    const float floorLevel = powf(FIELD_MIN_LEVEL, -fieldValReach);
+    value = (float)base.value * (1.0f + unit * (floorLevel - 1.0f));
+  }
+
+  return CHSV((uint8_t)(base.hue + (int16_t)(unit * fieldHueReach)),
+              (uint8_t)saturation,
+              (uint8_t)value);
+}
+
+// ---------------------------------------------------------------------------
+// Colour that follows how lit a pixel is
+//
+// Every shape the generator makes is a brightness ramp — a core, an edge fade,
+// a tail — and colour threw all of it away, so a comet's tail was its head in
+// the same colour with less light behind it. That reads as a region being
+// dimmed rather than as an object with heat in it.
+//
+// Both reaches are anchored at the shape's DIM end, matching the field above:
+// the faders are what the fade runs out to, and the core is the departure.
+// Fed the shape's own profile, before jitter and the pulse, so a flash does
+// not wash the whole strip out and jitter does not scatter colour as well as
+// light — each of those is its own question.
+// ---------------------------------------------------------------------------
+
+// A quarter wheel each way. Red through to yellow is 64 units, which is the
+// whole of the cooling ramp anyone is likely to want.
+#define LIT_MAX_HUE_REACH 64.0f
+
+static float litSatReach = 0.0f;   // 0 to 1, toward white at the core
+static float litHueReach = 0.0f;   // +-LIT_MAX_HUE_REACH
+
+static CHSV litColor(CHSV base, float profile) {
+  return CHSV((uint8_t)(base.hue + (int16_t)(profile * litHueReach)),
+              (uint8_t)((float)base.saturation * (1.0f - litSatReach * profile)),
+              base.value);
 }
 
 // `offset` is the signed distance from the core's centre, in cells, positive
@@ -264,9 +337,10 @@ void Generator(CHSV color) {
 
   const float pulse = trackedPhase(pulsePhase, beats, 1.0f / genPulseBeats);
 
-  const bool fieldActive = fieldHueDepth > 0.0001f
-                        || fieldSatDepth > 0.0001f
-                        || fieldValDepth > 0.0001f;
+  const bool fieldActive = fabsf(fieldHueReach) > 0.5f
+                        || fabsf(fieldSatReach) > 0.0001f
+                        || fabsf(fieldValReach) > 0.0001f;
+  const bool litActive = litSatReach > 0.0001f || fabsf(litHueReach) > 0.5f;
   // inoise8 takes a uint16 z and noise has no period, so the drift jumps once
   // every 256 cycles where the counter wraps. Wrapping in float first keeps
   // the conversion in range; a float past UINT16_MAX converts to nothing
@@ -348,15 +422,16 @@ void Generator(CHSV color) {
         if (lit) accumulated += shapeAt(nearest, width, genEdge, genTail);
       }
 
-      const float brightness =
-          (accumulated / (float)GEN_SUBSAMPLES) * jitterLevel * swell;
+      const float profile = accumulated / (float)GEN_SUBSAMPLES;
+      const float brightness = profile * jitterLevel * swell;
       if (brightness <= 0.002f) continue;
 
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
       // where it was set: converting at a low value lets a channel truncate to
       // zero before its neighbour, which is what turns a dim yellow red.
-      const CHSV tint =
+      CHSV tint =
           fieldActive ? fieldColor(color, fieldAt(stripIndex, pixelIndex, fieldZ)) : color;
+      if (litActive) tint = litColor(tint, profile);
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =
           lit.nscale8_video((uint8_t)((float)tint.value * brightness));
@@ -394,15 +469,32 @@ void setGeneratorFlags(uint8_t value) {
 
 // One blob is one period of the sine, which is 256 units wide, so a count
 // across the strip converts to the per-pixel step the field's maths wants.
+//
+// Subtracting one from the geometric ride lets the bottom of the knob reach
+// zero blobs, where the field holds still along each strip and only Fan
+// separates them — which is how a colour per strip is asked for. A plain
+// geometric law bottoms out at its minimum and can never arrive there.
 void setFieldCount(uint8_t value) {
-  const float count = FIELD_MIN_COUNT * powf(FIELD_COUNT_RANGE, ccUnit(value));
+  const float count = FIELD_MIN_COUNT * (powf(FIELD_COUNT_RANGE, ccUnit(value)) - 1.0f);
   fieldStep = count * 256.0f / (float)PIXELS_PER_STRIP;
 }
 void setFieldFan(uint8_t value)   { fieldFan = ccUnit(value) * FIELD_MAX_FAN; }
-void setFieldHueDepth(uint8_t value) { fieldHueDepth = ccUnit(value); }
-void setFieldSatDepth(uint8_t value) { fieldSatDepth = ccUnit(value); }
-void setFieldValDepth(uint8_t value) { fieldValDepth = ccUnit(value); }
 void setFieldSource(uint8_t value)   { fieldSource = ccUnit(value); }
+
+// Centred: 64 is no departure at all, and either side is a direction. The
+// three of them are what decides how far the field's patches sit from the
+// colour on the faders, so the centre has to be "the wall is one colour".
+static inline float ccBipolar(uint8_t value) {
+  return value < 64 ? ((float)value - 64.0f) / 64.0f
+                    : ((float)value - 64.0f) / 63.0f;
+}
+
+void setFieldHueDepth(uint8_t value) { fieldHueReach = ccBipolar(value) * FIELD_MAX_HUE_REACH; }
+void setFieldSatDepth(uint8_t value) { fieldSatReach = ccBipolar(value); }
+void setFieldValDepth(uint8_t value) { fieldValReach = ccBipolar(value); }
+
+void setLitSatReach(uint8_t value) { litSatReach = ccUnit(value); }
+void setLitHueReach(uint8_t value) { litHueReach = ccBipolar(value) * LIT_MAX_HUE_REACH; }
 
 // Precomputed on receipt rather than per pixel: powf on every one of the 225
 // would cost more than the whole rest of the field.

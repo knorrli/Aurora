@@ -144,14 +144,19 @@ enum AuroraCC : uint8_t {
     // Speed, count and fan mean the same here as they do in the shape block
     // below, and count is in the same unit: blobs along one strip.
     CC_FIELD_SPEED         = 23, // bipolar: 64 is frozen, either side drifts
-    CC_FIELD_HUE_DEPTH     = 24, // how far hue swings from the centre
-    CC_FIELD_COUNT         = 25, // blobs along a strip, 0.35–17
+    CC_FIELD_HUE_DEPTH     = 24, // bipolar: 64 is flat, either side rotates
+                                 // the field's patches off the fader's hue
+    CC_FIELD_COUNT         = 25, // blobs along a strip, 0 at the bottom of
+                                 // the knob — flat along it — up to about 16
     CC_FIELD_FAN           = 26, // how far the five strips differ. 0 = all
                                  // strips identical
     CC_FIELD_SOURCE        = 27, // 0 = stacked sines, 127 = Perlin noise
-    CC_FIELD_SAT_DEPTH     = 28, // how far saturation falls toward white
+    CC_FIELD_SAT_DEPTH     = 28, // bipolar: 64 is flat, up is toward white
+                                 // and down is toward a pure hue
                                  // where the field is high
-    CC_FIELD_VAL_DEPTH     = 29, // how far brightness falls toward dark
+    CC_FIELD_VAL_DEPTH     = 29, // bipolar: 64 is flat, down is toward dark
+                                 // and up toward full, which needs the V
+                                 // fader left below the top to have room
                                  // where the field is low
 
     // 30–39 — touchpad / sculpt
@@ -177,6 +182,12 @@ enum AuroraCC : uint8_t {
     // the preset implementation.
     CC_PRESET_PARAM_A      = 50,
     CC_PRESET_PARAM_B      = 51,
+    // Under the generator, A and B carry an experiment: colour that follows
+    // how lit a pixel is, so a fade changes colour instead of only dimming.
+    // Here rather than in the colour block because that block is full, and
+    // because it has not yet been judged on the wall.
+    CC_LIT_SAT_REACH       = CC_PRESET_PARAM_A, // 0 = none, up = white at the core
+    CC_LIT_HUE_REACH       = CC_PRESET_PARAM_B, // bipolar: 64 = none, +-64 hue
     CC_PRESET_PARAM_C      = 52,
     CC_PRESET_PARAM_D      = 53,
     CC_PRESET_PARAM_E      = 54,

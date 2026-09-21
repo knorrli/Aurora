@@ -42,6 +42,8 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_FIELD_SAT_DEPTH: setFieldSatDepth(value); break;
         case CC_FIELD_VAL_DEPTH: setFieldValDepth(value); break;
         case CC_FIELD_EDGE:      setFieldEdge(value); break;
+        case CC_LIT_SAT_REACH:   setLitSatReach(value); break;
+        case CC_LIT_HUE_REACH:   setLitHueReach(value); break;
         case CC_GEN_WIDTH:       setGeneratorWidth(value); break;
         case CC_GEN_COUNT:       setGeneratorCount(value); break;
         case CC_GEN_EDGE:        setGeneratorEdge(value); break;
