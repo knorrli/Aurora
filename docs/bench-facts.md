@@ -438,3 +438,30 @@ What that does not license is settling a question at the extremes on
 screen — the dark floor and red's resolution are still hardware facts,
 and the diffuser bias is one more reason the wall is the judge of a
 finished look.
+
+## The bounce rework holds on the wall, 2026-09-22
+
+Five checks on the strips, all from the bench panel's own buttons, after
+the preview had already agreed:
+
+- **Alternate and bounce arrive on their own CCs.** Bars turns at the
+  strip's ends; alternate sends the 2nd and 4th columns from the left the
+  other way. So CC 45 and 46 land, and the packed CC 79 is gone.
+- **Bounce is per cell.** Four shapes each turn inside their own quarter.
+  Nothing slides through into a neighbour and nothing re-enters at the
+  far end, which is what it did while the journey was measured along the
+  whole strip.
+- **Fan staggers the swing.** With fan up the five strips no longer turn
+  on the same frame; some are outbound while others are already coming
+  back.
+- **Full width is full.** Width at maximum with fan at maximum lights
+  every pixel of all five strips. The fault this replaces lit 45, 36, 27,
+  27 and 36 of 45.
+- **The tail is a history.** At a turn the head reverses and travels back
+  out through its own trail, which stays where it lies and fades. It no
+  longer changes sides in one frame.
+
+**Confirmed working, not yet judged.** Per-cell bounce and the folding
+tail are new behaviour rather than repairs, so whether they are *wanted*
+in a set is a separate question, and it has not been asked with music
+playing.
