@@ -381,6 +381,13 @@ the machine could now do is a judgement for a set, not a bench.
    chevron; a centre outside the span leaves you on one side of it only,
    which is a diagonal. So centre alone interpolates between the two, and
    inverted chevrons come free. Two parameters cover the whole family.
+
+   **A third shape is wanted: random.** Asked for on the wall 2026-09-21
+   as "the strobing should not be on all strips at the same time, it
+   should feel random". Fan is what decides per-strip timing, and a
+   staircase can only ever be orderly. A per-strip offset drawn from the
+   hash instead would cover it, which makes this one parameter with three
+   settings rather than a separate control.
 2. **Is a strip a loop or a line?** Answered for bounce, still open for
    wrap. Bounce now turns when the core's own edge meets the strip end, so
    under bounce a strip is a line and nothing crosses a boundary at all.
@@ -388,21 +395,38 @@ the machine could now do is a judgement for a set, not a bench.
    reappears at the other. Whether that wants clipping, a boundary fade —
    which costs the ends of every pattern that ought to reach them — or
    nothing at all is a judgement for the wall.
-3. **Morph moves every parameter in lockstep and linearly.** That is the
+3. **Jitter has one scale, and it is the wrong one for solid shapes.**
+   The noise is keyed on the pixel — `hash8(strip, pixel, bucket)` — so
+   every pixel gets its own displacement and its own level, which is dirt
+   on the picture. Asked for on the wall 2026-09-21: solid blocks, whole
+   and full on, appearing in random places rather than scattered pixels
+   and loose clumps.
+
+   Keying the same two effects on the **cell** instead would give that —
+   a block displaced intact, or killed intact — and it is close to a
+   change of which index goes into the hash rather than a new concept. So
+   jitter probably wants a scale, pixel through to cell, rather than a
+   second control.
+
+   Together with the random fan shape above this is the "chaotic strobe"
+   that could not be built out of fan, speed and pulse. Both halves are
+   randomness at a scale the machine does not currently have, which is
+   why they are worth doing in one go.
+4. **Morph moves every parameter in lockstep and linearly.** That is the
    crudest possible path. Count in particular probably wants to double
    rather than add — 1, 2, 4, 8, 16 — since half the travel is currently
    spent between 9 and 17 where it barely reads. Per-parameter timing,
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
-4. **The pulse shape taper** was spread geometrically across the fader on
+5. **The pulse shape taper** was spread geometrically across the fader on
    a guess. Where the midpoint should sit is a feel judgement nobody has
    made with music playing.
-5. **Where the field's controls should stop.** Combinations that look bad
+6. **Where the field's controls should stop.** Combinations that look bad
    are easy to reach — a hard edge with deep darkening and a wide hue
    swing is three strong things at once. Whether that wants narrower
    ranges or just practice is a judgement nobody has made with music
    playing. The test is a set, not a bench.
-6. **Whether the roster survives at all**, or becomes a set of named
+7. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
 
 ## Tools
