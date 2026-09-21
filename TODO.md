@@ -143,7 +143,7 @@ here waits on that first look.
 - [ ] **Thread the placed field's parameters as an argument.** A second
       placed field is a small refactor until this is done, and was
       designed for on the assumption it would be free. See
-      `docs/generator.md` § Open, item 9.
+      `docs/generator.md` § Open, item 10.
 - [ ] **Jitter in colour** — a starfield in hue rather than in
       brightness. The only randomness the colour layer has no way to
       make. See `docs/generator.md` § "The colour layer has no jitter".

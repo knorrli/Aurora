@@ -356,11 +356,18 @@ Fanning them from the middle strip rather than from the first also
 matters: from the first, strip 1 never moves and the last does all the
 travelling, which reads as a one-sided ramp rather than the wall opening.
 
-Both halves outlived the machine they were measured on. The colour
+The first half outlived the machine it was measured on: the colour
 layer's wander adds its across term inside the sine rather than to its
-output, and measures it from the middle strip — the second of those was
-got wrong first and fixed by re-reading this entry rather than by looking
-at the wall.
+output.
+
+**The second half carries much less force for a moving field**, which is
+worth knowing before applying it anywhere else. Shifting where the zero
+sits only relabels which strip sees which part of the pattern, so a
+wander that is drifting sweeps the same family of walls either way. What
+anchoring at the middle strip actually buys is the behaviour of the
+control that sets feature size: the wall opens outward from the centre
+instead of hinging on strip 1. Visible at slow rates, invisible at fast
+ones. It was the static fan this was measured on that made it a fault.
 
 ## A PAR smooths below about 25 ms, and does not lag
 

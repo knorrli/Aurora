@@ -534,7 +534,14 @@ do is a judgement for a set, not a bench.
    descriptions. Not added, because the design conversation was careful
    about controls arriving without a look behind them, and this one has
    not been looked at on the wall yet.
-9. **A second placed field was designed for and not built.** Both rulers
+9. **Nothing can make a chevron across the five strips.** Two properties
+   of a per-strip offset are easy to confuse: where its zero sits, and
+   what shape it makes. The colour layer's wander has its zero on the
+   centre strip; the shape branch's fan has its zero on strip 1. Both are
+   straight lines, and moving the zero of a straight line only slides it.
+   A chevron needs a fold, which is what item 1 above is asking for, and
+   neither branch has one.
+10. **A second placed field was designed for and not built.** Both rulers
    at once — a strip painted with a slide *and* shapes crossing it
    carrying their own — was agreed as the thing to leave until wanted,
    on the argument that the first one would be written so the second cost
@@ -544,7 +551,7 @@ do is a judgement for a set, not a bench.
    parameters as an argument, so a second field is a small refactor
    before it is a feature. Doing that refactor is cheaper than the
    argument for deferring it implied it would be.
-10. **The colour layer has never been judged on the wall.** It was
+11. **The colour layer has never been judged on the wall.** It was
     designed, dialled and checked in `tools/preview.js` and then ported.
     Everything above about how a look is *reached* has screen evidence
     behind it; nothing about how a colour *looks* does. Desaturation
