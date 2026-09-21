@@ -100,6 +100,8 @@
 </head>
 <body>
 
+<script src="preview.js"></script>
+
 <h1>Aurora — generator bench</h1>
 
 <div class="panel" style="margin-bottom:16px">
@@ -122,7 +124,7 @@
   <div class="panel">
     <h2>Base colour</h2>
     <div id="base"></div>
-    <div class="note">The colour the field works from, and what brightness scales. On the controller these are the three faders.</div>
+    <div class="note">Every push below is measured from here, and this is what the wall shows with nothing pushed. On the controller these are the three faders.</div>
   </div>
 </div>
 
@@ -166,29 +168,33 @@
     </div>
     <div class="groups">
       <div class="group">
-        <h3>Form</h3>
-        <div id="fieldForm"></div>
+        <h3>What you place</h3>
+          <div class="chips" id="placedKindSwitch"></div>
+          <div class="chips" id="placedRulerSwitch"></div>
+          <div id="placedAmount"></div>
+          <div id="placedForm"></div>
+          <div class="note">A slide runs one way across its ruler with the base colour at the centre, so the amount is how far one end departs and the two ends land twice that apart. A region is a bump — base, departure, back to base. The ruler decides what the position is measured against: across the five strips, along a strip, or from a shape's leading tip through to the end of its tail. Count, width and edge mean here exactly what they mean in the shape branch.</div>
+        </div>
+        <div class="group">
+          <h3>What lives</h3>
+          <div id="wanderAmount"></div>
+          <div id="wanderForm"></div>
+          <div class="note">Colour never quite the same in two places, with the difference always moving. Two terms at the golden ratio, so it cannot come back into step and the wall never repeats — that is built in rather than dialled. Aim it nowhere; that is what the placed field is for.</div>
+        </div>
+        <div class="group">
+          <h3>From the light level</h3>
+          <div id="litGroup"></div>
+          <div class="note">Colour read off how lit the shape branch left a pixel — the one source that reaches the pulse and jitter, since neither has any position for a ruler to measure. Reads the shape's profile only, never the colour layer's own darkness: feed that back and pulling the wall down for a quiet verse would slide its hue.</div>
+        </div>
       </div>
-      <div class="group">
-        <h3>Travel</h3>
-        <div id="fieldTravel"></div>
-      </div>
-      <div class="group">
-        <h3>Depth</h3>
-        <div id="fieldDepth"></div>
-        <div class="note">How far a patch sits from the colour on the faders, and which way. All three centred and the wall is one flat colour — and wherever the field is at its floor it is that colour exactly, which is what makes the faders a background rather than an average.</div>
-      </div>
-      <div class="group">
-        <h3>From the shape <span class="badge">unproven</span></h3>
-        <div id="fieldFromShape"></div>
-        <div class="note">Colour by how lit a pixel is rather than where it is — so a comet’s tail cools instead of only dimming. Anchored at the dim end like Depth above: the faders are what a fade runs out to, and the core is the departure. Reads the shape’s own profile, before jitter and the pulse. The second thing that crosses between the branches, and the only one going this way. On CC 50–51 until it earns a place.</div>
+      <div style="margin-top:12px">
+        <h3>Colour looks</h3>
+        <div class="chips" id="colourLooks"></div>
+        <div class="note">These set the colour layer only and leave the shape alone, so each one lands on whatever pattern is up. Head and tail and Hot core need a shape with gaps to show anything — try them on Bars or Comet.</div>
       </div>
     </div>
-    <div class="open">
-      <h3>On the chopping block</h3>
-      <div id="fieldOpen"></div>
-      <div class="note">Source was judged to make no perceptible difference of character at this resolution. Cutting it frees CC 27; it is still here so the judgement can be re-checked before the sine path goes.</div>
-    </div>
+
+</div>
   </div>
 
 </div>
@@ -225,7 +231,7 @@
       <button id="presetStripOrder">strip order (PC 11)</button>
     </div>
     <div class="note">The lit button is what the brain is actually running. Recalling a patch or a known look switches back to the generator by itself.</div>
-    <div class="note">PC 3 is the original hand-written pair, for comparing against the field: alt off is Plasma, alt on is Aurora.</div>
+    <div class="note">PC 3 is the original hand-written pair: alt off is Plasma, alt on is Aurora. Neither is reachable from the controls above any more — they are kept as something to look at, not as a target.</div>
     <div class="note">Strip order paints each strip one flat colour in data-chain order: red, orange, green, cyan, blue.</div>
   </div>
 
@@ -269,22 +275,24 @@ const CC = {
   width: 70, count: 71, edge: 72, tail: 73, speed: 74,
   fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, flags: 79, pulseShape: 80,
   hue: 20, saturation: 21, value: 22,
-  fieldSpeed: 23, fieldHueDepth: 24, fieldCount: 25, fieldFan: 26,
-  fieldSource: 27, fieldSatDepth: 28, fieldValDepth: 29, fieldEdge: 90,
   washLevel: 60, washHueOffset: 61,
-  litSat: 50, litHue: 51,
+
+  // The colour layer, matching shared/aurora_protocol.h.
+  colourFlags: 23,
+  placedHue: 24, placedWhite: 25, placedDark: 26,
+  placedCount: 27, placedWidth: 28, placedEdge: 29, placedSpeed: 90,
+  wanderHue: 91, wanderWhite: 92, wanderDark: 93,
+  wanderRate: 94, wanderScale: 95,
+  litHue: 96, litWhite: 97, litDark: 98,
 };
 
-// Patches saved before the field's controls were renamed to match the shape
-// branch carry the old keys, and would silently lose those three parameters.
-const RENAMED = { fieldRate: 'fieldSpeed', fieldGrain: 'fieldCount', fieldSpread: 'fieldFan' };
+// CC_COLOUR_FLAGS, bit for bit. Two switches share one CC because neither has
+// a middle, the same reason the shape branch packs its two.
+const COLOUR_FLAG_REGION = 1;
+const COLOUR_RULER_SHIFT = 1;
+const COLOUR_RULER_MASK = 3 << COLOUR_RULER_SHIFT;
 
-// Plasma's and Aurora's hardcoded constants, converted to slider positions:
-// count 45 is 1.4 blobs along a strip, 98 is 6.9; fan 32 is 40 across the
-// strips, 64 is 80; the rates are what millis()>>3 and >>4 came to at 120 BPM.
-const FIELD_OFF = { fieldSpeed: 64, fieldHueDepth: 64, fieldCount: 45,
-                    fieldFan: 60, fieldSource: 0, fieldSatDepth: 64,
-                    fieldValDepth: 64, fieldEdge: 127, litSat: 0, litHue: 64 };
+
 
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
 // readouts lie until they are changed to match.
@@ -305,26 +313,40 @@ const DERIVED = {
   hue:        v => Math.round(v / 127 * 250) + '/255',
   saturation: v => (v / 127 * 100).toFixed(0) + '%',
   value:      v => (v / 127 * 100).toFixed(0) + '%',
-  fieldHueDepth: v => { const r = Math.round(bip(v) * 128);
-                        return r === 0 ? 'flat' : (r > 0 ? '+' : '') + r + ' of 255'; },
-  fieldCount:    v => { const c = 0.35 * (Math.pow(48, v / 127) - 1);
-                        return c < 0.02 ? 'flat along the strip' : c.toFixed(2) + ' blobs'; },
-  fieldFan:      v => v === 0 ? 'strips identical' : (v / 127 * 100).toFixed(0) + '% apart',
-  fieldSpeed:    v => { const x = (v - 64) / 63; const r = Math.sign(x) * x * x;
-                        if (Math.abs(r) < 0.0005) return 'frozen';
-                        return (1 / Math.abs(r)).toFixed(0) + ' beats/cycle' + (r < 0 ? ' back' : ''); },
-  fieldSource:   v => v < 10 ? 'sines' : v > 117 ? 'noise' : (v / 127 * 100).toFixed(0) + '% noise',
-  fieldSatDepth: v => { const r = bip(v);
-                        if (Math.abs(r) < 0.01) return 'flat';
-                        return (r * 100).toFixed(0) + '% ' + (r > 0 ? 'to white' : 'to pure'); },
-  fieldEdge:     v => v < 8 ? 'hard' : v > 119 ? 'smooth' : (100 - v / 127 * 100).toFixed(0) + '% steepened',
-  fieldValDepth: v => { const r = bip(v);
-                        if (Math.abs(r) < 0.01) return 'flat';
-                        return r < 0 ? 'down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
-                                     : (r * 100).toFixed(0) + '% of the way to full'; },
-  litSat:        v => v === 0 ? 'off' : (v / 127 * 100).toFixed(0) + '% white at the core',
+  litWhite:      v => v === 0 ? 'off' : (v / 127 * 100).toFixed(0) + '% white at the core',
   litHue:        v => { const r = Math.round(bip(v) * 64);
                         return r === 0 ? 'off' : (r > 0 ? '+' : '') + r + ' at the core'; },
+  litDark:       v => { const r = bip(v);
+                        if (Math.abs(r) < 0.01) return 'off';
+                        return r < 0 ? 'core down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
+                                     : 'core ' + (r * 100).toFixed(0) + '% toward full'; },
+
+  placedHue:   v => { const r = Math.round(bip(v) * 128);
+                      return r === 0 ? 'flat' : (r > 0 ? '+' : '') + r + ' of 255 at one end'; },
+  placedWhite: v => { const r = bip(v);
+                      if (Math.abs(r) < 0.01) return 'flat';
+                      return (Math.abs(r) * 100).toFixed(0) + '% ' + (r > 0 ? 'to white' : 'to pure'); },
+  placedDark:  v => { const r = bip(v);
+                      if (Math.abs(r) < 0.01) return 'flat';
+                      return r < 0 ? 'down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
+                                   : (r * 100).toFixed(0) + '% toward full'; },
+  placedCount: v => (1 + Math.floor(v * 19 / 127)) + ' regions',
+  placedWidth: v => (v / 127 * 100).toFixed(0) + '% of cell',
+  placedEdge:  v => (v / 127 * 100).toFixed(0) + '% into gap',
+  placedSpeed: v => { const x = (v - 64) / 63; const r = Math.sign(x) * x * x;
+                      return Math.abs(r) < 0.002 ? 'still' : (1 / Math.abs(r)).toFixed(1) + ' beats per cell' + (r < 0 ? ' back' : ''); },
+
+  wanderHue:   v => { const r = Math.round(bip(v) * 128);
+                      return r === 0 ? 'off' : '±' + Math.abs(r) + ' of 255'; },
+  wanderWhite: v => { const r = bip(v);
+                      return Math.abs(r) < 0.01 ? 'off' : '±' + (Math.abs(r) * 100).toFixed(0) + '%'; },
+  wanderDark:  v => { const r = bip(v);
+                      return Math.abs(r) < 0.01 ? 'off' : '±' + (Math.abs(r) * 100).toFixed(0) + '%'; },
+  wanderRate:  v => { const r = v / 127 * 0.5;
+                      return r < 0.004 ? 'frozen' : (1 / r).toFixed(0) + ' beats per cycle'; },
+  wanderScale: v => { const c = 0.12 * Math.pow(180, v / 127);
+                      return c < 0.35 ? 'the whole wall as one' : (45 / c).toFixed(0) + ' px across'; },
+
   washLevel:     v => (v / 127 * 100).toFixed(0) + '%',
   washHueOffset: v => v === 0 ? 'matches strips' : '+' + Math.round(v / 127 * 255) + ' of 255',
 };
@@ -353,25 +375,30 @@ const GROUPS = {
   shapeOpen: [
     ['jitter',     'Jitter',      'randomness in position and brightness'],
   ],
-  fieldForm: [
-    ['fieldCount', 'Count',       'how many blobs along the strip — the same unit as the shape branch'],
-    ['fieldEdge',  'Edge',        'hard-edged regions through to a smooth ramp'],
+  placedAmount: [
+    ['placedHue',   'Hue',       'how far one end of the ruler departs from the base hue'],
+    ['placedWhite', 'To white',  'how far one end departs toward white, or toward a pure hue'],
+    ['placedDark',  'Dark',      'how far one end departs toward dark, or toward full'],
   ],
-  fieldTravel: [
-    ['fieldSpeed', 'Speed',       'centre is frozen; either side drifts, one way or the other'],
-    ['fieldFan',   'Fan',         'how far the five strips differ. 0 means all five identical'],
+  placedForm: [
+    ['placedCount', 'Count',     'how many regions along the ruler'],
+    ['placedWidth', 'Width',     'the solid core of a region, as a proportion of one cell'],
+    ['placedEdge',  'Edge',      'hard-edged cell through to a smooth fade'],
+    ['placedSpeed', 'Speed',     'centre is still; either side drifts the regions along the ruler'],
   ],
-  fieldDepth: [
-    ['fieldHueDepth', 'Hue',        'how far round the wheel a patch sits from the fader’s hue'],
-    ['fieldSatDepth', 'Saturation', 'up takes a patch toward white, down toward a pure hue'],
-    ['fieldValDepth', 'Brightness', 'down takes a patch toward dark, up toward full'],
+  wanderAmount: [
+    ['wanderHue',   'Hue',       'how far the hue wanders either side of the base'],
+    ['wanderWhite', 'To white',  'how far whiteness wanders'],
+    ['wanderDark',  'Dark',      'how far darkness wanders'],
   ],
-  fieldFromShape: [
-    ['litSat', 'To white', 'how pale the brightest part of a shape goes'],
-    ['litHue', 'Hue',      'how far the brightest part rotates off the fader’s hue'],
+  wanderForm: [
+    ['wanderRate',  'How fast',  'a slow ocean swell through to a nervous flicker'],
+    ['wanderScale', 'How big',   'the whole wall moving as one, down to individual pixels'],
   ],
-  fieldOpen: [
-    ['fieldSource', 'Source',     'stacked sines through to Perlin noise'],
+  litGroup: [
+    ['litHue',   'Hue',      'how far the brightest part rotates off the base hue'],
+    ['litWhite', 'To white', 'how pale the brightest part goes'],
+    ['litDark',  'Dark',     'how the brightest part sits against the base for brightness'],
   ],
   pars: [
     ['washLevel',     'Level',      'the PARs’ master, independent of the strips'],
@@ -395,21 +422,48 @@ const ANCHORS = {
   Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:0 },
 };
 
-// A full still fill with the colour field doing all the work — which is what
-// the two hand-written ones always were.
-const FIELD_ANCHORS = {
-  Plasma: { width:127, count:0, edge:0, tail:0, speed:64, fan:0, jitter:0, pulseDepth:0, pulseRate:64, flags:0, pulseShape:127,
-            fieldSpeed:95, fieldHueDepth:96, fieldCount:45, fieldFan:100, fieldSource:0,   fieldSatDepth:64, fieldValDepth:64, fieldEdge:127 },
-  Aurora: { width:127, count:0, edge:0, tail:0, speed:64, fan:0, jitter:0, pulseDepth:0, pulseRate:64, flags:0, pulseShape:127,
-            fieldSpeed:86, fieldHueDepth:96, fieldCount:98, fieldFan:40, fieldSource:127, fieldSatDepth:64, fieldValDepth:64, fieldEdge:127 },
+// Shape anchors set the shape and nothing else, and colour looks set the
+// colour and nothing else, so either can be laid over whatever the other is
+// already doing.
+
+// Everything centred is "no departure", so the wall is one flat colour with
+// the whole redesigned layer switched on and nothing dialled.
+const COLOUR_OFF = {
+  colourFlags: 1 << COLOUR_RULER_SHIFT,
+  placedHue: 64, placedWhite: 64, placedDark: 64,
+  placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
+  wanderHue: 64, wanderWhite: 64, wanderDark: 64,
+  wanderRate: 20, wanderScale: 20,
+  litHue: 64, litWhite: 0, litDark: 64,
 };
 
-// Every anchor carries a full field setting, so clicking one is a whole look
-// rather than a shape laid over whatever the field was left at.
-for (const name of Object.keys(ANCHORS)) ANCHORS[name] = { ...FIELD_OFF, ...ANCHORS[name] };
-Object.assign(ANCHORS, FIELD_ANCHORS);
+// slide | region across the strips | along a strip | within a shape
+const SLIDE = 0, REGION = COLOUR_FLAG_REGION;
+const ON_WALL = 0 << COLOUR_RULER_SHIFT;
+const ON_STRIP = 1 << COLOUR_RULER_SHIFT;
+const IN_SHAPE = 2 << COLOUR_RULER_SHIFT;
 
-const state = { ...ANCHORS.Sweep, hue: 20, saturation: 100, value: 100,
+// One row of the table the design landed on, each a colour layer only. Ruler
+// is 0 for the five strips, 64 for along a strip, 127 for within a shape.
+const COLOUR_LOOKS = {
+  'Flat':          {},
+  'Rainbow':       { colourFlags: SLIDE  | ON_WALL,  placedHue: 112 },
+  'Mirror':        { colourFlags: REGION | ON_WALL,  placedHue: 110, placedCount: 0, placedWidth: 30, placedEdge: 96 },
+  'Strip slide':   { colourFlags: SLIDE  | ON_STRIP, placedHue: 110 },
+  'Centre cell':   { colourFlags: REGION | ON_STRIP, placedHue: 104, placedCount: 0, placedWidth: 22, placedEdge: 0 },
+  'Head and tail': { colourFlags: SLIDE  | IN_SHAPE, placedHue: 104 },
+  'Comet tail':    { colourFlags: SLIDE  | IN_SHAPE, placedHue: 108, litWhite: 127 },
+  'Drifting bands':{ colourFlags: REGION | ON_STRIP, placedHue: 90, placedCount: 24, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
+  'Alive':         { wanderHue: 92, wanderRate: 8,  wanderScale: 6 },
+  'Boiling':       { wanderHue: 104, wanderDark: 40, wanderRate: 64, wanderScale: 74 },
+  'Ember':         { litHue: 100, litWhite: 34 },
+};
+for (const name of Object.keys(COLOUR_LOOKS)) {
+  COLOUR_LOOKS[name] = { ...COLOUR_OFF, ...COLOUR_LOOKS[name] };
+}
+
+const state = { ...ANCHORS.Sweep, ...COLOUR_OFF,
+                hue: 20, saturation: 100, value: 100,
                 washLevel: 127, washHueOffset: 0 };
 
 let output = null;
@@ -448,7 +502,7 @@ function buildRows(hostId, defs) {
 
     row.appendChild(slider); row.appendChild(out);
     host.appendChild(row);
-    controls[name] = { slider, out, readout };
+    controls[name] = { readout, set: v => { slider.value = v; readout(); } };
   }
 }
 
@@ -471,12 +525,10 @@ function applyPatch(patch) {
   if (activePreset !== 10) setPreset(10);
   for (const [name, value] of Object.entries(patch)) {
     state[name] = value;
-    if (controls[name]) {
-      controls[name].slider.value = value;
-      controls[name].readout();
-    }
+    if (controls[name]) controls[name].set(value);
   }
   syncFlagButtons();
+  paintSwitches();
   sendAll();
 }
 
@@ -495,19 +547,23 @@ function toggleFlag(bit) {
 
 const STORE = 'aurora.generator.patches';
 
-// The three Depth controls used to run 0 = off to 127 = full, and now run
-// centred. A patch saved under the old meaning would recall with all three at
-// full reach downward and come back a colour nobody chose, so those three are
-// centred instead and the rest of the patch is kept. Presence of a lit control
-// is what dates a patch, since they arrived in the same change.
-const CENTRED_ON_RECALL = ['fieldHueDepth', 'fieldSatDepth', 'fieldValDepth'];
 
+// The two switches were separate controls while the layer lived only in the
+// preview; they are bits of one CC now that the firmware carries it. A patch
+// saved in between has neither bit and would recall its colour from whatever
+// the switches happened to be left at.
 function migrate(patch) {
   const out = { ...patch };
-  for (const [was, now] of Object.entries(RENAMED)) {
-    if (was in out) { if (!(now in out)) out[now] = out[was]; delete out[was]; }
+  if (!('colourFlags' in out) && ('placedKind' in out || 'placedRuler' in out)) {
+    const ruler = Math.min(2, Math.floor((out.placedRuler | 0) * 3 / 128));
+    out.colourFlags = ((out.placedKind | 0) > 63 ? COLOUR_FLAG_REGION : 0)
+                    | (ruler << COLOUR_RULER_SHIFT);
   }
-  if (!('litSat' in out)) for (const name of CENTRED_ON_RECALL) if (name in out) out[name] = 64;
+  if (!('litWhite' in out) && 'litSat' in out) out.litWhite = out.litSat;
+  delete out.placedKind;
+  delete out.placedRuler;
+  delete out.litSat;
+  delete out.colourModel;
   return out;
 }
 
@@ -658,6 +714,54 @@ async function initMidi() {
 // --- wire up ---------------------------------------------------------------
 
 for (const [hostId, defs] of Object.entries(GROUPS)) buildRows(hostId, defs);
+
+// A switch, not a knob, because neither of these has a middle: half a slide
+// is not a state and neither is half of "measured across the strips".
+const packedSwitches = [];
+
+function buildSwitch(hostId, mask, options) {
+  const host = document.getElementById(hostId);
+  const buttons = options.map(([bits, label, hint]) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.title = hint;
+    b.addEventListener('click', () => {
+      state.colourFlags = (state.colourFlags & ~mask) | bits;
+      paintSwitches();
+      sendParam('colourFlags');
+    });
+    host.appendChild(b);
+    return [bits, b];
+  });
+  packedSwitches.push(() => {
+    for (const [bits, b] of buttons) b.classList.toggle('on', (state.colourFlags & mask) === bits);
+  });
+}
+
+function paintSwitches() { for (const paint of packedSwitches) paint(); }
+
+buildSwitch('placedKindSwitch', COLOUR_FLAG_REGION, [
+  [SLIDE,  'slide',  'one way across the ruler, base colour at the centre'],
+  [REGION, 'region', 'a bump: base, departure, back to base'],
+]);
+
+buildSwitch('placedRulerSwitch', COLOUR_RULER_MASK, [
+  [ON_WALL,  'across the strips', 'position is which of the five strips a pixel is on'],
+  [ON_STRIP, 'along a strip',     'position is how far up the strip a pixel is'],
+  [IN_SHAPE, 'within a shape',    'position runs from a shape’s leading tip to the end of its tail, and travels with it'],
+]);
+
+controls.colourFlags = { readout: paintSwitches, set: paintSwitches };
+paintSwitches();
+
+const looksHost = document.getElementById('colourLooks');
+for (const [name, look] of Object.entries(COLOUR_LOOKS)) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.addEventListener('click', () => applyPatch(look));
+  looksHost.appendChild(b);
+}
+
 syncFlagButtons();
 
 document.getElementById('flagAlternate').addEventListener('click', () => toggleFlag(1));
@@ -699,6 +803,11 @@ for (const [name, patch] of Object.entries(ANCHORS)) {
 
 renderPatches();
 initMidi();
+
+AuroraPreview.start(
+  () => state,
+  () => +document.getElementById('bpm').value || 120,
+);
 </script>
 </body>
 </html>

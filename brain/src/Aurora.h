@@ -126,21 +126,26 @@ extern void setGeneratorPulseDepth(uint8_t value);
 extern void setGeneratorPulseRate(uint8_t value);
 extern void setGeneratorPulseShape(uint8_t value);
 extern void setGeneratorFlags(uint8_t value);
-// The colour field — CC 23–29. Varies colour across the wall and over time
-// instead of holding one colour everywhere; at zero depth it does nothing.
-extern void setFieldSpeed(uint8_t value);
-extern void setFieldHueDepth(uint8_t value);
-extern void setFieldCount(uint8_t value);
-extern void setFieldFan(uint8_t value);
-extern void setFieldSource(uint8_t value);
-extern void setFieldSatDepth(uint8_t value);
-extern void setFieldValDepth(uint8_t value);
-extern void setFieldEdge(uint8_t value);
-
-// Colour that follows how lit a pixel is, rather than where it is. On the
-// per-preset CC slots while it earns or fails to earn a place of its own.
-extern void setLitSatReach(uint8_t value);
-extern void setLitHueReach(uint8_t value);
+// The colour layer — CC 23–29 and 90–98. Hue, whiteness and darkness pushed
+// away from the three faders by a placed field, a wander and the light level.
+// With every one centred the wall is exactly what the faders say. See
+// P_Generator.cpp § "The colour layer".
+extern void setColourFlags(uint8_t value);
+extern void setPlacedHue(uint8_t value);
+extern void setPlacedWhite(uint8_t value);
+extern void setPlacedDark(uint8_t value);
+extern void setPlacedCount(uint8_t value);
+extern void setPlacedWidth(uint8_t value);
+extern void setPlacedEdge(uint8_t value);
+extern void setPlacedSpeed(uint8_t value);
+extern void setWanderHue(uint8_t value);
+extern void setWanderWhite(uint8_t value);
+extern void setWanderDark(uint8_t value);
+extern void setWanderRate(uint8_t value);
+extern void setWanderScale(uint8_t value);
+extern void setLitHue(uint8_t value);
+extern void setLitWhite(uint8_t value);
+extern void setLitDark(uint8_t value);
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

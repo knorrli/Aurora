@@ -132,32 +132,35 @@ enum AuroraCC : uint8_t {
                                  // value is an AuroraTempoDivision index
     // 11–19 reserved (transport / meta)
 
-    // 20–29 — colour. 20–22 are the three faders; 23–29 are the colour
-    // field, which varies colour across the wall and over time rather than
-    // holding one colour everywhere. See P_Generator.cpp.
+    // 20–29 — colour, first half. 20–22 are the three faders; 23–29 carry
+    // the placed field. The second half is at 90–99.
     //
-    // This fills the category. A further colour parameter needs a decision
-    // about where the range grows, not a slot crammed in elsewhere.
+    // A colour is hue, whiteness and darkness. Everything below is a push on
+    // those three, measured from the faders, and the pushes add — so with
+    // every one of them centred the wall is exactly the colour on the faders.
+    // See P_Generator.cpp § "The colour layer".
     CC_HUE                 = 20, // hue centre / H fader
     CC_SATURATION          = 21, // saturation / S fader
     CC_VALUE               = 22, // brightness / V fader
-    // Speed, count and fan mean the same here as they do in the shape block
-    // below, and count is in the same unit: blobs along one strip.
-    CC_FIELD_SPEED         = 23, // bipolar: 64 is frozen, either side drifts
-    CC_FIELD_HUE_DEPTH     = 24, // bipolar: 64 is flat, either side rotates
-                                 // the field's patches off the fader's hue
-    CC_FIELD_COUNT         = 25, // blobs along a strip, 0 at the bottom of
-                                 // the knob — flat along it — up to about 16
-    CC_FIELD_FAN           = 26, // how far the five strips differ. 0 = all
-                                 // strips identical
-    CC_FIELD_SOURCE        = 27, // 0 = stacked sines, 127 = Perlin noise
-    CC_FIELD_SAT_DEPTH     = 28, // bipolar: 64 is flat, up is toward white
-                                 // and down is toward a pure hue
-                                 // where the field is high
-    CC_FIELD_VAL_DEPTH     = 29, // bipolar: 64 is flat, down is toward dark
-                                 // and up toward full, which needs the V
-                                 // fader left below the top to have room
-                                 // where the field is low
+
+    // The placed field is something aimed: a slide running one way across a
+    // ruler with the faders' colour at its centre, or regions sitting on that
+    // ruler. Count, width and edge mean here exactly what they mean in the
+    // shape block below.
+    CC_COLOUR_FLAGS        = 23, // bit-packed, see AuroraColourBits below
+    CC_PLACED_HUE          = 24, // bipolar: 64 is flat, either side is how far
+                                 // ONE end departs — the two ends land twice
+                                 // that far apart
+    CC_PLACED_WHITE        = 25, // bipolar: up is toward white at one end,
+                                 // down is toward a pure hue
+    CC_PLACED_DARK         = 26, // bipolar: down is toward dark, up toward
+                                 // full — which needs the V fader left below
+                                 // the top to have anywhere to go
+    CC_PLACED_COUNT        = 27, // regions along the ruler, 1–20. Ignored by
+                                 // a slide, which spans the ruler once
+    CC_PLACED_WIDTH        = 28, // a region's solid core, as a proportion of
+                                 // one cell
+    CC_PLACED_EDGE         = 29, // hard-edged region through to a smooth fade
 
     // 30–39 — touchpad / sculpt
     CC_SCULPT_Y            = 30, // touchpad Y in sculpt mode (per-preset axis)
@@ -182,12 +185,6 @@ enum AuroraCC : uint8_t {
     // the preset implementation.
     CC_PRESET_PARAM_A      = 50,
     CC_PRESET_PARAM_B      = 51,
-    // Under the generator, A and B carry an experiment: colour that follows
-    // how lit a pixel is, so a fade changes colour instead of only dimming.
-    // Here rather than in the colour block because that block is full, and
-    // because it has not yet been judged on the wall.
-    CC_LIT_SAT_REACH       = CC_PRESET_PARAM_A, // 0 = none, up = white at the core
-    CC_LIT_HUE_REACH       = CC_PRESET_PARAM_B, // bipolar: 64 = none, +-64 hue
     CC_PRESET_PARAM_C      = 52,
     CC_PRESET_PARAM_D      = 53,
     CC_PRESET_PARAM_E      = 54,
@@ -226,11 +223,34 @@ enum AuroraCC : uint8_t {
 
     // 81–89 reserved (band / song-specific automation)
 
-    // 90–99 — colour field, continued. The colour category above is full, and
-    // this is the overflow rather than a second home for it: colour lives in
-    // two blocks until the redesign decides what it keeps, at which point it
-    // should come back to one.
-    CC_FIELD_EDGE          = 90, // 0 = hard-edged regions, 127 = smooth ramp
+    // 90–99 — colour, second half. Twenty controls will not fit in ten slots,
+    // so colour stays in two blocks; what makes this a half rather than an
+    // overflow is that the split falls between whole ideas. 23–29 is the
+    // placed field, this is everything that is not aimed anywhere.
+    CC_PLACED_SPEED        = 90, // bipolar: 64 is still, either side drifts
+                                 // the regions along the ruler
+
+    // The wander: colour never quite the same in two places, with the
+    // difference always moving. Two terms at the golden ratio, so it cannot
+    // come back into step and never repeats — built in rather than dialled,
+    // because dialling how far apart two speeds sit is operating the
+    // mechanism rather than the look.
+    CC_WANDER_HUE          = 91, // bipolar: how far the hue wanders either side
+    CC_WANDER_WHITE        = 92, // bipolar: how far whiteness wanders
+    CC_WANDER_DARK         = 93, // bipolar: how far darkness wanders
+    CC_WANDER_RATE         = 94, // 0 = frozen, up to two beats per cycle
+    CC_WANDER_SCALE        = 95, // 0 = the whole wall moving as one, 127 =
+                                 // individual pixels shimmering
+
+    // Colour read off how lit the shape branch left a pixel. The one source
+    // that reaches the pulse and jitter, since neither has a position for a
+    // ruler to measure. Anchored at the dim end: the faders are what a fade
+    // runs out to, and the core is the departure.
+    CC_LIT_HUE             = 96, // bipolar: 64 = none, +-64 hue at the core
+    CC_LIT_WHITE           = 97, // 0 = none, up = white at the core
+    CC_LIT_DARK            = 98, // bipolar: 64 = none, down takes the core
+                                 // toward dark and up toward full
+    // 99 reserved (colour)
 
     // 100–119 reserved
 };
@@ -286,6 +306,25 @@ static inline uint16_t aurora_ticks_per_gate(uint8_t division) {
 enum AuroraGeneratorBits : uint8_t {
     GEN_FLAG_ALTERNATE = 1 << 0, // odd strips travel against the even ones
     GEN_FLAG_BOUNCE    = 1 << 1, // reverse at the strip end instead of wrapping
+};
+
+// ---------------------------------------------------------------------------
+// Colour flag bitfield (carried on CC_COLOUR_FLAGS)
+//
+// Switches rather than knobs, because neither has a middle: half a slide is
+// not a state, and neither is half of "measured across the strips".
+// ---------------------------------------------------------------------------
+
+enum AuroraColourBits : uint8_t {
+    COLOUR_FLAG_REGION = 1 << 0, // 0 = one slide across the ruler, 1 = regions
+    COLOUR_RULER_MASK  = 3 << 1, // >> 1 gives an AuroraColourRuler
+};
+
+enum AuroraColourRuler : uint8_t {
+    COLOUR_RULER_WALL  = 0, // position is which of the five strips a pixel is on
+    COLOUR_RULER_STRIP = 1, // position is how far along its strip a pixel is
+    COLOUR_RULER_SHAPE = 2, // a shape's leading tip through to the end of its
+                            // tail, travelling with it
 };
 
 // ---------------------------------------------------------------------------

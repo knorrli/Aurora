@@ -52,6 +52,7 @@ static bool genAlternate = false;
 static bool genBounce = false;
 
 static inline float fract(float x) { return x - floorf(x); }
+static float shapeAt(float offset, float width, float edge, float tail);
 
 // A phase derived as `beats * rate` teleports whenever the rate changes,
 // because beats is large and only grows: a small change of rate is a large
@@ -87,186 +88,151 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 }
 
 // ---------------------------------------------------------------------------
-// The colour field
+// The colour layer
 //
-// Plasma and Aurora were the same three lines: take a number from where you
-// are and when it is, add it to the hue. The only thing separating them was
-// where the number came from — two stacked sines, or Perlin noise — plus four
-// scaling constants each had hardcoded. Those are the parameters below.
+// A colour is hue, whiteness and darkness. Everything else is a push on those
+// three, and the pushes add. Three sources push:
 //
-// The field is sampled per pixel and applied to whatever the shape above has
-// lit, so a full-width fill with the field wound up is Plasma, and the same
-// field under a travelling shape colours the shape as it moves through it.
-// At zero depth it costs nothing and the wall is one flat colour.
+//   the placed field  something aimed — a slide across a ruler, or regions
+//                     sitting on it
+//   the wander        the wall never quite the same in two places, and where
+//                     it differs keeps moving
+//   the light level   colour read off how lit the shape branch left a pixel
+//
+// The layer reads the SHAPE branch's light level and never its own. Feed its
+// own darkness back in and colour depends on colour: pull the wall down for a
+// quiet verse and the hue slides with it.
+//
+// Designed and dialled in tools/preview.js before any of it was flashed; the
+// numbers here and there are meant to stay identical.
 // ---------------------------------------------------------------------------
 
-// Count is blobs along one strip — the same unit the shape layer counts in, so
-// the two Count controls mean the same thing and a number carries between them.
-#define FIELD_MIN_COUNT 0.35f
-#define FIELD_COUNT_RANGE 48.0f
-#define FIELD_MAX_FAN 51.0f          // five strips across one sine cycle
-#define FIELD_NOISE_FAN_SCALE 6.5f   // ...and 1.3 noise cells per strip
-#define FIELD_MAX_CYCLES_PER_BEAT 1.0f
-
-// How dark the field pulls a pixel at full reach, as a fraction of what it
-// would otherwise be — and the knob reaches it geometrically, so each equal
-// step is an equal ratio of light rather than an equal subtraction. Mapped
-// linearly, nearly the whole travel was imperceptible and everything worth
-// having sat in the last three steps.
-//
-// It stops short of zero because a WS2812 has eight linear bits and no gamma:
-// at the bottom one step is a third of the light, so brightness quantises into
-// lurches, and pixels crossing to zero pop out entirely.
-#define FIELD_MIN_LEVEL 0.02f
+// How dark a full push pulls a pixel, as a fraction of what it would
+// otherwise be. It stops short of zero because a WS2812 has eight linear bits
+// and no gamma: at the bottom one step is a third of the light, so brightness
+// quantises into lurches and pixels crossing to zero pop out entirely.
+#define DARK_FLOOR 0.02f
 
 // Half the wheel each way. Past about half, the hue fader stops meaning
 // anything and the wall becomes a spectrum rather than one colour with depth
 // in it; the bench put usable settings at a fifth to a half of the wheel.
-#define FIELD_MAX_HUE_REACH 128.0f
-
-static float fieldStep = 8.0f;   // units of field per pixel
-static float fieldFan = 40.0f;
-static float fieldSpeed = 0.0f;
-static float fieldSource = 0.0f;
-static float fieldSoftness = 1.0f;
-
-// Signed, and all three measured FROM the faders rather than around them. See
-// fieldColor().
-static float fieldHueReach = 0.0f;   // +-FIELD_MAX_HUE_REACH
-static float fieldSatReach = 0.0f;   // +1 to white, -1 to a pure hue
-static float fieldValReach = 0.0f;   // +1 to full, -1 to FIELD_MIN_LEVEL
-
-static PhaseTracker fieldPhase = { 0.0f, 0.0f };
-
-// inoise8 adds 64 to the raw gradient and doubles it, which is calibrated for
-// the +-64 a single gradient can theoretically reach. The value returned is a
-// trilinear blend of eight of them, and blending pulls the result toward the
-// middle, so the output never arrives at either end. Doubling again about the
-// centre gives noise the same authority as the sines, which do fill the range.
-static inline uint8_t expandFromCentre(uint8_t value) {
-  const int16_t swung = 128 + ((int16_t)value - 128) * 2;
-  if (swung < 0) return 0;
-  if (swung > 255) return 255;
-  return (uint8_t)swung;
-}
-
-// Five strips is five samples, against forty-five along a strip, so the across
-// axis needs a far coarser step to show anything — and the two sources need
-// different steps for the same reason they are different sources.
-//
-// Fan is symmetric about the centre strip, because a cosine is even: strips one
-// either side of the middle land on the same value, and so do the outer two. So
-// fan gives three colours mirrored across the wall rather than five distinct
-// ones, with the middle strip on the faders' colour. Five distinct needs the
-// fan centre to move off the middle — the same parameter the shape branch wants
-// for its chevron, in docs/generator.md § Open.
-//
-// Fan opens the strips out from the middle one rather than from the first,
-// so winding it up opens the wall symmetrically instead of pinning strip 1 and
-// leaving the last strip to do all the moving.
-static uint8_t fieldAt(uint8_t stripIndex, uint8_t pixelIndex, uint16_t z) {
-  const float fromCentre = (float)stripIndex - (float)(NUMBER_OF_STRIPS - 1) * 0.5f;
-  const int32_t across = (int32_t)(fromCentre * fieldFan);
-
-  // Fan displaces the field ALONG the strip rather than shifting its level.
-  // Shifting the level leaves every strip with its blobs at the same pixels
-  // and only their colour differing, which reads as one striped pattern rather
-  // than as a field with any depth in it.
-  const int32_t along = (int32_t)((float)pixelIndex * fieldStep) + across;
-
-  // One term, not three. Three sines at unrelated rates never line up, so the
-  // average huddled around the middle instead of spanning its range — measured
-  // at 0.21 to 0.79 on the centre strip, which left no floor for the faders'
-  // colour to sit at and no ceiling for a patch to reach. Two of the three
-  // also ran at the wrong rate: one at half the count and one constant along
-  // the strip, so a count of two produced four humps rather than two.
-  //
-  // The quarter-turn puts the trough at phase zero. Count, fan and speed all
-  // measure from there, which is what makes the start of a strip, and the
-  // centre strip under fan, come out as the colour on the faders exactly.
-  const uint8_t wave = sin8((uint8_t)(along + z + 192));
-
-  // Perlin noise returns exactly its midpoint wherever the input lands on the
-  // integer lattice, and FastLED's cells are 256 units wide. Stepping the
-  // strips by a whole number of cells puts every one of them on the same
-  // lattice line, and they come out sharing features however far apart they
-  // are. So the step is deliberately not a multiple of 256, and the bias keeps
-  // the middle strip off the lattice as well.
-  const uint16_t noiseAcross =
-      (uint16_t)(4200 + (int32_t)(fromCentre * fieldFan * FIELD_NOISE_FAN_SCALE));
-  const uint8_t noise = expandFromCentre(inoise8((uint16_t)(along + 4200), noiseAcross, z));
-
-  // Noise has no trough at phase zero, so winding Source up loosens the anchor
-  // that puts the faders' colour at a knowable place. One more reason it is on
-  // the chopping block.
-  return (uint8_t)((float)wave + ((float)noise - (float)wave) * fieldSource);
-}
-
-// All three reaches are anchored at the SAME end of the field — where the
-// field is at its floor, the pixel is exactly what the three faders say, and
-// the field's patches are a departure from it.
-//
-// They were each anchored somewhere different before, which meant the colour
-// on the faders appeared in three different places at once and, with all
-// three wound up, nowhere at all: hue put it at the field's midpoint, to-white
-// at the floor, to-dark at the peak. A red wall came out dim purple in the
-// troughs and pale orange in the peaks with no red anywhere.
-static CHSV fieldColor(CHSV base, uint8_t sample) {
-  // A smooth ramp of brightness has no edge anywhere for the eye to catch, so
-  // even a 50:1 range reads as barely there. Steepening the field toward a
-  // hard boundary is the same move that makes a strobe reachable from a sine,
-  // and it is what turns the field's regions into things you can see as
-  // regions rather than as a general unevenness.
-  float unit = ((float)sample / 255.0f - 0.5f) / fieldSoftness + 0.5f;
-  if (unit < 0.0f) unit = 0.0f;
-  else if (unit > 1.0f) unit = 1.0f;
-
-  const float satTarget = (fieldSatReach >= 0.0f) ? 0.0f : 255.0f;
-  const float saturation = (float)base.saturation
-      + unit * fabsf(fieldSatReach) * (satTarget - (float)base.saturation);
-
-  // Darkening keeps the geometric taper, because it is a ratio of light and
-  // the eye reads it as one. Brightening is a plain ride to full, and only has
-  // anywhere to go when the V fader is left below the top.
-  float value;
-  if (fieldValReach >= 0.0f) {
-    value = (float)base.value + unit * fieldValReach * (255.0f - (float)base.value);
-  } else {
-    const float floorLevel = powf(FIELD_MIN_LEVEL, -fieldValReach);
-    value = (float)base.value * (1.0f + unit * (floorLevel - 1.0f));
-  }
-
-  return CHSV((uint8_t)(base.hue + (int16_t)(unit * fieldHueReach)),
-              (uint8_t)saturation,
-              (uint8_t)value);
-}
-
-// ---------------------------------------------------------------------------
-// Colour that follows how lit a pixel is
-//
-// Every shape the generator makes is a brightness ramp — a core, an edge fade,
-// a tail — and colour threw all of it away, so a comet's tail was its head in
-// the same colour with less light behind it. That reads as a region being
-// dimmed rather than as an object with heat in it.
-//
-// Both reaches are anchored at the shape's DIM end, matching the field above:
-// the faders are what the fade runs out to, and the core is the departure.
-// Fed the shape's own profile, before jitter and the pulse, so a flash does
-// not wash the whole strip out and jitter does not scatter colour as well as
-// light — each of those is its own question.
-// ---------------------------------------------------------------------------
+#define PLACED_MAX_HUE 128.0f
+#define WANDER_MAX_HUE 128.0f
 
 // A quarter wheel each way. Red through to yellow is 64 units, which is the
 // whole of the cooling ramp anyone is likely to want.
-#define LIT_MAX_HUE_REACH 64.0f
+#define LIT_MAX_HUE 64.0f
 
-static float litSatReach = 0.0f;   // 0 to 1, toward white at the core
-static float litHueReach = 0.0f;   // +-LIT_MAX_HUE_REACH
+#define WANDER_MAX_CYCLES_PER_BEAT 0.5f
+#define PLACED_MAX_CELLS_PER_BEAT 1.0f
 
-static CHSV litColor(CHSV base, float profile) {
-  return CHSV((uint8_t)(base.hue + (int16_t)(profile * litHueReach)),
-              (uint8_t)((float)base.saturation * (1.0f - litSatReach * profile)),
-              base.value);
+// Two terms whose rates sit at the golden ratio, so they never come back into
+// step and the wall never repeats. Deliberately not a control: dialling how
+// far apart the two speeds are is operating the mechanism rather than the
+// look.
+#define GOLD 0.6180339887f
+
+enum ColourRuler : uint8_t {
+  RULER_WALL = 0,   // which of the five strips a pixel is on
+  RULER_STRIP = 1,  // how far along its strip a pixel is
+  RULER_SHAPE = 2,  // leading tip of a shape through to the end of its tail
+};
+
+static bool placedIsRegion = false;
+static uint8_t placedRuler = RULER_STRIP;
+static float placedHueReach = 0.0f;
+static float placedWhiteReach = 0.0f;
+static float placedDarkReach = 0.0f;
+static uint8_t placedCount = 1;
+static float placedWidth = 0.5f;
+static float placedEdge = 0.5f;
+static float placedCells = 0.0f;
+
+static float wanderHueReach = 0.0f;
+static float wanderWhiteReach = 0.0f;
+static float wanderDarkReach = 0.0f;
+static float wanderCycles = 0.0f;
+static float wanderScale = 0.0f;
+
+static float litHueReach = 0.0f;
+static float litWhiteReach = 0.0f;
+static float litDarkReach = 0.0f;
+
+static PhaseTracker wanderPhase = { 0.0f, 0.0f };
+static PhaseTracker placedPhase = { 0.0f, 0.0f };
+
+static bool placedActive() {
+  return fabsf(placedHueReach) > 0.5f
+      || fabsf(placedWhiteReach) > 0.001f
+      || fabsf(placedDarkReach) > 0.001f;
+}
+
+static bool wanderActive() {
+  return fabsf(wanderHueReach) > 0.5f
+      || fabsf(wanderWhiteReach) > 0.001f
+      || fabsf(wanderDarkReach) > 0.001f;
+}
+
+static bool litActive() {
+  return fabsf(litHueReach) > 0.5f
+      || fabsf(litWhiteReach) > 0.001f
+      || fabsf(litDarkReach) > 0.001f;
+}
+
+// The base colour sits at zero, so two terms that rarely reach their ends cost
+// nothing: a sum huddled around the middle is the wall sitting at the colour
+// that was dialled. There is no floor here for a colour to fall off.
+static float wanderAt(uint8_t stripIndex, float along01, float t) {
+  // Measured from the middle strip, not the first. Fanned from the first,
+  // strip one never moves and the last does all the travelling, which reads as
+  // a one-sided ramp rather than the wall opening — see docs/bench-facts.md
+  // § "A field built as along-plus-across".
+  const float acrossFromCentre =
+      ((float)stripIndex - (float)(NUMBER_OF_STRIPS - 1) * 0.5f)
+      / (float)(NUMBER_OF_STRIPS - 1);
+  const float cyclesAlong = 0.12f * powf(180.0f, wanderScale);
+  float cyclesAcross = cyclesAlong * 0.3f;
+  if (cyclesAcross > 1.4f) cyclesAcross = 1.4f;
+
+  const float a = sinf(2.0f * (float)PI
+      * (cyclesAlong * along01 + cyclesAcross * acrossFromCentre + t));
+  const float b = sinf(2.0f * (float)PI
+      * (cyclesAlong * GOLD * along01 - cyclesAcross * 1.37f * acrossFromCentre + t * GOLD));
+  return (a + b) * 0.5f;
+}
+
+// A slide is monotone with the base colour at the ruler's centre, so the reach
+// is how far ONE end departs and the two ends land twice that apart. A region
+// is a bump — base, departure, back to base — built from the shape branch's
+// own core and fades, which is what makes count, width and edge mean the same
+// thing in both branches.
+static float placedAt(float u, float drift) {
+  if (!placedIsRegion) return (u - 0.5f) * 2.0f;
+  const float cell = u * (float)placedCount + drift;
+  return shapeAt(fract(cell) - 0.5f, placedWidth, placedEdge, 0.0f);
+}
+
+// Pushes arrive summed and normalised. Darkening rides a geometric taper
+// because it is a ratio of light and the eye reads it as one; mapped linearly,
+// nearly the whole travel was imperceptible and everything worth having sat in
+// the last few steps. Brightening is a plain ride to full and only has room
+// when the V fader is left below the top. Both measured on the wall — see
+// docs/bench-facts.md.
+static CHSV applyPushes(CHSV base, float hue, float white, float dark) {
+  if (white < -1.0f) white = -1.0f; else if (white > 1.0f) white = 1.0f;
+  if (dark < -1.0f) dark = -1.0f; else if (dark > 1.0f) dark = 1.0f;
+
+  const float satTarget = (white >= 0.0f) ? 0.0f : 255.0f;
+  const float saturation = (float)base.saturation
+      + fabsf(white) * (satTarget - (float)base.saturation);
+
+  float value;
+  if (dark >= 0.0f) value = (float)base.value + dark * (255.0f - (float)base.value);
+  else value = (float)base.value * powf(DARK_FLOOR, -dark);
+
+  return CHSV((uint8_t)(base.hue + (int16_t)hue),
+              (uint8_t)saturation,
+              (uint8_t)value);
 }
 
 // `offset` is the signed distance from the core's centre, in cells, positive
@@ -308,6 +274,49 @@ static float shapeAt(float offset, float width, float edge, float tail) {
   return brightness;
 }
 
+// 0 at one end of the ruler, 1 at the other.
+static float rulerAt(uint8_t stripIndex, uint8_t pixelIndex, float shapeU) {
+  if (placedRuler == RULER_WALL) {
+    return (float)stripIndex / (float)(NUMBER_OF_STRIPS - 1);
+  }
+  if (placedRuler == RULER_SHAPE) return shapeU;
+  return (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
+}
+
+static CHSV colourAt(CHSV base, uint8_t stripIndex, uint8_t pixelIndex,
+                     float shapeU, float profile, float drift, float wanderT,
+                     bool placedOn, bool wanderOn) {
+  const float along01 = (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
+
+  const float placed = placedOn ? placedAt(rulerAt(stripIndex, pixelIndex, shapeU), drift) : 0.0f;
+  const float wander = wanderOn ? wanderAt(stripIndex, along01, wanderT) : 0.0f;
+
+  return applyPushes(base,
+      placed * placedHueReach + wander * wanderHueReach + profile * litHueReach,
+      placed * placedWhiteReach + wander * wanderWhiteReach + profile * litWhiteReach,
+      placed * placedDarkReach + wander * wanderDarkReach + profile * litDarkReach);
+}
+
+// The shape repeats once per cell, so the only images that can reach a sample
+// are the two standing either side of it. Under bounce the strip is a line and
+// an image off its end is not there to be seen — which is what stops a fade
+// leaving one end of the strip and arriving at the other.
+static bool nearestOffset(float posCells, float coreCentre, float stripDirection,
+                          bool bounce, float countCells, float &out) {
+  const float firstImage = coreCentre + floorf(posCells - coreCentre);
+  bool lit = false;
+  for (uint8_t image = 0; image < 2; image++) {
+    const float imagePos = firstImage + (float)image;
+    if (bounce && (imagePos < 0.0f || imagePos > countCells)) continue;
+    const float offset = -stripDirection * (posCells - imagePos);
+    if (!lit || fabsf(offset) < fabsf(out)) {
+      out = offset;
+      lit = true;
+    }
+  }
+  return lit;
+}
+
 void Generator(CHSV color) {
   const float beats = tempo::beats();
   const float cellLength = (float)PIXELS_PER_STRIP / (float)genCount;
@@ -337,16 +346,24 @@ void Generator(CHSV color) {
 
   const float pulse = trackedPhase(pulsePhase, beats, 1.0f / genPulseBeats);
 
-  const bool fieldActive = fabsf(fieldHueReach) > 0.5f
-                        || fabsf(fieldSatReach) > 0.0001f
-                        || fabsf(fieldValReach) > 0.0001f;
-  const bool litActive = litSatReach > 0.0001f || fabsf(litHueReach) > 0.5f;
-  // inoise8 takes a uint16 z and noise has no period, so the drift jumps once
-  // every 256 cycles where the counter wraps. Wrapping in float first keeps
-  // the conversion in range; a float past UINT16_MAX converts to nothing
-  // defined.
-  const float fieldCycles = trackedPhase(fieldPhase, beats, fieldSpeed);
-  const uint16_t fieldZ = (uint16_t)(fract(fieldCycles * (1.0f / 256.0f)) * 65536.0f);
+  const bool placedOn = placedActive();
+  const bool wanderOn = wanderActive();
+  const bool colourFlat = !placedOn && !wanderOn && !litActive();
+
+  // Both colour rates go through the tracker for the same reason travel and
+  // the pulse do: beats only grows, so a small change of rate multiplied by a
+  // large beat count is a large jump.
+  const float wanderT = trackedPhase(wanderPhase, beats, wanderCycles);
+  const float placedDrift = trackedPhase(placedPhase, beats, placedCells);
+
+  // The two sides of a shape are not the same length — a tail reaches much
+  // further than an edge fade — so they are normalised separately. Halfway
+  // between the two tips is not the core, and a region asked to sit at the
+  // middle of a shape means the core every time.
+  const float shapeGap = 1.0f - genWidth;
+  const float shapeLead = genWidth * 0.5f + genEdge * shapeGap * 0.5f;
+  const float shapeTrail = genWidth * 0.5f
+      + fmaxf(genEdge * shapeGap * 0.5f, genTail * shapeGap);
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     const float stripPhase = genFan * ((float)stripIndex / (float)NUMBER_OF_STRIPS);
@@ -407,19 +424,10 @@ void Generator(CHSV color) {
         // the strip is a line, and an image off its end is not there to be
         // seen — which is what stops a fade leaving one end of the strip and
         // arriving at the other.
-        const float firstImage = coreCentre + floorf(posCells - coreCentre);
         float nearest = 0.0f;
-        bool lit = false;
-        for (uint8_t image = 0; image < 2; image++) {
-          const float imagePos = firstImage + (float)image;
-          if (genBounce && (imagePos < 0.0f || imagePos > countCells)) continue;
-          const float offset = -stripDirection * (posCells - imagePos);
-          if (!lit || fabsf(offset) < fabsf(nearest)) {
-            nearest = offset;
-            lit = true;
-          }
+        if (nearestOffset(posCells, coreCentre, stripDirection, genBounce, countCells, nearest)) {
+          accumulated += shapeAt(nearest, width, genEdge, genTail);
         }
-        if (lit) accumulated += shapeAt(nearest, width, genEdge, genTail);
       }
 
       const float profile = accumulated / (float)GEN_SUBSAMPLES;
@@ -429,9 +437,22 @@ void Generator(CHSV color) {
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
       // where it was set: converting at a low value lets a channel truncate to
       // zero before its neighbour, which is what turns a dim yellow red.
-      CHSV tint =
-          fieldActive ? fieldColor(color, fieldAt(stripIndex, pixelIndex, fieldZ)) : color;
-      if (litActive) tint = litColor(tint, profile);
+      CHSV tint = color;
+      if (!colourFlat) {
+        float centreOffset = 0.0f;
+        const bool onShape = nearestOffset(
+            ((float)pixelIndex + 0.5f) / cellLength + jitterOffset,
+            coreCentre, stripDirection, genBounce, countCells, centreOffset);
+        const float reach = (centreOffset < 0.0f) ? shapeLead : shapeTrail;
+        float shapeU = 0.5f;
+        if (onShape && reach > 0.0001f) {
+          shapeU = 0.5f + 0.5f * centreOffset / reach;
+          if (shapeU < 0.0f) shapeU = 0.0f;
+          else if (shapeU > 1.0f) shapeU = 1.0f;
+        }
+        tint = colourAt(color, stripIndex, pixelIndex, shapeU, profile,
+                        placedDrift, wanderT, placedOn, wanderOn);
+      }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =
           lit.nscale8_video((uint8_t)((float)tint.value * brightness));
@@ -467,43 +488,43 @@ void setGeneratorFlags(uint8_t value) {
   genBounce = value & GEN_FLAG_BOUNCE;
 }
 
-// One blob is one period of the sine, which is 256 units wide, so a count
-// across the strip converts to the per-pixel step the field's maths wants.
-//
-// Subtracting one from the geometric ride lets the bottom of the knob reach
-// zero blobs, where the field holds still along each strip and only Fan
-// separates them — which is how a colour per strip is asked for. A plain
-// geometric law bottoms out at its minimum and can never arrive there.
-void setFieldCount(uint8_t value) {
-  const float count = FIELD_MIN_COUNT * (powf(FIELD_COUNT_RANGE, ccUnit(value)) - 1.0f);
-  fieldStep = count * 256.0f / (float)PIXELS_PER_STRIP;
-}
-void setFieldFan(uint8_t value)   { fieldFan = ccUnit(value) * FIELD_MAX_FAN; }
-void setFieldSource(uint8_t value)   { fieldSource = ccUnit(value); }
-
-// Centred: 64 is no departure at all, and either side is a direction. The
-// three of them are what decides how far the field's patches sit from the
-// colour on the faders, so the centre has to be "the wall is one colour".
+// Bipolar around 64: the centre has to be "no departure at all", because
+// these are what decide how far a push sits from the colour on the faders.
 static inline float ccBipolar(uint8_t value) {
   return value < 64 ? ((float)value - 64.0f) / 64.0f
                     : ((float)value - 64.0f) / 63.0f;
 }
 
-void setFieldHueDepth(uint8_t value) { fieldHueReach = ccBipolar(value) * FIELD_MAX_HUE_REACH; }
-void setFieldSatDepth(uint8_t value) { fieldSatReach = ccBipolar(value); }
-void setFieldValDepth(uint8_t value) { fieldValReach = ccBipolar(value); }
-
-void setLitSatReach(uint8_t value) { litSatReach = ccUnit(value); }
-void setLitHueReach(uint8_t value) { litHueReach = ccBipolar(value) * LIT_MAX_HUE_REACH; }
-
-// Precomputed on receipt rather than per pixel: powf on every one of the 225
-// would cost more than the whole rest of the field.
-void setFieldEdge(uint8_t value) { fieldSoftness = 0.02f * powf(50.0f, ccUnit(value)); }
-
-// Bipolar around 64 like the travel speed, and squared for the same reason:
-// the slow end is where a colour field that reads as depth rather than as an
-// effect actually lives.
-void setFieldSpeed(uint8_t value) {
-  const float x = ((float)value - 64.0f) / 63.0f;
-  fieldSpeed = (x < 0.0f ? -1.0f : 1.0f) * x * x * FIELD_MAX_CYCLES_PER_BEAT;
+void setColourFlags(uint8_t value) {
+  placedIsRegion = value & COLOUR_FLAG_REGION;
+  const uint8_t ruler = (value & COLOUR_RULER_MASK) >> 1;
+  placedRuler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 }
+
+void setPlacedHue(uint8_t value)   { placedHueReach = ccBipolar(value) * PLACED_MAX_HUE; }
+void setPlacedWhite(uint8_t value) { placedWhiteReach = ccBipolar(value); }
+void setPlacedDark(uint8_t value)  { placedDarkReach = ccBipolar(value); }
+void setPlacedWidth(uint8_t value) { placedWidth = ccUnit(value); }
+void setPlacedEdge(uint8_t value)  { placedEdge = ccUnit(value); }
+
+void setPlacedCount(uint8_t value) {
+  placedCount = 1 + (uint8_t)((uint16_t)value * (GEN_MAX_COUNT - 1) / 127);
+}
+
+// Bipolar and squared like the shape branch's travel, for the same reason:
+// the slow end is where a colour that reads as depth rather than as an effect
+// actually lives.
+void setPlacedSpeed(uint8_t value) {
+  const float x = ((float)value - 64.0f) / 63.0f;
+  placedCells = (x < 0.0f ? -1.0f : 1.0f) * x * x * PLACED_MAX_CELLS_PER_BEAT;
+}
+
+void setWanderHue(uint8_t value)   { wanderHueReach = ccBipolar(value) * WANDER_MAX_HUE; }
+void setWanderWhite(uint8_t value) { wanderWhiteReach = ccBipolar(value); }
+void setWanderDark(uint8_t value)  { wanderDarkReach = ccBipolar(value); }
+void setWanderRate(uint8_t value)  { wanderCycles = ccUnit(value) * WANDER_MAX_CYCLES_PER_BEAT; }
+void setWanderScale(uint8_t value) { wanderScale = ccUnit(value); }
+
+void setLitHue(uint8_t value)   { litHueReach = ccBipolar(value) * LIT_MAX_HUE; }
+void setLitWhite(uint8_t value) { litWhiteReach = ccUnit(value); }
+void setLitDark(uint8_t value)  { litDarkReach = ccBipolar(value); }
