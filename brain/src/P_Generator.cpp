@@ -571,10 +571,8 @@ void setGeneratorPulseRate(uint8_t value) {
   genPulseBeats = GEN_SLOWEST_PULSE_BEATS * powf(0.5f, ccUnit(value) * GEN_PULSE_RATE_OCTAVES);
 }
 
-void setGeneratorFlags(uint8_t value) {
-  genAlternate = value & GEN_FLAG_ALTERNATE;
-  genBounce = value & GEN_FLAG_BOUNCE;
-}
+void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
+void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); }
 
 // Bipolar around 64: the centre has to be "no departure at all", because
 // these are what decide how far a push sits from the colour on the faders.
@@ -583,9 +581,10 @@ static inline float ccBipolar(uint8_t value) {
                     : ((float)value - 64.0f) / 63.0f;
 }
 
-void setColourFlags(uint8_t value) {
-  placedIsRegion = value & COLOUR_FLAG_REGION;
-  const uint8_t ruler = (value & COLOUR_RULER_MASK) >> 1;
+void setColourRegion(uint8_t value) { placedIsRegion = aurora_cc_is_on(value); }
+
+void setColourRuler(uint8_t value) {
+  const uint8_t ruler = aurora_cc_band3(value);
   placedRuler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 }
 

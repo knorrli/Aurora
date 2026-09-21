@@ -256,7 +256,7 @@
       </div>
       <output id="morphReadout">A</output>
     </div>
-    <div class="note">Capture two patches, then slide between them. Everything continuous interpolates; the two switches snap at halfway because neither has a middle.</div>
+    <div class="note">Capture two patches, then slide between them. Everything continuous interpolates. Switches do not move at all — alternate, bounce, slide/region and the ruler belong to the patch, so B at the far end is B in everything but those. Recall B itself to take them.</div>
   </div>
 
   <div class="panel">
@@ -273,12 +273,13 @@
 <script>
 const CC = {
   width: 70, count: 71, edge: 72, tail: 73, speed: 74,
-  fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, flags: 79, pulseShape: 80,
+  fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, pulseShape: 80,
+  alternate: 45, bounce: 46,
   hue: 20, saturation: 21, value: 22,
   washLevel: 60, washHueOffset: 61,
 
   // The colour layer, matching shared/aurora_protocol.h.
-  colourFlags: 23,
+  colourRegion: 47, colourRuler: 48,
   placedHue: 24, placedWhite: 25, placedDark: 26,
   placedCount: 27, placedWidth: 28, placedEdge: 29, placedSpeed: 90,
   wanderHue: 91, wanderWhite: 92, wanderDark: 93,
@@ -286,11 +287,12 @@ const CC = {
   litHue: 96, litWhite: 97, litDark: 98,
 };
 
-// CC_COLOUR_FLAGS, bit for bit. Two switches share one CC because neither has
-// a middle, the same reason the shape branch packs its two.
-const COLOUR_FLAG_REGION = 1;
-const COLOUR_RULER_SHIFT = 1;
-const COLOUR_RULER_MASK = 3 << COLOUR_RULER_SHIFT;
+// One switch per CC, matching shared/aurora_protocol.h: off below 64, on from
+// 64 up, and a three-way banded into thirds so 0, 64 and 127 sit squarely in
+// the middle of their own band.
+const OFF = 0, ON = 127;
+const isOn = v => v >= 64;
+const band3 = v => (v < 43 ? 0 : v < 86 ? 1 : 2);
 
 
 
@@ -407,19 +409,19 @@ const GROUPS = {
 };
 
 const ANCHORS = {
-  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
-  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
-  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:90,  jitter:0,   pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:127 },
-  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:1, pulseShape:127 },
-  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  flags:2, pulseShape:127 },
-  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:100, pulseRate:30,  flags:0, pulseShape:127 },
-  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100, pulseRate:30,  flags:0, pulseShape:127 },
-  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  flags:0, pulseShape:80 },
-  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0,   pulseRate:55,  flags:0, pulseShape:127 },
-  Starfield:  { width:4,   count:110, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  flags:0, pulseShape:127 },
-  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, flags:0, pulseShape:0 },
-  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, flags:1, pulseShape:0 },
-  Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  flags:0, pulseShape:0 },
+  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:90,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseShape:127 },
+  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseShape:127 },
+  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseShape:80 },
+  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  Starfield:  { width:4,   count:110, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseShape:127 },
+  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseShape:0 },
+  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseShape:0 },
+  Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:0 },
 };
 
 // Shape anchors set the shape and nothing else, and colour looks set the
@@ -429,7 +431,7 @@ const ANCHORS = {
 // Everything centred is "no departure", so the wall is one flat colour with
 // the whole redesigned layer switched on and nothing dialled.
 const COLOUR_OFF = {
-  colourFlags: 1 << COLOUR_RULER_SHIFT,
+  colourRegion: SLIDE, colourRuler: ON_STRIP,
   placedHue: 64, placedWhite: 64, placedDark: 64,
   placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
   wanderHue: 64, wanderWhite: 64, wanderDark: 64,
@@ -438,22 +440,20 @@ const COLOUR_OFF = {
 };
 
 // slide | region across the strips | along a strip | within a shape
-const SLIDE = 0, REGION = COLOUR_FLAG_REGION;
-const ON_WALL = 0 << COLOUR_RULER_SHIFT;
-const ON_STRIP = 1 << COLOUR_RULER_SHIFT;
-const IN_SHAPE = 2 << COLOUR_RULER_SHIFT;
+const SLIDE = OFF, REGION = ON;
+const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 
 // One row of the table the design landed on, each a colour layer only. Ruler
 // is 0 for the five strips, 64 for along a strip, 127 for within a shape.
 const COLOUR_LOOKS = {
   'Flat':          {},
-  'Rainbow':       { colourFlags: SLIDE  | ON_WALL,  placedHue: 112 },
-  'Mirror':        { colourFlags: REGION | ON_WALL,  placedHue: 110, placedCount: 0, placedWidth: 30, placedEdge: 96 },
-  'Strip slide':   { colourFlags: SLIDE  | ON_STRIP, placedHue: 110 },
-  'Centre cell':   { colourFlags: REGION | ON_STRIP, placedHue: 104, placedCount: 0, placedWidth: 22, placedEdge: 0 },
-  'Head and tail': { colourFlags: SLIDE  | IN_SHAPE, placedHue: 104 },
-  'Comet tail':    { colourFlags: SLIDE  | IN_SHAPE, placedHue: 108, litWhite: 127 },
-  'Drifting bands':{ colourFlags: REGION | ON_STRIP, placedHue: 90, placedCount: 24, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
+  'Rainbow':       { colourRegion: SLIDE, colourRuler: ON_WALL,  placedHue: 112 },
+  'Mirror':        { colourRegion: REGION, colourRuler: ON_WALL,  placedHue: 110, placedCount: 0, placedWidth: 30, placedEdge: 96 },
+  'Strip slide':   { colourRegion: SLIDE, colourRuler: ON_STRIP, placedHue: 110 },
+  'Centre cell':   { colourRegion: REGION, colourRuler: ON_STRIP, placedHue: 104, placedCount: 0, placedWidth: 22, placedEdge: 0 },
+  'Head and tail': { colourRegion: SLIDE, colourRuler: IN_SHAPE, placedHue: 104 },
+  'Comet tail':    { colourRegion: SLIDE, colourRuler: IN_SHAPE, placedHue: 108, litWhite: 127 },
+  'Drifting bands':{ colourRegion: REGION, colourRuler: ON_STRIP, placedHue: 90, placedCount: 24, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
   'Alive':         { wanderHue: 92, wanderRate: 8,  wanderScale: 6 },
   'Boiling':       { wanderHue: 104, wanderDark: 40, wanderRate: 64, wanderScale: 74 },
   'Ember':         { litHue: 100, litWhite: 34 },
@@ -533,14 +533,14 @@ function applyPatch(patch) {
 }
 
 function syncFlagButtons() {
-  flagAlternate.classList.toggle('on', !!(state.flags & 1));
-  flagBounce.classList.toggle('on', !!(state.flags & 2));
+  flagAlternate.classList.toggle('on', isOn(state.alternate));
+  flagBounce.classList.toggle('on', isOn(state.bounce));
 }
 
-function toggleFlag(bit) {
-  state.flags ^= bit;
+function toggleFlag(name) {
+  state[name] = isOn(state[name]) ? OFF : ON;
   syncFlagButtons();
-  sendParam('flags');
+  sendParam(name);
 }
 
 // --- patches ---------------------------------------------------------------
@@ -548,18 +548,29 @@ function toggleFlag(bit) {
 const STORE = 'aurora.generator.patches';
 
 
-// The two switches were separate controls while the layer lived only in the
-// preview; they are bits of one CC now that the firmware carries it. A patch
-// saved in between has neither bit and would recall its colour from whatever
-// the switches happened to be left at.
+// Every switch has carried its own CC, then shared a packed one, and now has
+// its own again. A patch saved under either earlier scheme names nothing the
+// panel still reads, so without this it recalls its colour and its travel from
+// whatever the switches happen to be left at.
+const RULER_VALUES = [ON_WALL, ON_STRIP, IN_SHAPE];
+
 function migrate(patch) {
   const out = { ...patch };
-  if (!('colourFlags' in out) && ('placedKind' in out || 'placedRuler' in out)) {
-    const ruler = Math.min(2, Math.floor((out.placedRuler | 0) * 3 / 128));
-    out.colourFlags = ((out.placedKind | 0) > 63 ? COLOUR_FLAG_REGION : 0)
-                    | (ruler << COLOUR_RULER_SHIFT);
+  if ('colourFlags' in out) {
+    const packed = out.colourFlags | 0;
+    out.colourRegion = (packed & 1) ? REGION : SLIDE;
+    out.colourRuler = RULER_VALUES[Math.min(2, (packed >> 1) & 3)];
+  } else if ('placedKind' in out || 'placedRuler' in out) {
+    out.colourRegion = (out.placedKind | 0) > 63 ? REGION : SLIDE;
+    out.colourRuler = RULER_VALUES[Math.min(2, Math.floor((out.placedRuler | 0) * 3 / 128))];
+  }
+  if ('flags' in out) {
+    out.alternate = (out.flags & 1) ? ON : OFF;
+    out.bounce = (out.flags & 2) ? ON : OFF;
   }
   if (!('litWhite' in out) && 'litSat' in out) out.litWhite = out.litSat;
+  delete out.colourFlags;
+  delete out.flags;
   delete out.placedKind;
   delete out.placedRuler;
   delete out.litSat;
@@ -597,7 +608,12 @@ function renderPatches() {
 
 // --- morph -----------------------------------------------------------------
 
-const CONTINUOUS = Object.keys(CC).filter(name => name !== 'flags');
+// A switch is part of what a patch is, so no morph moves one — see DESIGN.md
+// § "Switches belong to the patch". This slider is the fader case: it holds
+// anywhere and never arrives, so the far end it reaches is B in everything
+// except its switches. Recall B itself to take those.
+const SWITCHES = ['alternate', 'bounce', 'colourRegion', 'colourRuler'];
+const CONTINUOUS = Object.keys(CC).filter(name => !SWITCHES.includes(name));
 let morphA = null, morphB = null, morphRaf = null;
 
 function applyMorph(position) {
@@ -610,8 +626,6 @@ function applyMorph(position) {
     if (controls[name]) { controls[name].slider.value = value; controls[name].readout(); }
     sendCC(CC[name], value);
   }
-  const flags = position < 0.5 ? morphA.flags : morphB.flags;
-  if (flags !== state.flags) { state.flags = flags; syncFlagButtons(); sendParam('flags'); }
 
   const label = position <= 0 ? 'A' : position >= 1 ? 'B' : (position * 100).toFixed(0) + '%';
   document.getElementById('morphReadout').textContent = label;
@@ -717,41 +731,45 @@ for (const [hostId, defs] of Object.entries(GROUPS)) buildRows(hostId, defs);
 
 // A switch, not a knob, because neither of these has a middle: half a slide
 // is not a state and neither is half of "measured across the strips".
-const packedSwitches = [];
+const namedSwitches = [];
 
-function buildSwitch(hostId, mask, options) {
+function buildSwitch(hostId, name, options) {
   const host = document.getElementById(hostId);
-  const buttons = options.map(([bits, label, hint]) => {
+  const buttons = options.map(([value, label, hint]) => {
     const b = document.createElement('button');
     b.textContent = label;
     b.title = hint;
     b.addEventListener('click', () => {
-      state.colourFlags = (state.colourFlags & ~mask) | bits;
+      state[name] = value;
       paintSwitches();
-      sendParam('colourFlags');
+      sendParam(name);
     });
     host.appendChild(b);
-    return [bits, b];
+    return [value, b];
   });
-  packedSwitches.push(() => {
-    for (const [bits, b] of buttons) b.classList.toggle('on', (state.colourFlags & mask) === bits);
+  const lit = name === 'colourRuler'
+    ? (value => band3(state[name]) === band3(value))
+    : (value => isOn(state[name]) === isOn(value));
+  namedSwitches.push(() => {
+    for (const [value, b] of buttons) b.classList.toggle('on', lit(value));
   });
 }
 
-function paintSwitches() { for (const paint of packedSwitches) paint(); }
+function paintSwitches() { for (const paint of namedSwitches) paint(); }
 
-buildSwitch('placedKindSwitch', COLOUR_FLAG_REGION, [
+buildSwitch('placedKindSwitch', 'colourRegion', [
   [SLIDE,  'slide',  'one way across the ruler, base colour at the centre'],
   [REGION, 'region', 'a bump: base, departure, back to base'],
 ]);
 
-buildSwitch('placedRulerSwitch', COLOUR_RULER_MASK, [
+buildSwitch('placedRulerSwitch', 'colourRuler', [
   [ON_WALL,  'across the strips', 'position is which of the five strips a pixel is on'],
   [ON_STRIP, 'along a strip',     'position is how far up the strip a pixel is'],
   [IN_SHAPE, 'within a shape',    'position runs from a shape’s leading tip to the end of its tail, and travels with it'],
 ]);
 
-controls.colourFlags = { readout: paintSwitches, set: paintSwitches };
+controls.colourRegion = { readout: paintSwitches, set: paintSwitches };
+controls.colourRuler = { readout: paintSwitches, set: paintSwitches };
 paintSwitches();
 
 const looksHost = document.getElementById('colourLooks');
@@ -764,8 +782,8 @@ for (const [name, look] of Object.entries(COLOUR_LOOKS)) {
 
 syncFlagButtons();
 
-document.getElementById('flagAlternate').addEventListener('click', () => toggleFlag(1));
-document.getElementById('flagBounce').addEventListener('click', () => toggleFlag(2));
+document.getElementById('flagAlternate').addEventListener('click', () => toggleFlag('alternate'));
+document.getElementById('flagBounce').addEventListener('click', () => toggleFlag('bounce'));
 document.getElementById('presetGen').addEventListener('click', () => { setPreset(10); sendAll(); });
 document.getElementById('presetHand').addEventListener('click', () => { setPreset(3); sendAll(); });
 

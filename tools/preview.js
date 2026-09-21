@@ -41,12 +41,10 @@
   const WANDER_MAX_CYCLES_PER_BEAT = 0.5;
   const PLACED_MAX_CELLS_PER_BEAT = 1;
 
-  // CC_COLOUR_FLAGS, bit for bit — see shared/aurora_protocol.h.
-  const COLOUR_FLAG_REGION = 1;
-  const COLOUR_RULER_MASK = 3 << 1;
-
-  const GEN_FLAG_ALTERNATE = 1;
-  const GEN_FLAG_BOUNCE = 2;
+  // One switch per CC — see shared/aurora_protocol.h. Off below 64, on from
+  // 64 up; the ruler is banded into thirds.
+  const isOn = v => v >= 64;
+  const band3 = v => (v < 43 ? 0 : v < 86 ? 1 : 2);
 
   // PRESET_STRIP_ORDER in shared/aurora_protocol.h.
   const PRESET_STRIP_ORDER = 11;
@@ -126,7 +124,6 @@
   const ccMap = (v, hi) => Math.floor(v * hi / 127);
 
   function readParams(s) {
-    const flags = s.flags | 0;
     return {
       width: ccUnit(s.width),
       count: 1 + Math.floor(s.count * (GEN_MAX_COUNT - 1) / 127),
@@ -138,16 +135,16 @@
       pulseDepth: ccUnit(s.pulseDepth),
       pulseBeats: GEN_SLOWEST_PULSE_BEATS * Math.pow(0.5, ccUnit(s.pulseRate) * GEN_PULSE_RATE_OCTAVES),
       pulseShape: ccUnit(s.pulseShape),
-      alternate: !!(flags & GEN_FLAG_ALTERNATE),
-      bounce: !!(flags & GEN_FLAG_BOUNCE),
+      alternate: isOn(s.alternate),
+      bounce: isOn(s.bounce),
 
 
       litWhiteReach: ccUnit(s.litWhite),
       litHueReach: ccBipolar(s.litHue) * LIT_MAX_HUE,
       litDarkReach: ccBipolar(s.litDark),
 
-      placedKind: (s.colourFlags & COLOUR_FLAG_REGION) ? KIND_REGION : KIND_SLIDE,
-      placedRuler: Math.min(RULER_SHAPE, (s.colourFlags & COLOUR_RULER_MASK) >> 1),
+      placedKind: isOn(s.colourRegion) ? KIND_REGION : KIND_SLIDE,
+      placedRuler: Math.min(RULER_SHAPE, band3(s.colourRuler)),
       placedHue: ccBipolar(s.placedHue) * PLACED_MAX_HUE,
       placedWhite: ccBipolar(s.placedWhite),
       placedDark: ccBipolar(s.placedDark),

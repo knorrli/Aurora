@@ -125,12 +125,14 @@ extern void setGeneratorJitter(uint8_t value);
 extern void setGeneratorPulseDepth(uint8_t value);
 extern void setGeneratorPulseRate(uint8_t value);
 extern void setGeneratorPulseShape(uint8_t value);
-extern void setGeneratorFlags(uint8_t value);
-// The colour layer — CC 23–29 and 90–98. Hue, whiteness and darkness pushed
+extern void setGeneratorAlternate(uint8_t value);
+extern void setGeneratorBounce(uint8_t value);
+// The colour layer — CC 24–29, 47–48 and 90–98. Hue, whiteness and darkness pushed
 // away from the three faders by a placed field, a wander and the light level.
 // With every one centred the wall is exactly what the faders say. See
 // P_Generator.cpp § "The colour layer".
-extern void setColourFlags(uint8_t value);
+extern void setColourRegion(uint8_t value);
+extern void setColourRuler(uint8_t value);
 extern void setPlacedHue(uint8_t value);
 extern void setPlacedWhite(uint8_t value);
 extern void setPlacedDark(uint8_t value);

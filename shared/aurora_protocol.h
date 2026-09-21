@@ -120,8 +120,8 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     70 –  79 : generator shape parameters
 //           80 : generator pulse shape
 //     81 –  89 : RESERVED for band / song-specific automation
-//     90 –  99 : colour field overflow (the colour block is full)
-//     90 – 119 : RESERVED
+//     90 –  99 : colour, second half (twenty controls will not fit in ten)
+//    100 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
 //
 // ---------------------------------------------------------------------------
@@ -147,7 +147,8 @@ enum AuroraCC : uint8_t {
     // ruler with the faders' colour at its centre, or regions sitting on that
     // ruler. Count, width and edge mean here exactly what they mean in the
     // shape block below.
-    CC_COLOUR_FLAGS        = 23, // bit-packed, see AuroraColourBits below
+    // 23 free — the primitive and the ruler moved to 47 and 48, where a
+    // sender can set one without having to know the other.
     CC_PLACED_HUE          = 24, // bipolar: 64 is flat, either side is how far
                                  // ONE end departs — the two ends land twice
                                  // that far apart
@@ -175,7 +176,22 @@ enum AuroraCC : uint8_t {
     CC_TOUCHPAD_EFFECT     = 42, // 0 = paint/fill, 64 = paint/invert, 127 = sculpt
     CC_HOLD_MODE           = 43, // 0 = off, 127 = on
     CC_VERTICAL_MODE       = 44, // 0 = Y-modulates-saturation, 127 = Y-modulates-hue
-    // 45–49 reserved (mode flags)
+
+    // One switch per CC, because a CC cannot be read back: nothing here can
+    // ask the brain what the other switches are currently set to, so a sender
+    // that packed several into one byte would have to know all of them to
+    // change any one of them. A sequencer setting "regions" would silently
+    // put the ruler back across the wall. Splitting them also makes each one
+    // an ordinary switch lane in a DAW rather than a number to be looked up.
+    //
+    // Everything here reads as off below 64 and on from 64 up, except the
+    // ruler, which is banded like CC_TOUCHPAD_STRIP_MODE above.
+    CC_GEN_ALTERNATE       = 45, // odd strips run the journey backwards
+    CC_GEN_BOUNCE          = 46, // turn at the cell's edge instead of wrapping
+    CC_COLOUR_REGION       = 47, // 0 = one slide across the ruler, 127 = regions
+    CC_COLOUR_RULER        = 48, // 0 = across the five strips, 64 = along a
+                                 // strip, 127 = within a shape
+    // 49 reserved (mode flags)
 
     // 50–59 — per-preset parameter slots
     //
@@ -218,7 +234,7 @@ enum AuroraCC : uint8_t {
     CC_GEN_JITTER          = 76, // randomness in position and brightness
     CC_GEN_PULSE_DEPTH     = 77, // how hard the shape swells in place
     CC_GEN_PULSE_RATE      = 78, // beats per swell, 16 down to 0.25
-    CC_GEN_FLAGS           = 79, // bit-packed, see AuroraGeneratorBits
+    // 79 free — alternate and bounce moved to 45 and 46.
     CC_GEN_PULSE_SHAPE     = 80, // 0 = hard on/off square, 127 = smooth sine
 
     // 81–89 reserved (band / song-specific automation)
@@ -296,29 +312,24 @@ static inline uint16_t aurora_ticks_per_gate(uint8_t division) {
 }
 
 // ---------------------------------------------------------------------------
-// Generator flag bitfield (carried on CC_GEN_FLAGS)
+// Switches and banded choices
 //
-// These two are switches rather than knobs because neither has a middle:
-// half of "runs opposite" is not a state, and neither is half of "turns
-// around at the end".
+// A switch is a switch rather than a knob because it has no middle: half of
+// "runs opposite" is not a state, and neither is half of "turns around at the
+// end". A morph therefore cannot interpolate one, and by the same argument
+// nothing else should try — see DESIGN.md § "Switches belong to the patch".
 // ---------------------------------------------------------------------------
 
-enum AuroraGeneratorBits : uint8_t {
-    GEN_FLAG_ALTERNATE = 1 << 0, // odd strips travel against the even ones
-    GEN_FLAG_BOUNCE    = 1 << 1, // reverse at the strip end instead of wrapping
-};
+static inline bool aurora_cc_is_on(uint8_t value) { return value >= 64; }
+static inline uint8_t aurora_cc_switch(bool on)   { return on ? 127 : 0; }
 
-// ---------------------------------------------------------------------------
-// Colour flag bitfield (carried on CC_COLOUR_FLAGS)
-//
-// Switches rather than knobs, because neither has a middle: half a slide is
-// not a state, and neither is half of "measured across the strips".
-// ---------------------------------------------------------------------------
-
-enum AuroraColourBits : uint8_t {
-    COLOUR_FLAG_REGION = 1 << 0, // 0 = one slide across the ruler, 1 = regions
-    COLOUR_RULER_MASK  = 3 << 1, // >> 1 gives an AuroraColourRuler
-};
+// Three-way, banded the way CC_TOUCHPAD_STRIP_MODE is: a third of the range
+// each, so 0, 64 and 127 land squarely in the middle of their own band.
+static inline uint8_t aurora_cc_band3(uint8_t value) {
+    if (value < 43) return 0;
+    if (value < 86) return 1;
+    return 2;
+}
 
 enum AuroraColourRuler : uint8_t {
     COLOUR_RULER_WALL  = 0, // position is which of the five strips a pixel is on

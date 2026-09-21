@@ -34,7 +34,8 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_WASH_HUE_OFFSET:
             dmx_out::setHueOffset(map(value, 0, 127, 0, 255));
             break;
-        case CC_COLOUR_FLAGS:    setColourFlags(value); break;
+        case CC_COLOUR_REGION:   setColourRegion(value); break;
+        case CC_COLOUR_RULER:    setColourRuler(value); break;
         case CC_PLACED_HUE:      setPlacedHue(value); break;
         case CC_PLACED_WHITE:    setPlacedWhite(value); break;
         case CC_PLACED_DARK:     setPlacedDark(value); break;
@@ -59,7 +60,8 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_GEN_JITTER:      setGeneratorJitter(value); break;
         case CC_GEN_PULSE_DEPTH: setGeneratorPulseDepth(value); break;
         case CC_GEN_PULSE_RATE:  setGeneratorPulseRate(value); break;
-        case CC_GEN_FLAGS:       setGeneratorFlags(value); break;
+        case CC_GEN_ALTERNATE:   setGeneratorAlternate(value); break;
+        case CC_GEN_BOUNCE:      setGeneratorBounce(value); break;
         case CC_GEN_PULSE_SHAPE: setGeneratorPulseShape(value); break;
         case CC_MODE_FLAGS:
             faderAltModeEnabled = value & MODE_BIT_FADER_ALT;
