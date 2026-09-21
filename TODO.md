@@ -167,6 +167,12 @@ designing there. See `docs/bench-facts.md`.
 - [ ] **Make Count double rather than add across a morph.** See
       `docs/generator.md` § Open, "Morph moves every parameter in
       lockstep".
+- [ ] **Preserve position when a switch flips.** Turning bounce on moves
+      the core 12 px of 45 on every strip; alternate moves the odd strips
+      16 px. Solve for the phase that leaves the shape where it stands.
+      See `DESIGN.md` § "Switches belong to the patch".
+- [ ] **Refuse to save a morph target whose switches differ** from its
+      patch's, in `tools/index.html`. Same section.
 - [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
       for bounce, open for wrap. See `docs/generator.md` § Open, "Is a
       strip a loop or a line?".
@@ -188,6 +194,20 @@ designing there. See `docs/bench-facts.md`.
       time teleports".
 - [ ] **Drop `-D AURORA_DEBUG`** from `brain/platformio.ini` once the
       strips are what gets read instead of the console.
+
+## Housekeeping
+
+- [ ] **Rename everything to American English.** Not only `colour` — the
+      new code and all the docs are British throughout: `centre`,
+      `normalised`, `behaviour`, `travelled`, `dialled`, `judgement`.
+      Code, comments and prose. Leave library names alone
+      (`ColorFromPalette`, `addColorStop`). Do it before the controller
+      starts consuming `shared/aurora_protocol.h`, so it is one pass and
+      not two.
+- [ ] **Regroup the CC table.** The blocks were laid out before most of
+      what uses them existed, and have only been added to since. Go
+      through the whole list and realign it. See
+      `shared/aurora_protocol.h`.
 
 ## Key files
 

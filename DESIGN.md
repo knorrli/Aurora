@@ -460,6 +460,71 @@ which is faster than a sweep any song has wanted so far. See
   position, since a window centred on a PAR with the thumb in the strip
   half is two contradictory instructions.
 
+### Switches belong to the patch — 2026-09-22
+
+> **A switch is part of what a patch is. Only arriving at a patch moves
+> one.**
+
+Four things have no middle: alternate, bounce, slide-or-region, and which
+ruler the placed field is measured against. An amount can fade in and a
+switch cannot, so a morph has never been able to interpolate one. What was
+never settled is *when* it should change instead, and "at the halfway
+point of the slider" was an arbitrary answer nobody had argued for.
+
+**The touchpad settles it.** Its window gives each strip its own share —
+how far *that strip* has travelled toward the destination — so there is no
+single position to compare against a halfway mark. A switch keyed on
+morph position would flip strip by strip as the window slid across, which
+is the stepping the window exists to remove, and it would need per-strip
+bounce and alternate in the renderer, which do not exist. So a switch
+cannot be a function of morph position at all.
+
+What each surface does follows:
+
+| Surface | Arrives? | Switches |
+|----|----|----|
+| Keypad | Always — release settles at the patch you pressed | Move at the settle |
+| Touchpad | Only as a driver of a keypad journey | Never during the gesture |
+| Fader | Never — it holds anywhere | Never |
+
+The keypad's settle is a better moment than halfway in a way worth
+naming: it is a moment the performer caused and is already watching for,
+so the one discontinuity left in the system sits where somebody put it.
+
+**What a fader cannot do, and why it does not matter.** A fader's far end
+is a morph target belonging to *the same patch*, not a different patch, so
+the constraint is an authoring rule rather than a runtime one: **a patch
+and its own morph target share switches**, and the panel should refuse to
+save a far end that breaks it. For the touchpad, whose destination is
+another patch, the loss is real but small — across the whole roster only
+Bars uses bounce and only CrossSweep and Stutter use alternate, so leaning
+toward most destinations loses nothing.
+
+**It does not weaken morphing as expression.** The three faders are three
+routes to *more*; expression is about degree, and a switch has no degree.
+Half of "turns around at the end" is not a weaker turn, it is nothing.
+
+**Rejected: dissolving the switches instead.** Alternate could be made
+continuous — odd strips running at anything from full speed with the
+others through to full speed against them — and that is worth having as a
+*look*, recorded in `docs/generator.md` § Open, item 1. It does not
+answer this question. Bounce cannot be dissolved at all, because wrap
+against bounce is a topology rather than a rate, so the rule would still
+be needed for it alone.
+
+**Not free yet: the flip itself jumps.** Measured in the preview on a
+45-pixel strip, turning bounce on moves the core 12 px on average and
+19.8 px at worst, on all five strips at once; turning alternate on moves
+the odd strips 16 px on average and 29.5 px at worst. Normal drift in the
+same slice of time is about 2 px. The cause is that position is derived
+from the travel phase differently in each mode — `fract(0.5 + phase)`
+against `halfCore + triangle(phase) × swingSpan` — and the phase tracker
+keeps the *phase* continuous rather than the position. Solving instead for
+the phase that puts the shape where it already stands, in the half of the
+triangle matching its direction, makes the shape stand still across the
+flip and simply turn at the next end. Alternate wants the same treatment:
+reverse the odd strips where they stand rather than mirroring them.
+
 ## Open
 
 - **What the fourth rocker does.** Three of the four switches are spoken
