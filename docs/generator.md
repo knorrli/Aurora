@@ -372,6 +372,89 @@ travel and pulse alike. That it turns a pulse into a chase is recorded
 above as evidence the decomposition is real; it is also the part nobody
 guesses from the word.
 
+### What the wall found, 2026-09-22
+
+Three faults with one cause, found while dialling looks chosen for not
+being in the roster. Two parts of the code disagreed about what a
+position is: travel under bounce was measured along the whole strip,
+while fan was added as a shift inside a cell. At count 1 those are the
+same thing, and count 1 is where bounce had been judged.
+
+- **Bounce only worked at count 1.** Above it the journey collapsed into
+  a single cell, so the shapes slid through their cells and re-entered at
+  the far side, and whichever image straddled the strip's end was clipped
+  — one block appearing to bounce while the others wrapped.
+- **All five strips turned on the same frame.** The swing was computed
+  once for the wall, so fan had nothing to stagger.
+- **Fan shortened a strip at full width.** A displaced core stands past
+  the strip's end, where the rule that stops a fade crossing a boundary
+  removes the overhang. At width 100 % and fan 100 % the five strips lit
+  45, 36, 27, 27 and 36 of their 45 pixels.
+
+The core now swings inside its own cell, and fan offsets where a strip
+stands in its own swing. Count 1 is unchanged; above it, bounce is a row
+of blocks each turning in its own cell.
+
+**Nothing visible was given up by confining it.** Every shape is an image
+of one shape, so they move in lockstep and can never pass one another,
+and sliding a field of evenly spaced identical shapes by exactly one cell
+reproduces the picture pixel for pixel. Travel beyond one cell was never
+visible, under bounce or wrap. Shapes that cross on one strip need a
+second field running its own count and speed, which is a second instance
+of the machine rather than another parameter.
+
+**Bounce speed now matches the dial.** The rate comes from the cell and
+the core's own width, so the core crosses the wall at the pixels per beat
+it claims. It ran slow by a factor of `1 − width`, which is visible on a
+wide shape at count 1.
+
+### The tail is history, not geometry, 2026-09-22
+
+A tail is where the core has **been**, not a shape hung off it. While travel
+runs one way the two are the same number — how far behind the core a point
+lies, and how long ago the core was there — which is why a single signed
+offset served for both. They come apart only where the core turns.
+
+Drawn as geometry, which side trails is decided by the direction of travel,
+so at a turn the whole trail changes sides in one frame. In the preview that
+is a jump of 157 of 255 on a single pixel between consecutive frames, against
+28 for the same shape mid-travel. On the wall it reads as the shape flinching
+away from the end.
+
+Under bounce the core's position is a triangle, so "when was the core last
+here" has a closed form: every point on the swing is crossed exactly twice a
+cycle, going up and coming down, and the more recent crossing is the one whose
+trail is still lying there. The distance is the path the core walked in that
+time, which folds the trail back on itself rather than moving it. The core
+then walks back out through what it laid down, and for a moment there is trail
+on both sides of it — the old one fading where it lies, the fresh one growing
+from the turn. The same jump measures 34 against 35 mid-travel, which is to
+say there is no longer anything special about the turn.
+
+This is how the hand-written rig did it, and it ran a year on stage.
+
+Three things follow:
+
+- **Under wrap nothing changes.** Travel is monotonic there, so the path and
+  the straight offset are the same number. Six wrap cases — one shape, six
+  shapes, alternate, fanned, still, and with the colour pushes open — render
+  pixel for pixel identically.
+- **A trail cannot leave its cell under bounce.** The core never does, so its
+  history cannot either. A geometric tail spilled into the neighbouring cell;
+  a folded one has nowhere to spill to.
+- **The colour layer's shape ruler follows it.** The ruler's trailing half is
+  taken from the same measure as the tail's brightness, or colour along a tail
+  paints where the tail is not.
+
+**A still shape keeps its tail**, which was expected to be the price and is
+not. Bounce with no travel falls through to the same path wrap uses, where the
+two measures agree, so a static lopsided shape is still reachable.
+
+**What it approximates.** The trail's length is computed from the current
+speed rather than the speed it was laid down at, so sweeping speed stretches
+and squashes the trail already lying there instead of leaving history where it
+fell. Invisible unless speed is swept hard.
+
 ### Modulation, settled 2026-09-21
 
 The pulse is a modulator, and the wander is a second one: a source, a set
@@ -475,9 +558,33 @@ do is a judgement for a set, not a bench.
    staircase can only ever be orderly. A per-strip offset drawn from the
    hash instead would cover it, which makes this one parameter with three
    settings rather than a separate control.
+
+   **The same per-strip shape wants a second destination: rate.** Fan
+   offsets *when* a strip runs — the same journey started at different
+   times, locked together for ever. Offsetting *how fast* instead lets the
+   strips drift apart and keep drifting, which is a family fan cannot
+   reach at any setting. At a ratio of −1 on the odd strips it reproduces
+   alternate exactly, so today's look survives as an endpoint and
+   everything between that and "all five together" is new — the midpoint
+   being the odd strips standing still while the even ones run. It is
+   nearly free once fan takes a shape and a centre, because it is the same
+   function aimed at a different number, which is the argument for doing
+   the two in one go rather than one of them now.
+
+   What it costs is that a patch stops looking like one thing. Strips at
+   different rates never come back into step, so the wall is whatever the
+   drift has accumulated since you arrived, and the same patch reached
+   twice does not look the same. That is not automatically an objection —
+   the colour layer's wander puts its two rates at the golden ratio to buy
+   exactly this, and it was judged the best thing the field it replaced
+   could do. So it is settle-by-looking. A per-patch **drift reset** — on
+   entering the patch, and optionally again every N beats — would hand
+   that choice to the patch, and is the first thing to try if the wall
+   says "no longer a pattern" rather than "alive".
 2. **Is a strip a loop or a line?** Answered for bounce, still open for
-   wrap. Bounce now turns when the core's own edge meets the strip end, so
-   under bounce a strip is a line and nothing crosses a boundary at all.
+   wrap. Under bounce a shape turns where its own edge meets its cell's
+   boundary, so nothing crosses a boundary at all and a strip is a line —
+   at counts above one, a row of short lines.
    Wrapping travel is still a loop, and a tail falling off one end still
    reappears at the other. Whether that wants clipping, a boundary fade —
    which costs the ends of every pattern that ought to reach them — or

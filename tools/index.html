@@ -807,6 +807,7 @@ initMidi();
 AuroraPreview.start(
   () => state,
   () => +document.getElementById('bpm').value || 120,
+  () => activePreset,
 );
 </script>
 </body>

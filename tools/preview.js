@@ -14,8 +14,10 @@
 //     getting wrong; settle those on the wall.
 //
 // Which physical end pixel 0 sits at, and the left-to-right order of the
-// five strips, are rigging facts the firmware never states — PC 11 exists
-// to find them. Both are controls here rather than assumptions.
+// five strips, are rigging facts the firmware never states. PC 11 settles
+// the order: it paints each strip one flat colour, and that order is
+// recorded in WALL_STRIP_ORDER below. It cannot settle which end pixel 0
+// is — a flat colour has no end to tell apart — so that stays a control.
 
 (function (global) {
   'use strict';
@@ -45,6 +47,15 @@
 
   const GEN_FLAG_ALTERNATE = 1;
   const GEN_FLAG_BOUNCE = 2;
+
+  // PRESET_STRIP_ORDER in shared/aurora_protocol.h.
+  const PRESET_STRIP_ORDER = 11;
+
+  // Data-chain strip numbers, left to right across the room. The chain runs
+  // the opposite way to the wall, so strip 5 stands at the left-hand end —
+  // read off PC 11, 2026-09-22. See docs/wiring.md § "Where they stand on
+  // the wall", which is also where fan's zero end is worked out.
+  const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
 
   // ---- FastLED byte maths, from brain/.pio/libdeps/.../lib8tion ----------
   // FASTLED_SCALE8_FIXED is 1 in fastled_config.h, which is what puts the
@@ -189,32 +200,76 @@
     return lit ? nearest : null;
   }
 
-  function shapeAt(offset, width, edge, tail) {
+  // The core and its edge fade are geometry: they sit around the core wherever
+  // it stands, the same on both sides.
+  function coreAt(offset, width, edge) {
     const halfCore = width * 0.5;
-    const gap = 1 - width;
-    const spread = edge * gap * 0.5;
-
     const distance = Math.abs(offset);
     if (distance <= halfCore) return 1;
 
+    const spread = edge * (1 - width) * 0.5;
     const beyond = distance - halfCore;
-
-    let brightness = 0;
     if (spread > 0.0001 && beyond < spread) {
       const k = 1 - beyond / spread;
-      brightness = k * k * (3 - 2 * k);
+      return k * k * (3 - 2 * k);
     }
+    return 0;
+  }
 
-    if (tail > 0.0001 && offset > 0) {
-      const tailLength = tail * gap;
-      if (beyond < tailLength) {
-        const k = 1 - beyond / tailLength;
-        const trailing = k * k;
-        if (trailing > brightness) brightness = trailing;
-      }
+  // The tail is not geometry. It is how far the core has travelled since it
+  // was last at this point, so `behind` is a path length, never a straight
+  // line.
+  function tailAt(behind, width, tail) {
+    if (tail <= 0.0001) return 0;
+    const beyond = behind - width * 0.5;
+    if (beyond <= 0) return 0;
+
+    const tailLength = tail * (1 - width);
+    if (tailLength <= 0.0001 || beyond >= tailLength) return 0;
+    const k = 1 - beyond / tailLength;
+    return k * k;
+  }
+
+  // While travel runs one way, how far behind the core a point lies and how
+  // long ago the core was there are the same number, which is why a straight
+  // offset serves for both. They come apart only where the core turns.
+  function shapeAt(offset, width, edge, tail) {
+    let brightness = coreAt(offset, width, edge);
+    if (offset > 0) {
+      const trailing = tailAt(offset, width, tail);
+      if (trailing > brightness) brightness = trailing;
     }
-
     return brightness;
+  }
+
+  // Every cell runs the same journey, and an odd strip runs it backwards, so a
+  // position on the strip becomes a position in that journey before the trail
+  // can be measured against it.
+  function journeyIn(posCells, mirrored) {
+    const withinCell = posCells - Math.floor(posCells);
+    return mirrored ? 1 - withinCell : withinCell;
+  }
+
+  // Under bounce the core's position is a triangle, so "when was the core last
+  // here" has an answer in closed form: every point on the swing is crossed
+  // exactly twice a cycle, going up and coming down, and the more recent of
+  // the two is the one whose trail is still lying there. Distance is the path
+  // the core walked in that time, which is what folds the trail back on itself
+  // at a turn instead of moving it.
+  //
+  // Points inside half a core width of the cell's ends are never reached by
+  // the centre, only swept by the body at the turn, so they measure from the
+  // turn and add the straight remainder.
+  function trailBehind(journey, phase, halfCore, swingSpan) {
+    if (swingSpan <= 0.0001) return Math.abs(journey - 0.5);
+
+    const far = 1 - halfCore;
+    const reachable = journey < halfCore ? halfCore : (journey > far ? far : journey);
+    const rising = 0.5 * ((reachable - halfCore) / swingSpan);
+    const up = fract(phase - rising);
+    const down = fract(phase - (1 - rising));
+    const elapsed = up < down ? up : down;
+    return elapsed * 2 * swingSpan + Math.abs(journey - reachable);
   }
 
   // A phase derived as beats * rate teleports when the rate changes. Carrying
@@ -344,18 +399,27 @@
     const cellLength = PIXELS / p.count;
     const countCells = p.count;
 
-    let centreCells, direction;
-    if (p.bounce && Math.abs(p.speedPixels) > 0.0001) {
-      const rate = Math.abs(p.speedPixels) / (2 * PIXELS);
-      const triangle = fract(trackedPhase(travelPhase, beats, rate));
-      const rising = triangle < 0.5;
-      const swing = rising ? triangle * 2 : (1 - triangle) * 2;
-      const halfCore = p.width * 0.5;
-      centreCells = halfCore + swing * (p.count - 2 * halfCore);
-      direction = rising ? 1 : -1;
+    // Under bounce the core swings inside its own cell, turning where its own
+    // edge meets the cell's boundary the way a ball meets a wall, so nothing
+    // ever crosses into a neighbouring cell. Taking the rate from the cell is
+    // what keeps speed an absolute distance: adding shapes shrinks the cell
+    // and quickens the turn, and the core still crosses the wall at the pixels
+    // per beat on the dial. At full width the swing closes to nothing, which
+    // is right — a shape filling its cell has nowhere to go.
+    const halfCore = p.width * 0.5;
+    const swingSpan = 1 - p.width;
+    const bouncing = p.bounce && Math.abs(p.speedPixels) > 0.0001;
+
+    let travelCycles = 0;
+    let centreCells = 0.5;
+    const direction = p.speedPixels >= 0 ? 1 : -1;
+    if (bouncing) {
+      const rate = swingSpan > 0.0001
+        ? Math.abs(p.speedPixels) / (2 * swingSpan * cellLength)
+        : 0;
+      travelCycles = trackedPhase(travelPhase, beats, rate);
     } else {
       centreCells = 0.5 + trackedPhase(travelPhase, beats, p.speedPixels / cellLength);
-      direction = p.speedPixels >= 0 ? 1 : -1;
     }
 
     const pulse = trackedPhase(pulsePhase, beats, 1 / p.pulseBeats);
@@ -384,8 +448,7 @@
     for (let stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
       const stripPhase = p.fan * (stripIndex / STRIPS);
 
-      let stripDirection = direction;
-      if (p.alternate && (stripIndex & 1)) stripDirection = -stripDirection;
+      const mirrored = p.alternate && (stripIndex & 1);
 
       const lfo = 0.5 - 0.5 * Math.cos(2 * Math.PI * fract(pulse + stripPhase));
       const softness = 0.02 * Math.pow(50, p.pulseShape);
@@ -393,8 +456,25 @@
       if (shaped < 0) shaped = 0; else if (shaped > 1) shaped = 1;
       const swell = 1 - p.pulseDepth + p.pulseDepth * shaped;
 
-      const centreHere = (p.alternate && (stripIndex & 1)) ? countCells - centreCells : centreCells;
-      const coreCentre = fract(centreHere + stripPhase);
+      // Under bounce fan offsets where a strip stands in its own swing, so the
+      // five turn at different moments. It cannot offset the core's position
+      // instead: an image standing past the strip's end is clipped away by
+      // nearestOffset, so displacing it there shortens a strip rather than
+      // staggering it.
+      let coreCentre, stripDirection, triangle = 0;
+      if (bouncing) {
+        triangle = fract(travelCycles + stripPhase);
+        const rising = triangle < 0.5;
+        const swing = rising ? triangle * 2 : (1 - triangle) * 2;
+        const place = halfCore + swing * swingSpan;
+        coreCentre = mirrored ? 1 - place : place;
+        stripDirection = rising ? 1 : -1;
+        if (mirrored) stripDirection = -stripDirection;
+      } else {
+        const centreHere = mirrored ? countCells - centreCells : centreCells;
+        coreCentre = fract(centreHere + stripPhase);
+        stripDirection = mirrored ? -direction : direction;
+      }
       const jitterBucket = Math.floor(pulse + stripPhase) & 255;
 
       for (let pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
@@ -412,21 +492,45 @@
           const samplePosition = pixelIndex + (sampleIndex + 0.5) / SUBSAMPLES;
           const posCells = samplePosition / cellLength + jitterOffset;
 
-          const nearest = nearestOffset(posCells, coreCentre, stripDirection, p.bounce, countCells);
-          if (nearest !== null) accumulated += shapeAt(nearest, p.width, p.edge, p.tail);
+          if (bouncing) {
+            // The core stays inside its cell, so its trail does too: at a turn
+            // the core walks back out through what it laid down rather than
+            // the trail changing sides.
+            const nearest = nearestOffset(posCells, coreCentre, stripDirection, true, countCells);
+            const level = nearest === null ? 0 : coreAt(nearest, p.width, p.edge);
+            const trailing = tailAt(
+              trailBehind(journeyIn(posCells, mirrored), triangle, halfCore, swingSpan),
+              p.width, p.tail);
+            accumulated += trailing > level ? trailing : level;
+          } else {
+            const nearest = nearestOffset(posCells, coreCentre, stripDirection, p.bounce, countCells);
+            if (nearest !== null) accumulated += shapeAt(nearest, p.width, p.edge, p.tail);
+          }
         }
 
         const profile = accumulated / SUBSAMPLES;
         const brightness = profile * jitterLevel * swell;
         if (brightness <= 0.002) continue;
 
-        const centreOffset = nearestOffset(
-          (pixelIndex + 0.5) / cellLength + jitterOffset,
-          coreCentre, stripDirection, p.bounce, countCells);
-        const reach = centreOffset < 0 ? shapeLead : shapeTrail;
-        const shapeU = (centreOffset === null || reach < 0.0001)
-          ? 0.5
-          : Math.max(0, Math.min(1, 0.5 + 0.5 * centreOffset / reach));
+        const centrePos = (pixelIndex + 0.5) / cellLength + jitterOffset;
+        const centreOffset = nearestOffset(centrePos, coreCentre, stripDirection,
+                                           p.bounce, countCells);
+        let shapeU = 0.5;
+        if (bouncing) {
+          // The ruler's trailing half has to be the same measure the tail is
+          // drawn from, or colour along a tail paints where the tail is not.
+          const behind = trailBehind(journeyIn(centrePos, mirrored), triangle,
+                                     halfCore, swingSpan);
+          if (behind < shapeTrail && shapeTrail > 0.0001) {
+            shapeU = 0.5 + 0.5 * behind / shapeTrail;
+          } else if (centreOffset !== null && shapeLead > 0.0001) {
+            shapeU = 0.5 - 0.5 * Math.abs(centreOffset) / shapeLead;
+          }
+        } else if (centreOffset !== null) {
+          const reach = centreOffset < 0 ? shapeLead : shapeTrail;
+          if (reach > 0.0001) shapeU = 0.5 + 0.5 * centreOffset / reach;
+        }
+        shapeU = Math.max(0, Math.min(1, shapeU));
         const tint = colourAt(p, base, stripIndex, pixelIndex, shapeU, profile,
                               placedDrift, wanderT);
 
@@ -440,6 +544,24 @@
     }
 
     return p;
+  }
+
+  // PC 11, a port of ShowStripOrder() in brain/src/helpers.cpp. Each strip one
+  // flat colour in data-chain order, which is how the left-to-right order and
+  // which end pixel 0 sits at get worked out in the first place.
+  const STRIP_ORDER_HUES = [0, 40, 96, 130, 165];
+
+  function renderStripOrder() {
+    wall.fill(0);
+    for (let stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
+      const rgb = hsv2rgb(STRIP_ORDER_HUES[stripIndex], 255, 200);
+      for (let pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
+        const at = (stripIndex * PIXELS + pixelIndex) * 3;
+        wall[at] = rgb[0];
+        wall[at + 1] = rgb[1];
+        wall[at + 2] = rgb[2];
+      }
+    }
   }
 
   // The PARs never see the generator. dmx_out::tick() takes presetColor —
@@ -532,7 +654,7 @@
     body.hasPreview { padding-right: 18px; }
   }`;
 
-  function start(getState, getBpm) {
+  function start(getState, getBpm, getPreset) {
     const style = document.createElement('style');
     style.textContent = PANEL_CSS;
     document.head.appendChild(style);
@@ -545,10 +667,10 @@
       <div class="pvRow">
         <button id="pvFlip">pixel 0 at bottom</button>
         <label style="color:#8b8fa3;font-size:11px">order
-          <input type="text" id="pvOrder" value="1,2,3,4,5">
+          <input type="text" id="pvOrder" value="${WALL_STRIP_ORDER.join(',')}">
         </label>
       </div>
-      <div class="pvNote">Ported from the firmware, not written afresh. Which end pixel 0 is and the strips' left-to-right order are rigging facts — set them here to match what PC 11 shows.</div>`;
+      <div class="pvNote">Ported from the firmware, not written afresh. <em>Order</em> is this wall's, from PC 11, and it comes from the code — edit it here to try something, edit WALL_STRIP_ORDER to keep it. A flat colour has no end to tell apart, so <em>pixel 0</em> needs a moving shape instead: one narrow shape, slow, no fan.</div>`;
     document.body.insertBefore(dock, document.body.firstChild);
     document.body.classList.add('hasPreview');
 
@@ -573,27 +695,23 @@
 
     const orderInput = dock.querySelector('#pvOrder');
 
-    // Rigging facts, not patch data: they describe this wall, so they belong
-    // with the browser rather than in a saved patch.
+    // Only the flip is remembered. The order is settled, so it lives in the
+    // code, where a value left in one browser cannot quietly override it.
     try {
       const saved = JSON.parse(localStorage.getItem('aurora.preview') || '{}');
-      if (saved.order) orderInput.value = saved.order;
       if (saved.flipped) flip.click();
     } catch {}
-    const remember = () => {
+    flip.addEventListener('click', () => {
       try {
-        localStorage.setItem('aurora.preview',
-          JSON.stringify({ order: orderInput.value, flipped }));
+        localStorage.setItem('aurora.preview', JSON.stringify({ flipped }));
       } catch {}
-    };
-    orderInput.addEventListener('change', remember);
-    flip.addEventListener('click', remember);
+    });
 
     function order() {
       const parsed = orderInput.value.split(',')
         .map(n => parseInt(n, 10) - 1)
         .filter(n => Number.isInteger(n) && n >= 0 && n < STRIPS);
-      return parsed.length === STRIPS ? parsed : [0, 1, 2, 3, 4];
+      return parsed.length === STRIPS ? parsed : WALL_STRIP_ORDER.map(n => n - 1);
     }
 
     const startedAt = performance.now();
@@ -601,12 +719,23 @@
       const s = getState();
       const bpm = getBpm();
       const beats = ((performance.now() - startedAt) / 60000) * bpm;
-      const p = render(s, beats);
+      const preset = getPreset ? getPreset() : 10;
+
+      // The PARs are not a pattern: dmx_out::tick() drives them from the
+      // faders whatever the brain is running, which is why a blackout on
+      // PC 0 alone leaves them lit.
+      let p;
+      if (preset === PRESET_STRIP_ORDER) {
+        renderStripOrder();
+        p = readParams(s);
+      } else {
+        p = render(s, beats);
+      }
       draw(ctx, glow, order(), flipped, parColour(p));
       global.requestAnimationFrame(frame);
     }
     global.requestAnimationFrame(frame);
   }
 
-  global.AuroraPreview = { start, render, parColour, wall };
+  global.AuroraPreview = { start, render, renderStripOrder, parColour, wall };
 })(window);

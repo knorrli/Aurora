@@ -245,33 +245,77 @@ static CHSV applyPushes(CHSV base, float hue, float white, float dark) {
 // it smaller. Both are scaled by the gap that is actually available, which
 // means edge at full always closes the gaps to the neighbouring shapes — the
 // two fades meet at zero and never have to be summed.
-static float shapeAt(float offset, float width, float edge, float tail) {
+// The core and its edge fade are geometry: they sit around the core wherever
+// it stands, the same on both sides.
+static float coreAt(float offset, float width, float edge) {
   const float halfCore = width * 0.5f;
-  const float gap = 1.0f - width;
-  const float spread = edge * gap * 0.5f;
-
   const float distance = fabsf(offset);
   if (distance <= halfCore) return 1.0f;
 
+  const float spread = edge * (1.0f - width) * 0.5f;
   const float beyond = distance - halfCore;
-
-  float brightness = 0.0f;
   if (spread > 0.0001f && beyond < spread) {
     const float k = 1.0f - (beyond / spread);
-    brightness = k * k * (3.0f - 2.0f * k);
+    return k * k * (3.0f - 2.0f * k);
   }
+  return 0.0f;
+}
 
-  // Positive offset is the trailing side, so the tail only ever falls behind.
-  if (tail > 0.0001f && offset > 0.0f) {
-    const float tailLength = tail * gap;
-    if (beyond < tailLength) {
-      const float k = 1.0f - (beyond / tailLength);
-      const float trailing = k * k;
-      if (trailing > brightness) brightness = trailing;
-    }
+// The tail is not geometry. It is how far the core has travelled since it was
+// last at this point, so `behind` is a path length and never a straight line.
+static float tailAt(float behind, float width, float tail) {
+  if (tail <= 0.0001f) return 0.0f;
+  const float beyond = behind - width * 0.5f;
+  if (beyond <= 0.0f) return 0.0f;
+
+  const float tailLength = tail * (1.0f - width);
+  if (tailLength <= 0.0001f || beyond >= tailLength) return 0.0f;
+  const float k = 1.0f - (beyond / tailLength);
+  return k * k;
+}
+
+// While travel runs one way, how far behind the core a point lies and how long
+// ago the core was there are the same number, which is why a straight offset
+// serves for both. They come apart only where the core turns.
+static float shapeAt(float offset, float width, float edge, float tail) {
+  float brightness = coreAt(offset, width, edge);
+  if (offset > 0.0f) {
+    const float trailing = tailAt(offset, width, tail);
+    if (trailing > brightness) brightness = trailing;
   }
-
   return brightness;
+}
+
+// Every cell runs the same journey, and an odd strip runs it backwards, so a
+// position on the strip becomes a position in that journey before the trail
+// can be measured against it.
+static inline float journeyIn(float posCells, bool mirrored) {
+  const float withinCell = posCells - floorf(posCells);
+  return mirrored ? (1.0f - withinCell) : withinCell;
+}
+
+// Under bounce the core's position is a triangle, so "when was the core last
+// here" has an answer in closed form: every point on the swing is crossed
+// exactly twice a cycle, going up and coming down, and the more recent of the
+// two is the one whose trail is still lying there. Distance is the path the
+// core walked in that time, which is what folds the trail back on itself at a
+// turn instead of moving it.
+//
+// Points inside half a core width of the cell's ends are never reached by the
+// centre, only swept by the body at the turn, so they measure from the turn
+// and add the straight remainder.
+static float trailBehind(float journey, float phase, float halfCore,
+                         float swingSpan) {
+  if (swingSpan <= 0.0001f) return fabsf(journey - 0.5f);
+
+  const float far = 1.0f - halfCore;
+  const float reachable = (journey < halfCore) ? halfCore
+                        : ((journey > far) ? far : journey);
+  const float rising = 0.5f * ((reachable - halfCore) / swingSpan);
+  const float up = fract(phase - rising);
+  const float down = fract(phase - (1.0f - rising));
+  const float elapsed = (up < down) ? up : down;
+  return elapsed * 2.0f * swingSpan + fabsf(journey - reachable);
 }
 
 // 0 at one end of the ruler, 1 at the other.
@@ -322,26 +366,29 @@ void Generator(CHSV color) {
   const float cellLength = (float)PIXELS_PER_STRIP / (float)genCount;
   const float countCells = (float)genCount;
 
-  // Where the core's centre sits, measured in cells.
-  float centreCells;
-  float direction;
-  if (genBounce && fabsf(genSpeedPixels) > 0.0001f) {
-    const float rate = fabsf(genSpeedPixels) / (2.0f * (float)PIXELS_PER_STRIP);
-    const float triangle = fract(trackedPhase(travelPhase, beats, rate));
-    const bool rising = triangle < 0.5f;
-    const float swing = rising ? (triangle * 2.0f) : ((1.0f - triangle) * 2.0f);
-    // The turn comes when the core's own edge reaches the strip end, the way a
-    // ball meets a wall, so nothing ever leaves the strip and reappears
-    // opposite. At full width the span closes to a point, which is right: a
-    // shape filling the strip has nowhere to go.
-    const float halfCore = genWidth * 0.5f;
-    centreCells = halfCore + swing * ((float)genCount - 2.0f * halfCore);
-    direction = rising ? 1.0f : -1.0f;
+  // Under bounce the core swings inside its own cell, turning where its own
+  // edge meets the cell's boundary the way a ball meets a wall, so nothing
+  // ever crosses into a neighbouring cell. Taking the rate from the cell is
+  // what keeps speed an absolute distance: adding shapes shrinks the cell and
+  // quickens the turn, and the core still crosses the wall at the pixels per
+  // beat on the dial. At full width the swing closes to nothing, which is
+  // right — a shape filling its cell has nowhere to go.
+  const float halfCore = genWidth * 0.5f;
+  const float swingSpan = 1.0f - genWidth;
+  const bool bouncing = genBounce && fabsf(genSpeedPixels) > 0.0001f;
+
+  float travelCycles = 0.0f;
+  float centreCells = 0.5f;
+  const float direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
+  if (bouncing) {
+    const float rate = (swingSpan > 0.0001f)
+        ? fabsf(genSpeedPixels) / (2.0f * swingSpan * cellLength)
+        : 0.0f;
+    travelCycles = trackedPhase(travelPhase, beats, rate);
   } else {
     // Half a cell, so a still shape sits in the middle of its cell rather than
     // straddling the boundary — which at count 1 is the strip's two ends.
     centreCells = 0.5f + trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
-    direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
   }
 
   const float pulse = trackedPhase(pulsePhase, beats, 1.0f / genPulseBeats);
@@ -368,8 +415,7 @@ void Generator(CHSV color) {
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     const float stripPhase = genFan * ((float)stripIndex / (float)NUMBER_OF_STRIPS);
 
-    float stripDirection = direction;
-    if (genAlternate && (stripIndex & 1)) stripDirection = -stripDirection;
+    const bool mirrored = genAlternate && (stripIndex & 1);
 
     // The pulse drives brightness only. Letting it drive width too made the
     // shape retract toward its head as it shrank, so a swell read as a fill
@@ -391,11 +437,28 @@ void Generator(CHSV color) {
     // shape where it stands. Travel is one value every strip shares, so
     // flipping the direction alone left the shape moving the same way and
     // showed up on nothing but the side a tail fell on.
-    const float centreHere =
-        (genAlternate && (stripIndex & 1)) ? (countCells - centreCells) : centreCells;
-
-    // Where the core's centre sits inside a cell.
-    const float coreCentre = fract(centreHere + stripPhase);
+    //
+    // Under bounce fan offsets where a strip stands in its own swing, so the
+    // five turn at different moments. It cannot offset the core's position
+    // instead: an image standing past the strip's end is clipped away by
+    // nearestOffset, so displacing it there shortens a strip rather than
+    // staggering it.
+    float coreCentre;
+    float stripDirection;
+    float triangle = 0.0f;
+    if (bouncing) {
+      triangle = fract(travelCycles + stripPhase);
+      const bool rising = triangle < 0.5f;
+      const float swing = rising ? (triangle * 2.0f) : ((1.0f - triangle) * 2.0f);
+      const float place = halfCore + swing * swingSpan;
+      coreCentre = mirrored ? (1.0f - place) : place;
+      stripDirection = rising ? 1.0f : -1.0f;
+      if (mirrored) stripDirection = -stripDirection;
+    } else {
+      const float centreHere = mirrored ? (countCells - centreCells) : centreCells;
+      coreCentre = fract(centreHere + stripPhase);
+      stripDirection = mirrored ? -direction : direction;
+    }
 
     // Jitter re-rolls once per swell, at the point in the cycle where the
     // pulse is darkest, so a flashing shape lands somewhere new each time
@@ -424,9 +487,24 @@ void Generator(CHSV color) {
         // the strip is a line, and an image off its end is not there to be
         // seen — which is what stops a fade leaving one end of the strip and
         // arriving at the other.
-        float nearest = 0.0f;
-        if (nearestOffset(posCells, coreCentre, stripDirection, genBounce, countCells, nearest)) {
-          accumulated += shapeAt(nearest, width, genEdge, genTail);
+        if (bouncing) {
+          // The core stays inside its cell, so its trail does too: at a turn
+          // the core walks back out through what it laid down rather than the
+          // trail changing sides.
+          const float journey = journeyIn(posCells, mirrored);
+          float level = 0.0f;
+          float nearest = 0.0f;
+          if (nearestOffset(posCells, coreCentre, stripDirection, true, countCells, nearest)) {
+            level = coreAt(nearest, width, genEdge);
+          }
+          const float trailing = tailAt(
+              trailBehind(journey, triangle, halfCore, swingSpan), width, genTail);
+          accumulated += (trailing > level) ? trailing : level;
+        } else {
+          float nearest = 0.0f;
+          if (nearestOffset(posCells, coreCentre, stripDirection, genBounce, countCells, nearest)) {
+            accumulated += shapeAt(nearest, width, genEdge, genTail);
+          }
         }
       }
 
@@ -439,17 +517,27 @@ void Generator(CHSV color) {
       // zero before its neighbour, which is what turns a dim yellow red.
       CHSV tint = color;
       if (!colourFlat) {
+        const float centrePos = ((float)pixelIndex + 0.5f) / cellLength + jitterOffset;
         float centreOffset = 0.0f;
-        const bool onShape = nearestOffset(
-            ((float)pixelIndex + 0.5f) / cellLength + jitterOffset,
-            coreCentre, stripDirection, genBounce, countCells, centreOffset);
-        const float reach = (centreOffset < 0.0f) ? shapeLead : shapeTrail;
+        const bool onShape = nearestOffset(centrePos, coreCentre, stripDirection,
+                                           genBounce, countCells, centreOffset);
         float shapeU = 0.5f;
-        if (onShape && reach > 0.0001f) {
-          shapeU = 0.5f + 0.5f * centreOffset / reach;
-          if (shapeU < 0.0f) shapeU = 0.0f;
-          else if (shapeU > 1.0f) shapeU = 1.0f;
+        if (bouncing) {
+          // The ruler's trailing half has to be the same measure the tail is
+          // drawn from, or colour along a tail paints where the tail is not.
+          const float behind =
+              trailBehind(journeyIn(centrePos, mirrored), triangle, halfCore, swingSpan);
+          if (behind < shapeTrail && shapeTrail > 0.0001f) {
+            shapeU = 0.5f + 0.5f * behind / shapeTrail;
+          } else if (onShape && shapeLead > 0.0001f) {
+            shapeU = 0.5f - 0.5f * fabsf(centreOffset) / shapeLead;
+          }
+        } else if (onShape) {
+          const float reach = (centreOffset < 0.0f) ? shapeLead : shapeTrail;
+          if (reach > 0.0001f) shapeU = 0.5f + 0.5f * centreOffset / reach;
         }
+        if (shapeU < 0.0f) shapeU = 0.0f;
+        else if (shapeU > 1.0f) shapeU = 1.0f;
         tint = colourAt(color, stripIndex, pixelIndex, shapeU, profile,
                         placedDrift, wanderT, placedOn, wanderOn);
       }

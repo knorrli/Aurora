@@ -213,6 +213,26 @@ better a one-franc buffer than the Teensy.
 `SN74AHCT125N`. Solid fill and Starfield-against-black both render
 cleanly, and the proximity flicker is gone, two-prong charger included.
 
+### Where they stand on the wall
+
+**The data chain runs right to left across the room.** Strip 5 stands at
+the left-hand end and strip 1 at the right. Read off PC 11 on
+2026-09-22, which paints each strip one flat colour — red, orange,
+green, cyan, blue in chain order — and came back blue on the left.
+
+Nothing in the firmware knows this. It matters in two places:
+
+- `tools/preview.js` draws the wall, and carries the order as
+  `WALL_STRIP_ORDER`. Change it there if the rig is ever re-strung.
+- **Fan counts from strip 1**, so its zero end is the wall's right and
+  its staircase climbs leftward. A fan diagonal therefore runs up to the
+  left on this wall, and reversing the rigging would reverse it.
+
+PC 11 cannot tell you which end of a strip pixel 0 sits at — every strip
+is one flat colour, so there is no end to tell apart. That takes a
+single narrow shape travelling slowly with fan at zero: whichever end it
+sets off from is pixel 0.
+
 ---
 
 ## Controller pin map — Arduino Nano
