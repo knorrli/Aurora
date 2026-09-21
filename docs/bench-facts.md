@@ -400,3 +400,23 @@ any rhythm a band plays. The limit only bites on travel — nine positions
 at 25 ms each puts a window crossing the whole wall in about 225 ms, or
 just under half a beat at 120. Faster than that and the pools smear.
 
+## The colour layer's flat state is flat
+
+Confirmed on the wall 2026-09-21, the first time any of the redesigned
+colour layer was seen on hardware.
+
+With every colour control centred, all five strips show exactly the
+colour on the three faders — no tint, no drift, nothing creeping in from
+the placed field, the wander or the light level.
+
+That is the state the whole layer is measured from, since every control
+is a push away from it, and it is what makes the dialling order work: set
+the colour flat, then open one push and watch it depart from something
+you chose. The previous field could not do this. It never reached its own
+floor, so a colour anchored there appeared nowhere on the wall — asked
+for orange, the wall came back green through cyan to blue.
+
+**Only flat is confirmed.** How a colour *looks* once a push is open —
+desaturation, the dark floor, red's resolution — is still screen evidence
+only, and this file already records three occasions where a screen would
+have got those wrong.

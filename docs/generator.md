@@ -574,9 +574,14 @@ do is a judgement for a set, not a bench.
   strips compare; where a travelling shape *is* does not.
 - `tools/index.html` — sliders over Web MIDI, patch save and recall, the
   morph control, the roster as one-click starting points, and a row of
-  colour looks that set the colour layer only. Serve it
-  with `python3 -m http.server` from `tools/` and open it in Chrome or
-  Edge; Safari and Firefox have no Web MIDI. Reload after every flash, as
-  that resets the Teensy's USB and the page keeps a dead port.
+  colour looks that set the colour layer only.
+
+  **Serve it rather than opening the file.** `python3 -m http.server` from
+  `tools/`, then `http://localhost:8000/`. A `file://` page gets a
+  throwaway origin on every load, so Chrome has nothing to attach the Web
+  MIDI permission to and asks again every time; `localhost` is a real
+  origin and a secure context, and the grant sticks. Chrome or Edge only —
+  Safari and Firefox have no Web MIDI. Reload after every flash, as that
+  resets the Teensy's USB and the page keeps a dead port.
 - **PC 11 paints each strip a flat colour** — red, orange, green, cyan,
   blue in data-chain order — for working out strip order while rigging.

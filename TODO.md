@@ -128,11 +128,11 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
 dialled in `tools/preview.js` and ported unjudged. Everything below it
 here waits on that first look.
 
-- [ ] **Judge the colour layer on the wall.** Flat first — every control
-      centred should give exactly the faders' colour — then `Rainbow` on
-      Fill, then `Comet tail` on Comet. A screen has been wrong before
-      about desaturation, the dark floor and red's resolution. See
-      `docs/bench-facts.md`.
+- [ ] **Judge the colour layer on the wall.** Flat is confirmed —
+      2026-09-21, every control centred gives exactly the faders' colour.
+      Still to look at: `Rainbow` on Fill, and `Comet tail` on Comet. A
+      screen has been wrong before about desaturation, the dark floor and
+      red's resolution. See `docs/bench-facts.md`.
 - [ ] **Average the placed field across each pixel**, as the shape branch
       already does. It is read once at the pixel centre, so it aliases
       above a region count the grid can carry. Same fault and same fix as
