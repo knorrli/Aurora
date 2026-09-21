@@ -461,7 +461,11 @@ the preview had already agreed:
   out through its own trail, which stays where it lies and fades. It no
   longer changes sides in one frame.
 
-**Confirmed working, not yet judged.** Per-cell bounce and the folding
-tail are new behaviour rather than repairs, so whether they are *wanted*
-in a set is a separate question, and it has not been asked with music
-playing.
+**Judged the same evening, and kept.** Per-cell bounce and the folding
+tail are new behaviour rather than repairs, so working and wanted were
+separate questions; both were answered on the wall. Per-cell bounce in
+particular was read as opening looks rather than repairing one — a row of
+blocks each turning in its own compartment is a shape the machine could
+not previously make, and it suggested more. The remaining untested thing
+is a set with music, which is where a look earns its place in a song
+rather than on a bench.
