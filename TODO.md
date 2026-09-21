@@ -31,6 +31,11 @@ untouched.
   layers at once.
 - **A strip-order rigging aid** on PC 11 — each strip a flat colour in
   data-chain order.
+- **The bench panel redrawn as the signal flow**, 2026-09-21. Two
+  branches off the beat, meeting once per pixel, then the outputs — and
+  the field's Drift, Grain and Spread renamed Speed, Count and Fan, which
+  is what they always were. The PARs' level and hue offset are driveable
+  from the page for the first time. See `docs/generator.md`.
 
 Details and measurements in `docs/bench-facts.md`.
 
@@ -164,9 +169,10 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       the panel are guesses, several of which were wrong; a morph between
       two wrong destinations tells you nothing. Five or six looks worth
       morphing between, dialled in on the wall and saved as patches.
-- [ ] **Decide whether a strip is a loop or a line.** Open question 2. It
-      determines what happens when a tail crosses the strip end, and it
-      wants deciding rather than patching case by case.
+- [ ] **Decide whether a *wrapping* strip is a loop or a line.** Bounce is
+      settled — it turns when the shape's edge meets the end, so nothing
+      crosses a boundary. Wrapping travel still loops, and a tail falling
+      off one end still reappears at the other. See `docs/generator.md`.
 - [ ] **Fan shape** — diagonal through to symmetric, so the chevron
       arrangement the roster's Rain uses becomes reachable.
 - [ ] **Count should double rather than add** across a morph.
@@ -184,9 +190,20 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       reads as a sweep or as a smear, and whether a strip caught halfway
       between two patches looks deliberate or broken. What it cannot
       answer is feel — thumb travel and spring-back need the hardware.
-- [ ] **Travel easing.** Linear through to slow at the ends and fast
-      through the middle, so a shape reads as a bouncing ball. Wanted by
-      the Motion fader in `DESIGN.md`; does not exist.
+- [ ] **Travel easing** — linear through to slow at the ends and fast
+      through the middle, so a shape reads as a ball thrown across the
+      wall. It is a **Shape curve in Travel**, beside Speed and Fan, not
+      an LFO pointed at Speed: the rate such an LFO would need falls out
+      of speed, count and width, so no rate anyone can dial is right.
+      It shapes the whole strip, not each cell. Wanted by the Motion
+      fader in `DESIGN.md`; does not exist. Reasoning in
+      `docs/generator.md`.
+- [ ] **Width as a third pulse destination.** Decided 2026-09-21, not
+      built. It was ripped out once for making a swell read as a fill
+      creeping in from one end — which happened because a shape was
+      anchored by its head. It is anchored by its centre now, so it
+      should breathe outward from the middle instead. One multiply, and
+      the wall says within a minute whether the old failure is gone.
 - [ ] **Decide the field's usable ranges.** A hard edge with deep
       darkening and a wide hue swing is three strong things at once and
       easy to make ugly. Open question 6 in `docs/generator.md`; the
@@ -201,6 +218,14 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       controller's "off" key must send `PC 0` and `CC_WASH_LEVEL` 0
       together, or a blackout leaves the PARs lit. This contract lives
       only in the protocol header.
+- [ ] **The pulse is in time but not on time.** Its phase is carried
+      across rate changes, which means a swell restarts from zero at the
+      moment the rate was last changed — never at a bar line. The period
+      is right and the landing is arbitrary, so a deep slow swell peaks
+      wherever it happens to. Anchor the phase to the bar; a retrigger
+      division (every beat, every 2, every 4) is the same fix with a
+      control on it. Watch for this while building endpoints — it costs
+      nothing to observe and it turns a suspicion into a measurement.
 - [ ] **Drop `-D AURORA_DEBUG`** from `brain/platformio.ini` once the
       strips are what gets read instead of the console.
 

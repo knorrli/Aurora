@@ -101,10 +101,12 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 // At zero depth it costs nothing and the wall is one flat colour.
 // ---------------------------------------------------------------------------
 
-#define FIELD_MIN_GRAIN 2.0f
-#define FIELD_GRAIN_RANGE 48.0f   // 2 units per pixel at one end, 96 at the other
-#define FIELD_MAX_SPREAD 51.0f          // five strips across one sine cycle
-#define FIELD_NOISE_SPREAD_SCALE 6.5f   // ...and 1.3 noise cells per strip
+// Count is blobs along one strip — the same unit the shape layer counts in, so
+// the two Count controls mean the same thing and a number carries between them.
+#define FIELD_MIN_COUNT 0.35f
+#define FIELD_COUNT_RANGE 48.0f
+#define FIELD_MAX_FAN 51.0f          // five strips across one sine cycle
+#define FIELD_NOISE_FAN_SCALE 6.5f   // ...and 1.3 noise cells per strip
 #define FIELD_MAX_CYCLES_PER_BEAT 1.0f
 
 // How dark the field pulls a trough at full depth, as a fraction of what the
@@ -118,9 +120,9 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 // lurches, and pixels crossing to zero pop out entirely.
 #define FIELD_MIN_LEVEL 0.02f
 
-static float fieldGrain = 8.0f;
-static float fieldSpread = 40.0f;
-static float fieldRate = 0.0f;
+static float fieldStep = 8.0f;   // units of field per pixel
+static float fieldFan = 40.0f;
+static float fieldSpeed = 0.0f;
 static float fieldHueDepth = 0.0f;
 static float fieldSatDepth = 0.0f;
 static float fieldValDepth = 0.0f;
@@ -145,18 +147,18 @@ static inline uint8_t expandFromCentre(uint8_t value) {
 // axis needs a far coarser step to show anything — and the two sources need
 // different steps for the same reason they are different sources.
 //
-// Spread fans the strips out from the middle one rather than from the first,
+// Fan opens the strips out from the middle one rather than from the first,
 // so winding it up opens the wall symmetrically instead of pinning strip 1 and
 // leaving the last strip to do all the moving.
 static uint8_t fieldAt(uint8_t stripIndex, uint8_t pixelIndex, uint16_t z) {
   const float fromCentre = (float)stripIndex - (float)(NUMBER_OF_STRIPS - 1) * 0.5f;
-  const int32_t across = (int32_t)(fromCentre * fieldSpread);
+  const int32_t across = (int32_t)(fromCentre * fieldFan);
 
-  // Spread displaces the field ALONG the strip rather than shifting its level.
+  // Fan displaces the field ALONG the strip rather than shifting its level.
   // Shifting the level leaves every strip with its blobs at the same pixels
   // and only their colour differing, which reads as one striped pattern rather
   // than as a field with any depth in it.
-  const int32_t along = (int32_t)((float)pixelIndex * fieldGrain) + across;
+  const int32_t along = (int32_t)((float)pixelIndex * fieldStep) + across;
 
   // Each term drifts at its own fraction of the rate so they never settle into
   // a visible period. The halving has to happen on the wide counter and the
@@ -173,7 +175,7 @@ static uint8_t fieldAt(uint8_t stripIndex, uint8_t pixelIndex, uint16_t z) {
   // are. So the step is deliberately not a multiple of 256, and the bias keeps
   // the middle strip off the lattice as well.
   const uint16_t noiseAcross =
-      (uint16_t)(4200 + (int32_t)(fromCentre * fieldSpread * FIELD_NOISE_SPREAD_SCALE));
+      (uint16_t)(4200 + (int32_t)(fromCentre * fieldFan * FIELD_NOISE_FAN_SCALE));
   const uint8_t noise = expandFromCentre(inoise8((uint16_t)(along + 4200), noiseAcross, z));
 
   return (uint8_t)((float)sines + ((float)noise - (float)sines) * fieldSource);
@@ -273,7 +275,7 @@ void Generator(CHSV color) {
   // every 256 cycles where the counter wraps. Wrapping in float first keeps
   // the conversion in range; a float past UINT16_MAX converts to nothing
   // defined.
-  const float fieldCycles = trackedPhase(fieldPhase, beats, fieldRate);
+  const float fieldCycles = trackedPhase(fieldPhase, beats, fieldSpeed);
   const uint16_t fieldZ = (uint16_t)(fract(fieldCycles * (1.0f / 256.0f)) * 65536.0f);
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
@@ -365,8 +367,13 @@ void setGeneratorFlags(uint8_t value) {
   genBounce = value & GEN_FLAG_BOUNCE;
 }
 
-void setFieldGrain(uint8_t value)    { fieldGrain = FIELD_MIN_GRAIN * powf(FIELD_GRAIN_RANGE, ccUnit(value)); }
-void setFieldSpread(uint8_t value)   { fieldSpread = ccUnit(value) * FIELD_MAX_SPREAD; }
+// One blob is one period of the sine, which is 256 units wide, so a count
+// across the strip converts to the per-pixel step the field's maths wants.
+void setFieldCount(uint8_t value) {
+  const float count = FIELD_MIN_COUNT * powf(FIELD_COUNT_RANGE, ccUnit(value));
+  fieldStep = count * 256.0f / (float)PIXELS_PER_STRIP;
+}
+void setFieldFan(uint8_t value)   { fieldFan = ccUnit(value) * FIELD_MAX_FAN; }
 void setFieldHueDepth(uint8_t value) { fieldHueDepth = ccUnit(value); }
 void setFieldSatDepth(uint8_t value) { fieldSatDepth = ccUnit(value); }
 void setFieldValDepth(uint8_t value) { fieldValDepth = ccUnit(value); }
@@ -379,7 +386,7 @@ void setFieldEdge(uint8_t value) { fieldSoftness = 0.02f * powf(50.0f, ccUnit(va
 // Bipolar around 64 like the travel speed, and squared for the same reason:
 // the slow end is where a colour field that reads as depth rather than as an
 // effect actually lives.
-void setFieldRate(uint8_t value) {
+void setFieldSpeed(uint8_t value) {
   const float x = ((float)value - 64.0f) / 63.0f;
-  fieldRate = (x < 0.0f ? -1.0f : 1.0f) * x * x * FIELD_MAX_CYCLES_PER_BEAT;
+  fieldSpeed = (x < 0.0f ? -1.0f : 1.0f) * x * x * FIELD_MAX_CYCLES_PER_BEAT;
 }

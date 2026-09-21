@@ -141,10 +141,12 @@ enum AuroraCC : uint8_t {
     CC_HUE                 = 20, // hue centre / H fader
     CC_SATURATION          = 21, // saturation / S fader
     CC_VALUE               = 22, // brightness / V fader
-    CC_FIELD_RATE          = 23, // field drift. Bipolar: 64 is frozen
+    // Speed, count and fan mean the same here as they do in the shape block
+    // below, and count is in the same unit: blobs along one strip.
+    CC_FIELD_SPEED         = 23, // bipolar: 64 is frozen, either side drifts
     CC_FIELD_HUE_DEPTH     = 24, // how far hue swings from the centre
-    CC_FIELD_GRAIN         = 25, // blob size along a strip, 2–96 units/pixel
-    CC_FIELD_SPREAD        = 26, // how far the five strips differ. 0 = all
+    CC_FIELD_COUNT         = 25, // blobs along a strip, 0.35–17
+    CC_FIELD_FAN           = 26, // how far the five strips differ. 0 = all
                                  // strips identical
     CC_FIELD_SOURCE        = 27, // 0 = stacked sines, 127 = Perlin noise
     CC_FIELD_SAT_DEPTH     = 28, // how far saturation falls toward white

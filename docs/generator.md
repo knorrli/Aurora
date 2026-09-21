@@ -59,7 +59,7 @@ That is the whole thing. Everything below is a parameter of it.
 | 79 | Flags | Bit 0: odd strips run against the even ones. Bit 1: reverse at the strip end instead of wrapping | — |
 | 80 | Pulse shape | Hard on/off square through to smooth sine | — |
 
-Colour stays where it already was, on hue, spread and brightness, and sits
+Colour stays where it already was, on hue, saturation and brightness, and sits
 downstream of all of this.
 
 **The two flags are switches rather than knobs because neither has a
@@ -153,7 +153,7 @@ they stay hand-written. Either is fine.
   build. Rain → Stutter with speed and hue moving too was judged to
   "genuinely work". Two patches built from scratch, with no reference to
   the roster, morphed well between each other.
-- **Colour belongs inside the morph.** Hue, spread and brightness were
+- **Colour belongs inside the morph.** Hue, saturation and brightness were
   outside the model as designed; morphing them along with the shape turned
   out to be part of what makes it read as one gesture rather than a
   parameter sweep.
@@ -184,10 +184,10 @@ each had hardcoded. Those constants are now the parameters.
 
 | CC | Control | Meaning |
 |----|---------|---------|
-| 23 | Drift | how fast the field moves. Bipolar; centre is frozen |
+| 23 | Speed | how fast the field moves. Bipolar; centre is frozen |
 | 24 | Hue depth | how far hue swings from the fader's centre |
-| 25 | Grain | blob size along a strip |
-| 26 | Spread | how far the five strips differ |
+| 25 | Count | how many blobs along a strip, 0.35–17 |
+| 26 | Fan | how far the five strips differ |
 | 27 | Source | stacked sines through to Perlin noise |
 | 28 | To white | saturation falls where the field is high |
 | 29 | To dark | brightness falls where the field is low |
@@ -212,17 +212,127 @@ what Two-pole implies — are defined by brightness falling at one end, and
 therefore have the hardware problem above. Haze, which falls toward white
 instead, is the one with evidence behind it.
 
-### The unsettled part: this looks like the shape generator again
+### Settled 2026-09-21: two branches, one vocabulary
 
-Grain is count. Drift is speed. Spread is fan. Edge is edge. Each was
-arrived at separately, because the wall asked for it, and every one
-landed on a parameter the shape generator already has.
+The field's controls were each arrived at separately, because the wall
+asked for them, and every one landed on a parameter the shape generator
+already has. They were called Grain, Drift and Spread; they are Count,
+Speed and Fan, and they now carry those names in the protocol, the
+firmware and the bench panel. Count is the same *unit* in both branches —
+blobs along one strip against shapes along one strip — so a number
+carries across.
 
-Which suggests the two are one machine pointed at different destinations
-rather than two machines that resemble each other — the same extension
-the pulse note above predicts when it says a modulation destination is
-the obvious next step. **Not decided.** It is recorded here because the
-colour discussion is being restarted from it.
+What this is **not** is one machine with a routing control. The shape
+branch decides whether a pixel is lit at all, which is what makes gaps
+and darkness; the field only ever modifies a pixel the shape has already
+lit, and at zero depth the wall is one flat colour. That is a fixed order
+in a chain, not two destinations off one source. Collapsing them would
+permit routing the field to lit-or-not, which is the shape branch again
+with fewer controls.
+
+So: two branches from the same beat, meeting exactly once — the last
+statement of `Generator()` multiplies the shape's brightness by the
+field's colour. What is shared is the vocabulary, not the machine.
+
+Two things follow from drawing it that way, and both are in
+`tools/index.html`:
+
+- **The two branches do not reach the same lights.** A PAR is one pixel,
+  so the shape branch cannot reach it — count, width, edge, tail, speed
+  and fan all describe positions along a strip. The colour branch is
+  exactly what a one-pixel fixture can render, which is why the PARs'
+  level and hue offset are a relationship to the strips rather than a
+  second look. See `DESIGN.md` § "The PAR cans".
+- **The pulse is the exception that crosses.** It sits in the shape
+  branch, but it is the one shape-side thing a PAR can show, so it is
+  drawn as a send rather than as part of the branch.
+
+### Modulation, settled 2026-09-21
+
+The pulse is a modulator, and the field's Depth group is a second one: a
+source, a set of destinations, and an **amount** for each. That is the
+synth pattern, and naming it makes a fourth word the two branches share,
+alongside Form, Travel and Shape.
+
+**The amounts live at the source.** Both arrangements exist on real
+instruments — an amount beside the modulator saying where it goes, or an
+amount beside each target saying what reaches it — and the choice is a
+real one. It goes to the source here because most of Aurora's
+destinations are not controls: the pulse's main target is how lit a pixel
+is, and the field's are what colour it is, and neither is a slider
+anywhere. They are the outputs of their branches. Putting amounts at the
+target would mean inventing rows for things that are not controls, purely
+to have somewhere to hang the amount. Width is the one exception, and
+splitting one destination from the other two is worse than either
+consistent choice.
+
+The escape from the one thing this costs — you cannot see what is pushing
+a given control — is a read-only marker beside the target showing that
+the pulse reaches it, and how hard. It is also the destination-side UI
+already half-built, should modulators ever multiply.
+
+**Deferred: a fixed-amount matrix.** More destinations, all of them
+always present, each with a bipolar amount that may be zero. Worth having
+eventually; the pulse reaching hue, or count, is not reachable today.
+
+**Not deferred, rejected: patchable routing.** Every patch has to be a
+valid morph destination from any live state, and a connection is either
+made or not — so there is no halfway between "pulse to hue" and "pulse to
+count", and a morph across two patches with different routing has to snap
+the graph. That is the abrupt jump this whole experiment exists to
+remove. Amounts interpolate; connections do not, and an amount rising
+from zero is a connection fading in, which no patch cable can do.
+
+A per-control version — every control with its own wave and timing rather
+than one source fanned out — survives the morph objection, since all of
+it is continuous numbers. What it does not survive is the parameter
+count: roughly three parameters per modulatable control outgrows
+one CC per parameter, so it drags in the patch-storage work first. It
+wants to be wanted before it is built.
+
+### Travel easing is a curve, not a modulation route
+
+Easing — slow at the strip's two ends, fast through the middle, so a
+shape reads as a ball thrown across the wall — looks like an LFO on
+speed, and is not one.
+
+A modulator doing that job would have to be phase-locked to the travel
+cycle exactly: zero speed at each turn, maximum at mid-travel, every
+time. The travel period is not something anyone dials. It falls out of
+speed, count, and under bounce the width as well, since the turn comes
+when the core's edge meets the end. Any rate a person can set will be
+slightly wrong and will slide, which gives a wobble drifting through the
+bounce rather than a bounce. Shaping the travel phase directly makes one
+traversal one cycle by construction, with no rate to get wrong.
+
+**It shapes the strip, not the cell.** At counts above one every shape
+slows and speeds up together, so the whole field breathes across the
+wall. Shaping the cell instead would have each shape easing inside its
+own cell, which is a different look and not the one wanted.
+
+So easing is one more knob in Travel, beside Speed and Fan — and it is
+the third instance of a control the generator already has twice. Pulse
+shape bends a swell from square to sine; field edge bends the field from
+hard regions to a smooth ramp; easing bends a traversal from linear to
+slow-at-the-ends. Same idea every time, which is what makes **Shape** a
+shared word rather than a coincidence.
+
+### Jitter and Source are not the same control
+
+Both look like randomness and only one is. Jitter is a per-pixel random
+displacement re-rolled four times a beat — it boils, and it breaks the
+regular grid the shape layer otherwise guarantees. Source blends the
+field between stacked sines and Perlin noise, and noise is smooth,
+continuous and fully deterministic; what changes across that control is
+whether the variation is periodic, not whether it is random. The evidence
+agrees: Source was judged to make no perceptible difference, while Jitter
+is among the most visible controls there is. One idea at two strengths
+would not do that.
+
+What the comparison does turn up is a hole. **The colour branch has no
+jitter** — the field can only ever be smooth, so a grainy, boiling colour
+is unreachable. Whether that serves a band backdrop or is only a thing
+the machine could now do is a judgement for a set, not a bench.
 
 ## Open
 
@@ -237,33 +347,28 @@ colour discussion is being restarted from it.
    chevron; a centre outside the span leaves you on one side of it only,
    which is a diagonal. So centre alone interpolates between the two, and
    inverted chevrons come free. Two parameters cover the whole family.
-2. **Is a strip a loop or a line?** The maths treats it as a loop — the
-   pattern repeats with a period of one cell, so at count 1 a tail falling
-   off one end reappears at the other. Consistent, but not what a strip
-   with two physical ends looks like, and it reads as wonky when a tail
-   wraps. Real options: clip what crosses the boundary, soften the last
-   few pixels at each end so things enter and leave, or use bounce, which
-   has no boundary to cross. Each costs something — a boundary fade dims
-   the ends of every pattern that ought to reach them. **Decide the model
-   rather than patching the cases.**
-3. **A shape anchors to its head, not its centre.** So a static shape sits
-   at one end of the strip rather than the middle, and there is no way to
-   make something expand outward from the centre.
-4. **Morph moves every parameter in lockstep and linearly.** That is the
+2. **Is a strip a loop or a line?** Answered for bounce, still open for
+   wrap. Bounce now turns when the core's own edge meets the strip end, so
+   under bounce a strip is a line and nothing crosses a boundary at all.
+   Wrapping travel is still a loop, and a tail falling off one end still
+   reappears at the other. Whether that wants clipping, a boundary fade —
+   which costs the ends of every pattern that ought to reach them — or
+   nothing at all is a judgement for the wall.
+3. **Morph moves every parameter in lockstep and linearly.** That is the
    crudest possible path. Count in particular probably wants to double
    rather than add — 1, 2, 4, 8, 16 — since half the travel is currently
    spent between 9 and 17 where it barely reads. Per-parameter timing,
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
-5. **The pulse shape taper** was spread geometrically across the fader on
+4. **The pulse shape taper** was spread geometrically across the fader on
    a guess. Where the midpoint should sit is a feel judgement nobody has
    made with music playing.
-6. **Where the field's controls should stop.** Combinations that look bad
+5. **Where the field's controls should stop.** Combinations that look bad
    are easy to reach — a hard edge with deep darkening and a wide hue
    swing is three strong things at once. Whether that wants narrower
    ranges or just practice is a judgement nobody has made with music
    playing. The test is a set, not a bench.
-7. **Whether the roster survives at all**, or becomes a set of named
+6. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
 
 ## Tools

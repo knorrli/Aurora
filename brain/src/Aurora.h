@@ -128,10 +128,10 @@ extern void setGeneratorPulseShape(uint8_t value);
 extern void setGeneratorFlags(uint8_t value);
 // The colour field — CC 23–29. Varies colour across the wall and over time
 // instead of holding one colour everywhere; at zero depth it does nothing.
-extern void setFieldRate(uint8_t value);
+extern void setFieldSpeed(uint8_t value);
 extern void setFieldHueDepth(uint8_t value);
-extern void setFieldGrain(uint8_t value);
-extern void setFieldSpread(uint8_t value);
+extern void setFieldCount(uint8_t value);
+extern void setFieldFan(uint8_t value);
 extern void setFieldSource(uint8_t value);
 extern void setFieldSatDepth(uint8_t value);
 extern void setFieldValDepth(uint8_t value);
