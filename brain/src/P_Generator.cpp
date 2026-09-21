@@ -242,16 +242,25 @@ void Generator(CHSV color) {
   const float cellLength = (float)PIXELS_PER_STRIP / (float)genCount;
   const uint8_t jitterBucket = (uint8_t)(beats * GEN_JITTER_REROLLS_PER_BEAT);
 
-  float travel;
+  // Where the core's centre sits, measured in cells.
+  float centreCells;
   float direction;
   if (genBounce && fabsf(genSpeedPixels) > 0.0001f) {
     const float rate = fabsf(genSpeedPixels) / (2.0f * (float)PIXELS_PER_STRIP);
     const float triangle = fract(trackedPhase(travelPhase, beats, rate));
     const bool rising = triangle < 0.5f;
-    travel = (rising ? (triangle * 2.0f) : ((1.0f - triangle) * 2.0f)) * (float)genCount;
+    const float swing = rising ? (triangle * 2.0f) : ((1.0f - triangle) * 2.0f);
+    // The turn comes when the core's own edge reaches the strip end, the way a
+    // ball meets a wall, so nothing ever leaves the strip and reappears
+    // opposite. At full width the span closes to a point, which is right: a
+    // shape filling the strip has nowhere to go.
+    const float halfCore = genWidth * 0.5f;
+    centreCells = halfCore + swing * ((float)genCount - 2.0f * halfCore);
     direction = rising ? 1.0f : -1.0f;
   } else {
-    travel = trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
+    // Half a cell, so a still shape sits in the middle of its cell rather than
+    // straddling the boundary — which at count 1 is the strip's two ends.
+    centreCells = 0.5f + trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
     direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
   }
 
@@ -288,7 +297,9 @@ void Generator(CHSV color) {
     const float swell = 1.0f - genPulseDepth + genPulseDepth * shaped;
 
     const float width = genWidth;
-    const float head = fract(travel + stripPhase);
+    // `d` is measured behind the head, so the offset that lands the core's
+    // centre on `centreCells` turns with the direction of travel.
+    const float head = fract(centreCells + stripPhase + stripDirection * width * 0.5f);
 
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
       float jitterOffset = 0.0f;
