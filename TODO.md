@@ -181,6 +181,31 @@ designing there. See `docs/bench-facts.md`.
 - [ ] **Test the touchpad window from the laptop, before any rewire.**
       See `DESIGN.md` § "Which strips — a window, not a selection".
 
+## Open discussions
+
+Raised in conversation and not yet settled. Each needs a decision before
+it becomes a build item.
+
+- [ ] **Editor layout.** `tools/index.html` grew the preview and the color
+      controls without a regroup, and it is cramped. Two boxes earn no
+      space: the one holding only the "send 120 BPM clock" button, never
+      used, and "Strips", which is empty. The question is what the
+      groupings should be, not where today's boxes go.
+- [ ] **The pulse as a routable modulator.** Whether it reaches more than
+      brightness, and in what form. `docs/generator.md` § "Modulation,
+      settled 2026-09-21" defers a fixed-amount matrix and rejects
+      patchable routing; what is open is which destinations are eligible.
+- [ ] **Travel easing — is the look wanted?** Built shape is settled in
+      `docs/generator.md` § "Travel easing is a curve, not a modulation
+      route", and it is a build item above. What has never been discussed
+      is whether a band backdrop asks for a thrown-ball traversal.
+- [ ] **Fan's full shape, and a rate offset beside it.** `docs/generator.md`
+      § Open, item 1 argues the two are one piece of work, and that a rate
+      ratio of -1 on the odd strips reproduces alternate exactly. Whether
+      that should dissolve the alternate switch is already settled as no,
+      in `DESIGN.md` § "Switches belong to the patch"; the look itself is
+      undiscussed.
+
 ## Known defects
 
 - [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
