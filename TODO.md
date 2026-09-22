@@ -460,6 +460,22 @@ it becomes a build item.
       build a patch to push — `tools/protocol.html` generates its bytes
       rather than dialing them. Coupled to the editor-layout question in
       § "Open discussions" and to the accent-preview item below.
+      Two gaps found 2026-09-23 while reading it against the wire: the
+      editor's `CC` map is 52 parameters where a patch saves 63, missing
+      `CC_TEMPO_DIVISION` and the per-pattern slots at 50-59; and no
+      control owns the remaining bytes of a 128-byte set, so what goes in
+      them has to be ruled before a patch can be built.
+
+- [ ] **Take the preset buttons out of the editor's MIDI surface.**
+      Program Change means patch now, so "generator (PC 10)", "Plasma
+      (PC 3)", "blackout (PC 0)" and "strip order (PC 11)" in
+      `tools/index.html` send patch selects. The anchor chips stay — they
+      are local starting points — but `applyPatch` opens with
+      `setPreset(10)` and that line goes with the box. Two things fall
+      out and neither is mechanical: nothing then tells the brain to run
+      the generator, so the editor cannot drive the wall until patch
+      recall exists; and strip order is a rigging aid with nowhere left
+      to live. See `DESIGN.md` § "Patch storage".
 
 - [x] **Export the library to a file the repo can hold.** Done 2026-09-22,
       untested. `tools/protocol.html` saves what the brain holds as JSON —
@@ -483,12 +499,18 @@ it becomes a build item.
       not the destination's, so an accent dialed in `tools/index.html`
       against the patch's own switches is judged on a picture it will
       rarely show. See `DESIGN.md` § "Switches belong to the patch".
+      Most of the machinery is already there: `applyMorph` interpolates
+      everything except the four switches, which is exactly the rule. What
+      it lacks is A and B coming from two named sets of one patch rather
+      than from "capture whatever is on screen".
 
 - [ ] **A default set compiled into the firmware**, so an empty brain
       still lights the wall. See `DESIGN.md` § "Patch storage". It must
       never be written to storage: the brain reporting an empty library is
       how the editor tells a fresh flash from a small library, and writing
-      the defaults in would destroy that distinction.
+      the defaults in would destroy that distinction. It must also leave
+      the brain on a patch other than key 0, or the blackout gate added
+      2026-09-23 holds the wall dark — `selectedPreset` starts at 0.
 - [x] **What a completed morph does.** Settled 2026-09-22. A completed
       morph arrives only if it was going to a patch, so a fader never
       arrives and the surfaces table in `DESIGN.md` § "Switches belong to
