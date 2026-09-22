@@ -537,8 +537,8 @@ const GROUPS = {
     ['wanderDark',  'Dark',      'how far darkness wanders'],
   ],
   wanderForm: [
-    ['wanderRate',  'How fast',  'a slow ocean swell through to a nervous flicker'],
-    ['wanderScale', 'How big',   'the whole wall moving as one, down to individual pixels'],
+    ['wanderRate',  'Rate',     'frozen, through a slow ocean swell, to a nervous flicker'],
+    ['wanderScale', 'Density',  'the whole wall moving as one, down to individual pixels'],
   ],
   litGroup: [
     ['litHue',   'Hue',      'how far the brightest part rotates off the base hue'],
@@ -587,7 +587,7 @@ const COLOR_OFF = {
   placedHue: 64, placedWhite: 64, placedDark: 64,
   placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
   wanderHue: 64, wanderWhite: 64, wanderDark: 64,
-  wanderRate: 20, wanderScale: 20,
+  wanderRate: 50, wanderScale: 20,
   litHue: 64, litWhite: 0, litDark: 64,
 };
 
@@ -602,8 +602,8 @@ const COLOR_LOOKS = {
   'Head and tail': { colorRegion: GRADIENT, colorRuler: IN_SHAPE, placedHue: 104 },
   'Comet tail':    { colorRegion: GRADIENT, colorRuler: IN_SHAPE, placedHue: 108, litWhite: 127 },
   'Drifting bands':{ colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 90, placedCount: 54, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
-  'Alive':         { wanderHue: 92, wanderRate: 8,  wanderScale: 6 },
-  'Boiling':       { wanderHue: 104, wanderDark: 40, wanderRate: 64, wanderScale: 74 },
+  'Alive':         { wanderHue: 92, wanderRate: 32, wanderScale: 6 },
+  'Boiling':       { wanderHue: 104, wanderDark: 40, wanderRate: 90, wanderScale: 74 },
   'Ember':         { litHue: 100, litWhite: 34 },
 };
 for (const name of Object.keys(COLOR_LOOKS)) {
@@ -836,6 +836,11 @@ function toggleFlag(name) {
 
 const STORE = 'aurora.generator.patches';
 
+// Stamped into every patch as it is saved. Bumped when a control's taper
+// changes under a value that still looks valid, which is the one kind of
+// change migrate() cannot detect from the patch itself.
+const SAVE_FORMAT = 2;
+
 
 // Every switch has carried its own CC, then shared a packed one, and now has
 // its own again. A patch saved under either earlier scheme names nothing the
@@ -858,6 +863,14 @@ function migrate(patch) {
     out.bounce = (out.flags & 2) ? ON : OFF;
   }
   if (!('litWhite' in out) && 'litSat' in out) out.litWhite = out.litSat;
+  // The wander's rate gained a squared taper on 2026-09-23, which changes
+  // what a stored value means without changing its shape — so unlike every
+  // other case here there is nothing in the patch to detect it by, and a
+  // stamp is what stops the conversion running twice.
+  if (!('saveFormat' in out)) {
+    out.wanderRate = Math.round(Math.sqrt(127 * (out.wanderRate | 0)));
+    out.saveFormat = SAVE_FORMAT;
+  }
   // A patch saved before the pulse had anywhere to go names none of its
   // destinations, and would otherwise recall its shape over whatever the
   // matrix is left at.
@@ -1238,7 +1251,7 @@ document.getElementById('save').addEventListener('click', () => {
   const name = prompt('Name this patch:');
   if (!name) return;
   const all = loadPatches();
-  all[name] = { ...state };
+  all[name] = { ...state, saveFormat: SAVE_FORMAT };
   savePatches(all);
   renderPatches();
 });

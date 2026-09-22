@@ -442,6 +442,21 @@ What is shared is the vocabulary. Count, width, edge and speed mean the
 same thing in both, and count is the same *unit*: shapes along one strip
 against regions along one ruler.
 
+**Every control is named for the quantity it sets**, and the section it
+sits in says what it applies to — which is what lets the same three words
+appear in both branches without either one qualifying them. Two nouns
+divide the time controls, and the split is not cosmetic: **Speed is travel
+through space and is bipolar**, because which way a thing moves is a look
+you can see, while **Rate is recurrence in time and is unipolar**, because
+a cycle has no direction to reverse. Travel and the placed field take the
+first; the pulse and the wander take the second.
+
+Settled 2026-09-23, retiring the two controls that were named as questions
+rather than for what they set. "How fast" is the wander's **Rate**. "How
+big" is its **Density** — the whole wall moving as one at the bottom,
+individual pixels shimmering at the top — which is the direction the
+control already ran in, and it borrows no word from the shape branch.
+
 Two things follow from drawing it that way, and both are in
 `tools/index.html`:
 

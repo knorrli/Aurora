@@ -200,7 +200,7 @@
       wanderHue: ccBipolar(s.wanderHue) * WANDER_MAX_HUE,
       wanderWhite: ccBipolar(s.wanderWhite),
       wanderDark: ccBipolar(s.wanderDark),
-      wanderRate: ccUnit(s.wanderRate) * WANDER_MAX_CYCLES_PER_BEAT,
+      wanderRate: ccUnit(s.wanderRate) ** 2 * WANDER_MAX_CYCLES_PER_BEAT,
       wanderScale: ccUnit(s.wanderScale),
 
 

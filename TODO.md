@@ -9,8 +9,8 @@ decides to act on it.
 The phase plan that used to live here was built on design decisions
 cleared on 2026-09-18; it is recoverable at commit `33f2d1f`.
 
-Everything currently lives on the **`preset-redesign`** branch. `main` is
-untouched.
+Everything lives on **`main`**. The last v1 commit is tagged
+`aurora-nano-final`.
 
 ---
 
@@ -354,24 +354,6 @@ it becomes a build item.
       pushes on. Whether the join beneath still reads — it says "the two
       multiply", which is true of shape and color and says nothing about
       the third box now above it — is part of this question.
-- [ ] **The wander's rate is the odd speed control.** Travel speed and the
-      placed field's speed are both bipolar and squared: 64 is still,
-      either side moves, and the slow end gets most of the fader because
-      that is where a color reading as depth rather than as an effect
-      lives. The wander's is unipolar and linear — 0 is frozen, the throw
-      is even. The squared taper's reasoning applies to it unchanged, so
-      at least that should match. Whether it should go bipolar too is a
-      real question, since a noise field running backwards looks much like
-      one running forwards; if it stays unipolar the label should say so.
-      Compare `setWanderRate` against `setPlacedSpeed` in
-      `brain/src/P_Generator.cpp`.
-- [ ] **"How fast" and "How big" are named as questions.** Every other
-      control in both branches is named for the thing it sets — Width,
-      Count, Edge, Tail, Speed, Fan, Depth, Rate, Skew, Shape. These two
-      are not. "How fast" is Rate or Speed depending on the item above.
-      "How big" is the wander's spatial scale, the whole wall moving as
-      one down to individual pixels; Scale is the obvious noun but has
-      never been held against what the control actually does.
 - [ ] **The color panel does not say what its switches govern, and four
       controls are dead in the default state.** Gradient / region and the
       three rulers drive the placed field and nothing else —

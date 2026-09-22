@@ -890,7 +890,16 @@ void setPlacedSpeed(uint8_t value) {
 void setWanderHue(uint8_t value)   { wanderHueReach = ccBipolar(value) * WANDER_MAX_HUE; }
 void setWanderWhite(uint8_t value) { wanderWhiteReach = ccBipolar(value); }
 void setWanderDark(uint8_t value)  { wanderDarkReach = ccBipolar(value); }
-void setWanderRate(uint8_t value)  { wanderCycles = ccUnit(value) * WANDER_MAX_CYCLES_PER_BEAT; }
+// Squared like the two travel speeds, for the same reason: the slow end is
+// where a color reading as depth rather than as an effect lives. Unipolar
+// unlike them, because the wander is symmetric interference with no anchor
+// and reversing it gives the same look — measured in docs/generator.md
+// § Open, item 11. Frozen therefore stays at the end of the throw, rather
+// than at a center this taper makes hard to tell from a crawl.
+void setWanderRate(uint8_t value) {
+  const float x = ccUnit(value);
+  wanderCycles = x * x * WANDER_MAX_CYCLES_PER_BEAT;
+}
 void setWanderScale(uint8_t value) { wanderScale = ccUnit(value); }
 
 void setLitHue(uint8_t value)   { litHueReach = ccBipolar(value) * LIT_MAX_HUE; }
