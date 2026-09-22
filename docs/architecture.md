@@ -76,6 +76,14 @@ What the move costs:
   shifter — the same problem the brain has, solved once for both.
 - **Not 5 V tolerant**, so a wiring mistake kills the board.
 
+**What it has for storage**, measured 2026-09-22 against the installed
+core rather than assumed. Flash is 1984 KB and the firmware uses well
+under a tenth of it; RAM is 1 MB. The emulated EEPROM is 1080 bytes
+(`E2END 0x437` in `cores/teensy4/avr/eeprom.h`) — an AVR compatibility
+shim, not the chip's storage, and too small for even one patch. Patches
+therefore go in LittleFS on the program flash, which survives a power
+cycle but not a firmware upload. See `DESIGN.md` § "Patch storage".
+
 The keypad ladder conversion left the plan with this decision: five pins
 is nothing on a 40-pin part, so the keypad keeps its existing wiring.
 The **foot-pedal** ladder survives, because it exists to fit a

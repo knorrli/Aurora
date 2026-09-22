@@ -60,8 +60,8 @@ A set of parameter values, **plus the far end of each fader's morph
 target**. "Intense Strobe" is not a separate patch; it is part of what
 the Strobe patch is.
 
-Patches live in the brain and are selected by number. Today they live in
-the browser's local storage, which survives nothing.
+Patches live in the brain and are selected by number. How they get there
+and what one is made of is § "Patch storage" below.
 
 ### A morph target
 
@@ -73,21 +73,6 @@ The test for whether something is a morph target: can you build the far
 end and look at it? "This patch flat out" — yes. "This patch's other
 color" — no, because every color is equally valid and there is no
 particular one to save.
-
-### A shift
-
-A rule applied on top of whatever the patch says — the color rotated so
-far, the brightness trimmed. **Relative**, patch-independent, and nothing
-is stored for it. Transpose, rather than a second saved arrangement.
-
-The difference from a morph target only ever shows when the patch
-changes. A morph target carries its **meaning** across: 60 % still means
-"fairly intense" on the next patch, over completely different parameters.
-A shift carries **the move itself** across: thirty degrees round is still
-thirty degrees round, applied to whatever the new patch's color is.
-
-Shifts are also what makes a room adjustable without editing anything,
-which is what lets the box have no editing on it at all.
 
 ### A position
 
@@ -106,16 +91,24 @@ thing that is actually *played*. Everything above is written at a desk.
   three. Shape is that field routed to brightness. There is no second
   machine — see `docs/generator.md`.
 - **Energy.** A morph target, reached by a fader or the pedal.
+- **A shift**, retired 2026-09-22. A relative, patch-independent rule
+  laid over whatever the patch says — hue rotated so far, brightness
+  trimmed — which a morph target cannot express, because a morph target
+  is absolute and belongs to one patch. The mechanism was sound and the
+  job was not: its case was adapting every patch at once to a room, and
+  that is a correction this rig will not need. It never reached a
+  control either; the box has no surface left that was going to send
+  one.
 
 ## Two structural decisions that come with the nouns
 
 **The brain owns meaning; the controller sends gestures.** The controller
 emits "fader 1 is at 60" and never learns what patch 4 contains. Forced
-three times over: the DIN link carries about 320 messages a second and an
-interpreted fader sweep would need more; a patch library in both boxes is
-the same two-boxes-must-agree failure `docs/architecture.md` already
-rejected for the indicator pixels; and a shift has to be added to a base
-hue only the brain knows.
+twice over: the DIN link carries about 320 messages a second and an
+interpreted fader sweep would need more; and a patch library in both
+boxes is the same two-boxes-must-agree failure `docs/architecture.md`
+already rejected for the indicator pixels. A third argument, that a shift
+has to be added to a base hue only the brain knows, went with the shift.
 
 It also keeps the brain's stated indifference to who is talking to it
 true, so a DAW can drive Aurora exactly as the controller does.
@@ -133,9 +126,135 @@ answered, which is the sign this is the right shape:
   are no pages.
 - The numpad's job is settled: it selects patches, and only that.
 
-What it costs is rewriting a patch in the room. Shifts cover adapting one;
-they do not cover rebuilding one. That is judged the right thing to lose.
+What it costs is **any** change to a patch in the room: with shifts
+retired, nothing on the box adapts a look without the laptop. Accepted
+deliberately — the laptop is there when patches are designed, and a look
+that needs fixing at a venue can be fixed at soundcheck.
 
+
+## Patch storage — settled 2026-09-22
+
+Nothing built. The format and the medium are decided; the one thing left
+open is named at the end.
+
+### Three ways the rig gets driven
+
+Every decision below was tested against all three, and the third is what
+settled most of them.
+
+| | What is connected | Who is in charge |
+|---|---|---|
+| **A** | Controller to brain, DIN | The controller, entirely |
+| **B** | A DAW into the controller, soft-thru to the brain, DIN | The DAW sends patch changes; the controller does everything else and updates its own state as it forwards |
+| **C** | A computer to the brain, no controller | A performance encoded as a MIDI track |
+
+**B is how the rest of the band's rig already works.** Mainstage changes
+patches on synths, pedals and drum pads by sending a *reference* — one
+Program Change — and the receiving device holds what that number means.
+Aurora joins on the same terms.
+
+**The brain is the only device present in all three**, which is why it
+holds the patches. Put them in the controller and C has none; put them in
+the DAW project and B asks Mainstage to hold Aurora's state, which is
+exactly what the rest of the rig does not do.
+
+**The brain never talks back over DIN.** The stage link is one-way. A
+controller forwarding a patch change updates its own state from what it
+forwards, rather than being told. The brain's USB send path is for the
+editor and nothing else.
+
+### A patch is raw CC values
+
+A patch is one byte per CC, indexed by CC number, plus the two things
+that arrive as Program Change — preset and palette — and the ramp time in
+beats. Not cooked parameters. Three arguments, and the first is the one
+that would have been expensive to discover later.
+
+- **Morph already interpolates in CC space, and at least one control
+  depends on it.** Count's fader is deliberately geometric so that
+  interpolating its CC linearly doubles by construction — see
+  `docs/generator.md` § Open, item 4. Interpolate cooked values instead
+  and that property is gone, along with any other nobody has noticed.
+- **The CC map is becoming a public interface regardless.** A DAW
+  automation lane is addressed by CC number, so an Ableton project breaks
+  if the numbers move. That is the real cost of renumbering, and it
+  arrives whether or not patches are CC-shaped. What raw storage buys in
+  exchange is that a saved patch and an automation lane are the same
+  numbers: a patch can be read straight into lane starting points, and a
+  morph is those numbers moving.
+- **Cooked values cannot be recovered anyway.** Every CC handler cooks on
+  arrival and discards the byte — `setGeneratorCount` stores
+  `round(20^(value/127))`, which takes 128 inputs to 20 outputs and
+  cannot be inverted. Today nothing in the brain knows what it is set to;
+  the only thing that does is the browser tab.
+
+What it costs: seven bits per control, and every parameter must be
+CC-addressable. Both were already true — everything the brain does is
+reachable by MIDI by design, and mode flags that once shared a bitfield
+have been moving to their own CCs since `docs/bench-facts.md` § "The
+bounce rework holds on the wall" recorded the packed CC gone.
+
+**A patch is several parameter sets, not one.** The base, plus the far
+end of each fader's morph target, and each far end covers the whole
+parameter set — § "What a patch holds for them". Four sets minimum, plus
+whatever the pad's destination scheme needs. About 700 bytes a patch,
+generously counted.
+
+### Where it lives
+
+**Up to 128 patches on the brain**, which is what a Program Change can
+name. Not nine. The numpad's nine keys are a limit on the hand surface,
+not on the machine — and in B a DAW addresses the whole range, so
+stopping at nine would cap an automated show at the keypad's reach for no
+gain.
+
+A **set** is then an ordered mapping of nine of the library's patches
+onto the keypad keys. Switching sets needs no laptop, because every patch
+is already on the brain.
+
+**In LittleFS on the program flash.** The Teensy 4.0's emulated EEPROM is
+1080 bytes — `E2END 0x437` in the installed core — which holds one patch,
+so it is categorically the wrong place. The flash is 1984 KB with the
+firmware using well under a tenth of it, so 128 patches at 90 KB is not a
+constraint and no external chip is needed.
+
+**Patches survive a power cycle and not a firmware upload.** The second is
+accepted rather than worked around: the editor holds the master library
+and re-pushes after a flash. That is what makes an external flash or FRAM
+chip unnecessary, and the storage interface is the same either way if
+that judgment ever reverses.
+
+**A small default set is compiled into the firmware**, so a brain that
+boots with empty storage still lights the wall instead of standing dark
+while a laptop is found.
+
+### The editor owns the library
+
+Arbitrarily large, on the computer, and authoritative. Patches are
+designed there over USB, which is two-way and already compiled in: the
+parameters, each fader's far end, the pad's targets, and which nine go on
+the keypad.
+
+**Tags, grouping and ordering are deferred**, not rejected. With fifty
+patches a flat sorted list is enough, and what is worth searching by will
+be obvious once fifty exist.
+
+### Open: what a physical control does when it disagrees
+
+The moment the brain can be set from anywhere but the box, every fader
+can disagree with the state — a patch loaded from the numpad, or a DAW
+moving a CC the fader also owns. Grab it and the wall jumps to wherever
+that fader happens to be sitting. Jump on touch, pickup, and scaled
+takeover are the three answers, each with a stage cost, and the faders
+that live at the extremes behave differently here from the ones parked
+mid-travel. Not a storage question, which is why it did not block this,
+but it arrives with the first patch recall.
+
+One measurement to take alongside it: nothing in the brain smooths an
+incoming value. A 30-second morph driven from a DAW is 128 steps, one
+every 235 ms, which on brightness may stair-step visibly. If it does, the
+answer is smoothing in the brain, which raw-byte storage makes
+straightforward.
 
 ## The surfaces — 2026-09-19
 
@@ -192,6 +311,11 @@ question.** Scattering a clean strobe into a chaotic one could be a lift
 or a character change. *The test:* with music, notice which one you reach
 for it to do. If it raises a chorus it is motion and it is a fader. If it
 changes the feel of one, it belongs on the pad.
+
+The question survives 2026-09-22's rework of what jitter should be —
+`docs/generator.md` § "What jitter is for" — but what it is asked about
+changes. A texture source has an amount per destination rather than one
+knob, so the question becomes which of those amounts a route reaches.
 
 ### Which strips — a window, not a selection
 
@@ -367,8 +491,7 @@ graphic, and the pool lands in a gap that is meters wide.
 The generator is already a function of where you are on the wall. A strip
 is a line of positions; a PAR is one position with no length. So the same
 machine renders both, and every noun above covers them for free — a patch
-holds them, a morph carries them, a shift rotates them, the numpad
-selects them. There is no wash page and no second saved thing.
+holds them, a morph carries them, the numpad selects them. There is no wash page and no second saved thing.
 
 That splits along the two layers the generator already has:
 
@@ -592,12 +715,12 @@ flip — see `docs/generator.md` § Open, item 1.
   rotary stays the tempo control; whether tempo division deserves a
   dedicated knob is a separate question.
 - **Whether a pool bridges a gap**, above. Settle by looking.
-- **Patches have nowhere to live.** They are in the browser's local
-  storage today, which survives nothing. Getting them into the brain is
-  unscoped work, and reading them back needs the brain's USB MIDI send
-  path, which exists and has never been used. Not urgent: what is at risk
-  is the storage mechanism, not the patches themselves, which are cheap
-  to rebuild once there is a tool for making them.
+- **What a control does when it disagrees with the state.** Raised by
+  § "Patch storage", and it arrives with the first patch recall. Settle
+  by looking, with a fader in hand.
+- **Patch storage is scoped but not built.** The format, the medium and
+  the library are settled in § "Patch storage"; what remains is the
+  editor-to-brain protocol over USB and the LittleFS layout.
 
 ### Dissolved rather than answered
 

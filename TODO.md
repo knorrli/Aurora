@@ -357,15 +357,54 @@ it becomes a build item.
       in `DESIGN.md` § "Switches belong to the patch"; the look itself is
       undiscussed.
 
-- [ ] **Real patch storage, and what a completed morph does.** Patches and
-      morph targets live in the browser today and survive nothing, and the
-      bench panel's A-to-B slider exists to test that morphing works at
-      all rather than to be played. Raised 2026-09-22 while deciding not to
-      police a far end's switches: a morph between two looks whose switches
-      differ should be saveable, and the suggestion is that a morph which
-      **completes** arrives and takes the switches there — which would make
-      a fader an arrival and change the table in `DESIGN.md` § "Switches
-      belong to the patch". Settle that with the storage, not before.
+- [ ] **Classify every CC as patch state, gesture or ambient.** The
+      format is one byte per CC, so the moment anything writes a snapshot
+      this classification exists whether or not it was decided. Four
+      independent questions per CC: does a patch save it, does arriving
+      at a patch overwrite it, does a morph interpolate it on the way,
+      and is it something a hand moves live. They come apart — switches
+      are saved and recalled but never morphed, and move only at the
+      keypad's settle. Record the answer beside each CC in
+      `shared/aurora_protocol.h`, which is also where someone automating
+      Aurora from a DAW would look to know which lanes a patch change
+      will stomp. Roughly 72 CCs, most obvious; do the pass as a
+      deliverable and bring back only the arguable ones. Tempo division
+      on CC 10 is known to be one of them — a half-time patch is a real
+      musical idea, and a section change that moves the division
+      unasked is a real hazard. See `DESIGN.md` § "Patch storage".
+- [ ] **Patch storage — the editor-to-brain protocol.** Format, medium
+      and library are settled in `DESIGN.md` § "Patch storage": raw CC
+      bytes, LittleFS on the program flash, up to 128 patches on the
+      brain with the editor holding the master library. What is unbuilt
+      is the USB conversation that moves them — writing a slot, reading
+      one back, and the brain saying it is empty so the editor can offer
+      to re-push after a flash.
+
+      **A far end cannot be sent as CCs.** Each fader's far end is a
+      whole parameter set, and sending its values as ordinary CCs would
+      move the live wall instead of filling a slot. So the protocol needs
+      addressed writes — this patch, this set, these bytes — rather than
+      a replay of the live control stream. That is the constraint that
+      shapes it.
+- [ ] **Keep the raw CC bytes in the brain.** A `uint8_t[128]` written in
+      `handleControlChange` beside the cooked values, which today are
+      computed and the byte discarded — `setGeneratorCount` stores
+      `round(20^(value/127))` and cannot be inverted. About fifteen
+      lines, no design questions left, and everything else here depends
+      on it.
+- [ ] **A default set compiled into the firmware**, so an empty brain
+      still lights the wall. See `DESIGN.md` § "Patch storage".
+- [ ] **What a completed morph does.** Raised 2026-09-22 while deciding
+      not to police a far end's switches: a morph between two looks whose
+      switches differ should be saveable, and the suggestion is that a
+      morph which **completes** arrives and takes the switches there —
+      which would make a fader an arrival and change the table in
+      `DESIGN.md` § "Switches belong to the patch". Settle that with the
+      storage, not before.
+- [ ] **Decide what a fader does when it disagrees with the state.**
+      Jump on touch, pickup, or scaled takeover. Arrives with the first
+      patch recall and with any DAW driving a CC a fader also owns. Needs
+      a fader in hand, not a desk. See `DESIGN.md` § Open.
 
 - [ ] **Jump the pattern to Position on the beat.** A reset that fires on
       the grid rather than a place to sit: bars swiping up from the center,
