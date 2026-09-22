@@ -146,10 +146,10 @@ designing there. See `docs/bench-facts.md`.
       paler on the wall, which is the diffuser. See `docs/bench-facts.md`
       § "The color layer's flat state is flat" and § "The screen and the
       wall agree".
-- [ ] **Average the placed field across each pixel**, as the shape branch
-      already does. It is read once at the pixel center, so it aliases
-      above a region count the grid can carry. Same fault and same fix as
-      `docs/bench-facts.md` § "Point-sampling a pattern aliases".
+- [x] **Average the placed field across each pixel.** Done 2026-09-22.
+      Both branches are read at the same four samples now. Measured in the
+      preview; not yet seen on the wall. See `docs/bench-facts.md` §
+      "Point-sampling a pattern aliases".
 - [ ] **Turn a region inside out.** One boolean, and it is what "base
       color on the center strip, outer ones departing" needs. See
       `docs/generator.md` § Open, item 8.

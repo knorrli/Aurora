@@ -496,14 +496,17 @@ static float trailBehind(float journey, float phase, float halfCore,
   return elapsed * 2.0f * swingSpan + fabsf(journey - reachable);
 }
 
-// 0 at one end of the ruler, 1 at the other.
+// 0 at one end of the ruler, 1 at the other. `alongPixels` is fractional
+// because the field is read several times across one pixel, and the strip
+// ruler's whole numbers are pixel centers: the shape branch's pixel runs from
+// `pixelIndex` to `pixelIndex + 1`, this one is centered on `pixelIndex`.
 static float rulerAt(const PlacedField &field, uint8_t stripIndex,
-                     uint8_t pixelIndex, float shapeU) {
+                     float alongPixels, float shapeU) {
   if (field.ruler == RULER_WALL) {
     return (float)stripIndex / (float)(NUMBER_OF_STRIPS - 1);
   }
   if (field.ruler == RULER_SHAPE) return shapeU;
-  return (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
+  return alongPixels / (float)(PIXELS_PER_STRIP - 1);
 }
 
 // `pulseHue` arrives already summed rather than as a fourth source, because
@@ -664,11 +667,21 @@ void Generator(CHSV color) {
         jitterLevel = 1.0f - genJitter * (levelNoise / 255.0f);
       }
 
+      // The placed field is read at the same samples the shape is, and for
+      // the same reason: read once at the pixel's center it aliases as soon
+      // as its regions get down to a pixel or two across, which is the fault
+      // docs/bench-facts.md § "Point-sampling a pattern aliases" records
+      // against the shape branch. The wander needs none of this — it is
+      // sines, and smooth by construction — and the light level reads the
+      // averaged profile already.
       float accumulated = 0.0f;
+      float placedAccumulated = 0.0f;
       for (uint8_t sampleIndex = 0; sampleIndex < GEN_SUBSAMPLES; sampleIndex++) {
-        const float samplePosition =
-            (float)pixelIndex + ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES;
-        const float posCells = samplePosition / cellLength + jitterOffset;
+        const float acrossPixel =
+            ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES - 0.5f;
+        const float posCells =
+            ((float)pixelIndex + 0.5f + acrossPixel) / cellLength + jitterOffset;
+        float shapeU = 0.5f;
 
         // The shape repeats once per cell, so the only images that can light
         // this sample are the two standing either side of it. Under bounce
@@ -682,17 +695,35 @@ void Generator(CHSV color) {
           const float journey = journeyIn(posCells, mirrored);
           float level = 0.0f;
           float nearest = 0.0f;
-          if (nearestOffset(posCells, coreCenter, stripDirection, true, countCells, nearest)) {
-            level = coreAt(nearest, width, genEdge);
-          }
-          const float trailing = tailAt(
-              trailBehind(journey, triangle, halfCore, swingSpan), width, genTail);
+          const bool onShape =
+              nearestOffset(posCells, coreCenter, stripDirection, true, countCells, nearest);
+          if (onShape) level = coreAt(nearest, width, genEdge);
+          const float behind = trailBehind(journey, triangle, halfCore, swingSpan);
+          const float trailing = tailAt(behind, width, genTail);
           accumulated += (trailing > level) ? trailing : level;
+
+          // The ruler's trailing half has to be the same measure the tail is
+          // drawn from, or color along a tail paints where the tail is not.
+          if (behind < shapeTrail && shapeTrail > 0.0001f) {
+            shapeU = 0.5f + 0.5f * behind / shapeTrail;
+          } else if (onShape && shapeLead > 0.0001f) {
+            shapeU = 0.5f - 0.5f * fabsf(nearest) / shapeLead;
+          }
         } else {
           float nearest = 0.0f;
           if (nearestOffset(posCells, coreCenter, stripDirection, genBounce, countCells, nearest)) {
             accumulated += shapeAt(nearest, width, genEdge, genTail);
+            const float reach = (nearest < 0.0f) ? shapeLead : shapeTrail;
+            if (reach > 0.0001f) shapeU = 0.5f + 0.5f * nearest / reach;
           }
+        }
+
+        if (placedOn) {
+          if (shapeU < 0.0f) shapeU = 0.0f;
+          else if (shapeU > 1.0f) shapeU = 1.0f;
+          const float u = rulerAt(placed, stripIndex,
+                                  (float)pixelIndex + acrossPixel, shapeU);
+          placedAccumulated += placedAt(placed, u, placedDrift);
         }
       }
 
@@ -705,32 +736,8 @@ void Generator(CHSV color) {
       // zero before its neighbor, which is what turns a dim yellow red.
       CHSV tint = color;
       if (!colorFlat) {
-        const float centerPos = ((float)pixelIndex + 0.5f) / cellLength + jitterOffset;
-        float centerOffset = 0.0f;
-        const bool onShape = nearestOffset(centerPos, coreCenter, stripDirection,
-                                           genBounce, countCells, centerOffset);
-        float shapeU = 0.5f;
-        if (bouncing) {
-          // The ruler's trailing half has to be the same measure the tail is
-          // drawn from, or color along a tail paints where the tail is not.
-          const float behind =
-              trailBehind(journeyIn(centerPos, mirrored), triangle, halfCore, swingSpan);
-          if (behind < shapeTrail && shapeTrail > 0.0001f) {
-            shapeU = 0.5f + 0.5f * behind / shapeTrail;
-          } else if (onShape && shapeLead > 0.0001f) {
-            shapeU = 0.5f - 0.5f * fabsf(centerOffset) / shapeLead;
-          }
-        } else if (onShape) {
-          const float reach = (centerOffset < 0.0f) ? shapeLead : shapeTrail;
-          if (reach > 0.0001f) shapeU = 0.5f + 0.5f * centerOffset / reach;
-        }
-        if (shapeU < 0.0f) shapeU = 0.0f;
-        else if (shapeU > 1.0f) shapeU = 1.0f;
-        const float placedLevel = placedOn
-            ? placedAt(placed, rulerAt(placed, stripIndex, pixelIndex, shapeU), placedDrift)
-            : 0.0f;
-        tint = colorAt(color, placed, placedLevel, stripIndex, pixelIndex,
-                        profile, wanderT, pulseHue, wanderOn);
+        tint = colorAt(color, placed, placedAccumulated / (float)GEN_SUBSAMPLES,
+                        stripIndex, pixelIndex, profile, wanderT, pulseHue, wanderOn);
       }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =

@@ -241,6 +241,23 @@ Detail finer than the strip can resolve now washes out smoothly into an
 even glow, which is the honest thing for it to do. The cost is four shape
 evaluations per pixel — 900 per frame — which is nothing on this part.
 
+**The color layer's placed field had the same fault, fixed 2026-09-22.**
+It was read once at each pixel's center while the shape around it was
+averaged. Measured in the preview on a full still fill painted with hard
+regions drifting a cell a beat: the worst one-frame change on a single
+pixel falls from 176 of 255 to 99 at every count from five regions
+upward, and above about eleven regions the difference between neighboring
+pixels stops climbing and starts falling — detail washing out instead of
+being carved up by the grid.
+
+Two things it leaves alone, both checked pixel for pixel over 120 frames.
+A gradient measured across the strips or along one is unchanged, because
+a straight ramp averaged over a pixel is its own value at that pixel's
+center; the shape ruler is not straight, so a gradient on it moves by up
+to 14 of 255. And the wander and the light level are untouched by
+construction — the first is sines and smooth already, the second reads
+the averaged profile.
+
 ## Converting a color at low brightness collapses its hue
 
 A dim yellow rendered as dim red. The cause is handing a low value

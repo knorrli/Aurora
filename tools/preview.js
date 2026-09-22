@@ -474,10 +474,15 @@
   // 0 at one end of the ruler, 1 at the other. The shape ruler runs from the
   // leading tip through to the end of the tail, so a gradient on it puts one
   // color at the head and the other behind.
-  function rulerAt(p, stripIndex, pixelIndex, shapeU) {
+  //
+  // `alongPixels` is fractional because the field is read several times
+  // across one pixel, and the strip ruler's whole numbers are pixel centers:
+  // the shape branch's pixel runs from `pixelIndex` to `pixelIndex + 1`, this
+  // one is centered on `pixelIndex`.
+  function rulerAt(p, stripIndex, alongPixels, shapeU) {
     if (p.placedRuler === RULER_WALL) return STRIPS > 1 ? stripIndex / (STRIPS - 1) : 0.5;
     if (p.placedRuler === RULER_SHAPE) return shapeU;
-    return PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
+    return PIXELS > 1 ? alongPixels / (PIXELS - 1) : 0.5;
   }
 
   // A gradient is monotone with the base color at the ruler's center, so the
@@ -486,7 +491,6 @@
   // own core-and-fades, which is what makes count, width and edge mean here
   // what they mean there.
   function placedAt(p, u, drift) {
-    if (!p.placedActive) return 0;
     if (p.placedKind === KIND_GRADIENT) return (u - 0.5) * 2;
     const cell = u * p.placedCount + drift;
     const offset = fract(cell) - 0.5;
@@ -516,10 +520,9 @@
   // `pulseHue` arrives already summed rather than as a fourth source: the
   // pulse pushes the layer's output, one push after the three have added,
   // which leaves the color layer's own design alone.
-  function colorAt(p, base, stripIndex, pixelIndex, shapeU, profile, drift, wanderT, pulseHue) {
+  function colorAt(p, base, stripIndex, pixelIndex, placed, profile, wanderT, pulseHue) {
     const along01 = PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
 
-    const placed = placedAt(p, rulerAt(p, stripIndex, pixelIndex, shapeU), drift);
     const wander = wanderAt(p, along01, stripIndex, wanderT);
 
     const hue = placed * p.placedHue + wander * p.wanderHue + profile * p.litHueReach + pulseHue;
@@ -647,10 +650,19 @@
           jitterLevel = 1 - p.jitter * (levelNoise / 255);
         }
 
+        // The placed field is read at the same samples the shape is, and for
+        // the same reason: read once at the pixel's center it aliases as soon
+        // as its regions get down to a pixel or two across, which is the
+        // fault docs/bench-facts.md § "Point-sampling a pattern aliases"
+        // records against the shape branch. The wander needs none of this —
+        // it is sines, and smooth by construction — and the light level reads
+        // the averaged profile already.
         let accumulated = 0;
+        let placedAccumulated = 0;
         for (let sampleIndex = 0; sampleIndex < SUBSAMPLES; sampleIndex++) {
-          const samplePosition = pixelIndex + (sampleIndex + 0.5) / SUBSAMPLES;
-          const posCells = samplePosition / cellLength + jitterOffset;
+          const acrossPixel = (sampleIndex + 0.5) / SUBSAMPLES - 0.5;
+          const posCells = (pixelIndex + 0.5 + acrossPixel) / cellLength + jitterOffset;
+          let shapeU = 0.5;
 
           if (bouncing) {
             // The core stays inside its cell, so its trail does too: at a turn
@@ -658,13 +670,31 @@
             // the trail changing sides.
             const nearest = nearestOffset(posCells, coreCenter, stripDirection, true, countCells);
             const level = nearest === null ? 0 : coreAt(nearest, width, p.edge);
-            const trailing = tailAt(
-              trailBehind(journeyIn(posCells, mirrored), triangle, halfCore, swingSpan),
-              width, p.tail);
+            const behind = trailBehind(journeyIn(posCells, mirrored), triangle,
+                                       halfCore, swingSpan);
+            const trailing = tailAt(behind, width, p.tail);
             accumulated += trailing > level ? trailing : level;
+
+            // The ruler's trailing half has to be the same measure the tail is
+            // drawn from, or color along a tail paints where the tail is not.
+            if (behind < shapeTrail && shapeTrail > 0.0001) {
+              shapeU = 0.5 + 0.5 * behind / shapeTrail;
+            } else if (nearest !== null && shapeLead > 0.0001) {
+              shapeU = 0.5 - 0.5 * Math.abs(nearest) / shapeLead;
+            }
           } else {
             const nearest = nearestOffset(posCells, coreCenter, stripDirection, p.bounce, countCells);
-            if (nearest !== null) accumulated += shapeAt(nearest, width, p.edge, p.tail);
+            if (nearest !== null) {
+              accumulated += shapeAt(nearest, width, p.edge, p.tail);
+              const reach = nearest < 0 ? shapeLead : shapeTrail;
+              if (reach > 0.0001) shapeU = 0.5 + 0.5 * nearest / reach;
+            }
+          }
+
+          if (p.placedActive) {
+            const u = rulerAt(p, stripIndex, pixelIndex + acrossPixel,
+                              Math.max(0, Math.min(1, shapeU)));
+            placedAccumulated += placedAt(p, u, placedDrift);
           }
         }
 
@@ -672,27 +702,8 @@
         const brightness = profile * jitterLevel * swell;
         if (brightness <= 0.002) continue;
 
-        const centerPos = (pixelIndex + 0.5) / cellLength + jitterOffset;
-        const centerOffset = nearestOffset(centerPos, coreCenter, stripDirection,
-                                           p.bounce, countCells);
-        let shapeU = 0.5;
-        if (bouncing) {
-          // The ruler's trailing half has to be the same measure the tail is
-          // drawn from, or color along a tail paints where the tail is not.
-          const behind = trailBehind(journeyIn(centerPos, mirrored), triangle,
-                                     halfCore, swingSpan);
-          if (behind < shapeTrail && shapeTrail > 0.0001) {
-            shapeU = 0.5 + 0.5 * behind / shapeTrail;
-          } else if (centerOffset !== null && shapeLead > 0.0001) {
-            shapeU = 0.5 - 0.5 * Math.abs(centerOffset) / shapeLead;
-          }
-        } else if (centerOffset !== null) {
-          const reach = centerOffset < 0 ? shapeLead : shapeTrail;
-          if (reach > 0.0001) shapeU = 0.5 + 0.5 * centerOffset / reach;
-        }
-        shapeU = Math.max(0, Math.min(1, shapeU));
-        const tint = colorAt(p, base, stripIndex, pixelIndex, shapeU, profile,
-                              placedDrift, wanderT, pulseHue);
+        const tint = colorAt(p, base, stripIndex, pixelIndex,
+                              placedAccumulated / SUBSAMPLES, profile, wanderT, pulseHue);
 
         const rgb = hsv2rgb(tint.h & 255, clamp8(tint.s), 255);
         const level = clamp8(tint.v * brightness);
