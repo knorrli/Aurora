@@ -231,12 +231,21 @@ it becomes a build item.
       "How big" is the wander's spatial scale, the whole wall moving as
       one down to individual pixels; Scale is the obvious noun but has
       never been held against what the control actually does.
-- [ ] **The color panel does not say what its switches govern.** Slide /
-      region and the three rulers drive the placed field and nothing else
-      — `placedIsRegion` and `placedRuler` are read nowhere outside that
+- [ ] **The color panel does not say what its switches govern, and four
+      controls are dead in the default state.** Slide / region and the
+      three rulers drive the placed field and nothing else —
+      `placedIsRegion` and `placedRuler` are read nowhere outside that
       path in `brain/src/P_Generator.cpp` — but they sit above three
-      subsections and read as though they govern all three. Nothing in the
-      panel says otherwise.
+      subsections and read as though they govern all three.
+      Worse, `placedAt` returns on its first line under slide, so Count,
+      Width, Edge and Speed — four of the seven controls under "What you
+      place" — do nothing at all whenever that switch is on slide, which
+      is where it starts. The preview agrees, so they really are inert
+      rather than merely subtle. Found by playing the panel and wondering
+      why the faders did nothing.
+      The cheap fix is the one the bypass already uses: dim the four while
+      slide is selected, so a control that cannot do anything does not
+      look like it should.
       Two more open parts. The subsection names "What you place", "What
       lives" and "From the light level" are the design's own words and are
       longer than the controls under them. And the ruler buttons name the
