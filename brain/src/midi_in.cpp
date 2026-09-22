@@ -13,8 +13,11 @@ static void handleProgramChange(uint8_t channel, uint8_t program) {
     resetPreset(selectedPreset);
 }
 
+static uint8_t ccByte[128];
+
 static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value) {
     (void)channel;
+    if (control < 128) ccByte[control] = value;
     switch (control) {
         case CC_TEMPO_DIVISION:
             tempo::setDivision(value);
@@ -122,5 +125,7 @@ void begin() {
 void tick() {
     while (usbMIDI.read()) { }
 }
+
+const uint8_t *ccBytes() { return ccByte; }
 
 } // namespace midi_in
