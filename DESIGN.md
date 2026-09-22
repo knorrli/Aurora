@@ -56,18 +56,25 @@ There are three saved things and one played thing.
 
 ### A patch
 
-A set of parameter values, **plus the far end of each fader's morph
-target**. "Intense Strobe" is not a separate patch; it is part of what
-the Strobe patch is.
+A set of parameter values, **plus the far end of every morph target it
+owns** — one per fader, and one the keypad pushes into. "Intense Strobe"
+is not a separate patch; it is part of what the Strobe patch is.
 
 Patches live in the brain and are selected by number. How they get there
 and what one is made of is § "Patch storage" below.
 
 ### A morph target
 
-A saved alternate set of values, belonging to one patch, that one fader
+A saved alternate set of values, belonging to one patch, that one control
 pulls toward. **Absolute** — the far end is a specific look you dialed
 in and judged.
+
+There are four per patch. Three belong to the faders, one each. The
+fourth is the **accent target**, reached by holding the key of the patch
+you are already on, and it belongs to no fader — see § "Changing patch".
+
+A morph target is not a patch and need not match one. That is what makes
+a fader unable to arrive: there is nothing at its far end to arrive at.
 
 The test for whether something is a morph target: can you build the far
 end and look at it? "This patch flat out" — yes. "This patch's other
@@ -194,11 +201,19 @@ reachable by MIDI by design, and mode flags that once shared a bitfield
 have been moving to their own CCs since `docs/bench-facts.md` § "The
 bounce rework holds on the wall" recorded the packed CC gone.
 
-**A patch is several parameter sets, not one.** The base, plus the far
-end of each fader's morph target, and each far end covers the whole
-parameter set — § "What a patch holds for them". Four sets minimum, plus
-whatever the pad's destination scheme needs. About 700 bytes a patch,
-generously counted.
+**Not every CC is in a patch.** Which ones are is recorded CC by CC in
+`shared/aurora_protocol.h` § "What a patch change does to each CC":
+the look is saved, recalled and morphed, except for the four switches,
+which are saved and recalled but never interpolated; the standing
+positions of the box's own switches and the hand on the pad are none of
+the three.
+
+**A patch is several parameter sets, not one.** The base, plus the far end
+of every morph target it owns, and each far end covers the whole parameter
+set — § "What a patch holds for them". Five minimum: the base, one per
+fader, and the accent target the keypad pushes into, which belongs to no
+fader. Plus whatever the pad's destination scheme needs. About 875 bytes a
+patch, generously counted, and two ramp times.
 
 ### Where it lives
 
@@ -319,6 +334,14 @@ knob, so the question becomes which of those amounts a route reaches.
 
 ### Which strips — a window, not a selection
 
+> **Reopened and shelved, 2026-09-22.** Everything in this subsection is
+> preserved as reasoning, not as a decision. What it describes — X as a
+> window across the nine positions, Y scrubbing toward the last key
+> pressed — is no longer believed to be what the pad should do. The
+> replacement is undecided and is deliberately not being argued. See
+> § Open, "What the touchpad is for".
+
+
 The old controller selected strips with the pad's X axis, in three modes.
 It was expressive and it wasted the axis: a continuous control with
 hundreds of positions was acting as a five-way switch, so sliding felt
@@ -404,20 +427,47 @@ needed on the hand controls.
 
 **One rule covers every release:**
 
-> Release means settle at the patch you pressed.
+> Release means settle at the patch you pressed, on the next beat.
 
 - Tap — you are there on the beat. A cut.
-- Hold, then release partway — the morph finishes at its ramp rate. You
-  arrive; holding only stretched the journey.
-- Hold past arrival — you are pushing into that patch's morph target, and
-  release falls back to the patch. The accent.
+- Hold, then release partway — whatever distance is left is re-timed to
+  land exactly on the next beat. You arrive smoothly; holding only
+  stretched the journey.
+- Hold past arrival — you are pushing into that patch's accent target, and
+  release falls back to the patch. The accent. The destination's switches
+  land on that release too, not at arrival — see § "Switches belong to the
+  patch".
 
 So holding is a journey first and an accent second, and you can never be
 stranded in an unnamed blend between two patches with no key that leads
 anywhere.
 
-**Ramp time belongs to the patch**, in beats: the rate the journey runs at
-when nothing is driving it, and the rate a release finishes at.
+**The two releases behave differently, settled 2026-09-22.** A journey's
+far end is the place you asked to go, so releasing must not throw away the
+morph you asked for: the remainder is re-timed and you arrive with no
+jump. Release early and the last stretch runs fast; release late and it
+glides. An accent's far end is a return, and the drop *is* the gesture —
+so releasing holds course to the next beat and then falls to the patch in
+one step. A strobe accent that faded out over half a beat would be a
+different effect.
+
+The alternative for the journey — hold course, then jump to the patch on
+the beat — was rejected because the size of that jump is whatever the
+release timing made it. Let go at 90 % and nothing shows; let go at 10 %
+and the beat cuts almost the whole journey in one frame, having pressed
+and held precisely because a morph was wanted.
+
+**Every keypad effect lands on a beat.** The press is snapped to the
+nearest one, arrival is on one, and both releases resolve on one. Nothing
+the keypad does is instant in the sense of happening between beats.
+
+**Ramp time belongs to the patch**, in beats, and there are two of them:
+one for the journey and one for the accent. A section change wants to be
+slow and a stab wants to be fast, and one number cannot be both. Both are
+**stepped to values that come back to the grid** — halves and their dotted
+forms, the treatment `AURORA_PULSE_PERIODS` already gets in
+`shared/aurora_protocol.h` — so that holding through a completed journey
+arrives on a beat rather than at an arbitrary fraction of one.
 
 **Telling a tap from a hold must not use a fixed threshold.** The obvious
 scheme — still holding when the beat arrives? — fails worst when you play
@@ -623,22 +673,59 @@ What each surface does follows:
 
 | Surface | Arrives? | Switches |
 |----|----|----|
-| Keypad | Always — release settles at the patch you pressed | Move at the settle |
+| Keypad | Always — the journey lands at the patch you pressed | Move when the key is released |
 | Touchpad | Only as a driver of a keypad journey | Never during the gesture |
 | Fader | Never — it holds anywhere | Never |
 
-The keypad's settle is a better moment than halfway in a way worth
-naming: it is a moment the performer caused and is already watching for,
-so the one discontinuity left in the system sits where somebody put it.
+**Switches move when you let go, not when you arrive.** The release is a
+moment the performer caused and is already watching for, and it is always
+on a beat because every keypad effect is — see § "Changing patch". For a
+tap, and for a hold released before arrival, that is the same instant as
+arrival. The two come apart only when a hold runs past arrival into the
+accent.
+
+**There, holding them back is the point.** Build through the journey,
+build further through the accent, let go — and on one beat the accent
+drops *and* the topology changes. One event carrying two things, which is
+what makes a drop land. The color rulers are the strongest case: a patch
+measuring color across the five strips and one measuring it within the
+shape are far apart, and arriving at the second one only when the hand
+comes off is a real gesture rather than a consequence.
+
+What it costs is that the accent plays with the *source* patch's switches,
+since the destination's have not landed yet. That is knowable rather than
+arbitrary — it is the patch you just left — but two things follow. The
+editor must be able to preview an accent with the switches held back, or a
+far end gets dialed against a picture it will rarely show. And which patch
+precedes which becomes compositional, because the reveal only fires when
+the two differ in a switch at all.
+
+**Open: what happens when the pad drives the journey.** A pad-driven
+transition may have no keypad release left to hang the flip on — the key
+that named the destination was let go long before the pad arrived. See
+§ "Which strips — a window, not a selection", which does not yet say how
+naming a destination and scrubbing toward it sit together.
+
+**A completed morph arrives only if it was going to a patch, settled
+2026-09-22.** The question was whether a morph running all the way to its
+far end should take the switches there, which would have made a fader an
+arrival and changed the table above. It does not, and the reason dissolves
+the question rather than answering it: **arrival means you are now at a
+patch**, and a fader's far end is a morph target, which need not be a
+stored patch at all. There is nothing there to arrive at. A keypad press
+must land on a real patch; a fader may be left anywhere a morph can reach.
+
+Two things follow. A switch is part of what a patch is, so a far end
+having no switches of its own is not a restriction — it is what being a
+far end means. And a morph cannot arrive for some strips and not others:
+the touchpad gives each strip its own share, and a per-strip arrival would
+need per-strip bounce and alternate in the renderer, which do not exist.
+Arrival is a whole-wall event, which is why the pad can drive a journey
+the whole way and still never arrive on its own.
 
 **Refusing to save a mismatched far end was considered and dropped,
 2026-09-22.** A morph between two looks whose switches differ is worth
-saving; what it cannot do is flip a switch halfway across. The suggestion
-on the table instead is that **a morph which completes arrives** — runs to
-its far end and takes the switches there, which would make a fader an
-arrival after all and change the table above. That is unsettled, and it
-belongs with real patch storage rather than with the bench panel's A-to-B
-slider, which exists to test that morphing works at all.
+saving; what it cannot do is flip a switch part-way across.
 
 **What a fader cannot do, and why it does not matter.** A fader's far end
 is a morph target belonging to *the same patch*, not a different patch, so
@@ -702,11 +789,39 @@ flip — see `docs/generator.md` § Open, item 1.
 
 ## Open
 
+- **What the touchpad is for.** Reopened 2026-09-22 and shelved the same
+  day, because it is settle-by-looking and nothing on the box is wired to
+  look with yet. What is wrong with the model in § "Which strips" is
+  settled by argument and worth keeping: **the pad's meaning is hidden
+  state.** Driving toward "the last key pressed" means the pad's effect
+  cannot be read off the pad or off the wall, and if that key named a
+  patch close to the one playing, the pad does nothing at all. A control
+  that sometimes does nothing is worse than one that is merely unfamiliar.
+
+  Three jobs want the pad and it has two axes: *where on the wall*, *which
+  direction*, and *how much*. The current model exports "which direction"
+  to the keypad, which is where the hidden state comes from. Pressure is
+  a third axis the hardware reads and the design has never used —
+  `CC_TOUCH_PRESSURE`, unmeasured, see `TODO.md`.
+
+  **No job has been named for the pad yet.** The two things wanted in an
+  improvised set — push the pattern into a burst for a drum fill, and drop
+  to something calm for a breakdown — are the accent and a patch change,
+  both already on the keypad and neither of them spatial. Two leads worth
+  testing when there is something to test with: *collapse the wall to the
+  position under the thumb*, which is the one job nothing else in the rig
+  can do; and a small set of pushes that work on **any** patch rather than
+  on a far end authored for one, which an unplanned set cannot have dialed
+  in advance. The second is the shift's mechanism with a different job —
+  see § "What stopped being a noun", which retired it saying the mechanism
+  was sound.
+
 - **What the fourth rocker does.** Three of the four switches are spoken
   for — overlay/exclusive, mirror, and width on the 3-way. Two jobs are
   left chasing one switch: latching the pad, which was a deliberate
   exception to spring-back, and anything the pad's destination scheme
-  turns out to need. If mirror is permanently on, the pressure
+  turns out to need. Both depend on the pad question above, so this one
+  cannot close before it does. If mirror is permanently on, the pressure
   disappears. PAR match against contrast was considered for it and
   rejected, above.
 - **Where jitter belongs**, above. Settle by looking.

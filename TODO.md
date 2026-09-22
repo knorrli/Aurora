@@ -111,6 +111,25 @@ Checked items are confirmed in the drawer.
           stereo before drilling anything — see `docs/wiring.md` §
           "Foot pedal".
 
+## The test that closes the performance controls
+
+Nothing about how Aurora is *played* can be settled at a desk. The
+performance controls — what the touchpad is for, where jitter belongs,
+whether the fourth rocker has a job, what a fader does when it disagrees
+with the state — all wait on the same thing.
+
+- [ ] **Play a full DJ set to Justice, "Women Worldwide."** Smooth
+      transitions, breakdowns highlighted, builds, drops. If that set can
+      be performed on the rebuilt controller, the performance model is
+      good. If it cannot, the thing that got in the way is the answer.
+      This is the acceptance test, not a demo — it needs the controller
+      rewired first.
+- [ ] **Find out whether the touchpad reads pressure usefully.** The
+      4-wire pad theoretically gives a Z reading and `CC_TOUCH_PRESSURE`
+      is already in the protocol, but it has never been tested on this
+      hardware. Until it has, nothing in the design may depend on it. See
+      `DESIGN.md` § Open, "What the touchpad is for".
+
 ## Hardware work that does not wait on the design
 
 - [ ] **Set the remaining two BCC145 to `A017` and `A025`.** Watch the
@@ -357,21 +376,19 @@ it becomes a build item.
       in `DESIGN.md` § "Switches belong to the patch"; the look itself is
       undiscussed.
 
-- [ ] **Classify every CC as patch state, gesture or ambient.** The
-      format is one byte per CC, so the moment anything writes a snapshot
-      this classification exists whether or not it was decided. Four
-      independent questions per CC: does a patch save it, does arriving
-      at a patch overwrite it, does a morph interpolate it on the way,
-      and is it something a hand moves live. They come apart — switches
-      are saved and recalled but never morphed, and move only at the
-      keypad's settle. Record the answer beside each CC in
-      `shared/aurora_protocol.h`, which is also where someone automating
-      Aurora from a DAW would look to know which lanes a patch change
-      will stomp. Roughly 72 CCs, most obvious; do the pass as a
-      deliverable and bring back only the arguable ones. Tempo division
-      on CC 10 is known to be one of them — a half-time patch is a real
-      musical idea, and a section change that moves the division
-      unasked is a real hazard. See `DESIGN.md` § "Patch storage".
+- [x] **Classify every CC as patch state, gesture or ambient.** Done
+      2026-09-22. All 72 assigned CCs carry a tag in
+      `shared/aurora_protocol.h`, which also states what each tag means:
+      59 `[patch]`, 4 `[switch]`, 4 `[ambient]`, 4 `[gesture]`, and CC 40
+      `[legacy]`. Two
+      things the pass turned up. `[gesture]` and `[ambient]` answer all
+      three storage questions identically — not saved, not recalled, not
+      morphed — so they stay apart only on the fourth question, which is
+      a property of the box rather than of the CC and is not recorded
+      there. And which pattern runs arrives as a Program Change rather
+      than a CC, so a patch holds one thing this classification does not
+      reach.
+
 - [ ] **Patch storage — the editor-to-brain protocol.** Format, medium
       and library are settled in `DESIGN.md` § "Patch storage": raw CC
       bytes, LittleFS on the program flash, up to 128 patches on the
@@ -386,21 +403,40 @@ it becomes a build item.
       addressed writes — this patch, this set, these bytes — rather than
       a replay of the live control stream. That is the constraint that
       shapes it.
-- [ ] **Keep the raw CC bytes in the brain.** A `uint8_t[128]` written in
-      `handleControlChange` beside the cooked values, which today are
-      computed and the byte discarded — `setGeneratorCount` stores
-      `round(20^(value/127))` and cannot be inverted. About fifteen
-      lines, no design questions left, and everything else here depends
-      on it.
+
+- [x] **Keep the raw CC bytes in the brain.** Done 2026-09-22.
+      `midi_in::ccBytes()` in `brain/src/midi_in.h` hands back the last
+      byte received on each CC; `handleControlChange` records it beside
+      the cooked value. Nothing reads it yet. One thing it does not
+      solve: a CC nothing has sent reads 0, which is not what a bipolar
+      control is rendering, so a snapshot taken before the brain has
+      been driven records 0 rather than what is lit. Compiling a default
+      set into the firmware is what closes that.
+
+- [ ] **The editor must preview an accent with the switches held back.**
+      Falls out of switches landing on release, 2026-09-22: in
+      performance an accent plays with the *source* patch's switches,
+      not the destination's, so an accent dialed in `tools/index.html`
+      against the patch's own switches is judged on a picture it will
+      rarely show. See `DESIGN.md` § "Switches belong to the patch".
+
 - [ ] **A default set compiled into the firmware**, so an empty brain
       still lights the wall. See `DESIGN.md` § "Patch storage".
-- [ ] **What a completed morph does.** Raised 2026-09-22 while deciding
-      not to police a far end's switches: a morph between two looks whose
-      switches differ should be saveable, and the suggestion is that a
-      morph which **completes** arrives and takes the switches there —
-      which would make a fader an arrival and change the table in
-      `DESIGN.md` § "Switches belong to the patch". Settle that with the
-      storage, not before.
+- [x] **What a completed morph does.** Settled 2026-09-22. A completed
+      morph arrives only if it was going to a patch, so a fader never
+      arrives and the surfaces table in `DESIGN.md` § "Switches belong to
+      the patch" stands. Switches move when the key is released, which is
+      always on a beat because every keypad effect is — held back through
+      the accent deliberately, so that letting go drops the accent and
+      changes the topology on one beat. Four consequences were written
+      into `DESIGN.md`: a patch holds five parameter sets rather than
+      four, the accent target being its own; there are two ramp times per
+      patch, journey and accent, both stepped to values that come back to
+      the grid; a journey release re-times the remaining distance to land
+      on the next beat; and an accent release holds course to the next
+      beat and then drops in one step, because there the drop is the
+      gesture.
+
 - [ ] **Decide what a fader does when it disagrees with the state.**
       Jump on touch, pickup, or scaled takeover. Arrives with the first
       patch recall and with any DAW driving a CC a fader also owns. Needs
