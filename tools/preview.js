@@ -302,8 +302,11 @@
     const lfo = 0.5 - 0.5 * Math.cos(2 * Math.PI * warped);
 
     // Steepening the sine toward a square is what makes a strobe reachable;
-    // no amount of depth on a sine ever produces an on/off edge.
-    const softness = 0.02 * Math.pow(50, shape);
+    // no amount of depth on a sine ever produces an on/off edge. The sweep is
+    // linear because the visible swelling tracks softness in proportion: spread
+    // geometrically over the same range, half the fader's visible travel falls
+    // in its top ten steps and everything below reads as one flat square.
+    const softness = 0.02 + 0.98 * shape;
     const shaped = (lfo - 0.5) / softness + 0.5;
     return shaped < 0 ? 0 : shaped > 1 ? 1 : shaped;
   }

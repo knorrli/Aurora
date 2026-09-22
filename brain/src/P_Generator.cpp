@@ -423,8 +423,11 @@ void Generator(CHSV color) {
     const float lfo = 0.5f - 0.5f * cosf(2.0f * (float)PI * fract(pulse + stripPhase));
 
     // Steepening the sine toward a square is what makes a strobe reachable;
-    // no amount of depth on a sine ever produces an on/off edge.
-    const float softness = 0.02f * powf(50.0f, genPulseShape);
+    // no amount of depth on a sine ever produces an on/off edge. The sweep is
+    // linear because the visible swelling tracks softness in proportion: spread
+    // geometrically over the same range, half the fader's visible travel falls
+    // in its top ten steps and everything below reads as one flat square.
+    const float softness = 0.02f + 0.98f * genPulseShape;
     float shaped = (lfo - 0.5f) / softness + 0.5f;
     if (shaped < 0.0f) shaped = 0.0f;
     else if (shaped > 1.0f) shaped = 1.0f;

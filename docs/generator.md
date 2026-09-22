@@ -622,9 +622,13 @@ do is a judgment for a set, not a bench.
    spent between 9 and 17 where it barely reads. Per-parameter timing,
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
-5. **The pulse shape taper** was spread geometrically across the fader on
-   a guess. Where the midpoint should sit is a feel judgment nobody has
-   made with music playing.
+5. **Where the pulse shape fader's midpoint should sit.** The sweep is
+   linear, because the visible swelling tracks softness in proportion:
+   measured as the fraction of a cycle the swell spends moving rather than
+   pinned, half the visible travel lands at CC 93. Spread geometrically
+   over the same range it landed at CC 117, with the whole middle of the
+   fader reading as one flat square. Whether 93 is where it should sit is
+   still a feel judgment nobody has made with music playing.
 6. **Where the color layer's controls should stop.** Combinations that
    look bad are easy to reach — a hard edge with deep darkening and a wide
    hue swing is three strong things at once. Whether that wants narrower
