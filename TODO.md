@@ -192,7 +192,10 @@ designing there. See `docs/bench-facts.md`.
       open. See `docs/generator.md` § Open, item 10.
 - [ ] **Jitter in color** — a starfield in hue rather than in
       brightness. The only randomness the color layer has no way to
-      make. See `docs/generator.md` § "The color layer has no jitter".
+      make. Absorbed 2026-09-22 into the texture source below, where it
+      is one destination rather than a project of its own. See
+      `docs/generator.md` § "The color layer has no jitter" and § "What
+      jitter is for".
 - [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 62.
       A scale down from the strips' saturation: full matches them, zero is
       white. The pulse's push toward white measures from it, and the
@@ -205,12 +208,23 @@ designing there. See `docs/bench-facts.md`.
       between strip strobes, the other half of this, became reachable on
       2026-09-22 when the pulse gained their saturation. See `DESIGN.md`
       § "The PAR cans".
-- [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
-      center and a random setting; jitter gains a scale from pixel to
-      cell, and a rate that is not the pulse's. Together they are the
-      chaotic strobe, and the fan half is also why Rain and Comet are the
-      same look. See `docs/generator.md` § Open, "Fan is a linear
-      staircase" and "Jitter has one scale", and `docs/visual-design.md`.
+- [ ] **Fan gains a shape and a center.** A random setting alongside the
+      staircase, so per-strip timing can stop being orderly. This is also
+      why Rain and Comet are the same look. See `docs/generator.md`
+      § Open, "Fan is a linear staircase", and `docs/visual-design.md`.
+- [ ] **Dial the placed field's approximation of the sprinkle.** Region,
+      strip ruler, count around 12, width and edge low, dark pushed up,
+      over a full-width wall with V around half. Thirty seconds in
+      `tools/preview.js`, and it decides how much of the texture source
+      below has to be built. Nothing else on that topic moves until this
+      has been looked at.
+- [ ] **Replace jitter with a texture source.** A value over time and
+      over the strip, routed to brightness or to color the way the pulse
+      is, rather than welded into how the shape branch samples itself.
+      Five looks are written down to measure it against; four of them
+      land on one mechanism, and whether the fifth — raindrops, which
+      need a spot that outlives its cell — is worth its controls is the
+      open fork. See `docs/generator.md` § "What jitter is for".
 - [ ] **Judge the pulse's destinations on the wall.** Everything else about
       them is guesswork until this happens. Three looks are what it was
       built for, and each is one patch: the washes swelling under still

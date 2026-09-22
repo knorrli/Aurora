@@ -686,6 +686,105 @@ wander, which was deliberately given interference instead of randomness.
 Whether it serves a band backdrop or is only a thing the machine could now
 do is a judgment for a set, not a bench.
 
+It is no longer a thing to build on its own: it is the texture source
+below, aimed at hue or whiteness instead of at brightness.
+
+### What jitter is for, worked out 2026-09-22
+
+Nothing built, and the list came first, the way the color layer's did.
+
+**Texture, not a shape, and it has to work alone and on top of another
+pattern.** The second is where the control as it stands fails. Five looks
+were asked for:
+
+| # | Look |
+|---|---|
+| 1 | A mostly black wall. Spots of one to five pixels appear at random places on every strip, hold, and fade. Positions unrelated across the five. Durations ideally not all the same, and the edges dialable from hard to a smooth fade in and out |
+| 2 | A traveling bar with smaller spots inside it that depart to white, to black, or to another hue, and come back |
+| 3 | The same spots standing *outside* the bar instead, covered up as the bar passes over them |
+| 4 | Blitzgewitter — small regions flashing at random places on every strip, hard or soft, reading as a thunderstorm or a room of press photographers |
+| 5 | Raindrops on a window. Spots appear, fade in, hold, then fall down the strip and fade out |
+
+**The control as it stands is not a modulator, which is why it cannot be
+applied to anything.** Jitter adds a random number to the position each
+pixel looks the shape up at, drawn fresh for every pixel. It deforms the
+shape branch from inside its own sampling, and at no point is it a value
+that could be aimed somewhere else. Three consequences, all of them
+visible on the wall:
+
+- **Its randomness has no size.** Neighboring pixels draw unrelated
+  numbers, so the grain is always one pixel wide. No setting produces a
+  block, which is what looks 1 and 4 both ask for.
+- **It only ever takes light away.** The brightness half is
+  `1 − jitter × noise`, one-sided, so full jitter costs half the average
+  brightness. The knob reads as spoiling a pattern rather than lifting
+  one.
+- **The same knob position means twenty different amounts.** The
+  displacement is measured in cells, and a cell is 45 pixels at count 1
+  and 2.2 pixels at count 20. At the roster's own Glitch settings the
+  scatter is about ±1 pixel, so what reaches the wall there is almost
+  entirely the dimming. Glitch cannot be reached by the control it is
+  named for.
+
+**What it should be is a third source, and the first one with a
+position.** The pulse is a value over time with no place on the wall, and
+the wander is the same for color. This is a value over time *and* over
+the strip; where it then goes is a routing choice under the rules
+§ Modulation already sets.
+
+Aimed that way the list collapses. Looks 1 and 4 are one mechanism at two
+settings — 4 is 1 with a faster clock, a harder edge and more of it. Look
+2 is the same source aimed at hue or whiteness instead of brightness,
+which is the gap § "The color layer has no jitter" records, so that stops
+being its own project. **Look 3 costs nothing:** a push runs from the
+dialed value toward a limit and a control already sitting at a limit has
+nowhere to go, so inside a fully lit bar the field is invisible and the
+bar covers the spots with no occlusion rule anywhere. An untested look
+falling out of a rule already in force is the argument that the framing
+is right.
+
+**Look 5 is the fork, and it is the open question.** A drop is born
+somewhere and then travels. Everything else here is computed fresh each
+frame from a phase and a hash, and a spot keyed to a cell cannot leave
+it — which is also what lets the shape branch consider only the two
+images either side of a sample.
+
+| | Spots on a grid | Spots with a lifetime |
+|---|---|---|
+| What it is | one random value per cell, on its own clock | each spot has a birth, an age, and a position that may move |
+| Reaches | 1, 2, 3, 4 | all five |
+| State | none | none needed — age from the phase, birth from a hash |
+| Cost | close to the code that is there | eight to ten new controls |
+| Hazard | a re-roll, which happens anyway | changing rate or count re-keys every spot, and everything in flight teleports |
+
+Neither costs CPU or memory worth counting, which was the surprise: the
+spots can be stateless either way, so there is no particle list. The real
+price of the second is controls, and at eight to ten it meets the line
+§ Modulation already draws, where parameter count outgrows one CC apiece
+and pulls the patch-storage work forward.
+
+**Two cheap moves buy most of the difference.** Give each cell a phase
+offset and a rate multiplier drawn from the hash — two more hashes, no
+state, one spread control — and durations vary and the spots stop
+blinking together, which is look 1's optional half and the plain grid
+cannot do it at all. Then let a spot move *within* its cell: worthless at
+count 20 where a cell is 2.2 pixels, but at count 5 it is nine, and
+appear, hold, slide nine pixels, fade is a raindrop at stage distance.
+Cells drifting permanently apart is the objection recorded against
+per-strip rate in item 1, and it does not apply to a texture — nothing
+reads a texture as a pattern that ought to come back into step.
+
+**Before any of it, the placed field already nearly does look 1.** Region
+primitive, strip ruler, count around 12, width low, edge low, and the
+dark push aimed up toward full, over a wall lit at full width with the V
+fader around half. Still spots, dialable size and hardness, nothing
+built. What it cannot do is break the regular grid or give the spots
+separate clocks, and it needs the V fader left below the top to have
+anywhere to push — the same trap the white and dark controls already set
+for a performer who keeps V high. Worth dialing before the mechanism is
+designed: if bright dots on a dim wall read as the sprinkle, look 1 is
+nearly free and the question shrinks to what 4 and 5 need.
+
 ## Open
 
 1. **Fan is a linear staircase, and the roster's Rain is a chevron.** Its
@@ -737,31 +836,27 @@ do is a judgment for a set, not a bench.
    reappears at the other. Whether that wants clipping, a boundary fade —
    which costs the ends of every pattern that ought to reach them — or
    nothing at all is a judgment for the wall.
-3. **Jitter has one scale, and it is the wrong one for solid shapes.**
-   The noise is keyed on the pixel — `hash8(strip, pixel, bucket)` — so
-   every pixel gets its own displacement and its own level, which is dirt
-   on the picture. Asked for on the wall 2026-09-21: solid blocks, whole
-   and full on, appearing in random places rather than scattered pixels
-   and loose clumps.
+3. **Jitter is the wrong mechanism, not the wrong scale.** What it should
+   be instead is § "What jitter is for" above, along with the five looks
+   it was measured against and the one fork left open. Deferred
+   2026-09-22 until the placed-field approximation recorded there has
+   been dialed on the wall.
 
-   Keying the same two effects on the **cell** instead would give that —
-   a block displaced intact, or killed intact — and it is close to a
-   change of which index goes into the hash rather than a new concept. So
-   jitter probably wants a scale, pixel through to cell, rather than a
-   second control.
+   The two wall findings that started it stand, both 2026-09-21. Solid
+   blocks, whole and full on, appearing in random places were asked for,
+   and the noise is keyed on the pixel — `hash8(strip, pixel, bucket)` —
+   so the grain can only ever be dirt. And Starfield cannot twinkle,
+   because jitter re-rolls once per swell: at its anchor the swell is
+   `16 × 0.5^(20/127 × 6)` ≈ 8.3 beats, so the wall jumps between random
+   arrangements about twice a bar. Winding the rate up cannot fix it,
+   since that is the same knob driving the brightness flash.
 
-   **Jitter also has only one rate, and it is the pulse's.** Re-rolling
-   once per swell is what makes a flashing shape land somewhere new each
-   time, but it leaves Starfield unable to twinkle: at its anchor the
-   swell is `16 × 0.5^(20/127 × 6)` ≈ 8.3 beats, so the wall jumps between
-   random arrangements about twice a bar. Winding the rate up cannot fix
-   it, because that is the same knob driving the brightness flash. Found
-   on the wall 2026-09-21.
-
-   Together with the random fan shape above this is the "chaotic strobe"
-   that could not be built out of fan, speed and pulse. Both halves are
-   randomness at a scale the machine does not currently have, which is
-   why they are worth doing in one go.
+   Together with the random fan shape in item 1 this is the "chaotic
+   strobe" that could not be built out of fan, speed and pulse. Both are
+   randomness at a scale the machine does not have, which is the argument
+   for doing them in one go — though the jitter half is now a larger
+   piece of work than changing which index goes into the hash, so whether
+   they still travel together is itself open.
 4. **Morph moves every parameter in lockstep and linearly.** That is the
    crudest possible path. The count half of it is answered: count's own
    fader is geometric now, so interpolating its CC linearly doubles by
