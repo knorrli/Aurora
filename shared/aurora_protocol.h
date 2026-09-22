@@ -143,7 +143,7 @@ enum AuroraCC : uint8_t {
     CC_SATURATION          = 21, // saturation / S fader
     CC_VALUE               = 22, // brightness / V fader
 
-    // The placed field is something aimed: a slide running one way across a
+    // The placed field is something aimed: a gradient running one way across a
     // ruler with the faders' color at its center, or regions sitting on that
     // ruler. Count, width and edge mean here exactly what they mean in the
     // shape block below.
@@ -158,7 +158,7 @@ enum AuroraCC : uint8_t {
                                  // full — which needs the V fader left below
                                  // the top to have anywhere to go
     CC_PLACED_COUNT        = 27, // regions along the ruler, 1–20. Ignored by
-                                 // a slide, which spans the ruler once
+                                 // a gradient, which spans the ruler once
     CC_PLACED_WIDTH        = 28, // a region's solid core, as a proportion of
                                  // one cell
     CC_PLACED_EDGE         = 29, // hard-edged region through to a smooth fade
@@ -188,7 +188,7 @@ enum AuroraCC : uint8_t {
     // ruler, which is banded like CC_TOUCHPAD_STRIP_MODE above.
     CC_GEN_ALTERNATE       = 45, // odd strips run the journey backwards
     CC_GEN_BOUNCE          = 46, // turn at the cell's edge instead of wrapping
-    CC_COLOR_REGION       = 47, // 0 = one slide across the ruler, 127 = regions
+    CC_COLOR_REGION       = 47, // 0 = one gradient across the ruler, 127 = regions
     CC_COLOR_RULER        = 48, // 0 = across the five strips, 64 = along a
                                  // strip, 127 = within a shape
     // 49 reserved (mode flags)

@@ -102,7 +102,7 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 // A color is hue, whiteness and darkness. Everything else is a push on those
 // three, and the pushes add. Three sources push:
 //
-//   the placed field  something aimed — a slide across a ruler, or regions
+//   the placed field  something aimed — a gradient across a ruler, or regions
 //                     sitting on it
 //   the wander        the wall never quite the same in two places, and where
 //                     it differs keeps moving
@@ -210,7 +210,7 @@ static float wanderAt(uint8_t stripIndex, float along01, float t) {
   return (a + b) * 0.5f;
 }
 
-// A slide is monotone with the base color at the ruler's center, so the reach
+// A gradient is monotone with the base color at the ruler's center, so the reach
 // is how far ONE end departs and the two ends land twice that apart. A region
 // is a bump — base, departure, back to base — built from the shape branch's
 // own core and fades, which is what makes count, width and edge mean the same

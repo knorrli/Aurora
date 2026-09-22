@@ -151,7 +151,7 @@ designing there. See `docs/bench-facts.md`.
       room. A scale down from the strips' saturation rather than a setting
       of its own, per `DESIGN.md` § "The PAR cans".
 - [ ] **Reach the PARs with more than a hue offset.** A white flash
-      between strip strobes, and the PARs following a slide with the
+      between strip strobes, and the PARs following a gradient with the
       strips. Both asked for, neither reachable. See `DESIGN.md` § "The
       PAR cans".
 - [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
@@ -232,19 +232,19 @@ it becomes a build item.
       one down to individual pixels; Scale is the obvious noun but has
       never been held against what the control actually does.
 - [ ] **The color panel does not say what its switches govern, and four
-      controls are dead in the default state.** Slide / region and the
+      controls are dead in the default state.** Gradient / region and the
       three rulers drive the placed field and nothing else —
       `placedIsRegion` and `placedRuler` are read nowhere outside that
       path in `brain/src/P_Generator.cpp` — but they sit above three
       subsections and read as though they govern all three.
-      Worse, `placedAt` returns on its first line under slide, so Count,
+      Worse, `placedAt` returns on its first line under gradient, so Count,
       Width, Edge and Speed — four of the seven controls under "What you
-      place" — do nothing at all whenever that switch is on slide, which
+      place" — do nothing at all whenever that switch is on gradient, which
       is where it starts. The preview agrees, so they really are inert
       rather than merely subtle. Found by playing the panel and wondering
       why the faders did nothing.
       The cheap fix is the one the bypass already uses: dim the four while
-      slide is selected, so a control that cannot do anything does not
+      gradient is selected, so a control that cannot do anything does not
       look like it should.
       Two more open parts. The subsection names "What you place", "What
       lives" and "From the light level" are the design's own words and are

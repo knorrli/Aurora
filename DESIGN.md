@@ -375,13 +375,13 @@ That splits along the two layers the generator already has:
 - **Most of the color layer is what a one-pixel fixture can render.**
   Sampled at each PAR's position, so the four of them differ from each
   other and from the strips instead of being four copies of one hue. The
-  wander and a slide measured across the strips both reach a PAR; a ruler
+  wander and a gradient measured across the strips both reach a PAR; a ruler
   measured within a shape does not, since a PAR has no shape to be inside.
   `dmx_out::tick()` reads one flat `presetColor` for all four today.
 
   Two looks already asked for need more than the hue offset they have: a
   white flash between strip strobes, and the PARs following a red-to-green
-  slide with the strips.
+  gradient with the strips.
 - **The shape layer cannot reach them, except the pulse**, which is
   brightness over time and needs no length. So a PAR follows a swell, a
   strobe and a breathe, and ignores a sweep. Slow and broad on the PARs,
@@ -465,7 +465,7 @@ which is faster than a sweep any song has wanted so far. See
 > **A switch is part of what a patch is. Only arriving at a patch moves
 > one.**
 
-Four things have no middle: alternate, bounce, slide-or-region, and which
+Four things have no middle: alternate, bounce, gradient-or-region, and which
 ruler the placed field is measured against. An amount can fade in and a
 switch cannot, so a morph has never been able to interpolate one. What was
 never settled is *when* it should change instead, and "at the halfway

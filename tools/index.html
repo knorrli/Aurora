@@ -195,7 +195,7 @@
           <div class="chips" id="placedRulerSwitch"></div>
           <div id="placedAmount"></div>
           <div id="placedForm"></div>
-          <div class="note">A slide runs one way across its ruler with the base color at the center, so the amount is how far one end departs and the two ends land twice that apart. A region is a bump — base, departure, back to base. The ruler decides what the position is measured against: across the five strips, along a strip, or from a shape's leading tip through to the end of its tail. Count, width and edge mean here exactly what they mean in the shape branch.</div>
+          <div class="note">A gradient runs one way across its ruler with the base color at the center, so the amount is how far one end departs and the two ends land twice that apart. A region is a bump — base, departure, back to base. The ruler decides what the position is measured against: across the five strips, along a strip, or from a shape's leading tip through to the end of its tail. Count, width and edge mean here exactly what they mean in the shape branch.</div>
         </div>
         <div class="group">
           <h3>What lives<button class="reset" id="wanderReset" title="Put this section back to neutral">reset</button></h3>
@@ -278,7 +278,7 @@
       </div>
       <output id="morphReadout">A</output>
     </div>
-    <div class="note">Capture two patches, then slide between them. Everything continuous interpolates. Switches do not move at all — alternate, bounce, slide/region and the ruler belong to the patch, so B at the far end is B in everything but those. Recall B itself to take them.</div>
+    <div class="note">Capture two patches, then slide between them. Everything continuous interpolates. Switches do not move at all — alternate, bounce, gradient/region and the ruler belong to the patch, so B at the far end is B in everything but those. Recall B itself to take them.</div>
   </div>
 
   <div class="panel">
@@ -316,8 +316,8 @@ const OFF = 0, ON = 127;
 const isOn = v => v >= 64;
 const band3 = v => (v < 43 ? 0 : v < 86 ? 1 : 2);
 
-// slide | region, across the strips | along a strip | within a shape
-const SLIDE = OFF, REGION = ON;
+// gradient | region, across the strips | along a strip | within a shape
+const GRADIENT = OFF, REGION = ON;
 const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 
 
@@ -462,7 +462,7 @@ const ANCHORS = {
 // Everything centered is "no departure", so the wall is one flat color with
 // the whole redesigned layer switched on and nothing dialed.
 const COLOR_OFF = {
-  colorRegion: SLIDE, colorRuler: ON_STRIP,
+  colorRegion: GRADIENT, colorRuler: ON_STRIP,
   placedHue: 64, placedWhite: 64, placedDark: 64,
   placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
   wanderHue: 64, wanderWhite: 64, wanderDark: 64,
@@ -474,12 +474,12 @@ const COLOR_OFF = {
 // is 0 for the five strips, 64 for along a strip, 127 for within a shape.
 const COLOR_LOOKS = {
   'Flat':          {},
-  'Rainbow':       { colorRegion: SLIDE, colorRuler: ON_WALL,  placedHue: 112 },
+  'Rainbow':       { colorRegion: GRADIENT, colorRuler: ON_WALL,  placedHue: 112 },
   'Mirror':        { colorRegion: REGION, colorRuler: ON_WALL,  placedHue: 110, placedCount: 0, placedWidth: 30, placedEdge: 96 },
-  'Strip slide':   { colorRegion: SLIDE, colorRuler: ON_STRIP, placedHue: 110 },
+  'Strip gradient':{ colorRegion: GRADIENT, colorRuler: ON_STRIP, placedHue: 110 },
   'Center cell':   { colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 104, placedCount: 0, placedWidth: 22, placedEdge: 0 },
-  'Head and tail': { colorRegion: SLIDE, colorRuler: IN_SHAPE, placedHue: 104 },
-  'Comet tail':    { colorRegion: SLIDE, colorRuler: IN_SHAPE, placedHue: 108, litWhite: 127 },
+  'Head and tail': { colorRegion: GRADIENT, colorRuler: IN_SHAPE, placedHue: 104 },
+  'Comet tail':    { colorRegion: GRADIENT, colorRuler: IN_SHAPE, placedHue: 108, litWhite: 127 },
   'Drifting bands':{ colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 90, placedCount: 54, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
   'Alive':         { wanderHue: 92, wanderRate: 8,  wanderScale: 6 },
   'Boiling':       { wanderHue: 104, wanderDark: 40, wanderRate: 64, wanderScale: 74 },
@@ -690,10 +690,10 @@ function migrate(patch) {
   const out = { ...patch };
   if ('colorFlags' in out) {
     const packed = out.colorFlags | 0;
-    out.colorRegion = (packed & 1) ? REGION : SLIDE;
+    out.colorRegion = (packed & 1) ? REGION : GRADIENT;
     out.colorRuler = RULER_VALUES[Math.min(2, (packed >> 1) & 3)];
   } else if ('placedKind' in out || 'placedRuler' in out) {
-    out.colorRegion = (out.placedKind | 0) > 63 ? REGION : SLIDE;
+    out.colorRegion = (out.placedKind | 0) > 63 ? REGION : GRADIENT;
     out.colorRuler = RULER_VALUES[Math.min(2, Math.floor((out.placedRuler | 0) * 3 / 128))];
   }
   if ('flags' in out) {
@@ -925,7 +925,7 @@ for (const [hostId, defs] of Object.entries(GROUPS)) buildRows(hostId, defs);
 // before the first frame gives a zero width and draws nothing.
 requestAnimationFrame(drawPulseWave);
 
-// A switch, not a knob, because neither of these has a middle: half a slide
+// A switch, not a knob, because neither of these has a middle: half a gradient
 // is not a state and neither is half of "measured across the strips".
 const namedSwitches = [];
 
@@ -954,7 +954,7 @@ function buildSwitch(hostId, name, options) {
 function paintSwitches() { for (const paint of namedSwitches) paint(); }
 
 buildSwitch('placedKindSwitch', 'colorRegion', [
-  [SLIDE,  'slide',  'one way across the ruler, base color at the center'],
+  [GRADIENT, 'gradient', 'one ramp spanning the ruler, base color at its center. Count, width and edge do nothing here'],
   [REGION, 'region', 'a bump: base, departure, back to base'],
 ]);
 

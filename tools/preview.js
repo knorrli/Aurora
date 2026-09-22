@@ -145,7 +145,7 @@
       litHueReach: ccBipolar(s.litHue) * LIT_MAX_HUE,
       litDarkReach: ccBipolar(s.litDark),
 
-      placedKind: isOn(s.colorRegion) ? KIND_REGION : KIND_SLIDE,
+      placedKind: isOn(s.colorRegion) ? KIND_REGION : KIND_GRADIENT,
       placedRuler: Math.min(RULER_SHAPE, band3(s.colorRuler)),
       placedHue: ccBipolar(s.placedHue) * PLACED_MAX_HUE,
       placedWhite: ccBipolar(s.placedWhite),
@@ -317,7 +317,7 @@
   // A color is hue, whiteness and darkness. Everything else is a push on
   // those three, and the pushes add. Three sources push:
   //
-  //   the placed field  something you aim — a slide across a ruler, or
+  //   the placed field  something you aim — a gradient across a ruler, or
   //                     regions sitting on it
   //   the wander        the wall never quite the same in two places, and
   //                     where it differs keeps moving
@@ -328,7 +328,7 @@
   // down for a quiet verse and the hue slides with it.
 
   const RULER_WALL = 0, RULER_STRIP = 1, RULER_SHAPE = 2;
-  const KIND_SLIDE = 0, KIND_REGION = 1;
+  const KIND_GRADIENT = 0, KIND_REGION = 1;
 
   const PLACED_MAX_HUE = 128;
   const WANDER_MAX_HUE = 128;
@@ -356,7 +356,7 @@
   }
 
   // 0 at one end of the ruler, 1 at the other. The shape ruler runs from the
-  // leading tip through to the end of the tail, so a slide on it puts one
+  // leading tip through to the end of the tail, so a gradient on it puts one
   // color at the head and the other behind.
   function rulerAt(p, stripIndex, pixelIndex, shapeU) {
     if (p.placedRuler === RULER_WALL) return STRIPS > 1 ? stripIndex / (STRIPS - 1) : 0.5;
@@ -364,14 +364,14 @@
     return PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
   }
 
-  // A slide is monotone with the base color at the ruler's center, so the
+  // A gradient is monotone with the base color at the ruler's center, so the
   // amount is how far ONE end departs and the two ends land twice that apart.
   // A region is a bump: base, departure, back to base — the shape branch's
   // own core-and-fades, which is what makes count, width and edge mean here
   // what they mean there.
   function placedAt(p, u, drift) {
     if (!p.placedActive) return 0;
-    if (p.placedKind === KIND_SLIDE) return (u - 0.5) * 2;
+    if (p.placedKind === KIND_GRADIENT) return (u - 0.5) * 2;
     const cell = u * p.placedCount + drift;
     const offset = fract(cell) - 0.5;
     return shapeAt(offset, p.placedWidth, p.placedEdge, 0);

@@ -214,7 +214,7 @@ the wall down for a quiet verse and the hue would slide with it.
 
 Two primitives, either of them measured against one of three rulers.
 
-- A **slide** runs one way across its ruler with the base color at the
+- A **gradient** runs one way across its ruler with the base color at the
   center. The amount is how far *one* end departs, so the two ends land
   twice that far apart.
 - A **region** is a bump — base, departure, back to base — built from the
@@ -230,15 +230,15 @@ one of them:
 
 | Look | Primitive | Ruler |
 |----|----|----|
-| A rainbow across the five strips | slide | wall |
+| A rainbow across the five strips | gradient | wall |
 | One color in the middle, mirrored outward | region | wall |
-| Cyan through violet to pink up a strip | slide | strip |
+| Cyan through violet to pink up a strip | gradient | strip |
 | A hard green cell at the center of a strip | region | strip |
-| A bar with a red head and a green tail | slide | shape |
+| A bar with a red head and a green tail | gradient | shape |
 | A band across the middle of a shape | region | shape |
 
-**Mirroring is a region, not a mode of the slide.** A fold flag on the
-slide was nearly built and would have made the same look reachable two
+**Mirroring is a region, not a mode of the gradient.** A fold flag on the
+gradient was nearly built and would have made the same look reachable two
 ways with different controls. Dropping it, each primitive does one thing
 and the table has no duplicate rows.
 
@@ -287,15 +287,15 @@ the wall goes hot as it flashes.
 The two are also not interchangeable where they overlap. On a comet, hue
 from the light level bunches the whole color change into the few pixels
 behind the core, because the tail is dim and nearly flat over most of its
-length — there is almost nothing left for color to follow. A slide within
+length — there is almost nothing left for color to follow. A gradient within
 a shape measures position instead and spreads evenly the whole way. So a
 white head wants the light level, and color along the tail wants the
-slide:
+gradient:
 
 | Want | Set |
 |----|----|
 | White head | light level → to white, full |
-| Color along the tail | slide, within a shape, hue |
+| Color along the tail | gradient, within a shape, hue |
 
 ### Why the previous field was replaced
 
@@ -656,7 +656,7 @@ do is a judgment for a set, not a bench.
    A chevron needs a fold, which is what item 1 above is asking for, and
    neither branch has one.
 10. **A second placed field was designed for and not built.** Both rulers
-   at once — a strip painted with a slide *and* shapes crossing it
+   at once — a strip painted with a gradient *and* shapes crossing it
    carrying their own — was agreed as the thing to leave until wanted,
    on the argument that the first one would be written so the second cost
    almost nothing.
