@@ -132,6 +132,28 @@ Checked items are confirmed in the drawer.
       lines means desoldering brittle keypad wiring, so they wait until
       the pad is off the box anyway.
 
+## On the wall, next session
+
+Built 2026-09-22 and seen by nothing but the preview. One look each.
+
+- [ ] **Turn bounce on and off** at count 1, fan 0, a narrow shape. The
+      shape should stand still across the flip and turn at the end it was
+      heading for. With fan up the other strips still move, and a pattern
+      entered with bounce already on starts its swing somewhere new — both
+      expected. See `DESIGN.md` § "Switches belong to the patch".
+- [ ] **Wind the placed field's region count up**, on the strip ruler with
+      a hard edge. It should wash out smoothly rather than strobe. See
+      `docs/bench-facts.md` § "Point-sampling a pattern aliases".
+- [ ] **Pull CC 62 down, then open the pulse's PAR saturation.** Full
+      should look like the strips as before; pulled down, the flash toward
+      white should start from pale. See `DESIGN.md` § "The PAR cans".
+- [ ] **Sweep the V fader under Glitch.** The white pixels should dim with
+      the colored ones. Then judge the 30 % white share, which has never
+      been judgeable. See `docs/bench-facts.md`.
+
+The pulse's destinations, the anchor against a click and the stepped rate
+are unjudged too, and are listed below.
+
 ## Generator, next
 
 None of this is committed to — it is an experiment that earned a second
