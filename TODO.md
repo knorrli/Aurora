@@ -243,9 +243,17 @@ it becomes a build item.
       is where it starts. The preview agrees, so they really are inert
       rather than merely subtle. Found by playing the panel and wondering
       why the faders did nothing.
-      The cheap fix is the one the bypass already uses: dim the four while
-      gradient is selected, so a control that cannot do anything does not
-      look like it should.
+      Two ways out, and the panel rework has to pick one. Indicate it —
+      dim the four while gradient is selected, the way a bypassed branch
+      already dims, so a control that cannot do anything stops looking
+      like it should. Or give them a meaning there, which only one of the
+      four can take: Count has nothing to repeat and Width nothing to
+      size, since a gradient spans the ruler once by definition, and Speed
+      cannot move it without wrapping a monotone ramp and putting a hard
+      jump where the two ends meet. Edge is the one that could — bending
+      the ramp from straight to eased is the same idea as pulse shape and
+      travel easing, which would make it a fourth use of one word rather
+      than a new control.
       Two more open parts. The subsection names "What you place", "What
       lives" and "From the light level" are the design's own words and are
       longer than the controls under them. And the ruler buttons name the
