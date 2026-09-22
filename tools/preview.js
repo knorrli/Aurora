@@ -39,6 +39,9 @@
   // How long a stopped pattern takes to walk home to Position, in beats.
   const GEN_POSITION_SETTLE_BEATS = 2;
 
+  // Below this a travel is a pixel a minute: slower than anything the roster
+  // wants, and a standstill that quietly drifts out from under Position.
+  const GEN_STILL_PIXELS_PER_BEAT = 0.05;
 
   // AURORA_PULSE_PERIODS in shared/aurora_protocol.h. Stepped rather than
   // continuous: the phase is anchored to the musical grid, and only a period
@@ -138,6 +141,7 @@
 
   const ccUnit = v => v / 127;
   const ccBipolar = v => (v < 64 ? (v - 64) / 64 : (v - 64) / 63);
+  const stillBelowThreshold = px => Math.abs(px) < GEN_STILL_PIXELS_PER_BEAT ? 0 : px;
   const ccSquared = (v, max) => { const x = (v - 64) / 63; return Math.sign(x) * x * x * max; };
   const ccMap = (v, hi) => Math.floor(v * hi / 127);
   const ccCount = v => Math.min(GEN_MAX_COUNT, Math.max(1, Math.round(Math.pow(GEN_MAX_COUNT, v / 127))));
@@ -157,7 +161,7 @@
       edge: ccUnit(s.edge),
       tail: ccUnit(s.tail),
       positionCells: ccBipolar(s.position) * 0.5,
-      speedPixels: ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT),
+      speedPixels: stillBelowThreshold(ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT)),
       fan: ccUnit(s.fan),
       jitter: ccUnit(s.jitter),
       pulseBeats: pulsePeriod(s.pulseRate),

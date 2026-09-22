@@ -44,6 +44,9 @@
 // second move of its own.
 #define GEN_POSITION_SETTLE_BEATS 2.0f
 
+// Below this a travel is a pixel a minute — slower than anything the roster
+// wants and slow enough to read as a standstill that quietly drifts.
+#define GEN_STILL_PIXELS_PER_BEAT 0.05f
 
 // Each pixel averages this many samples across its own width. Point-sampling
 // at the pixel center aliases once a cell is only a pixel or two across: the
@@ -747,9 +750,15 @@ void setGeneratorPosition(uint8_t value) { genPositionCells = ccBipolar(value) *
 
 // Bipolar around 64, squared so the slow end — where every pattern in the
 // roster actually lives — gets most of the travel.
+//
+// One step either side of center is a crawl of a pixel a minute, which is not
+// a speed anyone dials: it is a pattern that will not sit where Position puts
+// it, since the settle runs only at a standstill. Snapping it to nothing
+// costs the two steps that already read as still and makes still mean still.
 void setGeneratorSpeed(uint8_t value) {
   const float x = ((float)value - 64.0f) / 63.0f;
-  genSpeedPixels = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
+  const float pixels = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
+  genSpeedPixels = (fabsf(pixels) < GEN_STILL_PIXELS_PER_BEAT) ? 0.0f : pixels;
 }
 
 // Stepped, not continuous: the phase is anchored to the musical grid, and a

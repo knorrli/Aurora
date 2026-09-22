@@ -129,6 +129,21 @@ offset to give it without pushing the core out of its own cell.
 Fan still spreads the five strips from wherever Position puts them. Centered
 on all five means Position centered and Fan at zero.
 
+**Still has to mean still, or Position cannot hold.** The settle runs at a
+standstill and nothing else, so one step either side of center used to be a
+crawl of about a pixel a minute that never settled: the readout said still,
+and after a few minutes the pattern was visibly off-center. Anything under
+0.05 px/beat is now zero, which costs the two fader steps that already read
+as still.
+
+**An off-center shape at nearly full width shows the next copy.** With bounce
+off the strip is a loop — that is what carries a traveling shape off one end
+and back on the other — so a shape standing off-center and grown until its far
+edge crosses the end is met by the next copy coming in behind it: body, a dark
+pixel, then a lit sliver at the far end. It is the loop working, not a fault,
+and it is only reachable at count 1 with the shape both off-center and nearly
+as wide as the strip.
+
 ### Where the pulse reaches, built 2026-09-22
 
 One oscillator with one rate, pushing on six things at once. Each
