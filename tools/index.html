@@ -70,6 +70,8 @@
   /* ---- rows -------------------------------------------------------- */
 
   .row { display: grid; grid-template-columns: 96px 1fr 76px; align-items: center; gap: 9px; margin-bottom: 7px; }
+  .wave { display: block; width: 100%; height: 84px; margin-top: 10px;
+          border: 1px solid var(--line); border-radius: 4px; background: #17181f; }
   .row label { color: var(--text); font-size: 13px; }
   .row .cc { color: var(--dim); font-size: 10px; }
   .row output { text-align: right; color: var(--accent); font-variant-numeric: tabular-nums; font-size: 12px; }
@@ -151,6 +153,7 @@
       <div class="group">
         <h3>Pulse <span class="badge">also to PARs</span></h3>
         <div id="shapePulse"></div>
+        <canvas id="pulseWave" class="wave"></canvas>
         <div class="note">Brightness only. Driving width as well made a swell read as a fill creeping in from one end, which put a strobe out of reach.</div>
       </div>
     </div>
@@ -273,7 +276,7 @@
 <script>
 const CC = {
   width: 70, count: 71, edge: 72, tail: 73, speed: 74,
-  fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, pulseShape: 80,
+  fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
   alternate: 45, bounce: 46,
   hue: 20, saturation: 21, value: 22,
   washLevel: 60, washHueOffset: 61,
@@ -315,6 +318,9 @@ const DERIVED = {
   jitter:     v => (v / 127 * 100).toFixed(0) + '%',
   pulseDepth: v => (v / 127 * 100).toFixed(0) + '%',
   pulseRate:  v => (16 * Math.pow(0.5, v / 127 * 6)).toFixed(2) + ' beats',
+  pulseSkew:  v => { const k = 0.5 + 0.48 * bip(v);
+                     return Math.abs(bip(v)) < 0.03 ? 'even rise and fall'
+                          : (k * 100).toFixed(0) + '% of the cycle rising'; },
   pulseShape: v => v < 20 ? 'square' : v > 110 ? 'sine' : (v / 127 * 100).toFixed(0) + '% soft',
   hue:        v => Math.round(v / 127 * 250) + '/255',
   saturation: v => (v / 127 * 100).toFixed(0) + '%',
@@ -376,6 +382,7 @@ const GROUPS = {
   shapePulse: [
     ['pulseDepth', 'Depth',       'how hard the shape swells in place'],
     ['pulseRate',  'Rate',        '16 beats per swell → a quarter beat'],
+    ['pulseSkew',  'Skew',        'even rise and fall → a ramp that snaps back'],
     ['pulseShape', 'Shape',       'hard on/off square → smooth sine'],
   ],
   shapeOpen: [
@@ -413,19 +420,19 @@ const GROUPS = {
 };
 
 const ANCHORS = {
-  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:90,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseShape:127 },
-  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseShape:127 },
-  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseShape:80 },
-  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  Starfield:  { width:4,   count:110, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseShape:127 },
-  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseShape:0 },
-  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseShape:0 },
-  Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseShape:0 },
+  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:90,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseSkew:64, pulseShape:127 },
+  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:80 },
+  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Starfield:  { width:4,   count:110, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
 };
 
 // Shape anchors set the shape and nothing else, and color looks set the
@@ -497,6 +504,7 @@ function buildRows(hostId, defs) {
     slider.addEventListener('input', () => {
       state[name] = +slider.value;
       readout();
+      drawPulseWave();
       sendParam(name);
     });
 
@@ -529,6 +537,7 @@ function applyPatch(patch) {
   }
   syncFlagButtons();
   paintSwitches();
+  drawPulseWave();
   sendAll();
 }
 
@@ -725,9 +734,72 @@ async function initMidi() {
   refresh();
 }
 
+// Drawn with the renderer's own shaping function rather than a copy of it, so
+// the picture cannot drift from what the strips do. Two cycles, because the
+// snap at the end of a skewed cycle only reads as an edge where it repeats.
+const waveCanvas = document.getElementById('pulseWave');
+const WAVE_CYCLES = 2;
+
+function drawPulseWave() {
+  const w = waveCanvas.clientWidth, h = waveCanvas.clientHeight;
+  if (!w || !h) return;
+
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  waveCanvas.width = Math.round(w * dpr);
+  waveCanvas.height = Math.round(h * dpr);
+
+  const ctx = waveCanvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = 9;
+  const y = v => (h - pad) - v * (h - 2 * pad);
+
+  const depth = state.pulseDepth / 127;
+  const floor = 1 - depth;
+
+  const rail = (v, style) => {
+    ctx.strokeStyle = style; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y(v) + 0.5); ctx.lineTo(w, y(v) + 0.5); ctx.stroke();
+  };
+  rail(1, 'rgba(255,255,255,.08)');
+  rail(0, 'rgba(255,255,255,.08)');
+
+  ctx.setLineDash([3, 4]);
+  rail(floor, 'rgba(217,140,63,.30)');
+  ctx.setLineDash([]);
+
+  for (let c = 1; c < WAVE_CYCLES; c++) {
+    const x = Math.round(w * c / WAVE_CYCLES) + 0.5;
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, h - pad); ctx.stroke();
+  }
+
+  ctx.strokeStyle = '#d98c3f';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (let px = 0; px <= w; px++) {
+    const swell = floor + depth * AuroraPreview.pulseWave(
+      px / w * WAVE_CYCLES, state.pulseShape / 127, bip(state.pulseSkew));
+    if (px === 0) ctx.moveTo(px, y(swell)); else ctx.lineTo(px, y(swell));
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(139,143,163,.8)';
+  ctx.font = '10px ui-monospace, Menlo, monospace';
+  ctx.fillText('two swells \u00b7 ' + DERIVED.pulseRate(state.pulseRate) + ' each', 7, 13);
+}
+
+window.addEventListener('resize', drawPulseWave);
+
 // --- wire up ---------------------------------------------------------------
 
 for (const [hostId, defs] of Object.entries(GROUPS)) buildRows(hostId, defs);
+
+// After layout: the canvas is sized in CSS percentages, and measuring it
+// before the first frame gives a zero width and draws nothing.
+requestAnimationFrame(drawPulseWave);
 
 // A switch, not a knob, because neither of these has a middle: half a slide
 // is not a state and neither is half of "measured across the strips".

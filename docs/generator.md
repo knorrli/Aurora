@@ -47,6 +47,8 @@ That is the whole thing. Everything below is a parameter of it.
 
 | CC | Control | Meaning | Range |
 |----|---------|---------|-------|
+| 45 | Alternate | Odd strips run against the even ones | switch |
+| 46 | Bounce | Reverse at the strip end instead of wrapping | switch |
 | 70 | Width | The solid core, as a proportion of one cell | 0–100 % |
 | 71 | Count | How many shapes along the strip | 1–20 |
 | 72 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
@@ -56,7 +58,7 @@ That is the whole thing. Everything below is a parameter of it.
 | 76 | Jitter | Randomness in position and brightness, re-rolled once per swell | 0–100 % |
 | 77 | Pulse depth | How hard the brightness swells | 0–100 % |
 | 78 | Pulse rate | How long one swell takes | 16 → 0.25 beats |
-| 79 | Flags | Bit 0: odd strips run against the even ones. Bit 1: reverse at the strip end instead of wrapping | — |
+| 79 | Pulse skew | Bipolar — center is an even rise and fall, either side slides the peak toward a ramp. *Editor and preview only, no firmware yet* | — |
 | 80 | Pulse shape | Hard on/off square through to smooth sine | — |
 
 Color is hue, whiteness and darkness, and sits downstream of all of this —

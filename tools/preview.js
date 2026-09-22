@@ -135,6 +135,7 @@
       pulseDepth: ccUnit(s.pulseDepth),
       pulseBeats: GEN_SLOWEST_PULSE_BEATS * Math.pow(0.5, ccUnit(s.pulseRate) * GEN_PULSE_RATE_OCTAVES),
       pulseShape: ccUnit(s.pulseShape),
+      pulseSkew: ccBipolar(s.pulseSkew),
       alternate: isOn(s.alternate),
       bounce: isOn(s.bounce),
 
@@ -285,6 +286,27 @@
   const pulsePhase = makeTracker();
   const wanderPhase = makeTracker();
   const placedPhase = makeTracker();
+
+  // Skew slides the peak through the cycle, so one side of the swell
+  // collapses into a snap and a ramp becomes reachable. It warps the phase
+  // rather than the output, which leaves the cycle's length untouched: moving
+  // skew changes the swell's shape without changing how often it lands.
+  //
+  // Bipolar, so centre is an exactly even rise and fall. Anything near but not
+  // on 0.5 phase-shifts a square edge instead of leaving it alone, which reads
+  // as the strobe sitting late rather than as a control doing nothing.
+  function pulseWave(phase, shape, skew) {
+    const k = 0.5 + 0.48 * Math.min(1, Math.max(-1, skew));  // 0 and 1 divide by zero
+    const t = fract(phase);
+    const warped = t < k ? 0.5 * t / k : 0.5 + 0.5 * (t - k) / (1 - k);
+    const lfo = 0.5 - 0.5 * Math.cos(2 * Math.PI * warped);
+
+    // Steepening the sine toward a square is what makes a strobe reachable;
+    // no amount of depth on a sine ever produces an on/off edge.
+    const softness = 0.02 * Math.pow(50, shape);
+    const shaped = (lfo - 0.5) / softness + 0.5;
+    return shaped < 0 ? 0 : shaped > 1 ? 1 : shaped;
+  }
 
   // ---- the color layer, redesigned 2026-09-21 --------------------------
   //
@@ -447,10 +469,7 @@
 
       const mirrored = p.alternate && (stripIndex & 1);
 
-      const lfo = 0.5 - 0.5 * Math.cos(2 * Math.PI * fract(pulse + stripPhase));
-      const softness = 0.02 * Math.pow(50, p.pulseShape);
-      let shaped = (lfo - 0.5) / softness + 0.5;
-      if (shaped < 0) shaped = 0; else if (shaped > 1) shaped = 1;
+      const shaped = pulseWave(pulse + stripPhase, p.pulseShape, p.pulseSkew);
       const swell = 1 - p.pulseDepth + p.pulseDepth * shaped;
 
       // Under bounce fan offsets where a strip stands in its own swing, so the
@@ -734,5 +753,5 @@
     global.requestAnimationFrame(frame);
   }
 
-  global.AuroraPreview = { start, render, renderStripOrder, parColor, wall };
+  global.AuroraPreview = { start, render, renderStripOrder, parColor, wall, pulseWave };
 })(window);
