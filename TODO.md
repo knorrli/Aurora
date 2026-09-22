@@ -153,10 +153,10 @@ designing there. See `docs/bench-facts.md`.
 - [ ] **Turn a region inside out.** One boolean, and it is what "base
       color on the center strip, outer ones departing" needs. See
       `docs/generator.md` § Open, item 8.
-- [ ] **Thread the placed field's parameters as an argument.** A second
-      placed field is a small refactor until this is done, and was
-      designed for on the assumption it would be free. See
-      `docs/generator.md` § Open, item 10.
+- [x] **Thread the placed field's parameters as an argument.** Done
+      2026-09-22. A second field is now a second `PlacedField` rather than
+      a second set of file statics. What the two would sum to is still
+      open. See `docs/generator.md` § Open, item 10.
 - [ ] **Jitter in color** — a starfield in hue rather than in
       brightness. The only randomness the color layer has no way to
       make. See `docs/generator.md` § "The color layer has no jitter".

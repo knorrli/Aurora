@@ -773,10 +773,13 @@ do is a judgment for a set, not a bench.
    on the argument that the first one would be written so the second cost
    almost nothing.
 
-   It was not. `placedAt()` reads file statics rather than taking its
-   parameters as an argument, so a second field is a small refactor
-   before it is a feature. Doing that refactor is cheaper than the
-   argument for deferring it implied it would be.
+   It was not, and as of 2026-09-22 it is. Everything one field is —
+   which primitive, which ruler, its three reaches, its count, width,
+   edge, drift rate and the phase tracker that drift runs on — travels
+   together as one `PlacedField`, and every function that reads a field
+   takes it as an argument. A second field is a second instance and a
+   second block of CCs; what is still unanswered is what the two sum to,
+   since two fields pushing the same three qualities can cancel.
 ## Tools
 
 - `tools/preview.js` — the wall on screen: five strips and four PARs,

@@ -306,15 +306,26 @@ enum ColorRuler : uint8_t {
   RULER_SHAPE = 2,  // leading tip of a shape through to the end of its tail
 };
 
-static bool placedIsRegion = false;
-static uint8_t placedRuler = RULER_STRIP;
-static float placedHueReach = 0.0f;
-static float placedWhiteReach = 0.0f;
-static float placedDarkReach = 0.0f;
-static uint8_t placedCount = 1;
-static float placedWidth = 0.5f;
-static float placedEdge = 0.5f;
-static float placedCells = 0.0f;
+// Everything one placed field is, carried together so a second field is a
+// second instance rather than a second set of file statics. Both rulers at
+// once — a strip painted with a gradient and shapes crossing it carrying
+// their own — is the look that wants one.
+struct PlacedField {
+  bool isRegion;
+  uint8_t ruler;
+  float hueReach;
+  float whiteReach;
+  float darkReach;
+  uint8_t count;
+  float width;
+  float edge;
+  float cellsPerBeat;
+  PhaseTracker phase;
+};
+
+static PlacedField placed = {
+  false, RULER_STRIP, 0.0f, 0.0f, 0.0f, 1, 0.5f, 0.5f, 0.0f, { 0.0f, 0.0f }
+};
 
 static float wanderHueReach = 0.0f;
 static float wanderWhiteReach = 0.0f;
@@ -327,12 +338,11 @@ static float litWhiteReach = 0.0f;
 static float litDarkReach = 0.0f;
 
 static PhaseTracker wanderPhase = { 0.0f, 0.0f };
-static PhaseTracker placedPhase = { 0.0f, 0.0f };
 
-static bool placedActive() {
-  return fabsf(placedHueReach) > 0.5f
-      || fabsf(placedWhiteReach) > 0.001f
-      || fabsf(placedDarkReach) > 0.001f;
+static bool placedActive(const PlacedField &field) {
+  return fabsf(field.hueReach) > 0.5f
+      || fabsf(field.whiteReach) > 0.001f
+      || fabsf(field.darkReach) > 0.001f;
 }
 
 static bool wanderActive() {
@@ -374,10 +384,10 @@ static float wanderAt(uint8_t stripIndex, float along01, float t) {
 // is a bump — base, departure, back to base — built from the shape branch's
 // own core and fades, which is what makes count, width and edge mean the same
 // thing in both branches.
-static float placedAt(float u, float drift) {
-  if (!placedIsRegion) return (u - 0.5f) * 2.0f;
-  const float cell = u * (float)placedCount + drift;
-  return shapeAt(fract(cell) - 0.5f, placedWidth, placedEdge, 0.0f);
+static float placedAt(const PlacedField &field, float u, float drift) {
+  if (!field.isRegion) return (u - 0.5f) * 2.0f;
+  const float cell = u * (float)field.count + drift;
+  return shapeAt(fract(cell) - 0.5f, field.width, field.edge, 0.0f);
 }
 
 // Pushes arrive summed and normalized. Darkening rides a geometric taper
@@ -487,29 +497,29 @@ static float trailBehind(float journey, float phase, float halfCore,
 }
 
 // 0 at one end of the ruler, 1 at the other.
-static float rulerAt(uint8_t stripIndex, uint8_t pixelIndex, float shapeU) {
-  if (placedRuler == RULER_WALL) {
+static float rulerAt(const PlacedField &field, uint8_t stripIndex,
+                     uint8_t pixelIndex, float shapeU) {
+  if (field.ruler == RULER_WALL) {
     return (float)stripIndex / (float)(NUMBER_OF_STRIPS - 1);
   }
-  if (placedRuler == RULER_SHAPE) return shapeU;
+  if (field.ruler == RULER_SHAPE) return shapeU;
   return (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
 }
 
 // `pulseHue` arrives already summed rather than as a fourth source, because
 // the pulse pushes the layer's output: one push after the three have added,
 // which leaves the color layer's own design alone.
-static CHSV colorAt(CHSV base, uint8_t stripIndex, uint8_t pixelIndex,
-                     float shapeU, float profile, float drift, float wanderT,
-                     float pulseHue, bool placedOn, bool wanderOn) {
+static CHSV colorAt(CHSV base, const PlacedField &field, float placedLevel,
+                     uint8_t stripIndex, uint8_t pixelIndex,
+                     float profile, float wanderT, float pulseHue,
+                     bool wanderOn) {
   const float along01 = (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
-
-  const float placed = placedOn ? placedAt(rulerAt(stripIndex, pixelIndex, shapeU), drift) : 0.0f;
   const float wander = wanderOn ? wanderAt(stripIndex, along01, wanderT) : 0.0f;
 
   return applyPushes(base,
-      placed * placedHueReach + wander * wanderHueReach + profile * litHueReach + pulseHue,
-      placed * placedWhiteReach + wander * wanderWhiteReach + profile * litWhiteReach,
-      placed * placedDarkReach + wander * wanderDarkReach + profile * litDarkReach);
+      placedLevel * field.hueReach + wander * wanderHueReach + profile * litHueReach + pulseHue,
+      placedLevel * field.whiteReach + wander * wanderWhiteReach + profile * litWhiteReach,
+      placedLevel * field.darkReach + wander * wanderDarkReach + profile * litDarkReach);
 }
 
 // The shape repeats once per cell, so the only images that can reach a sample
@@ -566,7 +576,7 @@ void Generator(CHSV color) {
 
   const float pulse = anchoredPulsePhase(beats, 1.0f / genPulseBeats);
 
-  const bool placedOn = placedActive();
+  const bool placedOn = placedActive(placed);
   const bool wanderOn = wanderActive();
   const bool pulseHueOn = fabsf(pulseSends[PULSE_TO_HUE].amount) > 0.001f;
   const bool colorFlat = !placedOn && !wanderOn && !litActive() && !pulseHueOn;
@@ -575,7 +585,7 @@ void Generator(CHSV color) {
   // the pulse do: beats only grows, so a small change of rate multiplied by a
   // large beat count is a large jump.
   const float wanderT = trackedPhase(wanderPhase, beats, wanderCycles);
-  const float placedDrift = trackedPhase(placedPhase, beats, placedCells);
+  const float placedDrift = trackedPhase(placed.phase, beats, placed.cellsPerBeat);
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     const float stripPhase = genFan * ((float)stripIndex / (float)NUMBER_OF_STRIPS);
@@ -716,8 +726,11 @@ void Generator(CHSV color) {
         }
         if (shapeU < 0.0f) shapeU = 0.0f;
         else if (shapeU > 1.0f) shapeU = 1.0f;
-        tint = colorAt(color, stripIndex, pixelIndex, shapeU, profile,
-                        placedDrift, wanderT, pulseHue, placedOn, wanderOn);
+        const float placedLevel = placedOn
+            ? placedAt(placed, rulerAt(placed, stripIndex, pixelIndex, shapeU), placedDrift)
+            : 0.0f;
+        tint = colorAt(color, placed, placedLevel, stripIndex, pixelIndex,
+                        profile, wanderT, pulseHue, wanderOn);
       }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =
@@ -788,27 +801,27 @@ void setPulseSkew(uint8_t target, uint8_t value) {
   pulseSends[target].skew = ccBipolar(value);
 }
 
-void setColorRegion(uint8_t value) { placedIsRegion = aurora_cc_is_on(value); }
+void setColorRegion(uint8_t value) { placed.isRegion = aurora_cc_is_on(value); }
 
 void setColorRuler(uint8_t value) {
   const uint8_t ruler = aurora_cc_band3(value);
-  placedRuler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
+  placed.ruler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 }
 
-void setPlacedHue(uint8_t value)   { placedHueReach = ccBipolar(value) * PLACED_MAX_HUE; }
-void setPlacedWhite(uint8_t value) { placedWhiteReach = ccBipolar(value); }
-void setPlacedDark(uint8_t value)  { placedDarkReach = ccBipolar(value); }
-void setPlacedWidth(uint8_t value) { placedWidth = ccUnit(value); }
-void setPlacedEdge(uint8_t value)  { placedEdge = ccUnit(value); }
+void setPlacedHue(uint8_t value)   { placed.hueReach = ccBipolar(value) * PLACED_MAX_HUE; }
+void setPlacedWhite(uint8_t value) { placed.whiteReach = ccBipolar(value); }
+void setPlacedDark(uint8_t value)  { placed.darkReach = ccBipolar(value); }
+void setPlacedWidth(uint8_t value) { placed.width = ccUnit(value); }
+void setPlacedEdge(uint8_t value)  { placed.edge = ccUnit(value); }
 
-void setPlacedCount(uint8_t value) { placedCount = ccCount(value); }
+void setPlacedCount(uint8_t value) { placed.count = ccCount(value); }
 
 // Bipolar and squared like the shape branch's travel, for the same reason:
 // the slow end is where a color that reads as depth rather than as an effect
 // actually lives.
 void setPlacedSpeed(uint8_t value) {
   const float x = ((float)value - 64.0f) / 63.0f;
-  placedCells = (x < 0.0f ? -1.0f : 1.0f) * x * x * PLACED_MAX_CELLS_PER_BEAT;
+  placed.cellsPerBeat = (x < 0.0f ? -1.0f : 1.0f) * x * x * PLACED_MAX_CELLS_PER_BEAT;
 }
 
 void setWanderHue(uint8_t value)   { wanderHueReach = ccBipolar(value) * WANDER_MAX_HUE; }
