@@ -150,6 +150,13 @@ Built 2026-09-22 and seen by nothing but the preview. One look each.
 - [ ] **Sweep the V fader under Glitch.** The white pixels should dim with
       the colored ones. Then judge the 30 % white share, which has never
       been judgeable. See `docs/bench-facts.md`.
+- [ ] **Take Lit White from center down to zero**, on a flat fill with the
+      S fader at full. At zero the wall should be exactly the color on the
+      faders; at center it should wash every lit pixel to about 74 %
+      saturation at nearly double the light. It is the one color control
+      whose neutral is the bottom of the travel rather than the middle, so
+      check what it sits at in the patches actually in use. See
+      `docs/generator.md` § "Open" item 11.
 
 The pulse's destinations, the anchor against a click and the stepped rate
 are unjudged too, and are listed below.

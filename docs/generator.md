@@ -813,6 +813,79 @@ do is a judgment for a set, not a bench.
    takes it as an argument. A second field is a second instance and a
    second block of CCs; what is still unanswered is what the two sum to,
    since two fields pushing the same three qualities can cancel.
+11. **Five of the six white and dark controls read the fader as bipolar,
+   and the sign buys something different in each of the three sources.**
+   Placed, wander and light level each push whiteness and darkness, two
+   controls apiece. Only Lit White is read as a plain 0–1 amount; the
+   other five are bipolar around 64.
+
+   The **placed** field earns the sign. Its ruler runs both ways from the
+   base color at the center, so the sign says which end departs — at one
+   extreme the high end goes white, at the other the low end does. Both
+   halves work whatever the faders are set to, and the two walls are
+   mirror images of each other rather than the same picture twice.
+
+   The **wander** does not earn it. It is symmetric interference with no
+   anchor, so flipping the sign gives the same look. Measured over a
+   hundred wander cycles on a full still fill, base color red, S and V at
+   the top:
+
+   | Wander White | mean saturation | mean light |
+   |----|----|----|
+   | CC 0 (reach −1) | 87.4 % | 79.7 |
+   | CC 32 (−0.5) | 96.8 % | 61.1 |
+   | CC 64 | 100 % | 54.6 |
+   | CC 96 (+0.5) | 96.6 % | 61.4 |
+   | CC 127 (+1) | 87.3 % | 80.1 |
+
+   Wander Dark mirrors the same way. Both spend 128 steps expressing 64
+   settings.
+
+   The **light level** is a third case and not the wander's. Its push
+   rides a profile running 0 to 1, so the base color sits at the dim end
+   and the departure at the core — but the sign still picks whether the
+   core goes brighter or paler than the base, and those are two looks.
+   Lit White has already given that up; Lit Dark has not.
+
+   What decides whether the discarded direction is worth anything is
+   where the S and V faders live. In practice S sits at one end or the
+   other — full saturation or full white — and V sits near the top,
+   because the strips are behind a white diffuser and are not bright
+   enough to run below it outside a very dark room. Against a base at
+   full saturation a push toward saturation has nowhere to go, and
+   against a base at full value neither does a push toward brightness.
+   So half of each bipolar white or dark control is unreachable in the
+   settings the rig is actually played at, and which half it is flips
+   when S crosses from one end to the other.
+
+   **The proposal, not built.** Split the family on whether the source is
+   aimed at something, which is the split the CC map already draws:
+   `shared/aurora_protocol.h` calls 23–29 the placed field and 90–99
+   "everything that is not aimed anywhere".
+
+   | Source | Sign means | Fader |
+   |----|----|----|
+   | Placed White / Dark | which end of the ruler departs | bipolar, neutral 64 — unchanged |
+   | Wander White / Dark | nothing | unipolar, neutral 0 |
+   | Lit White | nothing left to mean | unipolar, neutral 0 — already is |
+   | Lit Dark | core brighter or darker than the base | unipolar, neutral 0 — trades a look |
+
+   Aimed at something, and there is an end to pick and therefore a sign.
+   Aimed at nothing, and there is no end, so the travel is better spent
+   on resolution in the one direction that exists.
+
+   **Three costs, and the third is the one to sit with.** Four controls
+   would then take their neutral at the bottom of the travel rather than
+   at its middle, which widens the trap Lit White already sets: park it
+   at center expecting no effect and it washes every lit pixel to 74 %
+   saturation at nearly double the light. Any saved patch holding a
+   wander or lit value is reinterpreted, which is the migration the
+   Depth controls already went through. And the Lit Dark row is not a
+   free doubling like the wander's — it buys resolution by giving up a
+   core brighter than its base, which is only unreachable for as long as
+   the V fader stays at the top. That one rests on a fader habit rather
+   than on a measurement, and it wants the wall before it is spent.
+
 ## Tools
 
 - `tools/preview.js` — the wall on screen: five strips and four PARs,

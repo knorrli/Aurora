@@ -309,6 +309,35 @@ a spectrum rather than one color with depth in it. Usable settings
 looked to be roughly a fifth to a half of that. Not a measurement, but
 consistent across several sittings.
 
+## A hue change is also a brightness change, by up to 5.4 to 1
+
+Computed 2026-09-22 from `tools/preview.js`. Not metered on the wall.
+
+`hsv2rgb_rainbow` hands out roughly equal eight-bit channel sums across
+the wheel, which is what keeps a hue sweep even on a screen. The dies
+behind those numbers are not equal: a WS2812B's green puts out around
+three times the light of its red and around five times its blue.
+Weighting the rendered RGB by a typical part's luminous intensities —
+450, 1400 and 250 mcd — gives, for a flat wall at full saturation and
+full value:
+
+| base hue fader | rendered RGB | relative light |
+|----|----|----|
+| CC 0 | 255, 0, 0 | 55 |
+| CC 24 | 171, 125, 0 | 120 |
+| CC 48 | 11, 250, 0 | 169 |
+| CC 72 | 0, 102, 154 | 86 |
+| CC 84 | 13, 0, 242 | 32 |
+| CC 108 | 138, 0, 118 | 44 |
+
+Brightest to dimmest is 5.4 to 1 — yellow-green against blue — with red
+a little under a third of the brightest.
+
+Every hue push in the color layer therefore moves brightness as well as
+color, and where the base hue sits decides which way. The ratio is
+arithmetic over a datasheet, so its shape is certain; the figure itself
+waits on a meter, and the diffuser goes with it.
+
 ## How far a pixel can be darkened before its color jitters
 
 Measured 2026-09-19, extending the hue-collapse finding below.
