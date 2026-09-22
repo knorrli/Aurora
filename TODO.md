@@ -213,6 +213,50 @@ it becomes a build item.
       space: the one holding only the "send 120 BPM clock" button, never
       used, and "Strips", which is empty. The question is what the
       groupings should be, not where today's boxes go.
+- [ ] **The wander's rate is the odd speed control.** Travel speed and the
+      placed field's speed are both bipolar and squared: 64 is still,
+      either side moves, and the slow end gets most of the fader because
+      that is where a color reading as depth rather than as an effect
+      lives. The wander's is unipolar and linear — 0 is frozen, the throw
+      is even. The squared taper's reasoning applies to it unchanged, so
+      at least that should match. Whether it should go bipolar too is a
+      real question, since a noise field running backwards looks much like
+      one running forwards; if it stays unipolar the label should say so.
+      Compare `setWanderRate` against `setPlacedSpeed` in
+      `brain/src/P_Generator.cpp`.
+- [ ] **"How fast" and "How big" are named as questions.** Every other
+      control in both branches is named for the thing it sets — Width,
+      Count, Edge, Tail, Speed, Fan, Depth, Rate, Skew, Shape. These two
+      are not. "How fast" is Rate or Speed depending on the item above.
+      "How big" is the wander's spatial scale, the whole wall moving as
+      one down to individual pixels; Scale is the obvious noun but has
+      never been held against what the control actually does.
+- [ ] **The color panel does not say what its switches govern.** Slide /
+      region and the three rulers drive the placed field and nothing else
+      — `placedIsRegion` and `placedRuler` are read nowhere outside that
+      path in `brain/src/P_Generator.cpp` — but they sit above three
+      subsections and read as though they govern all three. Nothing in the
+      panel says otherwise.
+      Two more open parts. The subsection names "What you place", "What
+      lives" and "From the light level" are the design's own words and are
+      longer than the controls under them. And the ruler buttons name the
+      strips where they could name the wall: "across the strips" is
+      horizontal and "along a strip" is vertical, since the five stand
+      spaced across the stage against the back wall. Whether that swap is
+      an improvement is not obvious — "within a shape" is not a direction
+      at all, so the three would stop being one vocabulary.
+- [ ] **Each color section wants a reset button.** Clearing one by hand is
+      three to seven faders dragged back one at a time — seven under "What
+      you place" — which is enough friction that a look gets abandoned
+      rather than cleared. One button per subsection.
+      It is "reset", not "zero": neutral is 64 for every bipolar control
+      and 0 for only a few, and `COLOR_OFF` in `tools/index.html` already
+      holds the neutral for every color control, so the button should read
+      from it rather than invent a second definition of neutral that can
+      drift. Worth knowing what that implies for the wander, whose rate
+      and scale sit at 20 there rather than at a neutral — with its three
+      reaches at 64 the wander is inactive whatever they say, so they are
+      parked somewhere usable instead of at zero.
 - [ ] **Travel easing — is the look wanted?** Built shape is settled in
       `docs/generator.md` § "Travel easing is a curve, not a modulation
       route", and it is a build item above. What has never been discussed
