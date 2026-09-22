@@ -2,6 +2,7 @@
 
 #include "dmx_out.h"
 #include "midi_in.h"
+#include "patch_store.h"
 #include "tempo.h"
 
 // TEMPO
@@ -38,6 +39,7 @@ void setup()
   FastLED.setBrightness(brightness);
   FastLED.addLeds<NEOPIXEL, PIN_LED_OUTPUT>(pixels, NUM_PIXELS_TOTAL);
 
+  patch_store::begin();
   midi_in::begin();
   tempo::begin();
   dmx_out::begin();

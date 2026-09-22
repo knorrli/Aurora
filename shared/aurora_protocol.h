@@ -615,6 +615,145 @@ enum AuroraNote : uint8_t {
 //   0xFC  Stop    : DAW transport stop. Brain freezes animation at phase.
 //
 // ---------------------------------------------------------------------------
+// System Exclusive — moving patches between the editor and the brain
+// ---------------------------------------------------------------------------
+//
+// SysEx carries nothing that happens during a song. It exists to move the
+// patch library over USB, and it never appears on the DIN link. The
+// reasoning is DESIGN.md § "Patch storage"; what follows is the wire.
+//
+// Framing:
+//
+//     F0 7D 41 55 <type> <payload …> F7
+//
+// 0x7D is the non-commercial manufacturer ID, free for private use and
+// never assigned to a product. 0x41 0x55 is "AU", so a merger carrying
+// another 0x7D device does not hand us its traffic.
+//
+// Every byte after F0 is 7-bit already: a parameter byte is a CC value, a
+// patch index runs 0–127, and names are clamped to printable ASCII. Nothing
+// needs a packing scheme to survive the transport.
+//
+// Messages stay far below 290 bytes, which is USB_MIDI_SYSEX_MAX in
+// cores/teensy4/usb_midi.h — a bare #define, so no build flag raises it.
+// Staying under it is worth more than raising it would be: below that size
+// the core hands the handler each message whole in a single callback, and
+// nothing has to be reassembled across calls.
+//
+// ### A sync replaces the whole library
+//
+// The editor holds the master library and pushes all of it. There is no
+// "patch 47 changed" message, and deliberately so — the brain's storage is
+// a mirror of what the editor last sent, so neither side tracks which
+// patches are stale and no patch needs an identity beyond its index.
+//
+// Everything lands in a staging file and becomes live only when
+// SYSEX_SYNC_COMMIT arrives. A sync cut off anywhere — unplugged cable,
+// crashed tab, closed laptop — leaves the previous library whole and
+// current. There is no state in which the brain holds half of one library
+// and half of another.
+//
+// **A sync is strictly ordered**: patch 0's head, then its five sets, then
+// patch 1, and so on to the count declared in SYSEX_SYNC_BEGIN. The brain
+// appends as it receives and never seeks, which keeps one flash write per
+// message and a constant amount of RAM in use. Anything out of order is
+// refused rather than stored, because a gap cannot be told from a
+// reordering once both have been written.
+//
+// The brain answers SYSEX_SYNC_BEGIN and SYSEX_SYNC_COMMIT and stays quiet
+// through the data in between. Those two are what the editor needs: the
+// first says the brain is listening and speaks this format, the second says
+// the library is stored and how much of it arrived. Acknowledging every
+// data message would say nothing extra — USB does not deliver a corrupted
+// packet, and a lost one shows up as a wrong index at once and a short
+// count at commit.
+//
+// ---------------------------------------------------------------------------
+
+static const uint8_t AURORA_SYSEX_ID       = 0x7D; // non-commercial
+static const uint8_t AURORA_SYSEX_SIG_A    = 0x41; // 'A'
+static const uint8_t AURORA_SYSEX_SIG_B    = 0x55; // 'U'
+
+// F0 + id + two signature bytes + type, and F7 at the end.
+static const uint8_t AURORA_SYSEX_HEADER_LEN = 5;
+static const uint8_t AURORA_SYSEX_FRAME_LEN  = AURORA_SYSEX_HEADER_LEN + 1;
+
+enum AuroraSysEx : uint8_t {
+    // 0x01–0x1F — editor to brain
+    SYSEX_SYNC_BEGIN      = 0x01, // format, count, keymap[9]
+    SYSEX_PATCH_HEAD      = 0x02, // index, then AURORA_PATCH_HEAD_LEN bytes
+    SYSEX_PATCH_SET       = 0x03, // index, set, then 128 CC bytes
+    SYSEX_SYNC_COMMIT     = 0x04, // no payload
+    SYSEX_SYNC_ABORT      = 0x05, // no payload
+    SYSEX_QUERY_LIBRARY   = 0x06, // no payload
+    SYSEX_QUERY_PATCH     = 0x07, // index
+
+    // 0x40–0x5F — brain to editor
+    SYSEX_ACK             = 0x40, // type being answered, status, detail
+    SYSEX_LIBRARY_INFO    = 0x41, // see AuroraLibraryState
+    SYSEX_PATCH_HEAD_OUT  = 0x42, // same payload as SYSEX_PATCH_HEAD
+    SYSEX_PATCH_SET_OUT   = 0x43, // same payload as SYSEX_PATCH_SET
+};
+
+enum AuroraSysExStatus : uint8_t {
+    SYSEX_OK              = 0,
+    SYSEX_ERR_FORMAT      = 1, // a patch format this firmware does not speak
+    SYSEX_ERR_SEQUENCE    = 2, // data outside a sync, or not the expected piece
+    SYSEX_ERR_INCOMPLETE  = 3, // commit arrived with patches still missing
+    SYSEX_ERR_STORAGE     = 4, // the flash refused a write or the rename failed
+    SYSEX_ERR_RANGE       = 5, // an index or count outside what a patch can hold
+};
+
+// What the brain is running, reported in SYSEX_LIBRARY_INFO.
+enum AuroraLibraryState : uint8_t {
+    LIBRARY_STORED        = 0, // a synced library is live
+    LIBRARY_EMPTY         = 1, // nothing stored; the compiled default set is
+                               // lit. The defaults are never written to
+                               // flash, so this stays true until a sync —
+                               // which is what lets the editor tell a fresh
+                               // flash from a small library.
+    LIBRARY_UNREADABLE    = 2, // something is stored that cannot be read
+};
+
+// ---------------------------------------------------------------------------
+// What a patch is made of on the wire and in flash
+// ---------------------------------------------------------------------------
+//
+// One byte per CC, five times over — DESIGN.md § "Patch storage". The head
+// carries the four things that are not CCs, and the name, which exists for
+// one reason: a library exported back off the brain has to be a library
+// rather than a heap of anonymous looks.
+//
+// Set order is fixed and is part of the format. The three fader far ends
+// follow DESIGN.md § "The three faders are three routes to more".
+
+static const uint8_t AURORA_PATCH_FORMAT    = 1;
+static const uint8_t AURORA_PATCH_MAX       = 128; // what a Program Change names
+static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
+static const uint8_t AURORA_PATCH_NAME_LEN  = 16;
+static const uint8_t AURORA_KEYPAD_KEYS     = 9;
+
+enum AuroraPatchSet : uint8_t {
+    PATCH_SET_BASE     = 0,
+    PATCH_SET_COLOR    = 1, // the Color fader's far end
+    PATCH_SET_EXTENT   = 2, // the Extent fader's far end
+    PATCH_SET_MOTION   = 3, // the Motion fader's far end
+    PATCH_SET_ACCENT   = 4, // where holding the key of the current patch goes
+    AURORA_PATCH_SETS  = 5,
+};
+
+// pattern, palette, journey ramp, accent ramp, then the name.
+//
+// The palette byte is carried and stored and nothing reads it. What a
+// palette is has not been settled — TODO.md § "What a palette is, and where
+// it lives" — and the byte costs nothing to reserve, since which palette a
+// patch uses is a property of the patch either way.
+static const uint8_t AURORA_PATCH_HEAD_LEN = 4 + AURORA_PATCH_NAME_LEN;
+
+static const uint16_t AURORA_PATCH_LEN =
+    AURORA_PATCH_HEAD_LEN + (uint16_t)AURORA_PATCH_SETS * AURORA_PATCH_CC_COUNT;
+
+// ---------------------------------------------------------------------------
 // Version string
 // ---------------------------------------------------------------------------
 //
@@ -625,6 +764,6 @@ enum AuroraNote : uint8_t {
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 8
+#define AURORA_PROTOCOL_VERSION_MINOR 9
 
 #endif // AURORA_PROTOCOL_H

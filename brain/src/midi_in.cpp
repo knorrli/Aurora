@@ -1,6 +1,7 @@
 #include "midi_in.h"
 
 #include "dmx_out.h"
+#include "patch_sync.h"
 
 #include "Aurora.h"
 #include "tempo.h"
@@ -120,6 +121,7 @@ void begin() {
     usbMIDI.setHandleProgramChange(handleProgramChange);
     usbMIDI.setHandleControlChange(handleControlChange);
     usbMIDI.setHandleNoteOn(handleNoteOn);
+    usbMIDI.setHandleSysEx(patch_sync::onSysEx);
 }
 
 void tick() {

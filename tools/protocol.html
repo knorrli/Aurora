@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora Patch Sync</title>
+<style>
+  :root {
+    --bg: #14151a; --panel: #1c1e26; --line: #2c2f3a;
+    --text: #e6e7ec; --dim: #8b8fa3; --accent: #d98c3f; --ok: #4a9e6a; --bad: #cf5c5c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px; background: var(--bg); color: var(--text);
+    font: 14px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    max-width: 900px;
+  }
+  h1 { font-size: 15px; margin: 0 0 4px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  h2 { font-size: 12px; margin: 0 0 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-top: 14px; }
+  .note { color: var(--dim); font-size: 12px; margin-top: 8px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 10px; }
+  button, select, input {
+    background: #262933; color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 10px; font: inherit;
+  }
+  button { cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  input[type=number] { width: 72px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  #log {
+    margin-top: 14px; padding: 12px; background: #101118; border: 1px solid var(--line);
+    border-radius: 6px; height: 340px; overflow-y: auto; white-space: pre-wrap;
+    font-size: 12px; line-height: 1.6;
+  }
+  #log .t { color: var(--dim); }
+  #log .e { color: var(--bad); }
+  #log .g { color: var(--ok); }
+</style>
+</head>
+<body>
+
+<h1>Aurora patch sync</h1>
+<div class="note">
+  The bench instrument for <code>shared/aurora_protocol.h</code> § "System Exclusive". It pushes a
+  library of known bytes, reads it back and compares, so the protocol can be told apart from the
+  editor when something misbehaves. Chrome or Edge, and it asks for SysEx permission. Reload after
+  every flash — that resets the Teensy's USB and the page keeps a dead port.
+</div>
+
+<div class="panel">
+  <div class="row">
+    <span>port</span>
+    <select id="port"></select>
+    <span id="state" class="bad">not connected</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>What is stored</h2>
+  <div class="row">
+    <button id="query" disabled>ask the brain</button>
+  </div>
+  <div class="note">An empty library means a fresh flash. The compiled default set is never written
+    to storage, which is what keeps that answer meaningful.</div>
+</div>
+
+<div class="panel">
+  <h2>Push a test library</h2>
+  <div class="row">
+    <span>patches</span><input type="number" id="count" value="8" min="1" max="128">
+    <button id="push" disabled>push</button>
+    <button id="abort" disabled>abort mid-sync</button>
+  </div>
+  <div class="note">Every byte is generated from the patch index, so anything read back can be
+    checked exactly. "Abort mid-sync" stops halfway on purpose: the library already on the brain
+    must survive it intact.</div>
+</div>
+
+<div class="panel">
+  <h2>Backup and restore</h2>
+  <div class="row">
+    <button id="save" disabled>save the brain's library to a file</button>
+    <button id="restore" disabled>push a library from a file</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+  </div>
+  <div class="note">The recovery path when the editor's machine is gone. What comes back is
+    everything the brain was given — names, keypad assignment, every parameter set — and nothing
+    it was never given, so anything the editor knows and does not sync is not in here. Commit the
+    file if you want it to survive the brain too.</div>
+</div>
+
+<div class="panel">
+  <h2>Read back</h2>
+  <div class="row">
+    <span>patch</span><input type="number" id="index" value="0" min="0" max="127">
+    <button id="read" disabled>read one</button>
+    <button id="verify" disabled>verify the whole library</button>
+  </div>
+</div>
+
+<div id="log"></div>
+
+<script>
+const SYSEX_ID = 0x7D, SIG_A = 0x41, SIG_B = 0x55;
+
+const T = {
+  SYNC_BEGIN: 0x01, PATCH_HEAD: 0x02, PATCH_SET: 0x03, SYNC_COMMIT: 0x04,
+  SYNC_ABORT: 0x05, QUERY_LIBRARY: 0x06, QUERY_PATCH: 0x07,
+  ACK: 0x40, LIBRARY_INFO: 0x41, PATCH_HEAD_OUT: 0x42, PATCH_SET_OUT: 0x43,
+};
+
+const STATUS = ['ok', 'format not understood', 'out of sequence', 'incomplete',
+                'storage failed', 'index out of range'];
+const LIB_STATE = ['a synced library is live', 'empty — running compiled defaults',
+                   'something stored that cannot be read'];
+
+const PATCH_FORMAT = 1, CC_COUNT = 128, NAME_LEN = 16, SETS = 5, KEYS = 9;
+const HEAD_LEN = 4 + NAME_LEN;
+
+let input = null, output = null;
+const waiters = [];
+
+// --- the test library ------------------------------------------------------
+//
+// Generated rather than stored so a read-back can be checked byte for byte
+// without holding a copy. Every value stays under 128 by construction, which
+// is the same thing that lets a patch cross SysEx without being encoded.
+
+const ccByte = (index, set, cc) => (index * 7 + set * 13 + cc * 3 + 11) & 0x7F;
+
+function testPatch(index) {
+  return {
+    name: `test ${index}`,
+    pattern: 10,                 // the generator
+    palette: index % 9,          // reserved; its meaning is unsettled
+    rampJourney: (index * 2) & 0x7F,
+    rampAccent: (index * 3) & 0x7F,
+    sets: Array.from({ length: SETS }, (_, s) =>
+      Array.from({ length: CC_COUNT }, (_, n) => ccByte(index, s, n))),
+  };
+}
+
+const testLibrary = (count) => ({
+  patchFormat: PATCH_FORMAT,
+  keymap: Array.from({ length: KEYS }, (_, i) => i % count),
+  patches: Array.from({ length: count }, (_, i) => testPatch(i)),
+});
+
+function headBytes(p) {
+  const name = String(p.name ?? '').padEnd(NAME_LEN, ' ').slice(0, NAME_LEN);
+  const out = [p.pattern & 0x7F, p.palette & 0x7F, p.rampJourney & 0x7F, p.rampAccent & 0x7F];
+  for (let i = 0; i < NAME_LEN; i++) out.push(name.charCodeAt(i) & 0x7F);
+  return out;
+}
+
+const nameOf = (head) => head.slice(4).map(c => String.fromCharCode(c)).join('').trim();
+
+// --- wire ------------------------------------------------------------------
+
+function frame(type, payload = []) {
+  return new Uint8Array([0xF0, SYSEX_ID, SIG_A, SIG_B, type, ...payload, 0xF7]);
+}
+
+function send(type, payload) {
+  if (!output) throw new Error('no MIDI output selected');
+  output.send(frame(type, payload));
+}
+
+function onMessage(e) {
+  const d = e.data;
+  if (d.length < 6 || d[0] !== 0xF0 || d[1] !== SYSEX_ID) return;
+  if (d[2] !== SIG_A || d[3] !== SIG_B) return;
+
+  const msg = { type: d[4], payload: Array.from(d.slice(5, d.length - 1)) };
+  for (let i = waiters.length - 1; i >= 0; i--) {
+    if (waiters[i].wants.includes(msg.type)) {
+      waiters.splice(i, 1)[0].resolve(msg);
+      return;
+    }
+  }
+}
+
+function expect(wants, ms = 4000) {
+  return new Promise((resolve, reject) => {
+    const w = { wants: [].concat(wants), resolve };
+    waiters.push(w);
+    setTimeout(() => {
+      const i = waiters.indexOf(w);
+      if (i >= 0) { waiters.splice(i, 1); reject(new Error('the brain did not answer')); }
+    }, ms);
+  });
+}
+
+async function ackFor(type, payload) {
+  send(type, payload);
+  const m = await expect([T.ACK]);
+  return { inReplyTo: m.payload[0], status: m.payload[1] };
+}
+
+// --- log -------------------------------------------------------------------
+
+const logEl = document.getElementById('log');
+function log(text, cls = '') {
+  const at = new Date().toLocaleTimeString('en-GB');
+  logEl.insertAdjacentHTML('beforeend', `<span class="t">${at}</span>  <span class="${cls}">${text}</span>\n`);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+const say = (t) => log(t);
+const good = (t) => log(t, 'g');
+const bad = (t) => log(t, 'e');
+
+function reportStatus(what, status) {
+  if (status === 0) good(`${what}: ok`);
+  else bad(`${what}: ${STATUS[status] ?? `unknown status ${status}`}`);
+  return status === 0;
+}
+
+// --- operations ------------------------------------------------------------
+
+async function queryLibrary() {
+  send(T.QUERY_LIBRARY);
+  const m = await expect([T.LIBRARY_INFO]);
+  const [major, minor, format, state, count, ...keys] = m.payload;
+  say(`protocol ${major}.${minor}, patch format ${format}`);
+  say(`${LIB_STATE[state] ?? `unknown state ${state}`} — ${count} patches`);
+  say(`keypad: ${keys.slice(0, KEYS).join(' ')}`);
+  return { state, count, keymap: keys.slice(0, KEYS) };
+}
+
+async function pushLibrary(lib, stopEarly = false) {
+  const count = lib.patches.length;
+  const keys = Array.from({ length: KEYS }, (_, i) => (lib.keymap?.[i] ?? 0) % count);
+
+  const begun = await ackFor(T.SYNC_BEGIN, [lib.patchFormat ?? PATCH_FORMAT, count, ...keys]);
+  if (!reportStatus('sync begin', begun.status)) return;
+
+  const upTo = stopEarly ? Math.max(1, Math.floor(count / 2)) : count;
+  for (let i = 0; i < upTo; i++) {
+    send(T.PATCH_HEAD, [i, ...headBytes(lib.patches[i])]);
+    for (let set = 0; set < SETS; set++) {
+      send(T.PATCH_SET, [i, set, ...lib.patches[i].sets[set]]);
+    }
+  }
+  say(`sent ${upTo} of ${count} patches — ${upTo * (1 + SETS) + 1} messages`);
+
+  if (stopEarly) {
+    say('stopping here on purpose; committing anyway to see it refused');
+  }
+
+  const done = await ackFor(T.SYNC_COMMIT);
+  const ok = reportStatus('commit', done.status);
+  if (stopEarly && !ok) good('refused, as it should be — the old library is untouched');
+  if (stopEarly && ok) bad('it committed a half library, which it must not');
+}
+
+async function readPatch(index) {
+  send(T.QUERY_PATCH, [index]);
+
+  const first = await expect([T.PATCH_HEAD_OUT, T.ACK]);
+  if (first.type === T.ACK) {
+    reportStatus(`read patch ${index}`, first.payload[1]);
+    return null;
+  }
+
+  const head = first.payload.slice(1);
+  const sets = [];
+  for (let s = 0; s < SETS; s++) {
+    const m = await expect([T.PATCH_SET_OUT, T.ACK]);
+    if (m.type === T.ACK) { reportStatus(`read patch ${index}`, m.payload[1]); return null; }
+    sets.push(m.payload.slice(2));
+  }
+  return { head, sets };
+}
+
+function compare(index, got) {
+  const wantHead = headBytes(testPatch(index));
+  const faults = [];
+  if (got.head.length !== HEAD_LEN) faults.push(`head is ${got.head.length} bytes, expected ${HEAD_LEN}`);
+  for (let i = 0; i < Math.min(HEAD_LEN, got.head.length); i++) {
+    if (got.head[i] !== wantHead[i]) { faults.push(`head byte ${i}: got ${got.head[i]}, expected ${wantHead[i]}`); break; }
+  }
+  for (let s = 0; s < SETS; s++) {
+    for (let n = 0; n < CC_COUNT; n++) {
+      const want = ccByte(index, s, n);
+      if (got.sets[s][n] !== want) {
+        faults.push(`set ${s} byte ${n}: got ${got.sets[s][n]}, expected ${want}`);
+        break;
+      }
+    }
+  }
+  return faults;
+}
+
+// --- backup and restore ----------------------------------------------------
+
+async function readLibrary() {
+  const info = await queryLibrary();
+  if (info.state !== 0 || !info.count) { bad('nothing stored to save'); return null; }
+
+  const patches = [];
+  for (let i = 0; i < info.count; i++) {
+    const got = await readPatch(i);
+    if (!got) { bad(`patch ${i} could not be read — stopping rather than saving a gap`); return null; }
+    patches.push({
+      name: nameOf(got.head),
+      pattern: got.head[0], palette: got.head[1],
+      rampJourney: got.head[2], rampAccent: got.head[3],
+      sets: got.sets,
+    });
+  }
+  return { patchFormat: PATCH_FORMAT, keymap: info.keymap, patches };
+}
+
+// Hand-laid out rather than JSON.stringify'd so that one parameter set is one
+// line: a file in version control then shows a changed patch as a handful of
+// changed lines instead of one enormous one.
+function serialize(lib) {
+  const out = ['{'];
+  out.push('  "aurora": "patch library",');
+  out.push(`  "patchFormat": ${lib.patchFormat},`);
+  out.push(`  "savedAt": ${JSON.stringify(new Date().toISOString())},`);
+  out.push(`  "keymap": [${lib.keymap.join(', ')}],`);
+  out.push('  "patches": [');
+  lib.patches.forEach((p, i) => {
+    out.push('    {');
+    out.push(`      "name": ${JSON.stringify(p.name)},`);
+    out.push(`      "pattern": ${p.pattern}, "palette": ${p.palette}, "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
+    out.push('      "sets": [');
+    p.sets.forEach((set, n) => out.push(`        [${set.join(',')}]${n < SETS - 1 ? ',' : ''}`));
+    out.push('      ]');
+    out.push(`    }${i < lib.patches.length - 1 ? ',' : ''}`);
+  });
+  out.push('  ]');
+  out.push('}');
+  return out.join('\n');
+}
+
+function download(filename, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// A file is checked before any of it is sent, because SYNC_BEGIN declares a
+// count the brain then waits for: discovering a bad patch halfway leaves the
+// sync open and the previous library is only safe because nothing commits.
+function validate(lib) {
+  if (!lib || typeof lib !== 'object') return 'not a library file';
+  if (lib.patchFormat !== PATCH_FORMAT) return `patch format ${lib.patchFormat}, this page speaks ${PATCH_FORMAT}`;
+  if (!Array.isArray(lib.patches) || !lib.patches.length) return 'no patches in it';
+  if (lib.patches.length > 128) return `${lib.patches.length} patches, and the brain holds 128`;
+  if (!Array.isArray(lib.keymap) || lib.keymap.length !== KEYS) return `keymap should be ${KEYS} entries`;
+
+  for (let i = 0; i < lib.patches.length; i++) {
+    const p = lib.patches[i];
+    if (!Array.isArray(p.sets) || p.sets.length !== SETS) return `patch ${i} has ${p.sets?.length} parameter sets, expected ${SETS}`;
+    for (let n = 0; n < SETS; n++) {
+      if (!Array.isArray(p.sets[n]) || p.sets[n].length !== CC_COUNT) return `patch ${i} set ${n} is not ${CC_COUNT} bytes`;
+      if (p.sets[n].some(v => !Number.isInteger(v) || v < 0 || v > 127)) return `patch ${i} set ${n} holds something that is not a 7-bit value`;
+    }
+  }
+  return null;
+}
+
+// --- buttons ---------------------------------------------------------------
+
+const buttons = ['query', 'push', 'abort', 'read', 'verify', 'save', 'restore'].map(id => document.getElementById(id));
+const busy = (on) => buttons.forEach(b => { b.disabled = on || !output || !input; });
+
+function run(fn) {
+  return async () => {
+    busy(true);
+    try { await fn(); }
+    catch (e) { bad(e.message); }
+    finally { busy(false); }
+  };
+}
+
+document.getElementById('query').addEventListener('click', run(queryLibrary));
+
+document.getElementById('push').addEventListener('click', run(async () => {
+  const count = Math.min(128, Math.max(1, +document.getElementById('count').value));
+  say(`pushing ${count} patches`);
+  const started = performance.now();
+  await pushLibrary(testLibrary(count));
+  say(`took ${Math.round(performance.now() - started)} ms`);
+}));
+
+document.getElementById('abort').addEventListener('click', run(async () => {
+  const count = Math.min(128, Math.max(2, +document.getElementById('count').value));
+  say(`pushing half of ${count} patches, then committing`);
+  await pushLibrary(testLibrary(count), true);
+  say('asking what survived');
+  await queryLibrary();
+}));
+
+document.getElementById('read').addEventListener('click', run(async () => {
+  const index = +document.getElementById('index').value;
+  const got = await readPatch(index);
+  if (!got) return;
+  say(`patch ${index} is named "${nameOf(got.head)}"`);
+  const faults = compare(index, got);
+  if (!faults.length) good(`patch ${index} matches what was pushed, all ${HEAD_LEN + SETS * CC_COUNT} bytes`);
+  else faults.forEach(bad);
+}));
+
+document.getElementById('verify').addEventListener('click', run(async () => {
+  const { state, count } = await queryLibrary();
+  if (state !== 0 || !count) { bad('nothing stored to verify'); return; }
+
+  let wrong = 0;
+  for (let i = 0; i < count; i++) {
+    const got = await readPatch(i);
+    if (!got) { wrong++; continue; }
+    const faults = compare(i, got);
+    if (faults.length) { wrong++; bad(`patch ${i}: ${faults[0]}`); }
+  }
+  if (wrong) bad(`${wrong} of ${count} patches came back wrong`);
+  else good(`all ${count} patches came back byte for byte`);
+}));
+
+document.getElementById('save').addEventListener('click', run(async () => {
+  const lib = await readLibrary();
+  if (!lib) return;
+  const stamp = new Date().toISOString().slice(0, 10);
+  download(`aurora-library-${stamp}.json`, serialize(lib));
+  good(`saved ${lib.patches.length} patches and the keypad assignment`);
+}));
+
+document.getElementById('restore').addEventListener('click', () => document.getElementById('file').click());
+
+document.getElementById('file').addEventListener('change', run(async () => {
+  const picker = document.getElementById('file');
+  const file = picker.files?.[0];
+  if (!file) return;
+
+  let lib;
+  try { lib = JSON.parse(await file.text()); }
+  catch { bad(`${file.name} is not readable JSON`); picker.value = ''; return; }
+
+  const fault = validate(lib);
+  picker.value = '';
+  if (fault) { bad(`${file.name}: ${fault}`); return; }
+
+  say(`pushing ${lib.patches.length} patches from ${file.name}`);
+  await pushLibrary(lib);
+}));
+
+// --- midi ------------------------------------------------------------------
+
+async function initMidi() {
+  const stateEl = document.getElementById('state');
+  if (!navigator.requestMIDIAccess) {
+    stateEl.textContent = 'Web MIDI unavailable — use Chrome or Edge';
+    return;
+  }
+
+  let access;
+  // Without sysex: true the browser silently drops every message this page
+  // sends, so the permission prompt is not optional here.
+  try { access = await navigator.requestMIDIAccess({ sysex: true }); }
+  catch { stateEl.textContent = 'SysEx permission denied'; return; }
+
+  const sel = document.getElementById('port');
+  const refresh = () => {
+    const outs = [...access.outputs.values()];
+    sel.innerHTML = '';
+    outs.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id; opt.textContent = o.name;
+      sel.appendChild(opt);
+    });
+
+    const preferred = outs.find(o => /teensy|aurora/i.test(o.name)) || outs[0];
+    if (!preferred) {
+      stateEl.textContent = 'no MIDI outputs found';
+      stateEl.className = 'bad';
+      output = null; busy(false);
+      return;
+    }
+    sel.value = preferred.id;
+    choose(preferred.id);
+  };
+
+  const choose = (id) => {
+    output = access.outputs.get(id);
+
+    // Web MIDI keeps the two directions apart, so the reply arrives on a
+    // separate port object that has to be matched to the output by name.
+    input = [...access.inputs.values()].find(i => i.name === output.name)
+         || [...access.inputs.values()].find(i => /teensy|aurora/i.test(i.name));
+
+    [...access.inputs.values()].forEach(i => { i.onmidimessage = null; });
+    if (input) input.onmidimessage = onMessage;
+
+    const stateEl = document.getElementById('state');
+    stateEl.textContent = input ? `connected to ${output.name}` : `${output.name} — no input port to hear replies on`;
+    stateEl.className = input ? 'ok' : 'bad';
+    busy(false);
+  };
+
+  sel.addEventListener('change', () => choose(sel.value));
+  access.onstatechange = refresh;
+  refresh();
+}
+
+busy(false);
+initMidi();
+say('ready — ask the brain what it is holding to check the link');
+</script>
+</body>
+</html>

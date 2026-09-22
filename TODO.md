@@ -153,7 +153,18 @@ with the state — all wait on the same thing.
 
 ## On the wall, next session
 
-Built 2026-09-22 and seen by nothing but the preview. One look each.
+Built 2026-09-22 and seen by nothing but the preview. One look each — and
+one that is not a look at all, listed first because it gates the rest.
+
+- [ ] **Run the patch sync against the brain.** Nothing below it has ever
+      met hardware. In order, all from `tools/protocol.html` but the last:
+      ask a freshly flashed brain what it holds and confirm it says empty;
+      push eight patches and read them back byte for byte; push a half
+      library and confirm the commit is refused and the previous one
+      survives; save the library to a file and push that same file back;
+      then pull the mains mid-sync and confirm the old library is still
+      whole. Time a full 128 while you are there — the flash write is the
+      likely cost, not the transfer.
 
 - [ ] **Turn bounce on and off** at count 1, fan 0, a narrow shape. The
       shape should stand still across the flip and turn at the end it was
@@ -285,6 +296,43 @@ designing there. See `docs/bench-facts.md`.
 Raised in conversation and not yet settled. Each needs a decision before
 it becomes a build item.
 
+- [ ] **Patch variants — one patch, a few overrides.** Raised 2026-09-22.
+      Tempo division and palette are both per-patch, so the same look at
+      half time, or in a cooler palette, is a second patch today. Three
+      things make this safe to leave alone. It resolves in the editor at
+      sync time, so the brain still receives flat, independent patches and
+      nothing about the wire or the storage depends on the answer.
+      Duplication is cheap — 128 slots and 85 KB against 1.9 MB, where what
+      runs out is keypad keys rather than room. And with no patches written
+      yet, which duplication actually grates is a guess.
+      It is not the retired shift returning. A shift was a live relative
+      rule applied while playing, which is what made it fight with morph
+      and need a control of its own; a variant is resolved at the desk
+      before anything is sent. See `DESIGN.md` § "What stopped being a
+      noun".
+      One consequence if it is ever built: a library pulled back off the
+      brain comes home as flat patches, since the parent structure never
+      crosses the wire. Same as tags.
+
+- [ ] **What a palette is, and where it lives.** Raised 2026-09-22 and
+      deliberately not settled: a fixed set of palettes on the brain, with
+      each patch referencing one, so a patch's controls move inside a
+      constrained color space rather than the whole wheel. The patch record
+      already carries a `palette` byte with no meaning attached, so the
+      per-patch half costs nothing. What is genuinely open is where the
+      palettes themselves live — a second section in the synced library is
+      the obvious answer, and it is safe to defer because a format change
+      costs a re-sync rather than a migration.
+      **A palette is a switch**, settled 2026-09-22, which is why the byte
+      sits in the patch head rather than in each parameter set: a far end
+      cannot sit in a different palette from its patch. It lands the way
+      every switch lands — on a patch change, or on release at the end of a
+      journey or an accent. See `DESIGN.md` § "Switches belong to the patch".
+
+      One wording job comes with it. `docs/visual-design.md` § "Palettes are
+      shapes, not colors" uses the word for what is now a patch or a shape,
+      and that section needs rewriting before anything here is built.
+
 - [ ] **Editor layout.** `tools/index.html` grew the preview and the color
       controls without a regroup, and it is cramped. Two boxes earn no
       space: the one holding only the "send 120 BPM clock" button, never
@@ -389,20 +437,44 @@ it becomes a build item.
       than a CC, so a patch holds one thing this classification does not
       reach.
 
-- [ ] **Patch storage — the editor-to-brain protocol.** Format, medium
-      and library are settled in `DESIGN.md` § "Patch storage": raw CC
-      bytes, LittleFS on the program flash, up to 128 patches on the
-      brain with the editor holding the master library. What is unbuilt
-      is the USB conversation that moves them — writing a slot, reading
-      one back, and the brain saying it is empty so the editor can offer
-      to re-push after a flash.
+- [x] **Patch storage — the editor-to-brain protocol.** Built 2026-09-22
+      and **never run against hardware**. SysEx over USB, specified in
+      `shared/aurora_protocol.h` § "System Exclusive" and reasoned in
+      `DESIGN.md` § "How a library gets there". A sync replaces the whole
+      library, streams in strictly ordered, stages to a file and goes live
+      on one rename, so an interrupted sync leaves the previous library
+      whole. `brain/src/patch_store.cpp` owns the flash,
+      `brain/src/patch_sync.cpp` owns the wire, and `tools/protocol.html`
+      pushes a library of generated bytes and reads it back to compare.
 
-      **A far end cannot be sent as CCs.** Each fader's far end is a
-      whole parameter set, and sending its values as ordinary CCs would
-      move the live wall instead of filling a slot. So the protocol needs
-      addressed writes — this patch, this set, these bytes — rather than
-      a replay of the live control stream. That is the constraint that
-      shapes it.
+      A patch is 660 bytes and the Teensy core will not receive a SysEx
+      message over 290 — `USB_MIDI_SYSEX_MAX` in `cores/teensy4/usb_midi.h`,
+      a bare `#define` no build flag reaches. Staying under it is worth
+      more than raising it: below that size the core hands over each
+      message whole in one callback and nothing is reassembled.
+
+- [ ] **Teach the brain to recall a patch.** Storage and the wire exist and
+      nothing puts a patch on the wall — the only reader of the library is
+      the export path. A patch arriving has to write the [patch] and [switch] CCs
+      through the same handlers a live CC goes through, which is what makes
+      the raw bytes worth storing. Needs the keypad-to-patch lookup at the
+      same time — the controller still sends `PC = key number` in
+      `scan_numpad()`, which only works while key N means preset N.
+
+- [ ] **The editor has no patch in the DESIGN sense.** `tools/index.html`
+      saves a flat map of cooked parameter names to `localStorage`: one
+      parameter set, no fader far ends, no accent target, no ramp times,
+      and the pattern is not in it. Until that is reworked, nothing can
+      build a patch to push — `tools/protocol.html` generates its bytes
+      rather than dialing them. Coupled to the editor-layout question in
+      § "Open discussions" and to the accent-preview item below.
+
+- [x] **Export the library to a file the repo can hold.** Done 2026-09-22,
+      untested. `tools/protocol.html` saves what the brain holds as JSON —
+      names, keypad assignment, every parameter set, one set per line so a
+      changed patch is a few changed lines in a diff — and pushes such a
+      file back. That is what stops the master library living on one
+      laptop, and it is the recovery path if that laptop is lost.
 
 - [x] **Keep the raw CC bytes in the brain.** Done 2026-09-22.
       `midi_in::ccBytes()` in `brain/src/midi_in.h` hands back the last
@@ -421,7 +493,10 @@ it becomes a build item.
       rarely show. See `DESIGN.md` § "Switches belong to the patch".
 
 - [ ] **A default set compiled into the firmware**, so an empty brain
-      still lights the wall. See `DESIGN.md` § "Patch storage".
+      still lights the wall. See `DESIGN.md` § "Patch storage". It must
+      never be written to storage: the brain reporting an empty library is
+      how the editor tells a fresh flash from a small library, and writing
+      the defaults in would destroy that distinction.
 - [x] **What a completed morph does.** Settled 2026-09-22. A completed
       morph arrives only if it was going to a patch, so a fader never
       arrives and the surfaces table in `DESIGN.md` § "Switches belong to

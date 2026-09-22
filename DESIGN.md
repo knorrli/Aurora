@@ -141,8 +141,9 @@ that needs fixing at a venue can be fixed at soundcheck.
 
 ## Patch storage — settled 2026-09-22
 
-Nothing built. The format and the medium are decided; the one thing left
-open is named at the end.
+The format, the medium and the editor conversation are decided. The
+conversation is built and **has never run against hardware**; everything
+below it is still unbuilt. The one thing left open is named at the end.
 
 ### Three ways the rig gets driven
 
@@ -224,8 +225,14 @@ stopping at nine would cap an automated show at the keypad's reach for no
 gain.
 
 A **set** is then an ordered mapping of nine of the library's patches
-onto the keypad keys. Switching sets needs no laptop, because every patch
-is already on the brain.
+onto the keypad keys. It is decided in the editor and arrives with a sync,
+so changing which nine is a laptop job — the requirement that it not be
+was withdrawn on 2026-09-22 as something nobody had asked for.
+
+The table itself still lives on the brain, because the brain is the only
+box present in all three ways the rig gets driven. So the controller sends
+"key 4 is down" and the brain decides what that means, which is the same
+division as everywhere else.
 
 **In LittleFS on the program flash.** The Teensy 4.0's emulated EEPROM is
 1080 bytes — `E2END 0x437` in the installed core — which holds one patch,
@@ -253,6 +260,52 @@ the keypad.
 **Tags, grouping and ordering are deferred**, not rejected. With fifty
 patches a flat sorted list is enough, and what is worth searching by will
 be obvious once fifty exist.
+
+### How a library gets there — built 2026-09-22, untested
+
+SysEx over USB, in `shared/aurora_protocol.h` § "System Exclusive". Four
+decisions worth keeping, because each one bought something.
+
+**A sync replaces the whole library.** There is no "patch 47 changed"
+message. The brain's storage is a mirror of what the editor last sent, so
+neither side tracks which patches are stale, and a patch needs no identity
+beyond its index. A full push is about 85 KB, which is seconds — unmeasured
+so far, and the flash write is the likelier half of that.
+
+**Everything lands in a staging file and becomes live on one rename.** A
+sync cut off anywhere leaves the previous library whole and current: there
+is no state holding half of one library and half of another. This is why
+the library is a single blob rather than a file per patch — 128 renames is
+not one commit, and there is no atomic way to do it.
+
+**A sync is strictly ordered and the brain appends.** One flash write per
+message, constant RAM, no seeking. Anything out of order is refused
+outright, because once both have been written a gap cannot be told from a
+reordering.
+
+**A palette is a switch**, so it sits in the patch head and not in each
+parameter set: a fader's far end cannot be in a different palette from its
+patch, and nothing interpolates one on the way. What a palette *is* stays
+open — `TODO.md` § "Open discussions" — and the byte is carried, stored and
+read by nothing.
+
+**A patch carries a name.** Sixteen bytes that the brain never reads. It
+exists for the export path: a library pulled back off the brain after the
+editor's machine is lost has to be a library rather than a heap of
+anonymous looks. That export is the same messages in the other direction,
+and it is what stops the master library being tied to one computer.
+
+Two things this deliberately does not have. There is no checksum — USB
+does not deliver a corrupted packet, and the failures that actually happen
+(wrong port, a Teensy that rebooted, a stalled tab, a flash write that
+failed) are all caught by the brain answering the commit. And there is no
+acknowledgment of the individual data messages, which would say nothing
+the commit does not.
+
+**The format is not a long-lived commitment.** Nothing on the brain is the
+only copy of anything, so changing the layout costs a re-sync rather than a
+migration. That is what lets the palette question stay open without
+blocking this — see `TODO.md` § "Open discussions".
 
 ### Open: what a physical control does when it disagrees
 
