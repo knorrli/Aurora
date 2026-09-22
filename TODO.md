@@ -323,8 +323,9 @@ it becomes a build item.
 
 ## Known defects
 
-- [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
-      cannot be tuned until this is fixed. See `docs/bench-facts.md`.
+- [x] **Glitch's white pixels ignored the V fader.** Fixed 2026-09-22;
+      white is made from the fader's own brightness now. The 30 % white
+      share can be tuned, and has not been. See `docs/bench-facts.md`.
 
 ## Housekeeping
 

@@ -163,7 +163,12 @@ void Glitch(CHSV color) {
     uint8_t stripIndex = random8(NUMBER_OF_STRIPS);
     uint8_t pixelIndex = random8(PIXELS_PER_STRIP);
     if (random8() < GLITCH_WHITE_CHANCE) {
-      strip[stripIndex][pixelIndex] = CRGB::White;
+      // Made from the fader's own brightness rather than a literal white:
+      // FastLED's master brightness is pinned at MAX_BRIGHTNESS in
+      // Aurora.ino and never follows the fader, so nothing downstream would
+      // dim a literal one and the preset turns to white noise below about a
+      // fifth of full V.
+      strip[stripIndex][pixelIndex] = CHSV(color.hue, 0, color.value);
     } else {
       strip[stripIndex][pixelIndex] = CHSV(color.hue, color.saturation, color.value);
     }

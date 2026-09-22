@@ -146,16 +146,25 @@ Bars read as visibly smoother while traveling more than twice as fast.
 Whether the glide is smooth enough *at real viewing distance* is
 untested. A bench flatters it.
 
-## Known defect: Glitch's white pixels ignore the V fader
+## Glitch's white pixels ignored the V fader
 
-Found 2026-09-09, unfixed. Glitch's white pixels are a flat `CRGB::White`
-while its colored pixels are `CHSV(hue, sat, value)`, and
+Found 2026-09-09, fixed 2026-09-22. Glitch's white pixels were a flat
+`CRGB::White` while its colored pixels were `CHSV(hue, sat, value)`, and
 `FastLED.setBrightness()` is pinned at `MAX_BRIGHTNESS` and never follows
-the fader. At a fifth of full V the whites are already about twenty times
-the colored pixels and the preset collapses into white noise.
+the fader. At a fifth of full V the whites were already about twenty times
+the colored pixels and the preset collapsed into white noise.
 
-The documented 30 % white share is therefore only true at full V, which
-is why that constant has never been judgeable.
+**Every step of that was re-read before it was fixed, and it holds.** The
+V fader maps to 0–255 and lands in `presetColor.value`. A colored pixel is
+converted from that, and `hsv2rgb_rainbow` squares the value on the way
+past, so a fifth of full V leaves a channel at 10 of 255 against a literal
+white's 255 — a factor of 25, which is the "about twenty times" above.
+`brightness` is assigned `MAX_BRIGHTNESS` once in `setup()` and appears
+nowhere else in the firmware, so the master really is pinned.
+
+The fix is to make white out of the fader's own brightness at zero
+saturation, which rides the same squared curve as every colored pixel.
+The 30 % white share is a judgeable constant now, and has not been judged.
 
 ## Limits of every bench session so far
 
