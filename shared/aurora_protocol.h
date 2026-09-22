@@ -122,7 +122,9 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     81 –  89 : RESERVED for band / song-specific automation
 //     90 –  99 : color, second half (twenty controls will not fit in ten)
 //    100 – 114 : the pulse's destinations, three apiece
-//    115 – 119 : RESERVED
+//           115 : where a still pattern stands — a shape control that did
+//                 not fit in 70–79
+//    116 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
 //
 // ---------------------------------------------------------------------------
@@ -315,7 +317,17 @@ enum AuroraCC : uint8_t {
     CC_PULSE_PAR_SAT_SHAPE = 113,
     CC_PULSE_PAR_SAT_SKEW  = 114,
 
-    // 115–119 reserved
+    // A shape control, and it belongs in the 70–79 block. That block was
+    // full before this was wanted, and moving one control on its own would
+    // mean renumbering a controller twice — once now and once at the
+    // regroup. It waits here for the regroup.
+    //
+    // Bipolar: 64 is the middle of the cell, and half a cell each way covers
+    // every place a shape can stand, because the pattern repeats once per
+    // cell. Read only while the pattern is still; travel sets its own place.
+    CC_GEN_POSITION        = 115, // where a still pattern stands in its cell
+
+    // 116–119 reserved
 };
 
 // ---------------------------------------------------------------------------

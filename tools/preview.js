@@ -36,6 +36,10 @@
   // rate has been moved, in its own cycles.
   const GEN_PULSE_ANCHOR_CYCLES = 2;
 
+  // How long a stopped pattern takes to walk home to Position, in beats.
+  const GEN_POSITION_SETTLE_BEATS = 2;
+
+
   // AURORA_PULSE_PERIODS in shared/aurora_protocol.h. Stepped rather than
   // continuous: the phase is anchored to the musical grid, and only a period
   // a bar holds a whole number of stays there. Halves and their dotted
@@ -152,6 +156,7 @@
       count: ccCount(s.count),
       edge: ccUnit(s.edge),
       tail: ccUnit(s.tail),
+      positionCells: ccBipolar(s.position) * 0.5,
       speedPixels: ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT),
       fan: ccUnit(s.fan),
       jitter: ccUnit(s.jitter),
@@ -357,6 +362,29 @@
     return phase - drift * pull;
   }
 
+  // The offset that stops a speed change teleporting the pattern is also what
+  // leaves a stopped one standing wherever the last traveling pattern ran out,
+  // so a patch saved still comes back somewhere else every time. A whole cell
+  // of offset is invisible, since the shape repeats once per cell, so only the
+  // fraction has to go and home is never further than half a cell away.
+  // While travel is running the offset is where the pattern stands, so there
+  // is nothing to settle and this leaves it alone.
+  let lastTravelBeats = 0;
+  function settledTravel(beats, rate) {
+    const elapsed = beats - lastTravelBeats;
+    lastTravelBeats = beats;
+
+    const travel = trackedPhase(travelPhase, beats, rate);
+    if (Math.abs(rate) > 0.0001 || elapsed <= 0) return travel;
+
+    const drift = travelPhase.offset - Math.round(travelPhase.offset);
+    if (Math.abs(drift) < 0.0001) return travel;
+
+    const pull = Math.min(1, elapsed / GEN_POSITION_SETTLE_BEATS);
+    travelPhase.offset -= drift * pull;
+    return travel - drift * pull;
+  }
+
   // Skew slides the peak through the cycle, so one side of the swell
   // collapses into a snap and a ramp becomes reachable. It warps the phase
   // rather than the output, which leaves the cycle's length untouched: moving
@@ -529,7 +557,8 @@
         : 0;
       travelCycles = trackedPhase(travelPhase, beats, rate);
     } else {
-      centerCells = 0.5 + trackedPhase(travelPhase, beats, p.speedPixels / cellLength);
+      centerCells = 0.5 + p.positionCells
+          + settledTravel(beats, p.speedPixels / cellLength);
     }
 
     const pulse = anchoredPulsePhase(beats, 1 / p.pulseBeats);

@@ -32,6 +32,11 @@ untouched.
   phase is anchored to the bar and its rate is stepped to the periods a bar
   can hold. Flashed but **not yet seen on the wall**. See
   `docs/generator.md` § "Where the pulse reaches".
+- **Position**, 2026-09-22. Where a still pattern stands in its cell, on
+  CC 115. What travel left over eases away while the pattern stands still,
+  so a patch saved still comes back to the same place instead of standing
+  wherever the last traveling one ran out. See `docs/generator.md` § "A
+  still pattern stands where it is told".
 - **The bench panel** — `tools/index.html`, drawn as the signal flow,
   with patch save/recall, the morph control and a row of color looks. The
   pulse is a third branch on it, since it reaches both the others and the
@@ -307,6 +312,15 @@ it becomes a build item.
       in `DESIGN.md` § "Switches belong to the patch"; the look itself is
       undiscussed.
 
+- [ ] **Jump the pattern to Position on the beat.** A reset that fires on
+      the grid rather than a place to sit: bars swiping up from the center,
+      snapping back to the center on the beat and swiping again. It is the
+      same family as the pulse's anchoring — something landing on the
+      musical grid rather than wherever it drifted to — and it needed
+      Position first, because a jump needs somewhere to jump to. Open
+      questions: what fires it (every beat, a division, a switch), and
+      whether the snap is instant or the settle it already has.
+
 ## Known defects
 
 - [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
@@ -319,8 +333,10 @@ it becomes a build item.
       through the whole list and realign it. The pulse now reads as two
       blocks — 77 to 80 for the strips' brightness and 100 to 114 for
       everything else — which is the clearest case in the file for a
-      regroup and the reason not to do one piecemeal. See
-      `shared/aurora_protocol.h`.
+      regroup and the reason not to do one piecemeal. Position sits at 115
+      for the same reason: it is a shape control, 70–79 was full before it
+      was wanted, and moving one control on its own would renumber a
+      controller twice. See `shared/aurora_protocol.h`.
 
 ## Key files
 

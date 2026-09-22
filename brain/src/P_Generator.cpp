@@ -39,6 +39,12 @@
 // same fraction of a swell and never a visible lurch.
 #define GEN_PULSE_ANCHOR_CYCLES 2.0f
 
+// How long a stopped pattern takes to walk home to Position, in beats. Long
+// enough that bringing Speed to a stop reads as settling rather than as a
+// second move of its own.
+#define GEN_POSITION_SETTLE_BEATS 2.0f
+
+
 // Each pixel averages this many samples across its own width. Point-sampling
 // at the pixel center aliases once a cell is only a pixel or two across: the
 // shape strobes as it moves instead of fading out. Averaging makes detail
@@ -50,6 +56,7 @@ static float genWidth = 0.3f;
 static uint8_t genCount = 1;
 static float genEdge = 0.15f;
 static float genTail = 0.0f;
+static float genPositionCells = 0.0f;
 static float genSpeedPixels = 0.0f;
 static float genFan = 0.0f;
 static float genJitter = 0.0f;
@@ -145,6 +152,33 @@ static float anchoredPulsePhase(float beats, float rate) {
   return phase - drift * pull;
 }
 
+// The tracker's offset is what stops a speed change teleporting the pattern,
+// and it is also what leaves a stopped pattern standing wherever the last
+// traveling one ran out — so a patch saved still comes back somewhere else
+// every time. A whole cell of offset is invisible, since the shape repeats
+// once per cell, so only the fraction has to go and home is never further
+// than half a cell away. Easing it out walks the pattern to Position without
+// the jump that bringing a fader to rest must not produce.
+//
+// While travel is running the offset is where the pattern stands, so there is
+// nothing to settle and this leaves it alone.
+static float settledTravel(float beats, float rate) {
+  static float lastBeats = 0.0f;
+  const float elapsed = beats - lastBeats;
+  lastBeats = beats;
+
+  const float travel = trackedPhase(travelPhase, beats, rate);
+  if (fabsf(rate) > 0.0001f || elapsed <= 0.0f) return travel;
+
+  const float drift = travelPhase.offset - roundf(travelPhase.offset);
+  if (fabsf(drift) < 0.0001f) return travel;
+
+  float pull = elapsed / GEN_POSITION_SETTLE_BEATS;
+  if (pull > 1.0f) pull = 1.0f;
+  travelPhase.offset -= drift * pull;
+  return travel - drift * pull;
+}
+
 // Skew slides the peak through the cycle, so one side of the swell collapses
 // into a snap and a ramp becomes reachable. It warps the phase rather than
 // the output, which leaves the cycle's length alone: moving skew changes the
@@ -190,6 +224,14 @@ static inline float pushToward(float base, float push, float low, float high) {
 }
 
 static inline float ccUnit(uint8_t value) { return (float)value / 127.0f; }
+
+// Bipolar around 64: the center has to be "no departure at all", because
+// every control spread this way measures how far something sits from where
+// the faders put it.
+static inline float ccBipolar(uint8_t value) {
+  return value < 64 ? ((float)value - 64.0f) / 64.0f
+                    : ((float)value - 64.0f) / 63.0f;
+}
 
 // Count is geometric because what reads on the wall is the ratio: one shape
 // against two changes everything, sixteen against seventeen is invisible.
@@ -512,9 +554,11 @@ void Generator(CHSV color) {
         : 0.0f;
     travelCycles = trackedPhase(travelPhase, beats, rate);
   } else {
-    // Half a cell, so a still shape sits in the middle of its cell rather than
+    // Half a cell puts a still shape in the middle of its cell rather than
     // straddling the boundary — which at count 1 is the strip's two ends.
-    centerCells = 0.5f + trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
+    // Position slides it from there.
+    centerCells = 0.5f + genPositionCells
+        + settledTravel(beats, genSpeedPixels / cellLength);
   }
 
   const float pulse = anchoredPulsePhase(beats, 1.0f / genPulseBeats);
@@ -695,6 +739,12 @@ void setGeneratorJitter(uint8_t value) { genJitter = ccUnit(value); }
 
 void setGeneratorCount(uint8_t value) { genCount = ccCount(value); }
 
+// Half a cell each way covers every place a shape can stand, because the
+// pattern repeats once per cell: a full cell of offset lands back where it
+// started. Only read while the pattern is still — a traveling one is already
+// everywhere in its cell.
+void setGeneratorPosition(uint8_t value) { genPositionCells = ccBipolar(value) * 0.5f; }
+
 // Bipolar around 64, squared so the slow end — where every pattern in the
 // roster actually lives — gets most of the travel.
 void setGeneratorSpeed(uint8_t value) {
@@ -712,12 +762,6 @@ void setGeneratorPulseRate(uint8_t value) {
 void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
 void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); }
 
-// Bipolar around 64: the center has to be "no departure at all", because
-// these are what decide how far a push sits from the color on the faders.
-static inline float ccBipolar(uint8_t value) {
-  return value < 64 ? ((float)value - 64.0f) / 64.0f
-                    : ((float)value - 64.0f) / 63.0f;
-}
 
 // Brightness has no room above full, so its amount is unipolar and its only
 // direction is down. Every other destination has two sides and the sign of

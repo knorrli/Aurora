@@ -185,6 +185,7 @@
       <div class="group">
         <h3>Travel</h3>
         <div id="shapeTravel"></div>
+        <div class="note">Position is where the pattern stands once Speed is centered: bring Speed to a stop and it walks home over a beat or two instead of staying where it ran out, so a patch saved still comes back to the same place. Under bounce the swing is anchored to the cell and Position does nothing.</div>
         <div class="chips" style="margin-top:9px">
           <button id="flagAlternate">alternate</button>
           <button id="flagBounce">bounce</button>
@@ -331,7 +332,7 @@
 
 <script>
 const CC = {
-  width: 70, count: 71, edge: 72, tail: 73, speed: 74,
+  width: 70, count: 71, edge: 72, tail: 73, position: 115, speed: 74,
   fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
   alternate: 45, bounce: 46,
 
@@ -429,6 +430,8 @@ const DERIVED = {
   count:      v => ccCount(v) + ' shapes',
   edge:       v => (v / 127 * 100).toFixed(0) + '% into gap',
   tail:       v => (v / 127 * 100).toFixed(0) + '% of gap',
+  position:   v => Math.abs(bip(v)) < 0.02 ? 'center of the cell'
+                   : (bip(v) * 50).toFixed(0) + '% of a cell off center',
   speed:      v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
                      return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
   fan:        v => (v / 127 * 100).toFixed(0) + '% apart',
@@ -505,6 +508,7 @@ const GROUPS = {
     ['tail',       'Tail',        'how far the trail reaches behind, into the gap'],
   ],
   shapeTravel: [
+    ['position',   'Position',    'where a still pattern stands in its cell; center is the middle'],
     ['speed',      'Speed',       'center is still; either side travels'],
     ['fan',        'Fan',         'how far the five strips run out of step'],
   ],
@@ -606,7 +610,7 @@ for (const name of Object.keys(COLOR_LOOKS)) {
 // The shape branch flattened: one shape filling the cell, still, not
 // traveling. What is left on the wall is the color layer alone.
 const SHAPE_OFF = {
-  width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 0, jitter: 0,
+  width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, fan: 0, jitter: 0,
   alternate: OFF, bounce: OFF,
 };
 
@@ -629,8 +633,10 @@ const PULSE_OFF = {
 // patch put it. So each one carries the whole pulse and states the
 // destinations it does not use, rather than inheriting a wash breathe from
 // whatever was up before.
+// Position comes centered for the same reason: a look should not inherit
+// where the last pattern happened to stop.
 for (const name of Object.keys(ANCHORS)) {
-  ANCHORS[name] = { ...PULSE_OFF, ...ANCHORS[name] };
+  ANCHORS[name] = { ...PULSE_OFF, position: 64, ...ANCHORS[name] };
 }
 
 

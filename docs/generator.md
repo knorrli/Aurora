@@ -60,6 +60,7 @@ That is the whole thing. Everything below is a parameter of it.
 | 78 | Pulse rate | How long one swell takes. Stepped | 16 → 0.25 beats |
 | 79 | Pulse skew | Bipolar — center is an even rise and fall, either side slides the peak toward a ramp | — |
 | 80 | Pulse shape | Hard on/off square through to smooth sine | — |
+| 115 | Position | Where a still pattern stands in its cell. Bipolar — center is the middle | ±half a cell |
 | 100–114 | Pulse destinations | Where else the swell reaches, three apiece | see below |
 
 Color is hue, whiteness and darkness, and sits downstream of all of this —
@@ -100,6 +101,33 @@ a softness control.
 
 Consequence worth knowing: at width 100 % there is no gap left, so edge
 and tail do nothing. That is consistent rather than broken.
+
+### A still pattern stands where it is told, built 2026-09-22
+
+Travel is a running total, and it is what says where the pattern stands.
+Stopping does not clear it, so a stopped pattern stood wherever the last
+traveling one ran out — arbitrary, invisible to every control, and different
+on each recall. A patch saved still did not come back to the same place, on
+the bench or on stage.
+
+Position is where the pattern stands once Speed is centered, and half a cell
+each way covers everywhere it can be: the pattern repeats once per cell, so a
+full cell of offset lands back where it started. Center is the middle of the
+cell, which at count 1 is the middle of the strip — a single lit pixel in the
+center of each strip, which is the thing that could not be dialed before.
+
+**What is left over eases away rather than snapping.** While the pattern
+stands still, the running total walks to the nearest whole cell over about two
+beats. A whole cell is invisible, so home is never more than half a cell away,
+and bringing Speed to a stop settles rather than jumps. It is the same fix as
+the pulse's anchoring, one section down, against the same cause.
+
+**Under bounce Position does nothing.** The swing is anchored to the cell's
+walls — that is what keeps the turn where Width puts it — so there is no
+offset to give it without pushing the core out of its own cell.
+
+Fan still spreads the five strips from wherever Position puts them. Centered
+on all five means Position centered and Fan at zero.
 
 ### Where the pulse reaches, built 2026-09-22
 

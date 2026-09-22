@@ -127,12 +127,13 @@ extern void resetStutter();
 extern void Chaos(CHSV color);
 extern void resetChaos();
 extern void Glitch(CHSV color);
-// The parametric generator — shape comes from CC 70–80 and 100–114, not from here
+// The parametric generator — shape comes from CC 70–80, 100–114 and 115, not from here
 extern void Generator(CHSV color);
 extern void setGeneratorWidth(uint8_t value);
 extern void setGeneratorCount(uint8_t value);
 extern void setGeneratorEdge(uint8_t value);
 extern void setGeneratorTail(uint8_t value);
+extern void setGeneratorPosition(uint8_t value);
 extern void setGeneratorSpeed(uint8_t value);
 extern void setGeneratorFan(uint8_t value);
 extern void setGeneratorJitter(uint8_t value);

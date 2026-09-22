@@ -55,6 +55,7 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_GEN_COUNT:       setGeneratorCount(value); break;
         case CC_GEN_EDGE:        setGeneratorEdge(value); break;
         case CC_GEN_TAIL:        setGeneratorTail(value); break;
+        case CC_GEN_POSITION:    setGeneratorPosition(value); break;
         case CC_GEN_SPEED:       setGeneratorSpeed(value); break;
         case CC_GEN_FAN:         setGeneratorFan(value); break;
         case CC_GEN_JITTER:      setGeneratorJitter(value); break;
