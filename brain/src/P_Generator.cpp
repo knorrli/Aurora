@@ -182,6 +182,46 @@ static float settledTravel(float beats, float rate) {
   return travel - drift * pull;
 }
 
+// Under bounce the core's position is a triangle: out to one wall of its cell
+// and back, once per cycle.
+static inline float triangleSwing(float phase) {
+  return (phase < 0.5f) ? (phase * 2.0f) : ((1.0f - phase) * 2.0f);
+}
+
+// Which phase stands the core where it already stands, for the mode being
+// entered. Position is read out of the travel phase differently in each — a
+// fraction of a cell under wrap, a triangle between the cell's two walls
+// under bounce — and the tracker keeps the phase continuous rather than the
+// position, so flipping the switch teleported the shape.
+//
+// Two things it cannot preserve. Fan enters the two modes as an offset of
+// different quantities, so only the unfanned strip is solved for and the
+// other four still move with fan up. And bounce cannot put a core within
+// half its own width of a cell wall, because that is where it turns — a
+// shape standing there snaps out to the wall, by at most half its width.
+static void reanchorTravel(float beats, bool bouncing, float coreCells,
+                           float halfCore, float swingSpan, float direction,
+                           float cellLength, float positionCells) {
+  float rate;
+  float wanted;
+  if (bouncing) {
+    rate = (swingSpan > 0.0001f)
+        ? fabsf(genSpeedPixels) / (2.0f * swingSpan * cellLength) : 0.0f;
+    float swing = (swingSpan > 0.0001f) ? (coreCells - halfCore) / swingSpan : 0.0f;
+    if (swing < 0.0f) swing = 0.0f;
+    else if (swing > 1.0f) swing = 1.0f;
+
+    // The half of the swing already traveling the way the shape is, so it
+    // carries on and turns at the end it was heading for.
+    wanted = (direction >= 0.0f) ? (swing * 0.5f) : (1.0f - swing * 0.5f);
+  } else {
+    rate = genSpeedPixels / cellLength;
+    wanted = coreCells - 0.5f - positionCells;
+  }
+  travelPhase.rate = rate;
+  travelPhase.offset = wanted - beats * rate;
+}
+
 // Skew slides the peak through the cycle, so one side of the swell collapses
 // into a snap and a ramp becomes reachable. It warps the phase rather than
 // the output, which leaves the cycle's length alone: moving skew changes the
@@ -561,9 +601,22 @@ void Generator(CHSV color) {
   const float swingSpan = 1.0f - genWidth;
   const bool bouncing = genBounce && fabsf(genSpeedPixels) > 0.0001f;
 
+  const float direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
+
+  // A switch belongs to the patch, so the one moment it moves is an arrival
+  // the performer caused and is watching — see DESIGN.md § "Switches belong
+  // to the patch". That is the moment a jump would be most visible, so the
+  // phase is solved for rather than carried across.
+  static bool lastBouncing = false;
+  static float lastCoreCells = 0.5f;
+  if (bouncing != lastBouncing) {
+    reanchorTravel(beats, bouncing, lastCoreCells, halfCore, swingSpan,
+                   direction, cellLength, genPositionCells);
+    lastBouncing = bouncing;
+  }
+
   float travelCycles = 0.0f;
   float centerCells = 0.5f;
-  const float direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
   if (bouncing) {
     const float rate = (swingSpan > 0.0001f)
         ? fabsf(genSpeedPixels) / (2.0f * swingSpan * cellLength)
@@ -576,6 +629,10 @@ void Generator(CHSV color) {
     centerCells = 0.5f + genPositionCells
         + settledTravel(beats, genSpeedPixels / cellLength);
   }
+
+  lastCoreCells = bouncing
+      ? (halfCore + triangleSwing(fract(travelCycles)) * swingSpan)
+      : fract(centerCells);
 
   const float pulse = anchoredPulsePhase(beats, 1.0f / genPulseBeats);
 
@@ -640,8 +697,7 @@ void Generator(CHSV color) {
     if (bouncing) {
       triangle = fract(travelCycles + stripPhase);
       const bool rising = triangle < 0.5f;
-      const float swing = rising ? (triangle * 2.0f) : ((1.0f - triangle) * 2.0f);
-      const float place = halfCore + swing * swingSpan;
+      const float place = halfCore + triangleSwing(triangle) * swingSpan;
       coreCenter = mirrored ? (1.0f - place) : place;
       stripDirection = rising ? 1.0f : -1.0f;
       if (mirrored) stripDirection = -stripDirection;

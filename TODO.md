@@ -205,12 +205,11 @@ designing there. See `docs/bench-facts.md`.
       seven positions, all powers of two.
 - [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
       See `docs/generator.md` § "Travel easing is a curve".
-- [ ] **Preserve position when a switch flips.** Turning bounce on moves
-      the core 12 px of 45 on every strip; alternate moves the odd strips
-      16 px. Solve for the phase that leaves the shape where it stands.
-      See `DESIGN.md` § "Switches belong to the patch".
-- [ ] **Refuse to save a morph target whose switches differ** from its
-      patch's, in `tools/index.html`. Same section.
+- [x] **Preserve position when bounce flips.** Done 2026-09-22; the phase
+      is solved for rather than carried across. Alternate keeps its jump
+      deliberately — it cannot be fixed without making it invisible under
+      bounce, and a per-strip rate offset is going to replace it. See
+      `DESIGN.md` § "Switches belong to the patch".
 - [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
       for bounce, open for wrap. See `docs/generator.md` § Open, "Is a
       strip a loop or a line?".

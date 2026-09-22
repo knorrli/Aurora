@@ -390,6 +390,43 @@
     return travel - drift * pull;
   }
 
+  // Under bounce the core's position is a triangle: out to one wall of its
+  // cell and back, once per cycle.
+  const triangleSwing = phase => (phase < 0.5 ? phase * 2 : (1 - phase) * 2);
+
+  // Which phase stands the core where it already stands, for the mode being
+  // entered. Position is read out of the travel phase differently in each — a
+  // fraction of a cell under wrap, a triangle between the cell's two walls
+  // under bounce — and the tracker keeps the phase continuous rather than the
+  // position, so flipping the switch teleported the shape.
+  //
+  // Two things it cannot preserve. Fan enters the two modes as an offset of
+  // different quantities, so only the unfanned strip is solved for and the
+  // other four still move with fan up. And bounce cannot put a core within
+  // half its own width of a cell wall, because that is where it turns — a
+  // shape standing there snaps out to the wall, by at most half its width.
+  let lastBouncing = false;
+  let lastCoreCells = 0.5;
+  function reanchorTravel(beats, bouncing, p, coreCells, halfCore, swingSpan,
+                          direction, cellLength) {
+    let rate, wanted;
+    if (bouncing) {
+      rate = swingSpan > 0.0001
+        ? Math.abs(p.speedPixels) / (2 * swingSpan * cellLength) : 0;
+      const swing = swingSpan > 0.0001
+        ? Math.max(0, Math.min(1, (coreCells - halfCore) / swingSpan)) : 0;
+
+      // The half of the swing already traveling the way the shape is, so it
+      // carries on and turns at the end it was heading for.
+      wanted = direction >= 0 ? swing * 0.5 : 1 - swing * 0.5;
+    } else {
+      rate = p.speedPixels / cellLength;
+      wanted = coreCells - 0.5 - p.positionCells;
+    }
+    travelPhase.rate = rate;
+    travelPhase.offset = wanted - beats * rate;
+  }
+
   // Skew slides the peak through the cycle, so one side of the swell
   // collapses into a snap and a ramp becomes reachable. It warps the phase
   // rather than the output, which leaves the cycle's length untouched: moving
@@ -556,9 +593,20 @@
     const swingSpan = 1 - p.width;
     const bouncing = p.bounce && Math.abs(p.speedPixels) > 0.0001;
 
+    const direction = p.speedPixels >= 0 ? 1 : -1;
+
+    // A switch belongs to the patch, so the one moment it moves is an arrival
+    // the performer caused and is watching — see DESIGN.md § "Switches belong
+    // to the patch". That is the moment a jump would be most visible, so the
+    // phase is solved for rather than carried across.
+    if (bouncing !== lastBouncing) {
+      reanchorTravel(beats, bouncing, p, lastCoreCells, halfCore, swingSpan,
+                     direction, cellLength);
+      lastBouncing = bouncing;
+    }
+
     let travelCycles = 0;
     let centerCells = 0.5;
-    const direction = p.speedPixels >= 0 ? 1 : -1;
     if (bouncing) {
       const rate = swingSpan > 0.0001
         ? Math.abs(p.speedPixels) / (2 * swingSpan * cellLength)
@@ -568,6 +616,10 @@
       centerCells = 0.5 + p.positionCells
           + settledTravel(beats, p.speedPixels / cellLength);
     }
+
+    lastCoreCells = bouncing
+      ? halfCore + triangleSwing(fract(travelCycles)) * swingSpan
+      : fract(centerCells);
 
     const pulse = anchoredPulsePhase(beats, 1 / p.pulseBeats);
     p.pulse = pulse;
@@ -629,8 +681,7 @@
       if (bouncing) {
         triangle = fract(travelCycles + stripPhase);
         const rising = triangle < 0.5;
-        const swing = rising ? triangle * 2 : (1 - triangle) * 2;
-        const place = halfCore + swing * swingSpan;
+        const place = halfCore + triangleSwing(triangle) * swingSpan;
         coreCenter = mirrored ? 1 - place : place;
         stripDirection = rising ? 1 : -1;
         if (mirrored) stripDirection = -stripDirection;

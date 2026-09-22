@@ -580,6 +580,27 @@ speed rather than the speed it was laid down at, so sweeping speed stretches
 and squashes the trail already lying there instead of leaving history where it
 fell. Invisible unless speed is swept hard.
 
+### Turning bounce on leaves the shape where it stands, built 2026-09-22
+
+The two modes read position out of the same travel phase differently — a
+fraction of a cell under wrap, a triangle between the cell's two walls under
+bounce — and the tracker that carries the phase across a rate change keeps the
+**phase** continuous, not the position. So the switch teleported the shape by
+about a quarter of a cell.
+
+The phase is solved for at the flip instead: the one that stands the core where
+it already stands, taken from the half of the triangle traveling the way the
+shape already was, so it carries on and turns at the end it was heading for.
+Measurements are in `DESIGN.md` § "Switches belong to the patch", which is also
+where a switch moving only on arrival is argued.
+
+Two things it cannot preserve, both geometry. **Bounce has nowhere to put a
+core standing within half its own width of a cell wall**, since that is where
+it turns, so a shape standing there is put out onto the wall — the bound on
+what is left, and largest at the widths where the swing is shortest anyway.
+And **fan offsets a different quantity in each mode**, so only the unfanned
+strip can be solved for and the other four still move with fan up.
+
 ### Modulation, settled 2026-09-21
 
 The pulse is a modulator, and the wander is a second one: a source, a set

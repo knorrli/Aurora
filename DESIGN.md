@@ -508,11 +508,20 @@ The keypad's settle is a better moment than halfway in a way worth
 naming: it is a moment the performer caused and is already watching for,
 so the one discontinuity left in the system sits where somebody put it.
 
+**Refusing to save a mismatched far end was considered and dropped,
+2026-09-22.** A morph between two looks whose switches differ is worth
+saving; what it cannot do is flip a switch halfway across. The suggestion
+on the table instead is that **a morph which completes arrives** — runs to
+its far end and takes the switches there, which would make a fader an
+arrival after all and change the table above. That is unsettled, and it
+belongs with real patch storage rather than with the bench panel's A-to-B
+slider, which exists to test that morphing works at all.
+
 **What a fader cannot do, and why it does not matter.** A fader's far end
 is a morph target belonging to *the same patch*, not a different patch, so
 the constraint is an authoring rule rather than a runtime one: **a patch
-and its own morph target share switches**, and the panel should refuse to
-save a far end that breaks it. For the touchpad, whose destination is
+and its own morph target share switches**. For the touchpad, whose
+destination is
 another patch, the loss is real but small — across the whole roster only
 Bars uses bounce and only CrossSweep and Stutter use alternate, so leaning
 toward most destinations loses nothing.
@@ -529,18 +538,44 @@ answer this question. Bounce cannot be dissolved at all, because wrap
 against bounce is a topology rather than a rate, so the rule would still
 be needed for it alone.
 
-**Not free yet: the flip itself jumps.** Measured in the preview on a
-45-pixel strip, turning bounce on moves the core 12 px on average and
-19.8 px at worst, on all five strips at once; turning alternate on moves
-the odd strips 16 px on average and 29.5 px at worst. Normal drift in the
-same slice of time is about 2 px. The cause is that position is derived
-from the travel phase differently in each mode — `fract(0.5 + phase)`
-against `halfCore + triangle(phase) × swingSpan` — and the phase tracker
-keeps the *phase* continuous rather than the position. Solving instead for
-the phase that puts the shape where it already stands, in the half of the
-triangle matching its direction, makes the shape stand still across the
-flip and simply turn at the next end. Alternate wants the same treatment:
-reverse the odd strips where they stand rather than mirroring them.
+**Bounce turns on without moving the shape, 2026-09-22.** Position is
+read out of the travel phase differently in each mode — a fraction of a
+cell under wrap, a triangle between the cell's two walls under bounce —
+and the phase tracker keeps the *phase* continuous rather than the
+position, so the flip teleported the shape. Solving instead for the phase
+that stands the core where it already stands, in the half of the triangle
+matching the direction it was going, leaves it standing and lets it turn
+at the end it was heading for.
+
+Measured in the preview at count 1 with no fan, sampled across a whole
+cell of travel, on a 45-pixel strip. Turning bounce on moved the core
+about 11 px on average and 22 at worst whatever the width was; it now
+moves 1.2 px on average at width 40, 0.2 px at width 12 and 5.1 px at
+width 90. One frame's own travel is 0.03 px.
+
+**What is left is geometry, not a loose end.** Bounce cannot stand a core
+within half its own width of a cell wall, because that is where it turns,
+so a shape standing there is put out onto the wall. The worst moves
+measured — 7.6, 2.8 and 16.1 px for those three widths — are half a core
+width in each case, which is the bound. And fan enters the two modes as an
+offset of different quantities, so only the unfanned strip can be solved
+for: at fan 90 the flip still averages 7.0 px across the five.
+
+**Alternate keeps its jump, deliberately.** The two things wanted of it
+cannot both be had. If turning it on leaves the odd strips where they
+stand, then where they sit relative to the even ones is whatever the
+moment of the flip made it, and the same patch entered twice is two
+different walls; keeping that relationship fixed is exactly what makes the
+flip a jump. Under bounce it is worse — the swing is symmetric inside its
+cell, so a shape running it backwards stands in the same place at every
+instant as one running it forwards, and reversing the odd strips where
+they stand would leave them sitting exactly on top of the even ones, with
+alternate visible on nothing but a tail.
+
+So it is not worth repairing, because it is not going to stay a switch. A
+per-strip **rate** offset in the fan family reaches alternate as one
+setting of a continuous control, and a continuous control has nothing to
+flip — see `docs/generator.md` § Open, item 1.
 
 ## Open
 
