@@ -210,6 +210,7 @@
 
       washLevel: ccMap(s.washLevel, 255),
       washHueOffset: ccMap(s.washHueOffset, 255),
+      washSaturation: ccMap(s.washSaturation, 255),
     };
   }
 
@@ -753,7 +754,10 @@
     const level = scale8(p.baseVal, clamp8(master));
     const hue = (p.baseHue + p.washHueOffset
                  + Math.trunc(push('parHue') * GEN_PULSE_MAX_HUE)) & 255;
-    const saturation = clamp8(pushToward(p.baseSat, push('parSat'), 0, 255));
+    // A scale down from the strips' saturation rather than a setting of its
+    // own, and it is where the pulse's push measures from.
+    const saturation = clamp8(
+      pushToward(scale8(p.baseSat, p.washSaturation), push('parSat'), 0, 255));
 
     const rgb = hsv2rgb(hue, saturation, 255);
     return [scale8v(rgb[0], level), scale8v(rgb[1], level), scale8v(rgb[2], level)];

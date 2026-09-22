@@ -32,6 +32,10 @@ untouched.
   phase is anchored to the bar and its rate is stepped to the periods a bar
   can hold. Flashed but **not yet seen on the wall**. See
   `docs/generator.md` § "Where the pulse reaches".
+- **The washes' own saturation**, 2026-09-22, on CC 62. A scale down from
+  the strips' saturation, and the origin the pulse's push toward white
+  measures from. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
+  cans".
 - **Position**, 2026-09-22. Where a still pattern stands in its cell, on
   CC 115. What travel left over eases away while the pattern stands still,
   so a patch saved still comes back to the same place instead of standing
@@ -160,13 +164,12 @@ designing there. See `docs/bench-facts.md`.
 - [ ] **Jitter in color** — a starfield in hue rather than in
       brightness. The only randomness the color layer has no way to
       make. See `docs/generator.md` § "The color layer has no jitter".
-- [ ] **Give the PARs their own saturation.** CC 62; the wash block has
-      room. A scale down from the strips' saturation rather than a setting
-      of its own, per `DESIGN.md` § "The PAR cans". The pulse already
-      pushes their saturation, off the S fader for want of anywhere else
-      to measure from, so this would give that push its own origin — and
-      give the read-only "the pulse reaches this" marker somewhere to sit,
-      which is the one destination currently without one.
+- [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 62.
+      A scale down from the strips' saturation: full matches them, zero is
+      white. The pulse's push toward white measures from it, and the
+      "the pulse reaches this" marker now has somewhere to sit for every
+      destination. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
+      cans".
 - [ ] **Reach the PARs with more than a hue offset.** The PARs following
       a gradient with the strips, which needs the color layer sampled at
       each PAR's position — today all four are one color. The white flash

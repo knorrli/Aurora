@@ -160,6 +160,11 @@ washes breathing while the strips strobe.
 | PAR hue offset | ± half the wheel | 109–111 |
 | PAR saturation | toward a pure hue / toward white | 112–114 |
 
+Every destination is measured from a control the performer set, which is
+what makes the wall rest at exactly what was dialed. PAR saturation was
+the one without such a control and measured from the strips' S fader
+instead; it measures from CC 62 now.
+
 **A push runs from the dialed value toward one of its two limits, and the
 amount's sign picks which.** Nothing can clip, a control already sitting
 at a limit simply has nowhere to go that way, and the wall rests at
@@ -597,9 +602,9 @@ consistent choice.
 The escape from the one thing this costs — you cannot see what is pushing
 a given control — is a read-only marker beside the target showing that
 the pulse reaches it, and how hard. Built in `tools/index.html`: Width,
-Hue, PAR level and PAR hue offset each carry one. PAR saturation has no
-control of its own to sit beside, which is its own argument for building
-one.
+Hue, PAR level, PAR hue offset and PAR saturation each carry one. The last
+of those had no control to sit beside until the washes got a saturation of
+their own, which was its own argument for building one.
 
 **Built 2026-09-22: a fixed-amount matrix.** Six destinations, all of them
 always present, each with an amount that may be zero and a wave of its own.

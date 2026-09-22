@@ -345,7 +345,7 @@ const CC = {
   pulseParSat: 112, pulseParSatShape: 113, pulseParSatSkew: 114,
 
   hue: 20, saturation: 21, value: 22,
-  washLevel: 60, washHueOffset: 61,
+  washLevel: 60, washHueOffset: 61, washSaturation: 62,
 
   // The color layer, matching shared/aurora_protocol.h.
   colorRegion: 47, colorRuler: 48,
@@ -394,7 +394,7 @@ const PULSE_DESTS = [
     note: 'Rotates the washes off the strips on the swell and back between them. Half the wheel each way at the fader’s ends.' },
   { key: 'parSat', name: 'PAR saturation', where: 'the four washes',
     amount: 'pulseParSat', shape: 'pulseParSatShape', skew: 'pulseParSatSkew',
-    note: 'Toward white is the flash between strip strobes that DESIGN.md records as asked for and unreachable. The washes have no saturation control of their own yet, so this pushes off the S fader.' },
+    note: 'Toward white is the flash between strip strobes that DESIGN.md records as asked for. It measures from the PARs’ own saturation, so pulling them pale leaves the flash less far to travel.' },
 ];
 
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
@@ -481,6 +481,8 @@ const DERIVED = {
 
   washLevel:     v => (v / 127 * 100).toFixed(0) + '%',
   washHueOffset: v => v === 0 ? 'matches strips' : '+' + Math.round(v / 127 * 255) + ' of 255',
+  washSaturation: v => v === 127 ? 'matches strips'
+                     : v === 0 ? 'white' : (v / 127 * 100).toFixed(0) + ' % of theirs',
 
   pulseWidth:    pulseAmount('toward full width', 'toward nothing'),
   pulseParLevel: pulseAmount('toward full', 'toward dark'),
@@ -546,6 +548,7 @@ const GROUPS = {
   pars: [
     ['washLevel',     'Level',      'the PARs’ master, independent of the strips'],
     ['washHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue. 0 matches them'],
+    ['washSaturation','Saturation', 'scales the PARs down from the strips’ saturation. Full matches them, zero is white'],
   ],
 };
 
@@ -730,7 +733,7 @@ function dropBypass(patch) {
 
 const state = { ...ANCHORS.Sweep, ...COLOR_OFF,
                 hue: 20, saturation: 100, value: 100,
-                washLevel: 127, washHueOffset: 0 };
+                washLevel: 127, washHueOffset: 0, washSaturation: 127 };
 
 let output = null;
 const controls = {};
@@ -861,6 +864,9 @@ function migrate(patch) {
   for (const [name, value] of Object.entries(PULSE_OFF)) {
     if (!(name in out)) out[name] = value;
   }
+  // A patch saved before the PARs had a saturation of their own would
+  // otherwise recall over whatever the control is left at.
+  if (!('washSaturation' in out)) out.washSaturation = 127;
   delete out.colorFlags;
   delete out.flags;
   delete out.placedKind;
@@ -1107,13 +1113,13 @@ function drawPulseWaves() {
 
 // The one thing putting the amounts at the source costs is that you cannot
 // see what is pushing a given control. These are the markers that buy it
-// back, sitting beside the control rather than beside the pulse. PAR
-// saturation has no control of its own yet, so it has no marker.
+// back, sitting beside the control rather than beside the pulse.
 const REACHED_BY = {
   width: 'pulseWidth',
   hue: 'pulseHue',
   washLevel: 'pulseParLevel',
   washHueOffset: 'pulseParHue',
+  washSaturation: 'pulseParSat',
 };
 const reachedMarkers = {};
 

@@ -403,10 +403,18 @@ stays available as an unsynced shimmer.
 
 ### What a patch holds for them
 
-Level, hue offset from the strips' hue, and how much of the pulse reaches
-them — the last of these three times over, once for each of level, hue and
-saturation. All of it relative to what the strips are doing — a
-relationship, not a second look.
+Level, hue offset from the strips' hue, saturation as a scale down from
+the strips' own, and how much of the pulse reaches them — the last of
+these three times over, once for each of level, hue and saturation. All of
+it relative to what the strips are doing — a relationship, not a second
+look.
+
+**Saturation is a scale rather than a setting**, on CC 62 since
+2026-09-22, and that is what makes it a relationship: full is whatever the
+strips are, zero is white, and nothing in between names a color of its
+own. It is also where the pulse's push toward white measures from. Without
+it that push had no origin but the strips' own S fader, so pulling the
+washes pale and flashing them paler were the same control.
 
 **Whether they match the strips or contrast against them is per-patch,
 and it lives on the faders.** Each fader's far end already covers the

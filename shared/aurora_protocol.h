@@ -225,7 +225,13 @@ enum AuroraCC : uint8_t {
                                  // adjacent instead of matching. 0 matches;
                                  // 64 of 127 is the opposite side of the
                                  // wheel.
-    // 62–69 reserved (washes)
+    // Scales the washes down from the strips' saturation: 127 matches them,
+    // 0 is white. A relationship rather than a color of their own, like
+    // every other wash control — see DESIGN.md § "The PAR cans". It is also
+    // where the pulse's push at 112–114 measures from, which it could not do
+    // while the only saturation in the rig was the strips' own fader.
+    CC_WASH_SATURATION     = 62,
+    // 63–69 reserved (washes)
 
     // 70–79 — generator shape. Only read while PRESET_GENERATOR is active.
     CC_GEN_WIDTH           = 70, // how much of one cell the shape covers
@@ -312,7 +318,8 @@ enum AuroraCC : uint8_t {
     CC_PULSE_PAR_HUE_SKEW  = 111,
 
     // Toward white is the flash between strip strobes that DESIGN.md
-    // records as asked for and unreachable.
+    // records as asked for. Measured from CC 62, so pulling the washes
+    // pale leaves the flash less far to travel.
     CC_PULSE_PAR_SAT       = 112, // toward a pure hue / toward white
     CC_PULSE_PAR_SAT_SHAPE = 113,
     CC_PULSE_PAR_SAT_SKEW  = 114,
@@ -505,6 +512,6 @@ enum AuroraNote : uint8_t {
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 7
+#define AURORA_PROTOCOL_VERSION_MINOR 8
 
 #endif // AURORA_PROTOCOL_H

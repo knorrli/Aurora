@@ -34,6 +34,9 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_WASH_HUE_OFFSET:
             dmx_out::setHueOffset(map(value, 0, 127, 0, 255));
             break;
+        case CC_WASH_SATURATION:
+            dmx_out::setSaturation(map(value, 0, 127, 0, 255));
+            break;
         case CC_COLOR_REGION:   setColorRegion(value); break;
         case CC_COLOR_RULER:    setColorRuler(value); break;
         case CC_PLACED_HUE:      setPlacedHue(value); break;

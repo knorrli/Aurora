@@ -33,6 +33,7 @@ static uint8_t lastWritten[8] = { 0 };
 
 static uint8_t washLevel = 255;
 static uint8_t washHueOffset = 0;
+static uint8_t washSaturation = 255;
 
 static float pulseLevel = 0.0f;
 static float pulseHue = 0.0f;
@@ -71,7 +72,10 @@ void tick() {
     const uint8_t level = scale8(hsv.value, master);
     hsv.value = 255;
     hsv.hue += washHueOffset + (int16_t)pulseHue;
-    hsv.saturation = pushToward(hsv.saturation, pulseSaturation, 0, 255);
+    // A scale down rather than a setting: the washes are a relationship to
+    // the strips, and this is where the pulse's push measures from.
+    hsv.saturation = pushToward(scale8(hsv.saturation, washSaturation),
+                                pulseSaturation, 0, 255);
 
     CRGB rgb;
     hsv2rgb_rainbow(hsv, rgb);
@@ -122,6 +126,10 @@ void setLevel(uint8_t level) {
 
 void setHueOffset(uint8_t offset) {
     washHueOffset = offset;
+}
+
+void setSaturation(uint8_t saturation) {
+    washSaturation = saturation;
 }
 
 const uint8_t *lastValues() {
