@@ -211,12 +211,12 @@ enum AuroraCC : uint8_t {
     CC_PRESET_PARAM_J      = 59,
 
     // 60–69 — washes / DMX fixtures
-    CC_WASH_LEVEL          = 60, // wash master. Independent of the strips
-                                 // and of PRESET_OFF, so the washes can be
-                                 // blacked out under a running pattern.
-                                 // The controller's "off" key must send
-                                 // PC 0 and this at 0 together, or a
-                                 // blackout leaves the washes lit.
+    CC_WASH_LEVEL          = 60, // wash master, independent of the strips
+                                 // so the washes can be pulled down under a
+                                 // running pattern. PRESET_OFF overrides it
+                                 // and darkens them: numpad 0 is an
+                                 // emergency stop, and one key has to kill
+                                 // the rig on its own.
     CC_WASH_HUE_OFFSET     = 61, // rotates the washes off the strips' hue,
                                  // so they can sit complementary or merely
                                  // adjacent instead of matching. 0 matches;

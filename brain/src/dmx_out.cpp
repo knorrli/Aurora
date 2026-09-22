@@ -31,9 +31,6 @@ static Fixture fixtures[] = {
 
 static uint8_t lastWritten[8] = { 0 };
 
-// Deliberately independent of PRESET_OFF: blacking the washes out under a
-// running pattern is its own control. The "everything off" gesture is the
-// controller sending PC 0 and CC_WASH_LEVEL 0 together.
 static uint8_t washLevel = 255;
 static uint8_t washHueOffset = 0;
 
@@ -49,8 +46,14 @@ void tick() {
     // they have the most resolution. Scaling RGBW down instead — the only
     // option the 4-channel personality offers — bands on slow fades at
     // the low levels the washes normally sit at.
+    // Preset 0 is the panic button on the numpad, so it darkens the washes
+    // too, whatever the wash master is set to. Gated rather than zeroed, so
+    // the level dialed in for the set comes back with the next preset. A
+    // washes-only look is a preset of its own, not the absence of one.
+    const uint8_t master = (currentPreset == PRESET_OFF) ? 0 : washLevel;
+
     CHSV hsv = presetColor;
-    const uint8_t level = scale8(hsv.value, washLevel);
+    const uint8_t level = scale8(hsv.value, master);
     hsv.value = 255;
     hsv.hue += washHueOffset;
 

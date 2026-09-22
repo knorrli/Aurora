@@ -19,8 +19,8 @@ namespace dmx_out {
 void begin();
 void tick();
 
-// Wash master, 0–255. Independent of the strips and of PRESET_OFF; see
-// CC_WASH_LEVEL in shared/aurora_protocol.h.
+// Wash master, 0–255. Independent of the strips, but not of PRESET_OFF,
+// which darkens everything. See CC_WASH_LEVEL in shared/aurora_protocol.h.
 void setLevel(uint8_t level);
 
 // Rotates the washes off the strips' hue; 0 matches them. See

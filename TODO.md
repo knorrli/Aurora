@@ -248,10 +248,6 @@ it becomes a build item.
 
 - [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
       cannot be tuned until this is fixed. See `docs/bench-facts.md`.
-- [ ] **`PRESET_OFF` alone no longer darkens the washes.** The
-      controller's "off" key must send `PC 0` and `CC_WASH_LEVEL` 0
-      together, or a blackout leaves the PARs lit. The contract lives
-      only in `shared/aurora_protocol.h`.
 - [ ] **Anchor the pulse's phase to the bar.** It is in time but not on
       time. See `docs/bench-facts.md` § "A phase derived from absolute
       time teleports".
