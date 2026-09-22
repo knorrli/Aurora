@@ -77,6 +77,15 @@ static PhaseTracker pulsePhase = { 0.0f, 0.0f };
 
 static inline float ccUnit(uint8_t value) { return (float)value / 127.0f; }
 
+// Count is geometric because what reads on the wall is the ratio: one shape
+// against two changes everything, sixteen against seventeen is invisible.
+// Spread evenly instead, more than half the fader sits above eight shapes,
+// where moving it does nothing anyone can see.
+static uint8_t ccCount(uint8_t value) {
+  const long shapes = lroundf(powf((float)GEN_MAX_COUNT, ccUnit(value)));
+  return (uint8_t)(shapes < 1 ? 1 : shapes > GEN_MAX_COUNT ? GEN_MAX_COUNT : shapes);
+}
+
 // Stable per-pixel noise: the same (strip, pixel, bucket) always hashes to
 // the same byte, so jitter holds still between re-rolls instead of boiling.
 static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
@@ -559,9 +568,7 @@ void setGeneratorJitter(uint8_t value) { genJitter = ccUnit(value); }
 void setGeneratorPulseDepth(uint8_t value) { genPulseDepth = ccUnit(value); }
 void setGeneratorPulseShape(uint8_t value) { genPulseShape = ccUnit(value); }
 
-void setGeneratorCount(uint8_t value) {
-  genCount = 1 + (uint8_t)((uint16_t)value * (GEN_MAX_COUNT - 1) / 127);
-}
+void setGeneratorCount(uint8_t value) { genCount = ccCount(value); }
 
 // Bipolar around 64, squared so the slow end — where every pattern in the
 // roster actually lives — gets most of the travel.
@@ -597,9 +604,7 @@ void setPlacedDark(uint8_t value)  { placedDarkReach = ccBipolar(value); }
 void setPlacedWidth(uint8_t value) { placedWidth = ccUnit(value); }
 void setPlacedEdge(uint8_t value)  { placedEdge = ccUnit(value); }
 
-void setPlacedCount(uint8_t value) {
-  placedCount = 1 + (uint8_t)((uint16_t)value * (GEN_MAX_COUNT - 1) / 127);
-}
+void setPlacedCount(uint8_t value) { placedCount = ccCount(value); }
 
 // Bipolar and squared like the shape branch's travel, for the same reason:
 // the slow end is where a color that reads as depth rather than as an effect

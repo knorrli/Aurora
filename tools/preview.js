@@ -122,11 +122,12 @@
   const ccBipolar = v => (v < 64 ? (v - 64) / 64 : (v - 64) / 63);
   const ccSquared = (v, max) => { const x = (v - 64) / 63; return Math.sign(x) * x * x * max; };
   const ccMap = (v, hi) => Math.floor(v * hi / 127);
+  const ccCount = v => Math.min(GEN_MAX_COUNT, Math.max(1, Math.round(Math.pow(GEN_MAX_COUNT, v / 127))));
 
   function readParams(s) {
     return {
       width: ccUnit(s.width),
-      count: 1 + Math.floor(s.count * (GEN_MAX_COUNT - 1) / 127),
+      count: ccCount(s.count),
       edge: ccUnit(s.edge),
       tail: ccUnit(s.tail),
       speedPixels: ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT),
@@ -149,7 +150,7 @@
       placedHue: ccBipolar(s.placedHue) * PLACED_MAX_HUE,
       placedWhite: ccBipolar(s.placedWhite),
       placedDark: ccBipolar(s.placedDark),
-      placedCount: 1 + Math.floor(s.placedCount * (GEN_MAX_COUNT - 1) / 127),
+      placedCount: ccCount(s.placedCount),
       placedWidth: ccUnit(s.placedWidth),
       placedEdge: ccUnit(s.placedEdge),
       placedSpeed: ccSquared(s.placedSpeed, PLACED_MAX_CELLS_PER_BEAT),

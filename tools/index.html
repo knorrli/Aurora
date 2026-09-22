@@ -313,10 +313,11 @@ const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
 // readouts lie until they are changed to match.
 const bip = v => v < 64 ? (v - 64) / 64 : (v - 64) / 63;
+const ccCount = v => Math.min(20, Math.max(1, Math.round(Math.pow(20, v / 127))));
 
 const DERIVED = {
   width:      v => (v / 127 * 100).toFixed(0) + '% of cell',
-  count:      v => (1 + Math.floor(v * 19 / 127)) + ' shapes',
+  count:      v => ccCount(v) + ' shapes',
   edge:       v => (v / 127 * 100).toFixed(0) + '% into gap',
   tail:       v => (v / 127 * 100).toFixed(0) + '% of gap',
   speed:      v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
@@ -349,7 +350,7 @@ const DERIVED = {
                       if (Math.abs(r) < 0.01) return 'flat';
                       return r < 0 ? 'down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
                                    : (r * 100).toFixed(0) + '% toward full'; },
-  placedCount: v => (1 + Math.floor(v * 19 / 127)) + ' regions',
+  placedCount: v => ccCount(v) + ' regions',
   placedWidth: v => (v / 127 * 100).toFixed(0) + '% of cell',
   placedEdge:  v => (v / 127 * 100).toFixed(0) + '% into gap',
   placedSpeed: v => { const x = (v - 64) / 63; const r = Math.sign(x) * x * x;
@@ -436,10 +437,10 @@ const ANCHORS = {
   Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
   Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:28 },
   Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Starfield:  { width:4,   count:110, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Starfield:  { width:4,   count:119, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
   Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
   Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
-  Glitch:     { width:6,   count:120, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Glitch:     { width:6,   count:122, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
 };
 
 // Shape anchors set the shape and nothing else, and color looks set the
@@ -467,7 +468,7 @@ const COLOR_LOOKS = {
   'Center cell':   { colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 104, placedCount: 0, placedWidth: 22, placedEdge: 0 },
   'Head and tail': { colorRegion: SLIDE, colorRuler: IN_SHAPE, placedHue: 104 },
   'Comet tail':    { colorRegion: SLIDE, colorRuler: IN_SHAPE, placedHue: 108, litWhite: 127 },
-  'Drifting bands':{ colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 90, placedCount: 24, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
+  'Drifting bands':{ colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 90, placedCount: 54, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
   'Alive':         { wanderHue: 92, wanderRate: 8,  wanderScale: 6 },
   'Boiling':       { wanderHue: 104, wanderDark: 40, wanderRate: 64, wanderScale: 74 },
   'Ember':         { litHue: 100, litWhite: 34 },

@@ -618,9 +618,9 @@ do is a judgment for a set, not a bench.
    randomness at a scale the machine does not currently have, which is
    why they are worth doing in one go.
 4. **Morph moves every parameter in lockstep and linearly.** That is the
-   crudest possible path. Count in particular probably wants to double
-   rather than add — 1, 2, 4, 8, 16 — since half the travel is currently
-   spent between 9 and 17 where it barely reads. Per-parameter timing,
+   crudest possible path. The count half of it is answered: count's own
+   fader is geometric now, so interpolating its CC linearly doubles by
+   construction and the morph needs no special case. Per-parameter timing,
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
 5. **Where the pulse shape fader's midpoint should sit.** The sweep is

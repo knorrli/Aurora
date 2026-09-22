@@ -189,9 +189,6 @@ designing there. See `docs/bench-facts.md`.
       `docs/generator.md` § "The pulse drives brightness only".
 - [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
       See `docs/generator.md` § "Travel easing is a curve".
-- [ ] **Make Count double rather than add across a morph.** See
-      `docs/generator.md` § Open, "Morph moves every parameter in
-      lockstep".
 - [ ] **Preserve position when a switch flips.** Turning bounce on moves
       the core 12 px of 45 on every strip; alternate moves the odd strips
       16 px. Solve for the phase that leaves the shape where it stands.
