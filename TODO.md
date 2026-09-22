@@ -314,6 +314,16 @@ it becomes a build item.
       in `DESIGN.md` § "Switches belong to the patch"; the look itself is
       undiscussed.
 
+- [ ] **Real patch storage, and what a completed morph does.** Patches and
+      morph targets live in the browser today and survive nothing, and the
+      bench panel's A-to-B slider exists to test that morphing works at
+      all rather than to be played. Raised 2026-09-22 while deciding not to
+      police a far end's switches: a morph between two looks whose switches
+      differ should be saveable, and the suggestion is that a morph which
+      **completes** arrives and takes the switches there — which would make
+      a fader an arrival and change the table in `DESIGN.md` § "Switches
+      belong to the patch". Settle that with the storage, not before.
+
 - [ ] **Jump the pattern to Position on the beat.** A reset that fires on
       the grid rather than a place to sit: bars swiping up from the center,
       snapping back to the center on the beat and swiping again. It is the
