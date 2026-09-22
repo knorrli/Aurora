@@ -160,6 +160,31 @@ designing there. See `docs/bench-facts.md`.
       chaotic strobe, and the fan half is also why Rain and Comet are the
       same look. See `docs/generator.md` § Open, "Fan is a linear
       staircase" and "Jitter has one scale", and `docs/visual-design.md`.
+- [ ] **Give the pulse its destinations.** A fixed-amount matrix: every
+      destination always present, each with a bipolar amount that may be
+      zero, so a morph never has to snap a connection on. Settled
+      2026-09-22; supersedes the width-only item below.
+      Destinations are PAR level, PAR hue offset, PAR saturation, strip
+      width, and the strips' hue taken after the three color sources have
+      added — one push on the output rather than one per source, which
+      leaves the color layer's design alone. PAR level against still
+      strips is the look that justifies it, and PAR saturation is the
+      white flash between strip strobes that `DESIGN.md` records as asked
+      for and unreachable. Fan belongs too but waits on the fan rework,
+      and is the one destination that is not a plain multiply: the pulse's
+      own per-strip phase is `fract(pulse + stripPhase)`, so aiming it at
+      fan feeds the pulse back into itself. Each destination also takes
+      its own shape, which is continuous and so morphs; PARs breathing
+      while the strips strobe is what that buys.
+      **Rates are not destinations.** Speed, placed speed and wander rate
+      all feed a running total, so a pulse aimed at one shifts position
+      permanently: turn the amount up and back down and the shape sits
+      somewhere else with every control where it started. The looks that
+      wanted them — a thrown ball, pixels surging down a comet's tail —
+      want easing, which is locked to the traversal and cannot drift. A
+      per-destination rate divide is out for the reason a patch cable is:
+      its middles are a beat frequency, not a halfway.
+
 - [ ] **Width as a third pulse destination.** One multiply. See
       `docs/generator.md` § "The pulse drives brightness only".
 - [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
@@ -191,10 +216,6 @@ it becomes a build item.
       space: the one holding only the "send 120 BPM clock" button, never
       used, and "Strips", which is empty. The question is what the
       groupings should be, not where today's boxes go.
-- [ ] **The pulse as a routable modulator.** Whether it reaches more than
-      brightness, and in what form. `docs/generator.md` § "Modulation,
-      settled 2026-09-21" defers a fixed-amount matrix and rejects
-      patchable routing; what is open is which destinations are eligible.
 - [ ] **Travel easing — is the look wanted?** Built shape is settled in
       `docs/generator.md` § "Travel easing is a curve, not a modulation
       route", and it is a build item above. What has never been discussed

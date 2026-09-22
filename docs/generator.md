@@ -481,9 +481,10 @@ a given control — is a read-only marker beside the target showing that
 the pulse reaches it, and how hard. It is also the destination-side UI
 already half-built, should modulators ever multiply.
 
-**Deferred: a fixed-amount matrix.** More destinations, all of them
-always present, each with a bipolar amount that may be zero. Worth having
-eventually; the pulse reaching hue, or count, is not reachable today.
+**Settled 2026-09-22, not built: a fixed-amount matrix.** More
+destinations, all of them always present, each with a bipolar amount that
+may be zero. The destination list and what is excluded from it live in
+`TODO.md` under "Give the pulse its destinations".
 
 **Not deferred, rejected: patchable routing.** Every patch has to be a
 valid morph destination from any live state, and a connection is either
