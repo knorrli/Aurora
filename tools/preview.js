@@ -292,7 +292,7 @@
   // rather than the output, which leaves the cycle's length untouched: moving
   // skew changes the swell's shape without changing how often it lands.
   //
-  // Bipolar, so centre is an exactly even rise and fall. Anything near but not
+  // Bipolar, so center is an exactly even rise and fall. Anything near but not
   // on 0.5 phase-shifts a square edge instead of leaving it alone, which reads
   // as the strobe sitting late rather than as a control doing nothing.
   function pulseWave(phase, shape, skew) {
