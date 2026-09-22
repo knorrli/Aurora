@@ -251,8 +251,6 @@ it becomes a build item.
 - [ ] **Anchor the pulse's phase to the bar.** It is in time but not on
       time. See `docs/bench-facts.md` § "A phase derived from absolute
       time teleports".
-- [ ] **Drop `-D AURORA_DEBUG`** from `brain/platformio.ini` once the
-      strips are what gets read instead of the console.
 
 ## Housekeeping
 
