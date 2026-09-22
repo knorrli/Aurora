@@ -199,6 +199,26 @@ it becomes a build item.
       `docs/generator.md` § "Travel easing is a curve, not a modulation
       route", and it is a build item above. What has never been discussed
       is whether a band backdrop asks for a thrown-ball traversal.
+- [ ] **Gate length on the pulse, as the far end of Shape.** A short stab
+      rather than an even square. Wanted from both sides independently, so
+      the want is real. Not a control of its own: fold it into the bottom
+      of the Shape fader, so the one axis runs stab -> square -> swell ->
+      sine. That is what makes it work — a gate only has a length where the
+      wave is square, and putting it anywhere else on the fader would mean
+      shifting the threshold at the sine end, which flat-bottoms the swell
+      and stops it reaching full. Costs: the sine half loses a quarter of
+      the fader, so the midpoint drifts from CC 93 back to about 102, and
+      Strobe, Stutter and Glitch all move off 0.
+      **Bounded by the frame rate, not by taste.** At 7-8 ms per frame
+      (`docs/bench-facts.md`) and the fastest rate of 0.25 beats, a 6 %
+      stab at 120 BPM is 8 ms, which is one frame — below that it lands
+      between frames and flickers instead of shortening. A gate measured
+      in percent of the cycle is therefore reliable at slow rates and not
+      at fast ones; a floor derived from frame time would fix that.
+      Build it only if a shorter stab is still wanted after playing with
+      the linear taper, since the dead bottom of the fader that made this
+      attractive is largely what the taper reclaimed.
+
 - [ ] **Fan's full shape, and a rate offset beside it.** `docs/generator.md`
       § Open, item 1 argues the two are one piece of work, and that a rate
       ratio of -1 on the odd strips reproduces alternate exactly. Whether
