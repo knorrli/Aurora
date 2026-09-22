@@ -245,18 +245,6 @@ it becomes a build item.
       spaced across the stage against the back wall. Whether that swap is
       an improvement is not obvious — "within a shape" is not a direction
       at all, so the three would stop being one vocabulary.
-- [ ] **Each color section wants a reset button.** Clearing one by hand is
-      three to seven faders dragged back one at a time — seven under "What
-      you place" — which is enough friction that a look gets abandoned
-      rather than cleared. One button per subsection.
-      It is "reset", not "zero": neutral is 64 for every bipolar control
-      and 0 for only a few, and `COLOR_OFF` in `tools/index.html` already
-      holds the neutral for every color control, so the button should read
-      from it rather than invent a second definition of neutral that can
-      drift. Worth knowing what that implies for the wander, whose rate
-      and scale sit at 20 there rather than at a neutral — with its three
-      reaches at 64 the wander is inactive whatever they say, so they are
-      parked somewhere usable instead of at zero.
 - [ ] **Travel easing — is the look wanted?** Built shape is settled in
       `docs/generator.md` § "Travel easing is a curve, not a modulation
       route", and it is a build item above. What has never been discussed

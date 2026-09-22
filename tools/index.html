@@ -20,7 +20,13 @@
   h3 {
     font-size: 11px; margin: 0 0 8px; letter-spacing: .14em; text-transform: uppercase;
     color: var(--dim); border-bottom: 1px solid var(--line); padding-bottom: 5px;
+    display: flex; align-items: baseline; gap: 8px;
   }
+  h3 .reset {
+    margin-left: auto; padding: 2px 7px; font-size: 10px; letter-spacing: .08em;
+    color: var(--dim);
+  }
+  h3 .reset:hover { color: var(--text); }
 
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; }
   .stack > * + * { margin-top: 14px; }
@@ -73,6 +79,12 @@
   .wave { display: block; width: 100%; height: 84px; margin-top: 10px;
           border: 1px solid var(--line); border-radius: 4px; background: #17181f; }
   .row label { color: var(--text); font-size: 13px; }
+  /* A label whose control has a defined neutral resets it on click. Only
+     those get the affordance, so a label that does nothing never looks
+     like it should. */
+  .row label.resettable { cursor: pointer; }
+  .row label.resettable:hover { color: var(--accent); }
+  .branch-color .row label.resettable:hover { color: var(--color); }
   .row .cc { color: var(--dim); font-size: 10px; }
   .row output { text-align: right; color: var(--accent); font-variant-numeric: tabular-nums; font-size: 12px; }
   input[type=range] { width: 100%; accent-color: var(--accent); height: 22px; }
@@ -178,7 +190,7 @@
     </div>
     <div class="groups">
       <div class="group">
-        <h3>What you place</h3>
+        <h3>What you place<button class="reset" id="placedReset" title="Put this section back to neutral">reset</button></h3>
           <div class="chips" id="placedKindSwitch"></div>
           <div class="chips" id="placedRulerSwitch"></div>
           <div id="placedAmount"></div>
@@ -186,13 +198,13 @@
           <div class="note">A slide runs one way across its ruler with the base color at the center, so the amount is how far one end departs and the two ends land twice that apart. A region is a bump — base, departure, back to base. The ruler decides what the position is measured against: across the five strips, along a strip, or from a shape's leading tip through to the end of its tail. Count, width and edge mean here exactly what they mean in the shape branch.</div>
         </div>
         <div class="group">
-          <h3>What lives</h3>
+          <h3>What lives<button class="reset" id="wanderReset" title="Put this section back to neutral">reset</button></h3>
           <div id="wanderAmount"></div>
           <div id="wanderForm"></div>
           <div class="note">Color never quite the same in two places, with the difference always moving. Two terms at the golden ratio, so it cannot come back into step and the wall never repeats — that is built in rather than dialed. Aim it nowhere; that is what the placed field is for.</div>
         </div>
         <div class="group">
-          <h3>From the light level</h3>
+          <h3>From the light level<button class="reset" id="litReset" title="Put this section back to neutral">reset</button></h3>
           <div id="litGroup"></div>
           <div class="note">Color read off how lit the shape branch left a pixel — the one source that reaches the pulse and jitter, since neither has any position for a ruler to measure. Reads the shape's profile only, never the color layer's own darkness: feed that back and pulling the wall down for a quiet verse would slide its hue.</div>
         </div>
@@ -495,6 +507,43 @@ const BYPASS = {
 };
 const stashed = { shape: null, color: null };
 
+// The flattened states double as the table of what neutral means per
+// control: 64 for everything bipolar, 0 for a few, and the wander's rate and
+// scale parked somewhere usable rather than at zero, since its three reaches
+// at 64 leave it inactive whatever they say.
+const neutralOf = name =>
+  name in SHAPE_OFF ? SHAPE_OFF[name] : name in COLOR_OFF ? COLOR_OFF[name] : null;
+
+const groupNames = defs => defs.map(([name]) => name);
+const SECTION_RESETS = {
+  placedReset: ['colorRegion', 'colorRuler',
+                ...groupNames(GROUPS.placedAmount), ...groupNames(GROUPS.placedForm)],
+  wanderReset: [...groupNames(GROUPS.wanderAmount), ...groupNames(GROUPS.wanderForm)],
+  litReset: groupNames(GROUPS.litGroup),
+};
+
+// While a branch is bypassed its controls show the flattened values, so an
+// edit has to be written into what the bypass will put back. Without this,
+// turning the bypass off would quietly undo whatever was just changed.
+function keepThroughBypass(name, value) {
+  for (const [branch, { flat }] of Object.entries(BYPASS))
+    if (stashed[branch] && name in flat) stashed[branch][name] = value;
+}
+
+function resetControls(names) {
+  const resettable = names.filter(name => neutralOf(name) !== null);
+  for (const name of resettable) {
+    const value = neutralOf(name);
+    state[name] = value;
+    keepThroughBypass(name, value);
+    if (controls[name]) controls[name].set(value);
+  }
+  syncFlagButtons();
+  paintSwitches();
+  drawPulseWave();
+  for (const name of resettable) sendParam(name);
+}
+
 function paintBypass(branch) {
   const { button, branch: cls } = BYPASS[branch];
   document.getElementById(button).classList.toggle('on', !!stashed[branch]);
@@ -555,6 +604,14 @@ function buildRows(hostId, defs) {
     row.className = 'row';
     row.innerHTML = `<label title="${hint}">${label}<br><span class="cc">CC ${CC[name]}</span></label>`;
 
+    const neutral = neutralOf(name);
+    if (neutral !== null) {
+      const labelEl = row.querySelector('label');
+      labelEl.classList.add('resettable');
+      labelEl.title = `${hint}\nClick to reset to ${neutral}`;
+      labelEl.addEventListener('click', () => resetControls([name]));
+    }
+
     const slider = document.createElement('input');
     slider.type = 'range'; slider.min = 0; slider.max = 127; slider.value = state[name];
 
@@ -567,6 +624,7 @@ function buildRows(hostId, defs) {
 
     slider.addEventListener('input', () => {
       state[name] = +slider.value;
+      keepThroughBypass(name, state[name]);
       readout();
       drawPulseWave();
       sendParam(name);
@@ -948,6 +1006,10 @@ document.getElementById('save').addEventListener('click', () => {
   savePatches(all);
   renderPatches();
 });
+
+for (const [id, names] of Object.entries(SECTION_RESETS)) {
+  document.getElementById(id).addEventListener('click', () => resetControls(names));
+}
 
 for (const branch of Object.keys(BYPASS)) {
   document.getElementById(BYPASS[branch].button)
