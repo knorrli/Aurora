@@ -61,12 +61,12 @@ void tick() {
     // they have the most resolution. Scaling RGBW down instead — the only
     // option the 4-channel personality offers — bands on slow fades at
     // the low levels the washes normally sit at.
-    // Preset 0 is the panic button on the numpad, so it darkens the washes
-    // too, whatever the wash master is set to. Gated rather than zeroed, so
-    // the level dialed in for the set comes back with the next preset. A
-    // washes-only look is a preset of its own, not the absence of one.
-    const uint8_t master = (currentPreset == PRESET_OFF)
-        ? 0 : pushToward(washLevel, pulseLevel, 0, 255);
+    const uint8_t master = pushToward(washLevel, pulseLevel, 0, 255);
+
+    // Key 0 is an override, not a look, and it reads selectedPreset for the
+    // reason Aurora.ino's gate does. Nothing above is skipped: the frame is
+    // computed and then thrown away at the write below.
+    const bool blackout = (selectedPreset == PRESET_OFF);
 
     CHSV hsv = presetColor;
     const uint8_t level = scale8(hsv.value, master);
@@ -100,6 +100,10 @@ void tick() {
             0,
             0,
         };
+
+        // Every channel, not the dimmer alone: a fixture that ignores its
+        // dimmer would hold the color channels and stay lit.
+        if (blackout) memset(values, 0, sizeof(values));
 
         dmx.set(fixture.address, values, 8);
 

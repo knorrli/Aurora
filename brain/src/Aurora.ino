@@ -84,6 +84,13 @@ void render()
   renderPreset(currentPreset);
   renderTrigger();
 
+  // Key 0 is an override, not a look: it wipes the frame after everything
+  // above has had its say, so no renderer can leave a pixel lit. It reads
+  // selectedPreset rather than currentPreset because currentPreset only
+  // catches up on a tempo pulse, and tempo::tick stops pulsing altogether
+  // between a MIDI Stop and the next Start.
+  if (selectedPreset == PRESET_OFF) FastLED.clear(false);
+
   FastLED.show();
   renderTempo();
   dmx_out::tick();

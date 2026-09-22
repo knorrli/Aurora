@@ -166,6 +166,16 @@ one that is not a look at all, listed first because it gates the rest.
       whole. Time a full 128 while you are there — the flash write is the
       likely cost, not the transfer.
 
+- [ ] **Try to defeat the blackout gate.** Built 2026-09-23, never seen on
+      hardware, and it is the one control that has to work when nothing
+      else does. Three presses, each with a path that used to stay lit:
+      with the transport stopped from the DAW, so no tempo pulse is
+      arriving; with the mic trigger firing, which fills the whole array
+      after the pattern has drawn; and with the washes at full, watching
+      that the PARs go dark rather than dim. Then press any other key and
+      confirm the wall comes back with nothing latched. See `DESIGN.md`
+      § "Blackout has two forms".
+
 - [ ] **Turn bounce on and off** at count 1, fan 0, a narrow shape. The
       shape should stand still across the flip and turn at the end it was
       heading for. With fan up the other strips still move, and a pattern

@@ -532,10 +532,34 @@ the window is cheap. The exact figure is unmeasured.
 
 ### Blackout has two forms
 
-**Key 0 is the musical blackout** — a patch like any other, so press cuts
-to black on the beat and hold fades to black over the ramp. It needs no
-special case, which is the argument for leaving key 0 alone rather than
-giving it a second job.
+**Key 0 is an override, not a patch** — settled 2026-09-23. It names no
+look, holds no parameters, takes no library slot and is never assigned in
+the editor, which is why the keymap is nine entries for keys 1–9. Pressed,
+everything the rig controls goes to black; released, nothing is latched,
+and the next key press brings the wall back.
+
+It is **one gate at the end of the frame**, and that placement is the whole
+design. Everything above it — the pattern, the color layer, the pulse, a
+morph in flight, a fader anywhere, a DAW pushing CCs — runs exactly as it
+always does and is then thrown away. There is no branch to get wrong,
+because nothing upstream is consulted. In `brain/src/Aurora.ino` it is the
+clear immediately before `FastLED.show()`; in `brain/src/dmx_out.cpp` it is
+the wipe immediately before the channels are written.
+
+Three things follow, and each one closes a path that was open before.
+
+- **It reads `selectedPreset`, not `currentPreset`.** The second is the
+  beat-quantized copy, and `tempo::tick` stops pulsing between a MIDI Stop
+  and the next Start — so a stopped transport would otherwise hold the wall
+  lit for ever. An override cannot wait on a clock that comes from outside
+  the brain.
+- **It runs after every renderer, including `renderTrigger`**, which fills
+  the whole array from the mic and never looked at the preset.
+- **It zeros all eight DMX channels, not the dimmer alone.** A fixture that
+  ignores its dimmer would otherwise hold its color channels and stay lit.
+
+Built 2026-09-23 and **not seen on hardware.** The bench check is in
+`TODO.md`.
 
 **The telephone hook switch is the master kill.** A hook is a maintained
 state rather than an event: hang up and the wall is out until the handset
