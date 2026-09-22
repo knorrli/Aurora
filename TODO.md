@@ -297,9 +297,14 @@ it becomes a build item.
 
 - [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
       cannot be tuned until this is fixed. See `docs/bench-facts.md`.
-- [ ] **Anchor the pulse's phase to the bar.** It is in time but not on
-      time. See `docs/bench-facts.md` § "A phase derived from absolute
-      time teleports".
+- [ ] **Anchor the pulse's phase to the bar. Do this before the
+      destinations.** It is in time but not on time. See
+      `docs/bench-facts.md` § "A phase derived from absolute time
+      teleports". It gates the matrix: every destination inherits the
+      pulse's phase, so aiming it at four more places multiplies a
+      misalignment that is currently only in one. It is also what makes
+      skew worth its CC at the square end, where skew moves when the
+      flash lands and nothing else.
 
 ## Housekeeping
 
