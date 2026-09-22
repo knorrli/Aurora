@@ -632,9 +632,10 @@ function applyMorph(position) {
     const value = Math.round(morphA[name] + (morphB[name] - morphA[name]) * position);
     if (value === state[name]) continue;
     state[name] = value;
-    if (controls[name]) { controls[name].slider.value = value; controls[name].readout(); }
+    if (controls[name]) controls[name].set(value);
     sendCC(CC[name], value);
   }
+  drawPulseWave();
 
   const label = position <= 0 ? 'A' : position >= 1 ? 'B' : (position * 100).toFixed(0) + '%';
   document.getElementById('morphReadout').textContent = label;
