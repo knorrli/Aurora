@@ -1,4 +1,5 @@
 #include "Aurora.h"
+#include "dmx_out.h"
 #include "tempo.h"
 
 #include <math.h>
@@ -28,8 +29,15 @@
 // stops doing anything.
 #define GEN_MAX_COUNT 20
 #define GEN_MAX_SPEED_PIXELS_PER_BEAT 60.0f
-#define GEN_SLOWEST_PULSE_BEATS 16.0f
-#define GEN_PULSE_RATE_OCTAVES 6.0f
+
+// Half the wheel each way, matching the placed field's reach. A pulse that
+// can only nudge the hue is not a destination anyone would spend a fader on.
+#define GEN_PULSE_MAX_HUE 128.0f
+
+// How long the pulse takes to walk back onto the musical grid after its rate
+// has been moved, measured in its own cycles so the correction is always the
+// same fraction of a swell and never a visible lurch.
+#define GEN_PULSE_ANCHOR_CYCLES 2.0f
 
 // Each pixel averages this many samples across its own width. Point-sampling
 // at the pixel center aliases once a cell is only a pixel or two across: the
@@ -45,9 +53,7 @@ static float genTail = 0.0f;
 static float genSpeedPixels = 0.0f;
 static float genFan = 0.0f;
 static float genJitter = 0.0f;
-static float genPulseDepth = 0.0f;
 static float genPulseBeats = 4.0f;
-static float genPulseShape = 1.0f;
 static bool genAlternate = false;
 static bool genBounce = false;
 
@@ -74,6 +80,114 @@ static float trackedPhase(PhaseTracker &tracker, float beats, float rate) {
 
 static PhaseTracker travelPhase = { 0.0f, 0.0f };
 static PhaseTracker pulsePhase = { 0.0f, 0.0f };
+
+// One oscillator with one rate, reaching several places at once. A
+// destination says how far the pulse pushes it and what wave does the
+// pushing; what it can never say is how fast, because every rate in here
+// feeds a running total and a pulse aimed at one would shift position
+// permanently instead of returning. See TODO.md § "Give the pulse its
+// destinations".
+//
+// Every destination is always connected and its amount may be zero: a morph
+// interpolates an amount and cannot snap a connection on.
+struct PulseSend {
+  float amount;
+  float shape;
+  float skew;
+};
+
+// Shape at 1 is a sine, which is the wave that does least on its way to
+// somewhere else; skew at 0 is an even rise and fall.
+static PulseSend pulseSends[PULSE_TARGET_COUNT] = {
+  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_LIGHT
+  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_WIDTH
+  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_HUE
+  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_PAR_LEVEL
+  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_PAR_HUE
+  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_PAR_SAT
+};
+
+// The peak sits at mid-cycle, so the offset that lands a peak on a bar line
+// is a half-integer rather than a whole one.
+static inline float nearestAnchor(float offset) {
+  return roundf(offset - 0.5f) + 0.5f;
+}
+
+// The tracker's offset is what stops a rate change teleporting, and it is
+// also what leaves the cycle's zero wherever the rate was last touched —
+// never a bar line, so a deep slow swell peaks wherever it happens to. A
+// whole cycle of offset is invisible, so only the fraction has to go: easing
+// it out over the next couple of cycles walks the pulse back onto the grid
+// without ever jumping.
+//
+// This is why the rate is stepped rather than continuous. Anchoring puts the
+// cycle's zero on the music's zero; only a period a bar holds a whole number
+// of keeps it there, which is what AURORA_PULSE_PERIODS is.
+static float anchoredPulsePhase(float beats, float rate) {
+  static float lastBeats = 0.0f;
+  const float elapsed = beats - lastBeats;
+  lastBeats = beats;
+
+  // The transport restarted, and beat zero is a bar line by definition.
+  if (elapsed < 0.0f) {
+    pulsePhase.offset = 0.5f;
+    pulsePhase.rate = rate;
+    return beats * rate + 0.5f;
+  }
+
+  const float phase = trackedPhase(pulsePhase, beats, rate);
+  const float drift = pulsePhase.offset - nearestAnchor(pulsePhase.offset);
+  if (fabsf(drift) < 0.0001f) return phase;
+
+  float pull = elapsed * rate / GEN_PULSE_ANCHOR_CYCLES;
+  if (pull > 1.0f) pull = 1.0f;
+  pulsePhase.offset -= drift * pull;
+  return phase - drift * pull;
+}
+
+// Skew slides the peak through the cycle, so one side of the swell collapses
+// into a snap and a ramp becomes reachable. It warps the phase rather than
+// the output, which leaves the cycle's length alone: moving skew changes the
+// swell's shape without changing how often it lands.
+static float pulseWave(float phase, float shape, float skew) {
+  if (skew < -1.0f) skew = -1.0f;
+  else if (skew > 1.0f) skew = 1.0f;
+
+  const float k = 0.5f + 0.48f * skew;  // 0 and 1 would divide by zero
+  const float t = fract(phase);
+  const float warped = (t < k) ? (0.5f * t / k)
+                               : (0.5f + 0.5f * (t - k) / (1.0f - k));
+  const float lfo = 0.5f - 0.5f * cosf(2.0f * (float)PI * warped);
+
+  // Steepening the sine toward a square is what makes a strobe reachable;
+  // no amount of depth on a sine ever produces an on/off edge. The sweep is
+  // linear because the visible swelling tracks softness in proportion: spread
+  // geometrically over the same range, half the fader's visible travel falls
+  // in its top ten steps and everything below reads as one flat square.
+  const float softness = 0.02f + 0.98f * shape;
+  float shaped = (lfo - 0.5f) / softness + 0.5f;
+  if (shaped < 0.0f) shaped = 0.0f;
+  else if (shaped > 1.0f) shaped = 1.0f;
+  return shaped;
+}
+
+// How hard this destination is being pushed right now: signed, and zero at
+// the bottom of the swell so the dialed value is what the wall rests at.
+static float pulsePush(uint8_t target, float phase) {
+  const PulseSend &send = pulseSends[target];
+  if (fabsf(send.amount) < 0.001f) return 0.0f;
+  return send.amount * pulseWave(phase, send.shape, send.skew);
+}
+
+// A push is a fraction of the way from the dialed value to one of its two
+// limits, and its sign picks which. Nothing can clip, and a control already
+// sitting at a limit simply has nowhere to go that way — which is why the
+// strips' brightness is the one destination with no sign: there is nothing
+// above full light, so its only direction is down.
+static inline float pushToward(float base, float push, float low, float high) {
+  const float limit = (push >= 0.0f) ? high : low;
+  return base + fabsf(push) * (limit - base);
+}
 
 static inline float ccUnit(uint8_t value) { return (float)value / 127.0f; }
 
@@ -336,16 +450,19 @@ static float rulerAt(uint8_t stripIndex, uint8_t pixelIndex, float shapeU) {
   return (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
 }
 
+// `pulseHue` arrives already summed rather than as a fourth source, because
+// the pulse pushes the layer's output: one push after the three have added,
+// which leaves the color layer's own design alone.
 static CHSV colorAt(CHSV base, uint8_t stripIndex, uint8_t pixelIndex,
                      float shapeU, float profile, float drift, float wanderT,
-                     bool placedOn, bool wanderOn) {
+                     float pulseHue, bool placedOn, bool wanderOn) {
   const float along01 = (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
 
   const float placed = placedOn ? placedAt(rulerAt(stripIndex, pixelIndex, shapeU), drift) : 0.0f;
   const float wander = wanderOn ? wanderAt(stripIndex, along01, wanderT) : 0.0f;
 
   return applyPushes(base,
-      placed * placedHueReach + wander * wanderHueReach + profile * litHueReach,
+      placed * placedHueReach + wander * wanderHueReach + profile * litHueReach + pulseHue,
       placed * placedWhiteReach + wander * wanderWhiteReach + profile * litWhiteReach,
       placed * placedDarkReach + wander * wanderDarkReach + profile * litDarkReach);
 }
@@ -400,11 +517,12 @@ void Generator(CHSV color) {
     centerCells = 0.5f + trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
   }
 
-  const float pulse = trackedPhase(pulsePhase, beats, 1.0f / genPulseBeats);
+  const float pulse = anchoredPulsePhase(beats, 1.0f / genPulseBeats);
 
   const bool placedOn = placedActive();
   const bool wanderOn = wanderActive();
-  const bool colorFlat = !placedOn && !wanderOn && !litActive();
+  const bool pulseHueOn = fabsf(pulseSends[PULSE_TO_HUE].amount) > 0.001f;
+  const bool colorFlat = !placedOn && !wanderOn && !litActive() && !pulseHueOn;
 
   // Both color rates go through the tracker for the same reason travel and
   // the pulse do: beats only grows, so a small change of rate multiplied by a
@@ -412,38 +530,39 @@ void Generator(CHSV color) {
   const float wanderT = trackedPhase(wanderPhase, beats, wanderCycles);
   const float placedDrift = trackedPhase(placedPhase, beats, placedCells);
 
-  // The two sides of a shape are not the same length — a tail reaches much
-  // further than an edge fade — so they are normalized separately. Halfway
-  // between the two tips is not the core, and a region asked to sit at the
-  // middle of a shape means the core every time.
-  const float shapeGap = 1.0f - genWidth;
-  const float shapeLead = genWidth * 0.5f + genEdge * shapeGap * 0.5f;
-  const float shapeTrail = genWidth * 0.5f
-      + fmaxf(genEdge * shapeGap * 0.5f, genTail * shapeGap);
-
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     const float stripPhase = genFan * ((float)stripIndex / (float)NUMBER_OF_STRIPS);
 
     const bool mirrored = genAlternate && (stripIndex & 1);
 
-    // The pulse drives brightness only. Letting it drive width too made the
-    // shape retract toward its head as it shrank, so a swell read as a fill
-    // from one end of the strip rather than as the whole thing breathing.
-    const float lfo = 0.5f - 0.5f * cosf(2.0f * (float)PI * fract(pulse + stripPhase));
+    // Fan is where a strip stands in the cycle, so every destination that
+    // lands on a strip inherits it and the three of them stay in step with
+    // each other. The washes take the unfanned phase: a PAR is one position
+    // with no strip to be offset from.
+    const float stripPulse = pulse + stripPhase;
 
-    // Steepening the sine toward a square is what makes a strobe reachable;
-    // no amount of depth on a sine ever produces an on/off edge. The sweep is
-    // linear because the visible swelling tracks softness in proportion: spread
-    // geometrically over the same range, half the fader's visible travel falls
-    // in its top ten steps and everything below reads as one flat square.
-    const float softness = 0.02f + 0.98f * genPulseShape;
-    float shaped = (lfo - 0.5f) / softness + 0.5f;
-    if (shaped < 0.0f) shaped = 0.0f;
-    else if (shaped > 1.0f) shaped = 1.0f;
+    // Nothing sits above full light, so brightness is the one destination
+    // with no sign: its amount is how far the trough digs below what the
+    // shape branch already lit.
+    const PulseSend &toLight = pulseSends[PULSE_TO_LIGHT];
+    const float swell = 1.0f - toLight.amount
+        * (1.0f - pulseWave(stripPulse, toLight.shape, toLight.skew));
 
-    const float swell = 1.0f - genPulseDepth + genPulseDepth * shaped;
+    // A shape is anchored by its center, so growing it is a breath outward
+    // rather than a wipe in from one end — which is what put this destination
+    // out of reach the first time it was tried.
+    const float width = pushToward(genWidth, pulsePush(PULSE_TO_WIDTH, stripPulse),
+                                   0.0f, 1.0f);
+    const float pulseHue = pulsePush(PULSE_TO_HUE, stripPulse) * GEN_PULSE_MAX_HUE;
 
-    const float width = genWidth;
+    // The two sides of a shape are not the same length — a tail reaches much
+    // further than an edge fade — so they are normalized separately. Halfway
+    // between the two tips is not the core, and a region asked to sit at the
+    // middle of a shape means the core every time.
+    const float shapeGap = 1.0f - width;
+    const float shapeLead = width * 0.5f + genEdge * shapeGap * 0.5f;
+    const float shapeTrail = width * 0.5f
+        + fmaxf(genEdge * shapeGap * 0.5f, genTail * shapeGap);
 
     // Odd strips run the journey backwards, rather than only mirroring the
     // shape where it stands. Travel is one value every strip shares, so
@@ -476,7 +595,7 @@ void Generator(CHSV color) {
     // pulse is darkest, so a flashing shape lands somewhere new each time
     // instead of being smeared where it stands. On a grid of its own it
     // could never coincide with a flash, which is all it used to do.
-    const uint8_t jitterBucket = (uint8_t)floorf(pulse + stripPhase);
+    const uint8_t jitterBucket = (uint8_t)floorf(stripPulse);
 
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
       float jitterOffset = 0.0f;
@@ -551,13 +670,21 @@ void Generator(CHSV color) {
         if (shapeU < 0.0f) shapeU = 0.0f;
         else if (shapeU > 1.0f) shapeU = 1.0f;
         tint = colorAt(color, stripIndex, pixelIndex, shapeU, profile,
-                        placedDrift, wanderT, placedOn, wanderOn);
+                        placedDrift, wanderT, pulseHue, placedOn, wanderOn);
       }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =
           lit.nscale8_video((uint8_t)((float)tint.value * brightness));
     }
   }
+
+  // The washes are not this frame's pixels, so the push is handed over
+  // rather than applied here: dmx_out::tick() runs after every preset and
+  // clears what it was given, which is what keeps a pulse dialed in here off
+  // the washes while a hand-written preset is up.
+  dmx_out::setPulsePush(pulsePush(PULSE_TO_PAR_LEVEL, pulse),
+                        pulsePush(PULSE_TO_PAR_HUE, pulse) * GEN_PULSE_MAX_HUE,
+                        pulsePush(PULSE_TO_PAR_SAT, pulse));
 }
 
 void setGeneratorWidth(uint8_t value) { genWidth = ccUnit(value); }
@@ -565,8 +692,6 @@ void setGeneratorEdge(uint8_t value) { genEdge = ccUnit(value); }
 void setGeneratorTail(uint8_t value) { genTail = ccUnit(value); }
 void setGeneratorFan(uint8_t value) { genFan = ccUnit(value); }
 void setGeneratorJitter(uint8_t value) { genJitter = ccUnit(value); }
-void setGeneratorPulseDepth(uint8_t value) { genPulseDepth = ccUnit(value); }
-void setGeneratorPulseShape(uint8_t value) { genPulseShape = ccUnit(value); }
 
 void setGeneratorCount(uint8_t value) { genCount = ccCount(value); }
 
@@ -577,8 +702,11 @@ void setGeneratorSpeed(uint8_t value) {
   genSpeedPixels = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
 }
 
+// Stepped, not continuous: the phase is anchored to the musical grid, and a
+// period the bar cannot hold a whole number of walks through the bar for ever
+// whatever the phase is anchored to. See AURORA_PULSE_PERIODS.
 void setGeneratorPulseRate(uint8_t value) {
-  genPulseBeats = GEN_SLOWEST_PULSE_BEATS * powf(0.5f, ccUnit(value) * GEN_PULSE_RATE_OCTAVES);
+  genPulseBeats = aurora_pulse_period(value);
 }
 
 void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
@@ -589,6 +717,22 @@ void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); 
 static inline float ccBipolar(uint8_t value) {
   return value < 64 ? ((float)value - 64.0f) / 64.0f
                     : ((float)value - 64.0f) / 63.0f;
+}
+
+// Brightness has no room above full, so its amount is unipolar and its only
+// direction is down. Every other destination has two sides and the sign of
+// the amount picks one.
+void setPulseAmount(uint8_t target, uint8_t value) {
+  pulseSends[target].amount = (target == PULSE_TO_LIGHT) ? ccUnit(value)
+                                                         : ccBipolar(value);
+}
+
+void setPulseShape(uint8_t target, uint8_t value) {
+  pulseSends[target].shape = ccUnit(value);
+}
+
+void setPulseSkew(uint8_t target, uint8_t value) {
+  pulseSends[target].skew = ccBipolar(value);
 }
 
 void setColorRegion(uint8_t value) { placedIsRegion = aurora_cc_is_on(value); }

@@ -34,6 +34,20 @@ static uint8_t lastWritten[8] = { 0 };
 static uint8_t washLevel = 255;
 static uint8_t washHueOffset = 0;
 
+static float pulseLevel = 0.0f;
+static float pulseHue = 0.0f;
+static float pulseSaturation = 0.0f;
+
+// A push is a fraction of the way from the dialed value toward one of its
+// limits, and its sign picks which — so a wash at full has nowhere to go up
+// and everything stays inside the channel either way. Same rule the
+// generator pushes width and the strips' color by.
+static uint8_t pushToward(uint8_t base, float push, uint8_t low, uint8_t high) {
+    const float limit = (push >= 0.0f) ? (float)high : (float)low;
+    const float amount = (push < 0.0f) ? -push : push;
+    return (uint8_t)((float)base + (amount > 1.0f ? 1.0f : amount) * (limit - (float)base));
+}
+
 namespace dmx_out {
 
 void begin() {
@@ -50,12 +64,14 @@ void tick() {
     // too, whatever the wash master is set to. Gated rather than zeroed, so
     // the level dialed in for the set comes back with the next preset. A
     // washes-only look is a preset of its own, not the absence of one.
-    const uint8_t master = (currentPreset == PRESET_OFF) ? 0 : washLevel;
+    const uint8_t master = (currentPreset == PRESET_OFF)
+        ? 0 : pushToward(washLevel, pulseLevel, 0, 255);
 
     CHSV hsv = presetColor;
     const uint8_t level = scale8(hsv.value, master);
     hsv.value = 255;
-    hsv.hue += washHueOffset;
+    hsv.hue += washHueOffset + (int16_t)pulseHue;
+    hsv.saturation = pushToward(hsv.saturation, pulseSaturation, 0, 255);
 
     CRGB rgb;
     hsv2rgb_rainbow(hsv, rgb);
@@ -85,6 +101,19 @@ void tick() {
 
         if (i == 0) memcpy(lastWritten, values, sizeof(lastWritten));
     }
+
+    // Consumed, not held. Only the generator writes a push, and only while
+    // it is the preset being drawn; clearing here is what stops the last
+    // frame it drew from following the washes into the next preset.
+    pulseLevel = 0.0f;
+    pulseHue = 0.0f;
+    pulseSaturation = 0.0f;
+}
+
+void setPulsePush(float level, float hueOffset, float saturation) {
+    pulseLevel = level;
+    pulseHue = hueOffset;
+    pulseSaturation = saturation;
 }
 
 void setLevel(uint8_t level) {

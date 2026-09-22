@@ -56,10 +56,11 @@ That is the whole thing. Everything below is a parameter of it.
 | 74 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
 | 75 | Fan | How far the five strips run out of step | 0–100 % of a cell |
 | 76 | Jitter | Randomness in position and brightness, re-rolled once per swell | 0–100 % |
-| 77 | Pulse depth | How hard the brightness swells | 0–100 % |
-| 78 | Pulse rate | How long one swell takes | 16 → 0.25 beats |
-| 79 | Pulse skew | Bipolar — center is an even rise and fall, either side slides the peak toward a ramp. *Editor and preview only, no firmware yet* | — |
+| 77 | Pulse depth | How far the trough digs below full light | 0–100 % |
+| 78 | Pulse rate | How long one swell takes. Stepped | 16 → 0.25 beats |
+| 79 | Pulse skew | Bipolar — center is an even rise and fall, either side slides the peak toward a ramp | — |
 | 80 | Pulse shape | Hard on/off square through to smooth sine | — |
+| 100–114 | Pulse destinations | Where else the swell reaches, three apiece | see below |
 
 Color is hue, whiteness and darkness, and sits downstream of all of this —
 this branch decides whether a pixel is lit, never what color it is.
@@ -100,24 +101,91 @@ a softness control.
 Consequence worth knowing: at width 100 % there is no gap left, so edge
 and tail do nothing. That is consistent rather than broken.
 
-### The pulse drives brightness only
+### Where the pulse reaches, built 2026-09-22
 
-Width was a second destination once and was taken out. A shape was
+One oscillator with one rate, pushing on six things at once. Each
+destination carries its own **amount**, its own **shape** and its own
+**skew** — the same phase, shaped differently — which is what buys the
+washes breathing while the strips strobe.
+
+| Destination | Amount | CC |
+|---|---|---|
+| The strips' brightness | unipolar: how far the trough digs | 77, 80, 79 |
+| Width | toward full width / toward nothing | 100–102 |
+| The strips' hue | ± half the wheel, after the color layer has summed | 103–105 |
+| PAR level | toward full / toward dark | 106–108 |
+| PAR hue offset | ± half the wheel | 109–111 |
+| PAR saturation | toward a pure hue / toward white | 112–114 |
+
+**A push runs from the dialed value toward one of its two limits, and the
+amount's sign picks which.** Nothing can clip, a control already sitting
+at a limit simply has nowhere to go that way, and the wall rests at
+exactly what was dialed whenever the swell is at its bottom. It is the
+same rule the color layer's darkness push already used.
+
+**The strips' brightness is the one destination with no sign**, because
+there is nothing above full light for a push to run toward. Its amount is
+how far the trough digs below whatever the shape branch already lit, which
+is what Depth has always meant. Making it bipolar would spend half of the
+most-used fader on an inverted strobe nobody has asked for.
+
+**Width is back, and the reason it failed before is gone.** A shape was
 anchored by its head then, and the head sits at one end of the strip when
-nothing is traveling, so a swell read as a fill creeping in from that
-end and a fast swell read as a traveling wipe rather than a flash. That
-put a strobe out of reach.
+nothing is traveling, so a swell read as a fill creeping in from that end
+and a fast swell read as a traveling wipe rather than a flash. A shape is
+anchored by its center now, so growing it is a breath outward. Under
+bounce the turn stays where the *dialed* width puts it: letting the swell
+move it would put the pulse into the travel rate, which is the one thing a
+destination may never be.
 
-A shape is anchored by its center now, which removes the cause: growing
-from the middle is a breath outward rather than a wipe from one end. So
-**width is wanted back as a pulse destination** — one multiply, and the
-wall says within a minute whether the old failure is gone. Decided
-2026-09-21, not built.
+**The washes take the unfanned phase.** Fan is where a strip stands in the
+cycle, and a PAR is one position with no strip to be offset from. Reaching
+the four of them separately is a different job — see `DESIGN.md` § "The
+PAR cans".
 
-Spatial growth is meanwhile available by hand on the width control.
+**Fan is not a destination**, and waits on the fan rework. It is the one
+that is not a plain push: the pulse's own per-strip phase is
+`fract(pulse + stripPhase)`, so aiming it at fan feeds the pulse back into
+itself.
+
+**Rates are not destinations at all.** Speed, placed speed and wander rate
+all feed a running total, so a pulse aimed at one shifts position
+permanently: turn the amount up and back down and the shape sits somewhere
+else with every control where it started. The looks that wanted them want
+easing, which is locked to the traversal and cannot drift.
 
 A sine can never produce an on/off edge no matter how deep it goes, which
 is why pulse shape exists as a separate control.
+
+### The pulse lands on the bar, built 2026-09-22
+
+Two halves, and neither works without the other.
+
+**The phase is anchored.** The offset that keeps a rate change from
+teleporting — see `docs/bench-facts.md` § "A phase derived from absolute
+time teleports" — is also what left the cycle's zero wherever the rate was
+last touched. A whole cycle of offset is invisible, so only the fraction
+has to go: it is eased out over about two cycles, which walks the pulse
+back onto the grid without ever jumping. Measured in the preview: a rate
+moved mid-flight pushes the phase to at most about 1.4× its settled speed
+for a moment, and a morph sweeping the whole rate fader never steps more
+than a tenth above nominal in a frame.
+
+**The rate is stepped.** 16, 12, 8, 6, 4, 3, 2, 1½, 1, ¾, ½, ⅜, ¼ beats —
+halves and their dotted values, thirteen positions. Anchoring alone only
+puts the cycle's zero on the music's zero; a period of 2.64 beats walks
+through the bar for ever and no anchoring can stop it. Only a period a bar
+can hold a whole number of stays put, which is what the table is.
+
+**What is anchored is the peak**, because the complaint was that a deep
+slow swell peaks wherever it happens to. A sine therefore reaches full on
+the downbeat. A square, which is that sine clipped around its own
+midpoint, is symmetric about the peak, so its flash is *centered* on the
+beat rather than starting there — at a two-beat period that is a flash
+beginning half a beat early. Skew is the control that moves the flash
+inside the cycle, and is what to reach for if the edge wants to land on
+the beat instead. Whether the anchor should be the leading edge rather
+than the peak is a judgment for a click track, not a bench.
 
 ## What it reaches
 
@@ -478,13 +546,14 @@ consistent choice.
 
 The escape from the one thing this costs — you cannot see what is pushing
 a given control — is a read-only marker beside the target showing that
-the pulse reaches it, and how hard. It is also the destination-side UI
-already half-built, should modulators ever multiply.
+the pulse reaches it, and how hard. Built in `tools/index.html`: Width,
+Hue, PAR level and PAR hue offset each carry one. PAR saturation has no
+control of its own to sit beside, which is its own argument for building
+one.
 
-**Settled 2026-09-22, not built: a fixed-amount matrix.** More
-destinations, all of them always present, each with a bipolar amount that
-may be zero. The destination list and what is excluded from it live in
-`TODO.md` under "Give the pulse its destinations".
+**Built 2026-09-22: a fixed-amount matrix.** Six destinations, all of them
+always present, each with an amount that may be zero and a wave of its own.
+See § "Where the pulse reaches" above.
 
 **Not deferred, rejected: patchable routing.** Every patch has to be a
 valid morph destination from any live state, and a connection is either
@@ -673,11 +742,16 @@ do is a judgment for a set, not a bench.
   two are meant to stay identical. It diverges deliberately in two places,
   both written at the top of the file.
 
-  Phase is the one thing it cannot match. `trackedPhase` carries an offset
-  across every rate change so a fader never makes a shape jump, and
-  nothing resets it — the brain's offset comes from its history since
+  Travel's phase is the one thing it cannot match. `trackedPhase` carries
+  an offset across every rate change so a fader never makes a shape jump,
+  and nothing resets it — the brain's offset comes from its history since
   boot, the page's from load. Speed, spacing and the relationship between
   strips compare; where a traveling shape *is* does not.
+
+  The **pulse's** phase does compare, which is the point of anchoring it.
+  Both sides ease their offset back onto the grid, and the panel's clock
+  button sends a transport start and restarts the page's beat zero
+  together, so the bar a swell lands on is the same bar in both.
 - `tools/index.html` — sliders over Web MIDI, patch save and recall, the
   morph control, the roster as one-click starting points, and a row of
   color looks that set the color layer only.

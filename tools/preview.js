@@ -28,8 +28,22 @@
 
   const GEN_MAX_COUNT = 20;
   const GEN_MAX_SPEED_PIXELS_PER_BEAT = 60;
-  const GEN_SLOWEST_PULSE_BEATS = 16;
-  const GEN_PULSE_RATE_OCTAVES = 6;
+
+  // Half the wheel each way, matching the placed field's reach.
+  const GEN_PULSE_MAX_HUE = 128;
+
+  // How long the pulse takes to walk back onto the musical grid after its
+  // rate has been moved, in its own cycles.
+  const GEN_PULSE_ANCHOR_CYCLES = 2;
+
+  // AURORA_PULSE_PERIODS in shared/aurora_protocol.h. Stepped rather than
+  // continuous: the phase is anchored to the musical grid, and only a period
+  // a bar holds a whole number of stays there. Halves and their dotted
+  // values, in animation beats.
+  const PULSE_PERIODS = [16, 12, 8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25];
+  const pulsePeriod = v => PULSE_PERIODS[
+    Math.min(PULSE_PERIODS.length - 1,
+             Math.floor((v * (PULSE_PERIODS.length - 1) + 63) / 127))];
 
   // How dark a full push pulls a pixel, as a fraction of what it would
   // otherwise be. It stops short of zero because a WS2812 has eight linear
@@ -124,6 +138,14 @@
   const ccMap = (v, hi) => Math.floor(v * hi / 127);
   const ccCount = v => Math.min(GEN_MAX_COUNT, Math.max(1, Math.round(Math.pow(GEN_MAX_COUNT, v / 127))));
 
+  function send(amount, shape, skew, unipolar) {
+    return {
+      amount: unipolar ? ccUnit(amount) : ccBipolar(amount),
+      shape: ccUnit(shape),
+      skew: ccBipolar(skew),
+    };
+  }
+
   function readParams(s) {
     return {
       width: ccUnit(s.width),
@@ -133,10 +155,21 @@
       speedPixels: ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT),
       fan: ccUnit(s.fan),
       jitter: ccUnit(s.jitter),
-      pulseDepth: ccUnit(s.pulseDepth),
-      pulseBeats: GEN_SLOWEST_PULSE_BEATS * Math.pow(0.5, ccUnit(s.pulseRate) * GEN_PULSE_RATE_OCTAVES),
-      pulseShape: ccUnit(s.pulseShape),
-      pulseSkew: ccBipolar(s.pulseSkew),
+      pulseBeats: pulsePeriod(s.pulseRate),
+
+      // One oscillator with one rate reaching six places, each with its own
+      // amount and its own wave — which is what lets the washes breathe
+      // while the strips strobe. Brightness is the only unipolar amount:
+      // nothing sits above full light, so its only direction is down.
+      sends: {
+        light:    send(s.pulseDepth, s.pulseShape, s.pulseSkew, true),
+        width:    send(s.pulseWidth, s.pulseWidthShape, s.pulseWidthSkew),
+        hue:      send(s.pulseHue, s.pulseHueShape, s.pulseHueSkew),
+        parLevel: send(s.pulseParLevel, s.pulseParLevelShape, s.pulseParLevelSkew),
+        parHue:   send(s.pulseParHue, s.pulseParHueShape, s.pulseParHueSkew),
+        parSat:   send(s.pulseParSat, s.pulseParSatShape, s.pulseParSatSkew),
+      },
+
       alternate: isOn(s.alternate),
       bounce: isOn(s.bounce),
 
@@ -283,10 +316,46 @@
     return beats * rate + tracker.offset;
   }
 
+  // Where the page's beat zero sits. Reset when the panel starts the clock,
+  // so the preview's bar lines and the brain's are the same bar lines — a
+  // MIDI Start puts the brain's position back to zero at the same moment.
+  // Without that the two agree on the period and not on the landing, which
+  // is the whole of what anchoring is about.
+  let startedAt = 0;
+  function restart() { startedAt = global.performance.now(); }
+
   const travelPhase = makeTracker();
   const pulsePhase = makeTracker();
   const wanderPhase = makeTracker();
   const placedPhase = makeTracker();
+
+  // The offset that stops a rate change teleporting is also what leaves the
+  // cycle's zero wherever the rate was last touched — never a bar line, so a
+  // deep slow swell peaks wherever it happens to. A whole cycle of offset is
+  // invisible, so only the fraction has to go: easing it out over the next
+  // couple of cycles walks the pulse back onto the grid without ever
+  // jumping. The peak sits at mid-cycle, so the offset that lands one on a
+  // bar line is a half-integer rather than a whole one.
+  let lastPulseBeats = 0;
+  function anchoredPulsePhase(beats, rate) {
+    const elapsed = beats - lastPulseBeats;
+    lastPulseBeats = beats;
+
+    // The transport restarted, and beat zero is a bar line by definition.
+    if (elapsed < 0) {
+      pulsePhase.offset = 0.5;
+      pulsePhase.rate = rate;
+      return beats * rate + 0.5;
+    }
+
+    const phase = trackedPhase(pulsePhase, beats, rate);
+    const drift = pulsePhase.offset - (Math.round(pulsePhase.offset - 0.5) + 0.5);
+    if (Math.abs(drift) < 0.0001) return phase;
+
+    const pull = Math.min(1, elapsed * rate / GEN_PULSE_ANCHOR_CYCLES);
+    pulsePhase.offset -= drift * pull;
+    return phase - drift * pull;
+  }
 
   // Skew slides the peak through the cycle, so one side of the swell
   // collapses into a snap and a ramp becomes reachable. It warps the phase
@@ -310,6 +379,21 @@
     const softness = 0.02 + 0.98 * shape;
     const shaped = (lfo - 0.5) / softness + 0.5;
     return shaped < 0 ? 0 : shaped > 1 ? 1 : shaped;
+  }
+
+  // How hard a destination is being pushed right now: signed, and zero at the
+  // bottom of the swell so the dialed value is what the wall rests at.
+  function pulsePush(send, phase) {
+    if (Math.abs(send.amount) < 0.001) return 0;
+    return send.amount * pulseWave(phase, send.shape, send.skew);
+  }
+
+  // A push is a fraction of the way from the dialed value to one of its two
+  // limits, and its sign picks which. Nothing can clip, and a control already
+  // at a limit has nowhere to go that way — which is why brightness is the
+  // one destination with no sign: there is nothing above full light.
+  function pushToward(base, push, low, high) {
+    return base + Math.abs(push) * ((push >= 0 ? high : low) - base);
   }
 
   // ---- the color layer, redesigned 2026-09-21 --------------------------
@@ -397,13 +481,16 @@
     return { h: (base.h + Math.trunc(hue)) & 255, s: saturation, v: value };
   }
 
-  function colorAt(p, base, stripIndex, pixelIndex, shapeU, profile, drift, wanderT) {
+  // `pulseHue` arrives already summed rather than as a fourth source: the
+  // pulse pushes the layer's output, one push after the three have added,
+  // which leaves the color layer's own design alone.
+  function colorAt(p, base, stripIndex, pixelIndex, shapeU, profile, drift, wanderT, pulseHue) {
     const along01 = PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
 
     const placed = placedAt(p, rulerAt(p, stripIndex, pixelIndex, shapeU), drift);
     const wander = wanderAt(p, along01, stripIndex, wanderT);
 
-    const hue = placed * p.placedHue + wander * p.wanderHue + profile * p.litHueReach;
+    const hue = placed * p.placedHue + wander * p.wanderHue + profile * p.litHueReach + pulseHue;
     const white = placed * p.placedWhite + wander * p.wanderWhite + profile * p.litWhiteReach;
     const dark = placed * p.placedDark + wander * p.wanderDark + profile * p.litDarkReach;
 
@@ -445,7 +532,8 @@
       centerCells = 0.5 + trackedPhase(travelPhase, beats, p.speedPixels / cellLength);
     }
 
-    const pulse = trackedPhase(pulsePhase, beats, 1 / p.pulseBeats);
+    const pulse = anchoredPulsePhase(beats, 1 / p.pulseBeats);
+    p.pulse = pulse;
 
     p.placedActive = Math.abs(p.placedHue) > 0.5
       || Math.abs(p.placedWhite) > 0.001
@@ -464,17 +552,36 @@
     const wanderT = trackedPhase(wanderPhase, beats, p.wanderRate);
     const placedDrift = trackedPhase(placedPhase, beats, p.placedSpeed);
 
-    const shapeGap = 1 - p.width;
-    const shapeLead = p.width * 0.5 + p.edge * shapeGap * 0.5;
-    const shapeTrail = p.width * 0.5 + Math.max(p.edge * shapeGap * 0.5, p.tail * shapeGap);
-
     for (let stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
       const stripPhase = p.fan * (stripIndex / STRIPS);
 
       const mirrored = p.alternate && (stripIndex & 1);
 
-      const shaped = pulseWave(pulse + stripPhase, p.pulseShape, p.pulseSkew);
-      const swell = 1 - p.pulseDepth + p.pulseDepth * shaped;
+      // Fan is where a strip stands in the cycle, so every destination
+      // landing on a strip inherits it and the three stay in step with each
+      // other. The washes take the unfanned phase: a PAR is one position
+      // with no strip to be offset from.
+      const stripPulse = pulse + stripPhase;
+
+      // Nothing sits above full light, so brightness is the one destination
+      // with no sign: its amount is how far the trough digs below what the
+      // shape branch already lit.
+      const swell = 1 - p.sends.light.amount
+        * (1 - pulseWave(stripPulse, p.sends.light.shape, p.sends.light.skew));
+
+      // A shape is anchored by its center, so growing it is a breath outward
+      // rather than a wipe in from one end — which is what put this
+      // destination out of reach the first time it was tried.
+      const width = pushToward(p.width, pulsePush(p.sends.width, stripPulse), 0, 1);
+      const pulseHue = pulsePush(p.sends.hue, stripPulse) * GEN_PULSE_MAX_HUE;
+
+      // The two sides of a shape are not the same length — a tail reaches far
+      // further than an edge fade — so they are normalized separately.
+      // Halfway between the two tips is not the core, and a region asked to
+      // sit at the middle of a shape means the core every time.
+      const shapeGap = 1 - width;
+      const shapeLead = width * 0.5 + p.edge * shapeGap * 0.5;
+      const shapeTrail = width * 0.5 + Math.max(p.edge * shapeGap * 0.5, p.tail * shapeGap);
 
       // Under bounce fan offsets where a strip stands in its own swing, so the
       // five turn at different moments. It cannot offset the core's position
@@ -517,14 +624,14 @@
             // the core walks back out through what it laid down rather than
             // the trail changing sides.
             const nearest = nearestOffset(posCells, coreCenter, stripDirection, true, countCells);
-            const level = nearest === null ? 0 : coreAt(nearest, p.width, p.edge);
+            const level = nearest === null ? 0 : coreAt(nearest, width, p.edge);
             const trailing = tailAt(
               trailBehind(journeyIn(posCells, mirrored), triangle, halfCore, swingSpan),
-              p.width, p.tail);
+              width, p.tail);
             accumulated += trailing > level ? trailing : level;
           } else {
             const nearest = nearestOffset(posCells, coreCenter, stripDirection, p.bounce, countCells);
-            if (nearest !== null) accumulated += shapeAt(nearest, p.width, p.edge, p.tail);
+            if (nearest !== null) accumulated += shapeAt(nearest, width, p.edge, p.tail);
           }
         }
 
@@ -552,7 +659,7 @@
         }
         shapeU = Math.max(0, Math.min(1, shapeU));
         const tint = colorAt(p, base, stripIndex, pixelIndex, shapeU, profile,
-                              placedDrift, wanderT);
+                              placedDrift, wanderT, pulseHue);
 
         const rgb = hsv2rgb(tint.h & 255, clamp8(tint.s), 255);
         const level = clamp8(tint.v * brightness);
@@ -584,12 +691,27 @@
     }
   }
 
-  // The PARs never see the generator. dmx_out::tick() takes presetColor —
-  // the three faders — converts it at full value, and carries brightness on
-  // the fixture's own dimmer. All four get the same color.
+  // dmx_out::tick() takes presetColor — the three faders — converts it at
+  // full value, and carries brightness on the fixture's own dimmer. All four
+  // get the same color.
+  //
+  // The pulse is the one part of the shape branch that reaches them: a PAR is
+  // one position with no length, so a swell, a strobe and a breathe all
+  // render on it and a sweep does not. It takes the unfanned phase, and it
+  // reaches them only while the generator is what is being drawn — `p.pulse`
+  // is absent otherwise, which is the same thing the firmware does by
+  // clearing the push it was handed every frame.
   function parColor(p) {
-    const level = scale8(p.baseVal, p.washLevel);
-    const rgb = hsv2rgb((p.baseHue + p.washHueOffset) & 255, p.baseSat, 255);
+    const phase = p.pulse;
+    const push = key => (phase === undefined ? 0 : pulsePush(p.sends[key], phase));
+
+    const master = pushToward(p.washLevel, push('parLevel'), 0, 255);
+    const level = scale8(p.baseVal, clamp8(master));
+    const hue = (p.baseHue + p.washHueOffset
+                 + Math.trunc(push('parHue') * GEN_PULSE_MAX_HUE)) & 255;
+    const saturation = clamp8(pushToward(p.baseSat, push('parSat'), 0, 255));
+
+    const rgb = hsv2rgb(hue, saturation, 255);
     return [scale8v(rgb[0], level), scale8v(rgb[1], level), scale8v(rgb[2], level)];
   }
 
@@ -734,7 +856,7 @@
       return parsed.length === STRIPS ? parsed : WALL_STRIP_ORDER.map(n => n - 1);
     }
 
-    const startedAt = performance.now();
+    restart();
     function frame() {
       const s = getState();
       const bpm = getBpm();
@@ -757,5 +879,5 @@
     global.requestAnimationFrame(frame);
   }
 
-  global.AuroraPreview = { start, render, renderStripOrder, parColor, wall, pulseWave };
+  global.AuroraPreview = { start, restart, render, renderStripOrder, parColor, wall, pulseWave, pulsePeriod };
 })(window);

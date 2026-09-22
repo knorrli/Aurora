@@ -26,8 +26,16 @@ untouched.
   PC 1–9. See `docs/visual-design.md`.
 - **The parametric generator** on PC 10, with the redesigned color layer
   in the firmware as of 2026-09-21. See `docs/generator.md`.
+- **The pulse's destinations**, 2026-09-22. One oscillator with one rate
+  reaching the strips' brightness, width and hue and the washes' level, hue
+  offset and saturation, each with its own amount and its own wave. Its
+  phase is anchored to the bar and its rate is stepped to the periods a bar
+  can hold. Flashed but **not yet seen on the wall**. See
+  `docs/generator.md` § "Where the pulse reaches".
 - **The bench panel** — `tools/index.html`, drawn as the signal flow,
-  with patch save/recall, the morph control and a row of color looks.
+  with patch save/recall, the morph control and a row of color looks. The
+  pulse is a third branch on it, since it reaches both the others and the
+  washes.
 - **The wall on screen** — `tools/preview.js`, five strips and four PARs
   rendered from a port of the firmware, so a look can be dialed with
   nothing plugged in. The color layer was designed here before it was
@@ -149,44 +157,44 @@ designing there. See `docs/bench-facts.md`.
       make. See `docs/generator.md` § "The color layer has no jitter".
 - [ ] **Give the PARs their own saturation.** CC 62; the wash block has
       room. A scale down from the strips' saturation rather than a setting
-      of its own, per `DESIGN.md` § "The PAR cans".
-- [ ] **Reach the PARs with more than a hue offset.** A white flash
-      between strip strobes, and the PARs following a gradient with the
-      strips. Both asked for, neither reachable. See `DESIGN.md` § "The
-      PAR cans".
+      of its own, per `DESIGN.md` § "The PAR cans". The pulse already
+      pushes their saturation, off the S fader for want of anywhere else
+      to measure from, so this would give that push its own origin — and
+      give the read-only "the pulse reaches this" marker somewhere to sit,
+      which is the one destination currently without one.
+- [ ] **Reach the PARs with more than a hue offset.** The PARs following
+      a gradient with the strips, which needs the color layer sampled at
+      each PAR's position — today all four are one color. The white flash
+      between strip strobes, the other half of this, became reachable on
+      2026-09-22 when the pulse gained their saturation. See `DESIGN.md`
+      § "The PAR cans".
 - [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
       center and a random setting; jitter gains a scale from pixel to
       cell, and a rate that is not the pulse's. Together they are the
       chaotic strobe, and the fan half is also why Rain and Comet are the
       same look. See `docs/generator.md` § Open, "Fan is a linear
       staircase" and "Jitter has one scale", and `docs/visual-design.md`.
-- [ ] **Give the pulse its destinations.** A fixed-amount matrix: every
-      destination always present, each with a bipolar amount that may be
-      zero, so a morph never has to snap a connection on. Settled
-      2026-09-22; supersedes the width-only item below.
-      Destinations are PAR level, PAR hue offset, PAR saturation, strip
-      width, and the strips' hue taken after the three color sources have
-      added — one push on the output rather than one per source, which
-      leaves the color layer's design alone. PAR level against still
-      strips is the look that justifies it, and PAR saturation is the
-      white flash between strip strobes that `DESIGN.md` records as asked
-      for and unreachable. Fan belongs too but waits on the fan rework,
-      and is the one destination that is not a plain multiply: the pulse's
-      own per-strip phase is `fract(pulse + stripPhase)`, so aiming it at
-      fan feeds the pulse back into itself. Each destination also takes
-      its own shape, which is continuous and so morphs; PARs breathing
-      while the strips strobe is what that buys.
-      **Rates are not destinations.** Speed, placed speed and wander rate
-      all feed a running total, so a pulse aimed at one shifts position
-      permanently: turn the amount up and back down and the shape sits
-      somewhere else with every control where it started. The looks that
-      wanted them — a thrown ball, pixels surging down a comet's tail —
-      want easing, which is locked to the traversal and cannot drift. A
-      per-destination rate divide is out for the reason a patch cable is:
-      its middles are a beat frequency, not a halfway.
-
-- [ ] **Width as a third pulse destination.** One multiply. See
-      `docs/generator.md` § "The pulse drives brightness only".
+- [ ] **Judge the pulse's destinations on the wall.** Everything else about
+      them is guesswork until this happens. Three looks are what it was
+      built for, and each is one patch: the washes swelling under still
+      strips, a white flash on the washes between strip strobes, and the
+      shapes breathing on width while the light holds. See
+      `docs/generator.md` § "Where the pulse reaches".
+- [ ] **Judge the anchor against a click.** The *peak* is what lands on the
+      beat, because "a deep slow swell peaks wherever it happens to" was
+      the complaint. A square is that swell clipped around its own
+      midpoint, so its flash is centered on the beat rather than starting
+      there — at a two-beat period the light comes on half a beat early.
+      Skew moves the flash inside the cycle and is the control to reach
+      for. Whether the leading edge is the better thing to anchor is a
+      question a click track answers and a bench cannot. See
+      `docs/bench-facts.md` § "A phase derived from absolute time
+      teleports".
+- [ ] **Judge the stepped rate.** Thirteen positions where there were 128.
+      The dotted values — 12, 6, 3, 1½, ¾, ⅜ beats — come back to the
+      downbeat every three bars rather than every one, which is a musical
+      relationship and may still read as adrift. Cutting them would leave
+      seven positions, all powers of two.
 - [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
       See `docs/generator.md` § "Travel easing is a curve".
 - [ ] **Preserve position when a switch flips.** Turning bounce on moves
@@ -213,6 +221,12 @@ it becomes a build item.
       space: the one holding only the "send 120 BPM clock" button, never
       used, and "Strips", which is empty. The question is what the
       groupings should be, not where today's boxes go.
+      The pulse left the shape branch on 2026-09-22 and became a third
+      branch of its own, because it reaches the color layer and the washes
+      as well and could no longer sit inside one of the two things it
+      pushes on. Whether the join beneath still reads — it says "the two
+      multiply", which is true of shape and color and says nothing about
+      the third box now above it — is part of this question.
 - [ ] **The wander's rate is the odd speed control.** Travel speed and the
       placed field's speed are both bipolar and squared: 64 is still,
       either side moves, and the slow end gets most of the fader because
@@ -297,20 +311,15 @@ it becomes a build item.
 
 - [ ] **Glitch's white pixels ignore the V fader.** The 30 % white share
       cannot be tuned until this is fixed. See `docs/bench-facts.md`.
-- [ ] **Anchor the pulse's phase to the bar. Do this before the
-      destinations.** It is in time but not on time. See
-      `docs/bench-facts.md` § "A phase derived from absolute time
-      teleports". It gates the matrix: every destination inherits the
-      pulse's phase, so aiming it at four more places multiplies a
-      misalignment that is currently only in one. It is also what makes
-      skew worth its CC at the square end, where skew moves when the
-      flash lands and nothing else.
 
 ## Housekeeping
 
 - [ ] **Regroup the CC table.** The blocks were laid out before most of
       what uses them existed, and have only been added to since. Go
-      through the whole list and realign it. See
+      through the whole list and realign it. The pulse now reads as two
+      blocks — 77 to 80 for the strips' brightness and 100 to 114 for
+      everything else — which is the clearest case in the file for a
+      regroup and the reason not to do one piecemeal. See
       `shared/aurora_protocol.h`.
 
 ## Key files

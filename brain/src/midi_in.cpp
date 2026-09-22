@@ -58,11 +58,37 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_GEN_SPEED:       setGeneratorSpeed(value); break;
         case CC_GEN_FAN:         setGeneratorFan(value); break;
         case CC_GEN_JITTER:      setGeneratorJitter(value); break;
-        case CC_GEN_PULSE_DEPTH: setGeneratorPulseDepth(value); break;
         case CC_GEN_PULSE_RATE:  setGeneratorPulseRate(value); break;
         case CC_GEN_ALTERNATE:   setGeneratorAlternate(value); break;
         case CC_GEN_BOUNCE:      setGeneratorBounce(value); break;
-        case CC_GEN_PULSE_SHAPE: setGeneratorPulseShape(value); break;
+
+        // The pulse, destination by destination. The strips' brightness kept
+        // the three numbers it has always had; the rest are the 100–114
+        // block, three apiece in the order amount, shape, skew.
+        case CC_GEN_PULSE_DEPTH: setPulseAmount(PULSE_TO_LIGHT, value); break;
+        case CC_GEN_PULSE_SHAPE: setPulseShape(PULSE_TO_LIGHT, value); break;
+        case CC_GEN_PULSE_SKEW:  setPulseSkew(PULSE_TO_LIGHT, value); break;
+
+        case CC_PULSE_WIDTH:       setPulseAmount(PULSE_TO_WIDTH, value); break;
+        case CC_PULSE_WIDTH_SHAPE: setPulseShape(PULSE_TO_WIDTH, value); break;
+        case CC_PULSE_WIDTH_SKEW:  setPulseSkew(PULSE_TO_WIDTH, value); break;
+
+        case CC_PULSE_HUE:       setPulseAmount(PULSE_TO_HUE, value); break;
+        case CC_PULSE_HUE_SHAPE: setPulseShape(PULSE_TO_HUE, value); break;
+        case CC_PULSE_HUE_SKEW:  setPulseSkew(PULSE_TO_HUE, value); break;
+
+        case CC_PULSE_PAR_LEVEL:       setPulseAmount(PULSE_TO_PAR_LEVEL, value); break;
+        case CC_PULSE_PAR_LEVEL_SHAPE: setPulseShape(PULSE_TO_PAR_LEVEL, value); break;
+        case CC_PULSE_PAR_LEVEL_SKEW:  setPulseSkew(PULSE_TO_PAR_LEVEL, value); break;
+
+        case CC_PULSE_PAR_HUE:       setPulseAmount(PULSE_TO_PAR_HUE, value); break;
+        case CC_PULSE_PAR_HUE_SHAPE: setPulseShape(PULSE_TO_PAR_HUE, value); break;
+        case CC_PULSE_PAR_HUE_SKEW:  setPulseSkew(PULSE_TO_PAR_HUE, value); break;
+
+        case CC_PULSE_PAR_SAT:       setPulseAmount(PULSE_TO_PAR_SAT, value); break;
+        case CC_PULSE_PAR_SAT_SHAPE: setPulseShape(PULSE_TO_PAR_SAT, value); break;
+        case CC_PULSE_PAR_SAT_SKEW:  setPulseSkew(PULSE_TO_PAR_SAT, value); break;
+
         case CC_MODE_FLAGS:
             faderAltModeEnabled = value & MODE_BIT_FADER_ALT;
             presetAltModeEnabled = value & MODE_BIT_PRESET_ALT;

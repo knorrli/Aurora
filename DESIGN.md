@@ -381,11 +381,19 @@ That splits along the two layers the generator already has:
 
   Two looks already asked for need more than the hue offset they have: a
   white flash between strip strobes, and the PARs following a red-to-green
-  gradient with the strips.
+  gradient with the strips. **The white flash is reachable as of
+  2026-09-22** — the pulse pushes their saturation toward white, on its own
+  wave, so it can flash between the strips' strobes rather than with them.
+  The gradient still needs the color layer sampled at each PAR's position,
+  which is not built.
 - **The shape layer cannot reach them, except the pulse**, which is
   brightness over time and needs no length. So a PAR follows a swell, a
   strobe and a breathe, and ignores a sweep. Slow and broad on the PARs,
   fast and fine on the strips, by construction rather than by discipline.
+  **Built 2026-09-22**: level, hue offset and saturation each take the
+  pulse with an amount and a wave of their own, so the washes can breathe
+  under a strip strobe. All four move together — they take the unfanned
+  phase, since a PAR is one position with no strip to be offset from.
 
 **The pulse drives the dimmer channel, never the fixture's strobe
 channel.** That channel is a free-running internal rate with nothing to
@@ -396,8 +404,9 @@ stays available as an unsynced shimmer.
 ### What a patch holds for them
 
 Level, hue offset from the strips' hue, and how much of the pulse reaches
-them. All of it relative to what the strips are doing — a relationship,
-not a second look.
+them — the last of these three times over, once for each of level, hue and
+saturation. All of it relative to what the strips are doing — a
+relationship, not a second look.
 
 **Whether they match the strips or contrast against them is per-patch,
 and it lives on the faders.** Each fader's far end already covers the

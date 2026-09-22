@@ -8,7 +8,7 @@
   :root {
     --bg: #14151a; --panel: #1c1e26; --line: #2c2f3a; --rail: #3a3e4d;
     --text: #e6e7ec; --dim: #8b8fa3; --accent: #d98c3f; --ok: #4a9e6a;
-    --shape: #d98c3f; --color: #6fa8dc; --out: #8f7fd4;
+    --shape: #d98c3f; --color: #6fa8dc; --out: #8f7fd4; --pulse: #cf7d93;
   }
   * { box-sizing: border-box; }
   body {
@@ -45,11 +45,13 @@
   }
   .branch-shape  { border-left: 3px solid var(--shape); }
   .branch-color { border-left: 3px solid var(--color); }
+  .branch-pulse { border-left: 3px solid var(--pulse); }
 
   .branch-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
   .branch-name { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; }
   .branch-shape  .branch-name { color: var(--shape); }
   .branch-color .branch-name { color: var(--color); }
+  .branch-pulse .branch-name { color: var(--pulse); }
   .branch-does { color: var(--dim); font-size: 12px; }
 
   /* Form and Travel sit in the same two columns in both branches — that
@@ -68,16 +70,9 @@
   .feeds { font-size: 11px; color: var(--dim); margin-bottom: 10px; }
   .feeds b { font-weight: normal; color: var(--text); }
 
-  .badge {
-    display: inline-block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--out); border: 1px solid var(--out); border-radius: 3px; padding: 1px 6px; opacity: .85;
-  }
-
   /* ---- rows -------------------------------------------------------- */
 
   .row { display: grid; grid-template-columns: 96px 1fr 76px; align-items: center; gap: 9px; margin-bottom: 7px; }
-  .wave { display: block; width: 100%; height: 84px; margin-top: 10px;
-          border: 1px solid var(--line); border-radius: 4px; background: #17181f; }
   .row label { color: var(--text); font-size: 13px; }
   /* A label whose control has a defined neutral resets it on click. Only
      those get the affordance, so a label that does nothing never looks
@@ -90,6 +85,31 @@
   input[type=range] { width: 100%; accent-color: var(--accent); height: 22px; }
   .branch-color input[type=range] { accent-color: var(--color); }
   .branch-color .row output { color: var(--color); }
+  .branch-pulse input[type=range] { accent-color: var(--pulse); }
+  .branch-pulse .row output { color: var(--pulse); }
+  .branch-pulse .row label.resettable:hover { color: var(--pulse); }
+
+  /* One card per destination rather than one aligned matrix: what has to be
+     read at a glance is a destination's own wave against its own amount, and
+     six waves side by side is what "the washes breathe while the strips
+     strobe" looks like before it is played. */
+  .dests { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; }
+  .dest { border: 1px solid var(--line); border-radius: 5px; padding: 11px 12px; background: #191b22; }
+  /* Dimmed rather than hidden: an amount of zero is a destination the pulse
+     is not using, never a connection that is not made. */
+  .dest.idle { opacity: .48; }
+  .dest .row { grid-template-columns: 58px 1fr 62px; gap: 7px; margin-bottom: 5px; }
+  .dest .row label { font-size: 12px; }
+  .dest-head { display: flex; align-items: baseline; gap: 7px; margin-bottom: 8px; flex-wrap: wrap; }
+  .dest-name { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--pulse); }
+  .dest-where { font-size: 11px; color: var(--dim); }
+  .destwave { display: block; width: 100%; height: 62px; margin-top: 8px;
+              border: 1px solid var(--line); border-radius: 4px; background: #14151a; }
+  .dest .note { margin-top: 7px; }
+
+  /* The one thing amounts-at-the-source costs is that you cannot see what is
+     pushing a given control. This is that marker, beside the control itself. */
+  .reached { color: var(--pulse); font-size: 10px; letter-spacing: .04em; }
 
   button {
     background: #262934; color: var(--text); border: 1px solid var(--line);
@@ -102,6 +122,7 @@
   /* Dimmed rather than disabled: the settings are still there and still
      readable, they are simply not what the wall is showing. */
   .branch.bypassed .groups, .branch.bypassed .open { opacity: .5; }
+  .branch-pulse.bypassed .dest.idle { opacity: 1; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
   select { background: #262934; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 6px; font: inherit; width: 100%; }
@@ -138,6 +159,7 @@
       <span class="cc">BPM</span>
     </div>
     <div class="note">Both branches read this. Every speed and every rate below is per beat, so changing tempo changes rate and never jumps. Browser timing drifts a little — fine for judging motion, use a DAW if the tempo itself is what you are testing. With no clock the brain free-runs at 120.</div>
+    <div class="note">Starting the clock also sends a transport start, which puts the brain's musical position and the preview's both back to zero — so the bar the pulse lands on is the same bar in both. Travel is not reset by it, on the wall or here.</div>
   </div>
 
   <div class="panel">
@@ -169,16 +191,10 @@
         </div>
       </div>
       <div class="group">
-        <h3>Pulse <span class="badge">also to PARs</span></h3>
-        <div id="shapePulse"></div>
-        <canvas id="pulseWave" class="wave"></canvas>
-        <div class="note">Brightness only. Driving width as well made a swell read as a fill creeping in from one end, which put a strobe out of reach.</div>
+        <h3>Unplaced</h3>
+        <div id="shapeOpen"></div>
+        <div class="note">Re-rolls once per swell, at the darkest point of the cycle — so with a deep square pulse the shape lands somewhere new on every flash rather than being smeared where it stands. Still has no settled home: reach for it to lift a chorus and it is Travel, reach for it to change how a section feels and it belongs on the character surface. Being clocked by the pulse is an argument for filing it under Pulse; that is not the same question. Settle by looking.</div>
       </div>
-    </div>
-    <div class="open">
-      <h3>Unplaced</h3>
-      <div id="shapeOpen"></div>
-      <div class="note">Re-rolls once per swell, at the darkest point of the cycle — so with a deep square pulse the shape lands somewhere new on every flash rather than being smeared where it stands. Still has no settled home: reach for it to lift a chorus and it is Travel, reach for it to change how a section feels and it belongs on the character surface. Being clocked by the pulse is an argument for filing it under Pulse; that is not the same question. Settle by looking.</div>
     </div>
   </div>
 
@@ -219,6 +235,27 @@
 </div>
   </div>
 
+  <div class="branch branch-pulse">
+    <div class="branch-head">
+      <span class="branch-name">Pulse</span>
+      <span class="branch-does">one swell, pushing on both branches and on the washes</span>
+      <button id="pulseBypass" class="bypass" title="Take the pulse off every destination at once, so the wall holds still. Settings are kept.">bypass</button>
+    </div>
+    <div class="groups" style="grid-template-columns:minmax(230px,1fr) 2fr">
+      <div class="group">
+        <h3>Source</h3>
+        <div id="pulseSource"></div>
+        <div class="note">One oscillator with one rate. A destination says how far the pulse pushes it and what wave does the pushing — never how fast, because every rate here feeds a running total, so a pulse aimed at one would move the wall permanently instead of returning it.</div>
+        <div class="note">The rate steps rather than sweeps, and the phase is anchored to the grid, so a swell lands on the downbeat instead of wherever the fader was last touched. Between the steps there is no period a bar can hold a whole number of, which is what "in time but not on time" was.</div>
+      </div>
+      <div class="group" style="min-width:0">
+        <h3>Destinations</h3>
+        <div class="dests" id="pulseDests"></div>
+        <div class="note">Every destination is always connected and its amount may be zero. Nothing here is a patch cable: a morph can interpolate an amount and cannot snap a connection on, and an amount rising from zero is a connection fading in.</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="join"><span class="join-label">the two multiply, once, per pixel</span></div>
@@ -237,7 +274,7 @@
     <div class="note">A PAR is one color, so the shape branch cannot reach it: count, width, edge, tail, speed and fan all describe positions along a strip that a single lamp has no way to show. The color branch is exactly what a one-pixel fixture <em>can</em> render, which is why these two controls are a relationship to the strips rather than a second look.</div>
     <div class="open">
       <h3>Not built</h3>
-      <div class="note">How much of the pulse reaches the PARs — designed in <code>DESIGN.md</code>, no CC and no firmware. Until it exists the pulse either reaches them through the strips' own brightness or not at all.</div>
+      <div class="note">A saturation of their own, and a color sampled at each PAR's position so the four differ from each other rather than being four copies of one hue. Both designed in <code>DESIGN.md</code>, neither has a CC. The pulse reaches all four together: they take its unfanned phase, because a PAR is one position with no strip to be offset from.</div>
     </div>
   </div>
 </div>
@@ -297,6 +334,15 @@ const CC = {
   width: 70, count: 71, edge: 72, tail: 73, speed: 74,
   fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
   alternate: 45, bounce: 46,
+
+  // Where else the pulse reaches — the 100–114 block in
+  // shared/aurora_protocol.h, three apiece in the order amount, shape, skew.
+  pulseWidth: 100, pulseWidthShape: 101, pulseWidthSkew: 102,
+  pulseHue: 103, pulseHueShape: 104, pulseHueSkew: 105,
+  pulseParLevel: 106, pulseParLevelShape: 107, pulseParLevelSkew: 108,
+  pulseParHue: 109, pulseParHueShape: 110, pulseParHueSkew: 111,
+  pulseParSat: 112, pulseParSatShape: 113, pulseParSatSkew: 114,
+
   hue: 20, saturation: 21, value: 22,
   washLevel: 60, washHueOffset: 61,
 
@@ -322,10 +368,61 @@ const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 
 
 
+// One oscillator with one rate, reaching six places at once. Each
+// destination carries its own amount and its own wave, which is what lets
+// the washes breathe while the strips strobe.
+//
+// Every one is always connected and its amount may be zero — a morph
+// interpolates an amount and cannot snap a connection on. See
+// docs/generator.md § "Modulation".
+const PULSE_DESTS = [
+  { key: 'light', name: 'Brightness', where: 'the strips’ own light',
+    amount: 'pulseDepth', shape: 'pulseShape', skew: 'pulseSkew',
+    note: 'Nothing sits above full, so this is the one amount with no sign: it digs the trough below whatever the shape branch already lit.' },
+  { key: 'width', name: 'Width', where: 'the shape’s solid core',
+    amount: 'pulseWidth', shape: 'pulseWidthShape', skew: 'pulseWidthSkew',
+    note: 'A shape is anchored by its center, so this breathes outward instead of wiping in from one end. Under bounce the turn stays where Width alone puts it, or the swell would be driving the travel rate.' },
+  { key: 'hue', name: 'Hue', where: 'the strips, after the color layer',
+    amount: 'pulseHue', shape: 'pulseHueShape', skew: 'pulseHueSkew',
+    note: 'One push on what the placed field, the wander and the light level have already summed to — not a fourth source, so the color layer’s own design is untouched.' },
+  { key: 'parLevel', name: 'PAR level', where: 'the four washes',
+    amount: 'pulseParLevel', shape: 'pulseParLevelShape', skew: 'pulseParLevelSkew',
+    note: 'The washes flashing against still strips is the look that justifies the whole matrix. Pull Level down first: a push toward full needs somewhere to go.' },
+  { key: 'parHue', name: 'PAR hue', where: 'the four washes',
+    amount: 'pulseParHue', shape: 'pulseParHueShape', skew: 'pulseParHueSkew',
+    note: 'Rotates the washes off the strips on the swell and back between them. Half the wheel each way at the fader’s ends.' },
+  { key: 'parSat', name: 'PAR saturation', where: 'the four washes',
+    amount: 'pulseParSat', shape: 'pulseParSatShape', skew: 'pulseParSatSkew',
+    note: 'Toward white is the flash between strip strobes that DESIGN.md records as asked for and unreachable. The washes have no saturation control of their own yet, so this pushes off the S fader.' },
+];
+
 // Mirrors the mappings in brain/src/P_Generator.cpp. If those change, these
 // readouts lie until they are changed to match.
 const bip = v => v < 64 ? (v - 64) / 64 : (v - 64) / 63;
 const ccCount = v => Math.min(20, Math.max(1, Math.round(Math.pow(20, v / 127))));
+
+// AURORA_PULSE_PERIODS in shared/aurora_protocol.h. The bar counts assume
+// 4/4 with the tempo division left on a quarter note; move the division and
+// the whole table scales with it.
+const PULSE_PERIODS = [16, 12, 8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25];
+const PULSE_PERIOD_NAMES = [
+  '16 beats · four bars', '12 beats · three bars', '8 beats · two bars',
+  '6 beats', '4 beats · one bar', '3 beats', '2 beats · half a bar',
+  '1½ beats', '1 beat', '¾ beat', '½ beat', '⅜ beat', '¼ beat',
+];
+
+// A bipolar amount: the sign picks which of the destination's two limits the
+// push runs toward, so it can never clip.
+const pulseAmount = (up, down) => v => {
+  const r = bip(v);
+  if (Math.abs(r) < 0.01) return 'not reached';
+  return (Math.abs(r) * 100).toFixed(0) + '% ' + (r > 0 ? up : down);
+};
+
+const pulseHueAmount = v => {
+  const r = Math.round(bip(v) * 128);
+  return r === 0 ? 'not reached' : (r > 0 ? '+' : '') + r + ' of 255 at the peak';
+};
 
 const DERIVED = {
   width:      v => (v / 127 * 100).toFixed(0) + '% of cell',
@@ -336,8 +433,8 @@ const DERIVED = {
                      return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
   fan:        v => (v / 127 * 100).toFixed(0) + '% apart',
   jitter:     v => (v / 127 * 100).toFixed(0) + '%',
-  pulseDepth: v => (v / 127 * 100).toFixed(0) + '%',
-  pulseRate:  v => (16 * Math.pow(0.5, v / 127 * 6)).toFixed(2) + ' beats',
+  pulseDepth: v => v === 0 ? 'not reached' : (v / 127 * 100).toFixed(0) + '% down at the trough',
+  pulseRate:  v => PULSE_PERIOD_NAMES[PULSE_PERIODS.indexOf(AuroraPreview.pulsePeriod(v))],
   pulseSkew:  v => { const k = 0.5 + 0.48 * bip(v);
                      return Math.abs(bip(v)) < 0.03 ? 'even rise and fall'
                           : (k * 100).toFixed(0) + '% of the cycle rising'; },
@@ -381,7 +478,19 @@ const DERIVED = {
 
   washLevel:     v => (v / 127 * 100).toFixed(0) + '%',
   washHueOffset: v => v === 0 ? 'matches strips' : '+' + Math.round(v / 127 * 255) + ' of 255',
+
+  pulseWidth:    pulseAmount('toward full width', 'toward nothing'),
+  pulseParLevel: pulseAmount('toward full', 'toward dark'),
+  pulseParSat:   pulseAmount('toward a pure hue', 'toward white'),
+  pulseHue:      pulseHueAmount,
+  pulseParHue:   pulseHueAmount,
 };
+
+// Every destination's wave reads the same way as the pulse's own.
+for (const dest of PULSE_DESTS) {
+  DERIVED[dest.shape] = DERIVED.pulseShape;
+  DERIVED[dest.skew] = DERIVED.pulseSkew;
+}
 
 const GROUPS = {
   base: [
@@ -399,11 +508,8 @@ const GROUPS = {
     ['speed',      'Speed',       'center is still; either side travels'],
     ['fan',        'Fan',         'how far the five strips run out of step'],
   ],
-  shapePulse: [
-    ['pulseDepth', 'Depth',       'how hard the shape swells in place'],
-    ['pulseRate',  'Rate',        '16 beats per swell → a quarter beat'],
-    ['pulseSkew',  'Skew',        'even rise and fall → a ramp that snaps back'],
-    ['pulseShape', 'Shape',       'hard on/off square → smooth sine'],
+  pulseSource: [
+    ['pulseRate',  'Rate',        'how often the swell lands. Stepped, so it can sit on the bar'],
   ],
   shapeOpen: [
     ['jitter',     'Jitter',      'randomness in position and brightness'],
@@ -439,6 +545,14 @@ const GROUPS = {
   ],
 };
 
+for (const dest of PULSE_DESTS) {
+  GROUPS['pulseDest_' + dest.key] = [
+    [dest.amount, 'Amount', 'how far the pulse pushes ' + dest.where],
+    [dest.shape,  'Shape',  'hard on/off square → smooth sine'],
+    [dest.skew,   'Skew',   'even rise and fall → a ramp that snaps back'],
+  ];
+}
+
 const ANCHORS = {
   Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
   Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
@@ -455,8 +569,8 @@ const ANCHORS = {
   Glitch:     { width:6,   count:122, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
 };
 
-// Shape anchors set the shape and nothing else, and color looks set the
-// color and nothing else, so either can be laid over whatever the other is
+// Shape anchors set the shape and the pulse, and color looks set the color
+// and nothing else, so either can be laid over whatever the other is
 // already doing.
 
 // Everything centered is "no departure", so the wall is one flat color with
@@ -490,12 +604,35 @@ for (const name of Object.keys(COLOR_LOOKS)) {
 }
 
 // The shape branch flattened: one shape filling the cell, still, not
-// swelling. What is left on the wall is the color layer alone.
+// traveling. What is left on the wall is the color layer alone.
 const SHAPE_OFF = {
   width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 0, jitter: 0,
-  pulseDepth: 0, pulseRate: 64, pulseSkew: 64, pulseShape: 127,
   alternate: OFF, bounce: OFF,
 };
+
+// The pulse reaching nowhere. Every amount is at its neutral and every wave
+// is a sine, which is the wave that does least on its way somewhere else.
+// The rate is kept — it is the one setting a destination cannot override, so
+// flattening it would be flattening something no amount can restore.
+const PULSE_OFF = {
+  pulseRate: 64,
+  pulseDepth: 0, pulseShape: 127, pulseSkew: 64,
+  pulseWidth: 64, pulseWidthShape: 127, pulseWidthSkew: 64,
+  pulseHue: 64, pulseHueShape: 127, pulseHueSkew: 64,
+  pulseParLevel: 64, pulseParLevelShape: 127, pulseParLevelSkew: 64,
+  pulseParHue: 64, pulseParHueShape: 127, pulseParHueSkew: 64,
+  pulseParSat: 64, pulseParSatShape: 127, pulseParSatSkew: 64,
+};
+
+// An anchor names a look, and a look with a swell in it is a look with a
+// pulse in it — Strobe is not Strobe with the depth left wherever the last
+// patch put it. So each one carries the whole pulse and states the
+// destinations it does not use, rather than inheriting a wash breathe from
+// whatever was up before.
+for (const name of Object.keys(ANCHORS)) {
+  ANCHORS[name] = { ...PULSE_OFF, ...ANCHORS[name] };
+}
+
 
 // Either branch can be switched out of the way to read the other one. The
 // settings come back untouched, because the question being asked is always
@@ -504,15 +641,18 @@ const SHAPE_OFF = {
 const BYPASS = {
   shape: { flat: SHAPE_OFF, button: 'shapeBypass', branch: 'branch-shape' },
   color: { flat: COLOR_OFF, button: 'colorBypass', branch: 'branch-color' },
+  pulse: { flat: PULSE_OFF, button: 'pulseBypass', branch: 'branch-pulse' },
 };
-const stashed = { shape: null, color: null };
+const stashed = { shape: null, color: null, pulse: null };
 
 // The flattened states double as the table of what neutral means per
 // control: 64 for everything bipolar, 0 for a few, and the wander's rate and
 // scale parked somewhere usable rather than at zero, since its three reaches
 // at 64 leave it inactive whatever they say.
 const neutralOf = name =>
-  name in SHAPE_OFF ? SHAPE_OFF[name] : name in COLOR_OFF ? COLOR_OFF[name] : null;
+  name in SHAPE_OFF ? SHAPE_OFF[name]
+  : name in PULSE_OFF ? PULSE_OFF[name]
+  : name in COLOR_OFF ? COLOR_OFF[name] : null;
 
 const groupNames = defs => defs.map(([name]) => name);
 const SECTION_RESETS = {
@@ -540,7 +680,7 @@ function resetControls(names) {
   }
   syncFlagButtons();
   paintSwitches();
-  drawPulseWave();
+  drawPulseWaves();
   for (const name of resettable) sendParam(name);
 }
 
@@ -565,7 +705,7 @@ function setBypass(branch, on) {
   }
   syncFlagButtons();
   paintSwitches();
-  drawPulseWave();
+  drawPulseWaves();
   paintBypass(branch);
   sendAll();
 }
@@ -604,6 +744,14 @@ function buildRows(hostId, defs) {
     row.className = 'row';
     row.innerHTML = `<label title="${hint}">${label}<br><span class="cc">CC ${CC[name]}</span></label>`;
 
+    if (name in REACHED_BY) {
+      const marker = document.createElement('span');
+      marker.className = 'reached';
+      row.querySelector('label').appendChild(document.createTextNode(' '));
+      row.querySelector('label').appendChild(marker);
+      reachedMarkers[name] = marker;
+    }
+
     const neutral = neutralOf(name);
     if (neutral !== null) {
       const labelEl = row.querySelector('label');
@@ -626,7 +774,7 @@ function buildRows(hostId, defs) {
       state[name] = +slider.value;
       keepThroughBypass(name, state[name]);
       readout();
-      drawPulseWave();
+      drawPulseWaves();
       sendParam(name);
     });
 
@@ -660,7 +808,7 @@ function applyPatch(patch) {
   }
   syncFlagButtons();
   paintSwitches();
-  drawPulseWave();
+  drawPulseWaves();
   sendAll();
 }
 
@@ -701,6 +849,12 @@ function migrate(patch) {
     out.bounce = (out.flags & 2) ? ON : OFF;
   }
   if (!('litWhite' in out) && 'litSat' in out) out.litWhite = out.litSat;
+  // A patch saved before the pulse had anywhere to go names none of its
+  // destinations, and would otherwise recall its shape over whatever the
+  // matrix is left at.
+  for (const [name, value] of Object.entries(PULSE_OFF)) {
+    if (!(name in out)) out[name] = value;
+  }
   delete out.colorFlags;
   delete out.flags;
   delete out.placedKind;
@@ -758,7 +912,7 @@ function applyMorph(position) {
     if (controls[name]) controls[name].set(value);
     sendCC(CC[name], value);
   }
-  drawPulseWave();
+  drawPulseWaves();
 
   const label = position <= 0 ? 'A' : position >= 1 ? 'B' : (position * 100).toFixed(0) + '%';
   document.getElementById('morphReadout').textContent = label;
@@ -807,11 +961,27 @@ function pumpClock() {
   }
 }
 
+// Starting the clock sends a transport Start, which puts the brain's musical
+// position back to zero, and restarts the preview's at the same moment. The
+// pulse's phase is anchored to that zero, so without this the wall and the
+// screen would agree on the period and disagree on where the bar is.
+//
+// Stopping sends nothing. A Stop would freeze the brain at its phase; going
+// quiet instead lets it notice the silence and free-run, which is what it
+// does on stage when a cable is pulled.
 function setClock(on) {
   clockOn = on;
   document.getElementById('clockToggle').classList.toggle('on', on);
-  if (on) { nextTickAt = performance.now(); pumpClock(); clockTimer = setInterval(pumpClock, SCHEDULE_EVERY_MS); }
-  else { clearInterval(clockTimer); clockTimer = null; }
+  if (on) {
+    send([0xFA]);
+    AuroraPreview.restart();
+    nextTickAt = performance.now();
+    pumpClock();
+    clockTimer = setInterval(pumpClock, SCHEDULE_EVERY_MS);
+  } else {
+    clearInterval(clockTimer);
+    clockTimer = null;
+  }
 }
 
 // --- midi ------------------------------------------------------------------
@@ -859,71 +1029,125 @@ async function initMidi() {
 }
 
 // Drawn with the renderer's own shaping function rather than a copy of it, so
-// the picture cannot drift from what the strips do. Two cycles, because the
+// the picture cannot drift from what the wall does. Two cycles, because the
 // snap at the end of a skewed cycle only reads as an edge where it repeats.
-const waveCanvas = document.getElementById('pulseWave');
+//
+// Every card draws the same thing: how far this destination departs from the
+// value dialed for it, against a rail at no departure. Brightness is the one
+// that hangs below the rail the whole way — it has nothing above full, so it
+// rests at the top and digs down between flashes.
 const WAVE_CYCLES = 2;
 
-function drawPulseWave() {
-  const w = waveCanvas.clientWidth, h = waveCanvas.clientHeight;
+function departureAt(dest, phase) {
+  const wave = AuroraPreview.pulseWave(phase, state[dest.shape] / 127, bip(state[dest.skew]));
+  if (dest.key === 'light') return -(state.pulseDepth / 127) * (1 - wave);
+  return bip(state[dest.amount]) * wave;
+}
+
+function drawDestWave(canvas, dest) {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
   if (!w || !h) return;
 
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  waveCanvas.width = Math.round(w * dpr);
-  waveCanvas.height = Math.round(h * dpr);
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
 
-  const ctx = waveCanvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  const pad = 9;
-  const y = v => (h - pad) - v * (h - 2 * pad);
+  const pad = 8;
+  const y = v => (h / 2) - v * (h / 2 - pad);
 
-  const depth = state.pulseDepth / 127;
-  const floor = 1 - depth;
-
-  const rail = (v, style) => {
+  const rail = (v, style, dashed) => {
+    ctx.setLineDash(dashed ? [3, 4] : []);
     ctx.strokeStyle = style; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, y(v) + 0.5); ctx.lineTo(w, y(v) + 0.5); ctx.stroke();
+    ctx.setLineDash([]);
   };
-  rail(1, 'rgba(255,255,255,.08)');
-  rail(0, 'rgba(255,255,255,.08)');
-
-  ctx.setLineDash([3, 4]);
-  rail(floor, 'rgba(217,140,63,.30)');
-  ctx.setLineDash([]);
+  rail(1, 'rgba(255,255,255,.06)');
+  rail(-1, 'rgba(255,255,255,.06)');
+  rail(0, 'rgba(255,255,255,.22)', true);
 
   for (let c = 1; c < WAVE_CYCLES; c++) {
     const x = Math.round(w * c / WAVE_CYCLES) + 0.5;
-    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.strokeStyle = 'rgba(255,255,255,.08)';
     ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, h - pad); ctx.stroke();
   }
 
-  ctx.strokeStyle = '#d98c3f';
+  ctx.strokeStyle = '#cf7d93';
   ctx.lineWidth = 2;
   ctx.lineJoin = 'round';
   ctx.beginPath();
   for (let px = 0; px <= w; px++) {
-    const swell = floor + depth * AuroraPreview.pulseWave(
-      px / w * WAVE_CYCLES, state.pulseShape / 127, bip(state.pulseSkew));
-    if (px === 0) ctx.moveTo(px, y(swell)); else ctx.lineTo(px, y(swell));
+    const v = departureAt(dest, px / w * WAVE_CYCLES);
+    if (px === 0) ctx.moveTo(px, y(v)); else ctx.lineTo(px, y(v));
   }
   ctx.stroke();
-
-  ctx.fillStyle = 'rgba(139,143,163,.8)';
-  ctx.font = '10px ui-monospace, Menlo, monospace';
-  ctx.fillText('two swells \u00b7 ' + DERIVED.pulseRate(state.pulseRate) + ' each', 7, 13);
 }
 
-window.addEventListener('resize', drawPulseWave);
+const destCards = {};
+
+function drawPulseWaves() {
+  for (const dest of PULSE_DESTS) {
+    const card = destCards[dest.key];
+    if (!card) continue;
+    const neutral = state[dest.amount] === neutralOf(dest.amount);
+    card.classList.toggle('idle', neutral);
+    drawDestWave(card.querySelector('canvas'), dest);
+  }
+  paintReached();
+}
+
+// The one thing putting the amounts at the source costs is that you cannot
+// see what is pushing a given control. These are the markers that buy it
+// back, sitting beside the control rather than beside the pulse. PAR
+// saturation has no control of its own yet, so it has no marker.
+const REACHED_BY = {
+  width: 'pulseWidth',
+  hue: 'pulseHue',
+  washLevel: 'pulseParLevel',
+  washHueOffset: 'pulseParHue',
+};
+const reachedMarkers = {};
+
+function paintReached() {
+  for (const [target, amount] of Object.entries(REACHED_BY)) {
+    const marker = reachedMarkers[target];
+    if (!marker) continue;
+    const reach = bip(state[amount]);
+    marker.textContent = Math.abs(reach) < 0.01
+      ? '' : '\u2190 pulse ' + (reach > 0 ? '+' : '\u2212')
+             + (Math.abs(reach) * 100).toFixed(0) + '%';
+  }
+}
+
+function buildPulseDests() {
+  const host = document.getElementById('pulseDests');
+  for (const dest of PULSE_DESTS) {
+    const card = document.createElement('div');
+    card.className = 'dest';
+    card.innerHTML =
+      `<div class="dest-head"><span class="dest-name">${dest.name}</span>` +
+      `<span class="dest-where">${dest.where}</span></div>` +
+      `<div id="pulseDest_${dest.key}"></div>` +
+      `<canvas class="destwave"></canvas>` +
+      `<div class="note">${dest.note}</div>`;
+    host.appendChild(card);
+    destCards[dest.key] = card;
+  }
+}
+
+window.addEventListener('resize', drawPulseWaves);
 
 // --- wire up ---------------------------------------------------------------
 
+buildPulseDests();
 for (const [hostId, defs] of Object.entries(GROUPS)) buildRows(hostId, defs);
 
 // After layout: the canvas is sized in CSS percentages, and measuring it
 // before the first frame gives a zero width and draws nothing.
-requestAnimationFrame(drawPulseWave);
+requestAnimationFrame(drawPulseWaves);
 
 // A switch, not a knob, because neither of these has a middle: half a gradient
 // is not a state and neither is half of "measured across the strips".

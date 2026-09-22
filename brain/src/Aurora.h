@@ -45,6 +45,20 @@ extern CRGBArray<NUM_PIXELS_TOTAL> pixels;
 extern CRGBSet strips;
 extern struct CRGB * strip[NUMBER_OF_STRIPS];
 
+// Where the pulse reaches. One oscillator with one rate; each destination
+// carries its own amount and its own wave, so the washes can breathe while
+// the strips strobe. CC numbers are in shared/aurora_protocol.h; the order
+// here is the order that block is laid out in.
+enum PulseTarget : uint8_t {
+  PULSE_TO_LIGHT = 0,   // the strips' own brightness — the pulse's home
+  PULSE_TO_WIDTH,
+  PULSE_TO_HUE,         // one push on the color layer's summed output
+  PULSE_TO_PAR_LEVEL,
+  PULSE_TO_PAR_HUE,
+  PULSE_TO_PAR_SAT,
+  PULSE_TARGET_COUNT,
+};
+
 struct PositionDirection {
   uint8_t stripIndex;
   uint8_t pixelIndex;
@@ -113,7 +127,7 @@ extern void resetStutter();
 extern void Chaos(CHSV color);
 extern void resetChaos();
 extern void Glitch(CHSV color);
-// The parametric generator — shape comes from CC 70–79, not from here
+// The parametric generator — shape comes from CC 70–80 and 100–114, not from here
 extern void Generator(CHSV color);
 extern void setGeneratorWidth(uint8_t value);
 extern void setGeneratorCount(uint8_t value);
@@ -122,11 +136,15 @@ extern void setGeneratorTail(uint8_t value);
 extern void setGeneratorSpeed(uint8_t value);
 extern void setGeneratorFan(uint8_t value);
 extern void setGeneratorJitter(uint8_t value);
-extern void setGeneratorPulseDepth(uint8_t value);
 extern void setGeneratorPulseRate(uint8_t value);
-extern void setGeneratorPulseShape(uint8_t value);
 extern void setGeneratorAlternate(uint8_t value);
 extern void setGeneratorBounce(uint8_t value);
+// The pulse's destinations — CC 77/79/80 for the strips' brightness and
+// 100–114 for the rest. An amount of zero is a destination the pulse is not
+// using, never a connection that is not made.
+extern void setPulseAmount(uint8_t target, uint8_t value);
+extern void setPulseShape(uint8_t target, uint8_t value);
+extern void setPulseSkew(uint8_t target, uint8_t value);
 // The color layer — CC 24–29, 47–48 and 90–98. Hue, whiteness and darkness pushed
 // away from the three faders by a placed field, a wander and the light level.
 // With every one centered the wall is exactly what the faders say. See

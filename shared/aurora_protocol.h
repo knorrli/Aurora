@@ -121,7 +121,8 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //           80 : generator pulse shape
 //     81 –  89 : RESERVED for band / song-specific automation
 //     90 –  99 : color, second half (twenty controls will not fit in ten)
-//    100 – 119 : RESERVED
+//    100 – 114 : the pulse's destinations, three apiece
+//    115 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
 //
 // ---------------------------------------------------------------------------
@@ -232,9 +233,14 @@ enum AuroraCC : uint8_t {
     CC_GEN_SPEED           = 74, // bipolar: 64 is still, either side travels
     CC_GEN_FAN             = 75, // how far the five strips run out of step
     CC_GEN_JITTER          = 76, // randomness in position and brightness
-    CC_GEN_PULSE_DEPTH     = 77, // how hard the shape swells in place
-    CC_GEN_PULSE_RATE      = 78, // beats per swell, 16 down to 0.25
-    // 79 free — alternate and bounce moved to 45 and 46.
+    // The pulse is one oscillator with one rate, and 77/79/80 are its
+    // amount and its wave where it reaches the strips' brightness. Every
+    // other destination carries its own three at 100–114.
+    CC_GEN_PULSE_DEPTH     = 77, // how far the trough digs below full light
+    CC_GEN_PULSE_RATE      = 78, // beats per swell; stepped, see
+                                 // AURORA_PULSE_PERIODS below
+    CC_GEN_PULSE_SKEW      = 79, // bipolar: 64 is an even rise and fall,
+                                 // either side slides the peak toward a ramp
     CC_GEN_PULSE_SHAPE     = 80, // 0 = hard on/off square, 127 = smooth sine
 
     // 81–89 reserved (band / song-specific automation)
@@ -268,7 +274,48 @@ enum AuroraCC : uint8_t {
                                  // toward dark and up toward full
     // 99 reserved (color)
 
-    // 100–119 reserved
+    // 100–114 — where else the pulse reaches. One oscillator, one rate: a
+    // destination sets how far it is pushed and what wave pushes it, never
+    // how fast. Three per destination, always in the order amount, shape,
+    // skew, so the block reads as a table.
+    //
+    // Every destination is always connected and its amount may be zero,
+    // because a morph can interpolate an amount and cannot snap a
+    // connection on — see DESIGN.md § "Switches belong to the patch".
+    //
+    // Amounts are bipolar and 64 is no push. The sign picks which of the
+    // destination's two limits the push runs toward, so it can never clip
+    // and a control already sitting at a limit has nowhere to go that way.
+    // The strips' brightness at 77 is the exception and is unipolar: there
+    // is nothing above full light, so its only direction is down.
+    CC_PULSE_WIDTH         = 100, // toward full width / toward nothing
+    CC_PULSE_WIDTH_SHAPE   = 101,
+    CC_PULSE_WIDTH_SKEW    = 102,
+
+    // Added after the placed field, the wander and the light level have
+    // summed — one push on the color layer's output rather than one per
+    // source, which leaves that layer's design alone.
+    CC_PULSE_HUE           = 103, // bipolar, up to half the wheel each way
+    CC_PULSE_HUE_SHAPE     = 104,
+    CC_PULSE_HUE_SKEW      = 105,
+
+    // The washes. A PAR is one position with no length, so the shape branch
+    // cannot reach it and the pulse can — see DESIGN.md § "The PAR cans".
+    CC_PULSE_PAR_LEVEL     = 106, // toward full / toward dark
+    CC_PULSE_PAR_LEVEL_SHAPE = 107,
+    CC_PULSE_PAR_LEVEL_SKEW  = 108,
+
+    CC_PULSE_PAR_HUE       = 109, // bipolar, up to half the wheel each way
+    CC_PULSE_PAR_HUE_SHAPE = 110,
+    CC_PULSE_PAR_HUE_SKEW  = 111,
+
+    // Toward white is the flash between strip strobes that DESIGN.md
+    // records as asked for and unreachable.
+    CC_PULSE_PAR_SAT       = 112, // toward a pure hue / toward white
+    CC_PULSE_PAR_SAT_SHAPE = 113,
+    CC_PULSE_PAR_SAT_SKEW  = 114,
+
+    // 115–119 reserved
 };
 
 // ---------------------------------------------------------------------------
@@ -299,6 +346,35 @@ enum AuroraTempoDivision : uint8_t {
 };
 
 static const uint16_t AURORA_TICKS_PER_BEAT = 24;
+
+// ---------------------------------------------------------------------------
+// The pulse's periods (carried on CC_GEN_PULSE_RATE)
+// ---------------------------------------------------------------------------
+//
+// Stepped rather than continuous, because the pulse's phase is anchored to
+// the musical grid and only a period a bar holds a whole number of can land
+// on a downbeat. A period of 2.64 beats is in time and never on time: it
+// walks through the bar for ever and no anchoring can stop it.
+//
+// Halves and their dotted values. The dotted ones do not divide a 4/4 bar
+// on their own — three beats comes back to the downbeat every three bars —
+// which is a musical relationship rather than a drift.
+//
+// In animation beats, so the tempo division rotary scales the whole table.
+//
+// ---------------------------------------------------------------------------
+
+static const float AURORA_PULSE_PERIODS[] = {
+    16.0f, 12.0f, 8.0f, 6.0f, 4.0f, 3.0f, 2.0f, 1.5f, 1.0f, 0.75f, 0.5f, 0.375f, 0.25f,
+};
+static const uint8_t AURORA_PULSE_PERIOD_COUNT =
+    sizeof(AURORA_PULSE_PERIODS) / sizeof(AURORA_PULSE_PERIODS[0]);
+
+static inline float aurora_pulse_period(uint8_t value) {
+    const uint8_t last = AURORA_PULSE_PERIOD_COUNT - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return AURORA_PULSE_PERIODS[step > last ? last : step];
+}
 
 static inline uint16_t aurora_ticks_per_gate(uint8_t division) {
     switch (division) {
@@ -417,6 +493,6 @@ enum AuroraNote : uint8_t {
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 6
+#define AURORA_PROTOCOL_VERSION_MINOR 7
 
 #endif // AURORA_PROTOCOL_H

@@ -201,15 +201,33 @@ The two earlier instances of the same family:
   tempo change altered the step size but not the position already
   accumulated, and motion jumped. That is what `tempo::` exists to fix.
 
-**What the fix costs, noticed 2026-09-21 and not yet dealt with.** Once
-the phase is carried across rate changes, the cycle's zero sits wherever
-the rate was last touched — which is never a bar line. The period is
-right and the landing is arbitrary, so the pulse is in time but not on
-time, and a deep slow swell peaks wherever it happens to. Anchoring the
-phase to the bar is the fix; a retrigger division (every beat, every
-two, every four) is the same fix with a control on it. Worth watching
-for while dialing patches in, since observing it costs nothing and
-turns a suspicion into a measurement.
+**What the fix cost, and how it was paid, 2026-09-22.** Once the phase is
+carried across rate changes, the cycle's zero sits wherever the rate was
+last touched — which is never a bar line. The period was right and the
+landing arbitrary, so the pulse was in time but not on time, and a deep
+slow swell peaked wherever it happened to.
+
+Two halves, and neither works alone:
+
+- **Ease the offset back to a whole number of cycles.** A whole cycle of
+  offset is invisible, so only the fraction has to go. Spread over about
+  two cycles it is a correction and not a jump — measured in the preview,
+  a rate moved mid-flight runs the phase at most about 1.4× its settled
+  speed for a moment, and a morph sweeping the whole rate fader never
+  steps more than a tenth above nominal in a frame. The tracker keeps
+  doing the job it was built for.
+- **Step the rate.** Anchoring only puts the cycle's zero on the music's
+  zero. A period of 2.64 beats walks through the bar for ever whatever the
+  phase is anchored to, and most of a continuous fader is periods like
+  that. Thirteen positions — halves and their dotted values, 16 down to a
+  quarter beat — are the periods a bar can hold a whole number of.
+
+What is anchored is the **peak**, since the complaint was about where a
+swell peaks. A square is that swell clipped around its own midpoint and
+is therefore symmetric about the peak, so its flash is centered on the
+beat rather than starting there. Skew is what moves the flash inside the
+cycle. Whether the leading edge is the better anchor is a question for a
+click track.
 
 ## Point-sampling a pattern aliases; averaging it does not
 

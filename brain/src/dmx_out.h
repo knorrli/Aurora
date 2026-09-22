@@ -27,6 +27,14 @@ void setLevel(uint8_t level);
 // CC_WASH_HUE_OFFSET in shared/aurora_protocol.h.
 void setHueOffset(uint8_t offset);
 
+// What the generator's pulse is doing to the washes this frame. `level` and
+// `saturation` are signed fractions of the way from the dialed value to one
+// of its limits, the sign picking which; `hueOffset` is a plain rotation in
+// hue units. Written before tick() and cleared by it, so a preset that never
+// writes one leaves the washes unpushed rather than inheriting the last
+// frame the generator drew.
+void setPulsePush(float level, float hueOffset, float saturation);
+
 // The eight channel values last written to the first fixture, for the
 // debug line.
 const uint8_t *lastValues();
