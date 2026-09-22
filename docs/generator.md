@@ -21,7 +21,7 @@ nobody plays one. The character comes from the continuous shaping applied
 to it, and the same saw becomes a bass, a pad, a lead or a pluck.
 
 Aurora's ratio was inverted. "Plasma" is not raw material, it is a
-finished look, and the continuous controls only changed its colour. So
+finished look, and the continuous controls only changed its color. So
 the discrete choice carried nearly all the identity and the faders
 decorated it.
 
@@ -34,7 +34,7 @@ Three consequences, all of which were live complaints:
 
 ## The model
 
-One machine: **a shape, repeated along each strip, optionally travelling,
+One machine: **a shape, repeated along each strip, optionally traveling,
 with the five strips optionally run out of step with each other.**
 
 Each strip is divided into `count` equal cells. Every cell contains the
@@ -51,7 +51,7 @@ That is the whole thing. Everything below is a parameter of it.
 | 71 | Count | How many shapes along the strip | 1–20 |
 | 72 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
 | 73 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
-| 74 | Speed | Travel along the strip. Bipolar — centre is still, either side travels | ±60 px/beat |
+| 74 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
 | 75 | Fan | How far the five strips run out of step | 0–100 % of a cell |
 | 76 | Jitter | Randomness in position and brightness, re-rolled once per swell | 0–100 % |
 | 77 | Pulse depth | How hard the brightness swells | 0–100 % |
@@ -59,8 +59,8 @@ That is the whole thing. Everything below is a parameter of it.
 | 79 | Flags | Bit 0: odd strips run against the even ones. Bit 1: reverse at the strip end instead of wrapping | — |
 | 80 | Pulse shape | Hard on/off square through to smooth sine | — |
 
-Colour is hue, whiteness and darkness, and sits downstream of all of this —
-this branch decides whether a pixel is lit, never what colour it is.
+Color is hue, whiteness and darkness, and sits downstream of all of this —
+this branch decides whether a pixel is lit, never what color it is.
 
 **The two flags are switches rather than knobs because neither has a
 middle.** Half of "runs opposite" is not a state, and neither is half of
@@ -90,9 +90,9 @@ Softening therefore made a shape look *smaller*, and the dark gap between
 shapes stayed hard no matter how soft the shapes got.
 
 Fading outward into the gap fixes both, and gives the parameter a natural
-limit: at 100 % the two neighbouring fades meet at zero, so they never
+limit: at 100 % the two neighboring fades meet at zero, so they never
 overlap and nothing has to be summed. **Edge at full always closes the
-gaps, whatever the width is** — which is the behaviour anyone expects from
+gaps, whatever the width is** — which is the behavior anyone expects from
 a softness control.
 
 Consequence worth knowing: at width 100 % there is no gap left, so edge
@@ -102,11 +102,11 @@ and tail do nothing. That is consistent rather than broken.
 
 Width was a second destination once and was taken out. A shape was
 anchored by its head then, and the head sits at one end of the strip when
-nothing is travelling, so a swell read as a fill creeping in from that
-end and a fast swell read as a travelling wipe rather than a flash. That
+nothing is traveling, so a swell read as a fill creeping in from that
+end and a fast swell read as a traveling wipe rather than a flash. That
 put a strobe out of reach.
 
-A shape is anchored by its centre now, which removes the cause: growing
+A shape is anchored by its center now, which removes the cause: growing
 from the middle is a breath outward rather than a wipe from one end. So
 **width is wanted back as a pulse destination** — one multiply, and the
 wall says within a minute whether the old failure is gone. Decided
@@ -124,14 +124,14 @@ Thirteen of the roster, approximately, from nine knobs and two switches:
 | Look | Roughly |
 |---|---|
 | Fill | width full, not moving |
-| Sweep | a third width, hard edge, travelling, fan zero |
+| Sweep | a third width, hard edge, traveling, fan zero |
 | Rain | the same with fan up and some tail |
 | CrossSweep | Sweep with alternate direction |
 | Bars | Sweep on bounce instead of wrap |
 | Breathe | width full, not moving, pulse deep and slow, sine |
 | Wave | the same with fan up |
 | Chase | width full, pulse at maximum, fan at maximum |
-| Comet | a narrow shape with a long tail, travelling, strips fanned |
+| Comet | a narrow shape with a long tail, traveling, strips fanned |
 | Starfield | tiny shapes, high count, jitter up |
 | Strobe | width full, pulse at maximum, fast, square |
 | Stutter | Strobe with alternate direction and some fan |
@@ -143,7 +143,7 @@ the strips. The first two were already known to be one number; that the
 third falls out of the same parameter is the strongest evidence the
 decomposition is real rather than fitted after the fact.
 
-**Plasma and Aurora are not in here and should not be.** They are a colour
+**Plasma and Aurora are not in here and should not be.** They are a color
 field rather than a moving shape, so they are either a second generator or
 they stay hand-written. Either is fine.
 
@@ -157,24 +157,24 @@ they stay hand-written. Either is fine.
   build. Rain → Stutter with speed and hue moving too was judged to
   "genuinely work". Two patches built from scratch, with no reference to
   the roster, morphed well between each other.
-- **Colour belongs inside the morph.** Hue, saturation and brightness were
+- **Color belongs inside the morph.** Hue, saturation and brightness were
   outside the model as designed; morphing them along with the shape turned
   out to be part of what makes it read as one gesture rather than a
   parameter sweep.
 - **Count is genuinely new territory.** Nothing in the roster sits between
   one shape and a dozen, so three to six shapes is unexplored, and
-  high count with a wide edge produces a continuous travelling ripple that
+  high count with a wide edge produces a continuous traveling ripple that
   no existing pattern can make.
 
 ### The panel's roster settings are guesses
 
 The roster entries in `tools/index.html` were written by reasoning from
-each look's description, not by dialling it in and comparing. Several
+each look's description, not by dialing it in and comparing. Several
 have since been found wrong on the wall. They are fine as starting
 points to wander from, and they are **not** fit to morph between: a
 morph between two wrong destinations says nothing about the morph.
 
-Five or six looks dialled in by eye and saved as patches is what the
+Five or six looks dialed in by eye and saved as patches is what the
 morph work needs underneath it, and nothing else about the morph is
 worth judging until they exist.
 
@@ -188,12 +188,12 @@ That dissolves a question that had been open and blocking for weeks —
 whether a transition is a scene, an effect, or a third kind of thing —
 rather than answering it.
 
-## The colour layer, redesigned 2026-09-21
+## The color layer, redesigned 2026-09-21
 
-A colour is **hue, whiteness and darkness**. Everything else is a push on
+A color is **hue, whiteness and darkness**. Everything else is a push on
 those three, measured from the three faders, and the pushes add. With
-every control centred the wall is exactly the colour on the faders — which
-is what makes the dialling order work: set the colour flat, then open a
+every control centered the wall is exactly the color on the faders — which
+is what makes the dialing order work: set the color flat, then open a
 push and watch it depart from something you chose.
 
 Three things push, and what separates them is what each is anchored to.
@@ -205,22 +205,22 @@ Three things push, and what separates them is what each is anchored to.
 | The light level | how lit the shape branch left that pixel |
 
 The layer reads the **shape branch's** light level and never its own.
-Feeding its own darkness back in would make colour depend on colour: pull
+Feeding its own darkness back in would make color depend on color: pull
 the wall down for a quiet verse and the hue would slide with it.
 
 ### What you place
 
 Two primitives, either of them measured against one of three rulers.
 
-- A **slide** runs one way across its ruler with the base colour at the
-  centre. The amount is how far *one* end departs, so the two ends land
+- A **slide** runs one way across its ruler with the base color at the
+  center. The amount is how far *one* end departs, so the two ends land
   twice that far apart.
 - A **region** is a bump — base, departure, back to base — built from the
   shape branch's own core and fades. Count, width and edge therefore mean
   the same thing in both branches.
 
 The ruler is **across the five strips**, **along a strip**, or **within a
-shape** — a shape's leading tip through to the end of its tail, travelling
+shape** — a shape's leading tip through to the end of its tail, traveling
 with it.
 
 Six combinations, and every look asked for on the wall lands on exactly
@@ -229,9 +229,9 @@ one of them:
 | Look | Primitive | Ruler |
 |----|----|----|
 | A rainbow across the five strips | slide | wall |
-| One colour in the middle, mirrored outward | region | wall |
+| One color in the middle, mirrored outward | region | wall |
 | Cyan through violet to pink up a strip | slide | strip |
-| A hard green cell at the centre of a strip | region | strip |
+| A hard green cell at the center of a strip | region | strip |
 | A bar with a red head and a green tail | slide | shape |
 | A band across the middle of a shape | region | shape |
 
@@ -243,23 +243,23 @@ and the table has no duplicate rows.
 ### The two sides of a shape are not the same length
 
 A tail reaches far further than an edge fade, so the shape ruler
-normalises its two sides separately: 0 at the leading tip, **0.5 at the
-core's centre**, 1 at the end of the tail.
+normalizes its two sides separately: 0 at the leading tip, **0.5 at the
+core's center**, 1 at the end of the tail.
 
-Normalising the whole span at once put the ruler's middle halfway between
+Normalizing the whole span at once put the ruler's middle halfway between
 the two tips, which with a long tail is well behind the core. A region
 asked to sit at the middle of a shape then landed nowhere near the bright
 part. Found on screen before any of it was flashed.
 
 ### What lives
 
-Colour never quite the same in two places, with the difference always
+Color never quite the same in two places, with the difference always
 moving. Three controls, each sayable in words before you turn it: **how
 much** for each of the three qualities, **how fast**, and **how big** —
 the whole wall moving as one, down through patches a strip-length across,
 down to individual pixels shimmering.
 
-**Never repeating is built in rather than dialled.** Two terms whose rates
+**Never repeating is built in rather than dialed.** Two terms whose rates
 sit at the golden ratio can never come back into step. An earlier attempt
 put that on a control — how far apart the two speeds sit — which is making
 the performer operate the mechanism rather than the look.
@@ -269,9 +269,9 @@ lost. Three superimposed waves looked right on the wall for a year and
 were impossible to reason about; one wave could be reasoned about and
 marched.
 
-### Colour from the light level
+### Color from the light level
 
-Colour read off how lit a pixel already is, so a comet's tail cools
+Color read off how lit a pixel already is, so a comet's tail cools
 instead of only dimming. Anchored at the dim end: the faders are what a
 fade runs out to, and the core is the departure. It reads the shape's own
 profile, before jitter and the pulse.
@@ -283,31 +283,31 @@ measure. Only this source reaches them. Point it at a flashing wall and
 the wall goes hot as it flashes.
 
 The two are also not interchangeable where they overlap. On a comet, hue
-from the light level bunches the whole colour change into the few pixels
+from the light level bunches the whole color change into the few pixels
 behind the core, because the tail is dim and nearly flat over most of its
-length — there is almost nothing left for colour to follow. A slide within
+length — there is almost nothing left for color to follow. A slide within
 a shape measures position instead and spreads evenly the whole way. So a
-white head wants the light level, and colour along the tail wants the
+white head wants the light level, and color along the tail wants the
 slide:
 
 | Want | Set |
 |----|----|
 | White head | light level → to white, full |
-| Colour along the tail | slide, within a shape, hue |
+| Color along the tail | slide, within a shape, hue |
 
 ### Why the previous field was replaced
 
 Two things it could not do, both asked for on the wall, and both geometry:
-hold a colour still somewhere, and put one colour on each strip.
+hold a color still somewhere, and put one color on each strip.
 
 It was a cloud with a count knob attached. Making it reach a flat floor so
-it could place a colour is the same change that made Plasma and Aurora
+it could place a color is the same change that made Plasma and Aurora
 read more regular — geometry was bought with aliveness, because one field
 had to be both. **That is the fault the redesign fixes**, and it is why
 there are two separate things here rather than one with more parameters.
 
 Three smaller findings survive from it, and all three are built in above:
-a colour must have a place of its own or the fader stops reading as a
+a color must have a place of its own or the fader stops reading as a
 thing that sets; darkening wants a geometric taper because it is a ratio
 of light; and steepening an edge is what turns a general unevenness into
 regions you can see.
@@ -315,9 +315,9 @@ regions you can see.
 ### Two branches, one vocabulary
 
 The shape branch decides whether a pixel is lit at all, which is what
-makes gaps and darkness. The colour layer only ever decides what colour a
+makes gaps and darkness. The color layer only ever decides what color a
 lit pixel is. That is a fixed order in a chain, not two destinations off
-one source — collapsing them would permit routing colour to lit-or-not,
+one source — collapsing them would permit routing color to lit-or-not,
 which is the shape branch again with fewer controls.
 
 What is shared is the vocabulary. Count, width, edge and speed mean the
@@ -329,7 +329,7 @@ Two things follow from drawing it that way, and both are in
 
 - **The two branches do not reach the same lights.** A PAR is one pixel,
   so the shape branch cannot reach it — count, width, edge, tail, speed
-  and fan all describe positions along a strip. The colour layer is
+  and fan all describe positions along a strip. The color layer is
   largely what a one-pixel fixture can render, which is why the PARs'
   level and hue offset are a relationship to the strips rather than a
   second look. See `DESIGN.md` § "The PAR cans". The shape ruler is the
@@ -374,7 +374,7 @@ guesses from the word.
 
 ### What the wall found, 2026-09-22
 
-Three faults with one cause, found while dialling looks chosen for not
+Three faults with one cause, found while dialing looks chosen for not
 being in the roster. Two parts of the code disagreed about what a
 position is: travel under bounce was measured along the whole strip,
 while fan was added as a shift inside a cell. At count 1 those are the
@@ -437,13 +437,13 @@ Three things follow:
 
 - **Under wrap nothing changes.** Travel is monotonic there, so the path and
   the straight offset are the same number. Six wrap cases — one shape, six
-  shapes, alternate, fanned, still, and with the colour pushes open — render
+  shapes, alternate, fanned, still, and with the color pushes open — render
   pixel for pixel identically.
 - **A trail cannot leave its cell under bounce.** The core never does, so its
-  history cannot either. A geometric tail spilled into the neighbouring cell;
+  history cannot either. A geometric tail spilled into the neighboring cell;
   a folded one has nowhere to spill to.
-- **The colour layer's shape ruler follows it.** The ruler's trailing half is
-  taken from the same measure as the tail's brightness, or colour along a tail
+- **The color layer's shape ruler follows it.** The ruler's trailing half is
+  taken from the same measure as the tail's brightness, or color along a tail
   paints where the tail is not.
 
 **A still shape keeps its tail**, which was expected to be the price and is
@@ -467,7 +467,7 @@ instruments — an amount beside the modulator saying where it goes, or an
 amount beside each target saying what reaches it — and the choice is a
 real one. It goes to the source here because most of Aurora's
 destinations are not controls: the pulse's main target is how lit a pixel
-is, and the wander's are what colour it is, and neither is a slider
+is, and the wander's are what color it is, and neither is a slider
 anywhere. They are the outputs of their branches. Putting amounts at the
 target would mean inventing rows for things that are not controls, purely
 to have somewhere to hang the amount. Width is the one exception, and
@@ -525,31 +525,31 @@ hard cell to a smooth fade; easing bends a traversal from linear to
 slow-at-the-ends. Same idea every time, which is what makes **Shape** a
 shared word rather than a coincidence.
 
-### The colour layer has no jitter
+### The color layer has no jitter
 
 Jitter is a per-pixel random displacement re-rolled once per swell: it
 breaks the regular grid the shape layer otherwise guarantees, and it is
 among the most visible controls there is.
 
-Nothing on the colour side does that. Every push it can make is smooth, so
-a grainy, boiling colour is unreachable — a starfield in hue rather than
+Nothing on the color side does that. Every push it can make is smooth, so
+a grainy, boiling color is unreachable — a starfield in hue rather than
 in brightness. Wanted as its own effect rather than folded into the
 wander, which was deliberately given interference instead of randomness.
 Whether it serves a band backdrop or is only a thing the machine could now
-do is a judgement for a set, not a bench.
+do is a judgment for a set, not a bench.
 
 ## Open
 
 1. **Fan is a linear staircase, and the roster's Rain is a chevron.** Its
    per-strip offsets are 20, 28, 34, 28, 20 — symmetric, peaking on the
-   centre strip. The generator computes `fan × strip_index / 5`, which is
+   center strip. The generator computes `fan × strip_index / 5`, which is
    purely linear and can only make a diagonal.
 
-   The likely answer, worked out 2026-09-18 but not built: generalise to
-   `amount × f(strip − centre)` and make the **centre** a parameter that
-   may range beyond the five strips. A centre at strip 2 gives the
-   chevron; a centre outside the span leaves you on one side of it only,
-   which is a diagonal. So centre alone interpolates between the two, and
+   The likely answer, worked out 2026-09-18 but not built: generalize to
+   `amount × f(strip − center)` and make the **center** a parameter that
+   may range beyond the five strips. A center at strip 2 gives the
+   chevron; a center outside the span leaves you on one side of it only,
+   which is a diagonal. So center alone interpolates between the two, and
    inverted chevrons come free. Two parameters cover the whole family.
 
    **A third shape is wanted: random.** Asked for on the wall 2026-09-21
@@ -567,7 +567,7 @@ do is a judgement for a set, not a bench.
    alternate exactly, so today's look survives as an endpoint and
    everything between that and "all five together" is new — the midpoint
    being the odd strips standing still while the even ones run. It is
-   nearly free once fan takes a shape and a centre, because it is the same
+   nearly free once fan takes a shape and a center, because it is the same
    function aimed at a different number, which is the argument for doing
    the two in one go rather than one of them now.
 
@@ -575,7 +575,7 @@ do is a judgement for a set, not a bench.
    different rates never come back into step, so the wall is whatever the
    drift has accumulated since you arrived, and the same patch reached
    twice does not look the same. That is not automatically an objection —
-   the colour layer's wander puts its two rates at the golden ratio to buy
+   the color layer's wander puts its two rates at the golden ratio to buy
    exactly this, and it was judged the best thing the field it replaced
    could do. So it is settle-by-looking. A per-patch **drift reset** — on
    entering the patch, and optionally again every N beats — would hand
@@ -588,7 +588,7 @@ do is a judgement for a set, not a bench.
    Wrapping travel is still a loop, and a tail falling off one end still
    reappears at the other. Whether that wants clipping, a boundary fade —
    which costs the ends of every pattern that ought to reach them — or
-   nothing at all is a judgement for the wall.
+   nothing at all is a judgment for the wall.
 3. **Jitter has one scale, and it is the wrong one for solid shapes.**
    The noise is keyed on the pixel — `hash8(strip, pixel, bucket)` — so
    every pixel gets its own displacement and its own level, which is dirt
@@ -621,20 +621,20 @@ do is a judgement for a set, not a bench.
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
 5. **The pulse shape taper** was spread geometrically across the fader on
-   a guess. Where the midpoint should sit is a feel judgement nobody has
+   a guess. Where the midpoint should sit is a feel judgment nobody has
    made with music playing.
-6. **Where the colour layer's controls should stop.** Combinations that
+6. **Where the color layer's controls should stop.** Combinations that
    look bad are easy to reach — a hard edge with deep darkening and a wide
    hue swing is three strong things at once. Whether that wants narrower
-   ranges or just practice is a judgement nobody has made with music
+   ranges or just practice is a judgment nobody has made with music
    playing. The test is a set, not a bench.
 7. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
 8. **A region can only push inward, so one asked-for look is inverted.**
-   "Base colour on the centre strip, the outer ones departing" needs a
+   "Base color on the center strip, the outer ones departing" needs a
    bump turned inside out — base within the core, the departure outside
-   it. What comes out instead is the complement: the centre strip
-   departing and the outer ones on the base colour.
+   it. What comes out instead is the complement: the center strip
+   departing and the outer ones on the base color.
 
    One boolean on the region covers it and is not a crutch, since "a
    place that differs" and "everywhere except a place" are both real
@@ -643,8 +643,8 @@ do is a judgement for a set, not a bench.
    not been looked at on the wall yet.
 9. **Nothing can make a chevron across the five strips.** Two properties
    of a per-strip offset are easy to confuse: where its zero sits, and
-   what shape it makes. The colour layer's wander has its zero on the
-   centre strip; the shape branch's fan has its zero on strip 1. Both are
+   what shape it makes. The color layer's wander has its zero on the
+   center strip; the shape branch's fan has its zero on strip 1. Both are
    straight lines, and moving the zero of a straight line only slides it.
    A chevron needs a fold, which is what item 1 above is asking for, and
    neither branch has one.
@@ -661,7 +661,7 @@ do is a judgement for a set, not a bench.
 ## Tools
 
 - `tools/preview.js` — the wall on screen: five strips and four PARs,
-  rendered from a port of `P_Generator.cpp` and `dmx_out.cpp`. The colour
+  rendered from a port of `P_Generator.cpp` and `dmx_out.cpp`. The color
   layer was designed here before it was flashed, and the constants in the
   two are meant to stay identical. It diverges deliberately in two places,
   both written at the top of the file.
@@ -670,10 +670,10 @@ do is a judgement for a set, not a bench.
   across every rate change so a fader never makes a shape jump, and
   nothing resets it — the brain's offset comes from its history since
   boot, the page's from load. Speed, spacing and the relationship between
-  strips compare; where a travelling shape *is* does not.
+  strips compare; where a traveling shape *is* does not.
 - `tools/index.html` — sliders over Web MIDI, patch save and recall, the
   morph control, the roster as one-click starting points, and a row of
-  colour looks that set the colour layer only.
+  color looks that set the color layer only.
 
   **Serve it rather than opening the file.** `python3 -m http.server` from
   `tools/`, then `http://localhost:8000/`. A `file://` page gets a
@@ -682,5 +682,5 @@ do is a judgement for a set, not a bench.
   origin and a secure context, and the grant sticks. Chrome or Edge only —
   Safari and Firefox have no Web MIDI. Reload after every flash, as that
   resets the Teensy's USB and the page keeps a dead port.
-- **PC 11 paints each strip a flat colour** — red, orange, green, cyan,
+- **PC 11 paints each strip a flat color** — red, orange, green, cyan,
   blue in data-chain order — for working out strip order while rigging.

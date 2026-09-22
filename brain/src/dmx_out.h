@@ -1,10 +1,10 @@
 // dmx_out — drives the wash fixtures.
 //
-// Every frame each configured fixture gets the colour the strips are
+// Every frame each configured fixture gets the color the strips are
 // showing, rotated by CC_WASH_HUE_OFFSET and scaled by CC_WASH_LEVEL,
 // written as 8 channels with brightness on the fixture's own dimmer.
 // The macro channel must stay below 50 or the fixture starts an auto
-// sequence that overrides colour entirely.
+// sequence that overrides color entirely.
 //
 // Fixture addresses and calibration are hardcoded below; changing venue
 // means editing the table and reflashing.

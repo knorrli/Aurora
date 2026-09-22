@@ -1,7 +1,7 @@
 // Aurora wall preview — a port of brain/src/P_Generator.cpp and
 // brain/src/dmx_out.cpp, so a setting can be judged without the rig.
 //
-// The shape branch is the firmware's. The colour layer is not yet in the
+// The shape branch is the firmware's. The color layer is not yet in the
 // firmware at all — it is designed here first, and ported once it survives.
 //
 // Two deliberate divergences, both stated:
@@ -15,9 +15,9 @@
 //
 // Which physical end pixel 0 sits at, and the left-to-right order of the
 // five strips, are rigging facts the firmware never states. PC 11 settles
-// the order: it paints each strip one flat colour, and that order is
+// the order: it paints each strip one flat color, and that order is
 // recorded in WALL_STRIP_ORDER below. It cannot settle which end pixel 0
-// is — a flat colour has no end to tell apart — so that stays a control.
+// is — a flat color has no end to tell apart — so that stays a control.
 
 (function (global) {
   'use strict';
@@ -34,7 +34,7 @@
   // How dark a full push pulls a pixel, as a fraction of what it would
   // otherwise be. It stops short of zero because a WS2812 has eight linear
   // bits and no gamma: at the bottom one step is a third of the light, so
-  // brightness quantises into lurches and pixels crossing to zero pop out.
+  // brightness quantizes into lurches and pixels crossing to zero pop out.
   const DARK_FLOOR = 0.02;
 
   const LIT_MAX_HUE = 64;
@@ -66,7 +66,7 @@
 
   // hsv2rgb_rainbow, with Y1 on and G2/Gscale off as FastLED ships them.
   // Not interchangeable with a textbook HSV conversion: this one widens and
-  // brightens yellow, and every hue the wall has ever been dialled to was
+  // brightens yellow, and every hue the wall has ever been dialed to was
   // chosen through it.
   function hsv2rgb(hue, sat, val) {
     hue &= 255; sat &= 255; val &= 255;
@@ -143,8 +143,8 @@
       litHueReach: ccBipolar(s.litHue) * LIT_MAX_HUE,
       litDarkReach: ccBipolar(s.litDark),
 
-      placedKind: isOn(s.colourRegion) ? KIND_REGION : KIND_SLIDE,
-      placedRuler: Math.min(RULER_SHAPE, band3(s.colourRuler)),
+      placedKind: isOn(s.colorRegion) ? KIND_REGION : KIND_SLIDE,
+      placedRuler: Math.min(RULER_SHAPE, band3(s.colorRuler)),
       placedHue: ccBipolar(s.placedHue) * PLACED_MAX_HUE,
       placedWhite: ccBipolar(s.placedWhite),
       placedDark: ccBipolar(s.placedDark),
@@ -184,8 +184,8 @@
   // The shape repeats once per cell, so the only images that can reach a
   // sample are the two standing either side of it. Under bounce the strip is
   // a line and an image off its end is not there to be seen.
-  function nearestOffset(posCells, coreCentre, stripDirection, bounce, countCells) {
-    const firstImage = coreCentre + Math.floor(posCells - coreCentre);
+  function nearestOffset(posCells, coreCenter, stripDirection, bounce, countCells) {
+    const firstImage = coreCenter + Math.floor(posCells - coreCenter);
     let nearest = 0;
     let lit = false;
     for (let image = 0; image < 2; image++) {
@@ -213,7 +213,7 @@
     return 0;
   }
 
-  // The tail is not geometry. It is how far the core has travelled since it
+  // The tail is not geometry. It is how far the core has traveled since it
   // was last at this point, so `behind` is a path length, never a straight
   // line.
   function tailAt(behind, width, tail) {
@@ -255,7 +255,7 @@
   // at a turn instead of moving it.
   //
   // Points inside half a core width of the cell's ends are never reached by
-  // the centre, only swept by the body at the turn, so they measure from the
+  // the center, only swept by the body at the turn, so they measure from the
   // turn and add the straight remainder.
   function trailBehind(journey, phase, halfCore, swingSpan) {
     if (swingSpan <= 0.0001) return Math.abs(journey - 0.5);
@@ -286,19 +286,19 @@
   const wanderPhase = makeTracker();
   const placedPhase = makeTracker();
 
-  // ---- the colour layer, redesigned 2026-09-21 --------------------------
+  // ---- the color layer, redesigned 2026-09-21 --------------------------
   //
-  // A colour is hue, whiteness and darkness. Everything else is a push on
+  // A color is hue, whiteness and darkness. Everything else is a push on
   // those three, and the pushes add. Three sources push:
   //
   //   the placed field  something you aim — a slide across a ruler, or
   //                     regions sitting on it
   //   the wander        the wall never quite the same in two places, and
   //                     where it differs keeps moving
-  //   the light level   colour read off how lit the shape left a pixel
+  //   the light level   color read off how lit the shape left a pixel
   //
   // The layer reads the SHAPE branch's light level and never its own. Feed
-  // its own darkness back in and colour depends on colour: pull the wall
+  // its own darkness back in and color depends on color: pull the wall
   // down for a quiet verse and the hue slides with it.
 
   const RULER_WALL = 0, RULER_STRIP = 1, RULER_SHAPE = 2;
@@ -308,37 +308,37 @@
   const WANDER_MAX_HUE = 128;
 
   // Two terms whose rates sit at the golden ratio, so they never come back
-  // into step and the wall never repeats. This is not a control: dialling
+  // into step and the wall never repeats. This is not a control: dialing
   // "how far apart the two speeds are" is operating the mechanism.
   const GOLD = 0.6180339887;
 
-  // The base colour sits at zero, so two terms that rarely reach their ends
+  // The base color sits at zero, so two terms that rarely reach their ends
   // cost nothing: a sum huddled around the middle is the wall sitting at the
-  // colour that was dialled. There is no floor here for a colour to fall off.
+  // color that was dialed. There is no floor here for a color to fall off.
   function wanderAt(p, along01, stripIndex, t) {
     if (!p.wanderActive) return 0;
     // Measured from the middle strip, not the first. Fanned from the first,
-    // strip one never moves and the last does all the travelling, which reads
+    // strip one never moves and the last does all the traveling, which reads
     // as a one-sided ramp rather than the wall opening — see
     // docs/bench-facts.md § "A field built as along-plus-across".
-    const acrossFromCentre = (stripIndex - (STRIPS - 1) * 0.5) / (STRIPS - 1);
+    const acrossFromCenter = (stripIndex - (STRIPS - 1) * 0.5) / (STRIPS - 1);
     const cyclesAlong = 0.12 * Math.pow(180, p.wanderScale);
     const cyclesAcross = Math.min(1.4, cyclesAlong * 0.3);
-    const a = Math.sin(2 * Math.PI * (cyclesAlong * along01 + cyclesAcross * acrossFromCentre + t));
-    const b = Math.sin(2 * Math.PI * (cyclesAlong * GOLD * along01 - cyclesAcross * 1.37 * acrossFromCentre + t * GOLD));
+    const a = Math.sin(2 * Math.PI * (cyclesAlong * along01 + cyclesAcross * acrossFromCenter + t));
+    const b = Math.sin(2 * Math.PI * (cyclesAlong * GOLD * along01 - cyclesAcross * 1.37 * acrossFromCenter + t * GOLD));
     return (a + b) * 0.5;
   }
 
   // 0 at one end of the ruler, 1 at the other. The shape ruler runs from the
   // leading tip through to the end of the tail, so a slide on it puts one
-  // colour at the head and the other behind.
+  // color at the head and the other behind.
   function rulerAt(p, stripIndex, pixelIndex, shapeU) {
     if (p.placedRuler === RULER_WALL) return STRIPS > 1 ? stripIndex / (STRIPS - 1) : 0.5;
     if (p.placedRuler === RULER_SHAPE) return shapeU;
     return PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
   }
 
-  // A slide is monotone with the base colour at the ruler's centre, so the
+  // A slide is monotone with the base color at the ruler's center, so the
   // amount is how far ONE end departs and the two ends land twice that apart.
   // A region is a bump: base, departure, back to base — the shape branch's
   // own core-and-fades, which is what makes count, width and edge mean here
@@ -351,7 +351,7 @@
     return shapeAt(offset, p.placedWidth, p.placedEdge, 0);
   }
 
-  // Pushes arrive summed and normalised. Darkening rides a geometric taper
+  // Pushes arrive summed and normalized. Darkening rides a geometric taper
   // because it is a ratio of light and the eye reads it as one; mapped
   // linearly, nearly the whole travel was imperceptible and everything worth
   // having sat in the last few steps. Brightening is a plain ride to full and
@@ -371,7 +371,7 @@
     return { h: (base.h + Math.trunc(hue)) & 255, s: saturation, v: value };
   }
 
-  function colourAt(p, base, stripIndex, pixelIndex, shapeU, profile, drift, wanderT) {
+  function colorAt(p, base, stripIndex, pixelIndex, shapeU, profile, drift, wanderT) {
     const along01 = PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
 
     const placed = placedAt(p, rulerAt(p, stripIndex, pixelIndex, shapeU), drift);
@@ -398,7 +398,7 @@
 
     // Under bounce the core swings inside its own cell, turning where its own
     // edge meets the cell's boundary the way a ball meets a wall, so nothing
-    // ever crosses into a neighbouring cell. Taking the rate from the cell is
+    // ever crosses into a neighboring cell. Taking the rate from the cell is
     // what keeps speed an absolute distance: adding shapes shrinks the cell
     // and quickens the turn, and the core still crosses the wall at the pixels
     // per beat on the dial. At full width the swing closes to nothing, which
@@ -408,7 +408,7 @@
     const bouncing = p.bounce && Math.abs(p.speedPixels) > 0.0001;
 
     let travelCycles = 0;
-    let centreCells = 0.5;
+    let centerCells = 0.5;
     const direction = p.speedPixels >= 0 ? 1 : -1;
     if (bouncing) {
       const rate = swingSpan > 0.0001
@@ -416,7 +416,7 @@
         : 0;
       travelCycles = trackedPhase(travelPhase, beats, rate);
     } else {
-      centreCells = 0.5 + trackedPhase(travelPhase, beats, p.speedPixels / cellLength);
+      centerCells = 0.5 + trackedPhase(travelPhase, beats, p.speedPixels / cellLength);
     }
 
     const pulse = trackedPhase(pulsePhase, beats, 1 / p.pulseBeats);
@@ -429,10 +429,10 @@
       || Math.abs(p.wanderDark) > 0.001;
 
     // The two sides of a shape are not the same length — a tail reaches far
-    // further than an edge fade — so they are normalised separately. Halfway
+    // further than an edge fade — so they are normalized separately. Halfway
     // between the two tips is not the core, and a region asked to sit at the
     // middle of a shape means the core every time.
-    // Both colour rates go through the tracker for the same reason travel and
+    // Both color rates go through the tracker for the same reason travel and
     // the pulse do: beats only grows, so a small change of rate multiplied by
     // a large beat count is a large jump.
     const wanderT = trackedPhase(wanderPhase, beats, p.wanderRate);
@@ -458,18 +458,18 @@
       // instead: an image standing past the strip's end is clipped away by
       // nearestOffset, so displacing it there shortens a strip rather than
       // staggering it.
-      let coreCentre, stripDirection, triangle = 0;
+      let coreCenter, stripDirection, triangle = 0;
       if (bouncing) {
         triangle = fract(travelCycles + stripPhase);
         const rising = triangle < 0.5;
         const swing = rising ? triangle * 2 : (1 - triangle) * 2;
         const place = halfCore + swing * swingSpan;
-        coreCentre = mirrored ? 1 - place : place;
+        coreCenter = mirrored ? 1 - place : place;
         stripDirection = rising ? 1 : -1;
         if (mirrored) stripDirection = -stripDirection;
       } else {
-        const centreHere = mirrored ? countCells - centreCells : centreCells;
-        coreCentre = fract(centreHere + stripPhase);
+        const centerHere = mirrored ? countCells - centerCells : centerCells;
+        coreCenter = fract(centerHere + stripPhase);
         stripDirection = mirrored ? -direction : direction;
       }
       const jitterBucket = Math.floor(pulse + stripPhase) & 255;
@@ -493,14 +493,14 @@
             // The core stays inside its cell, so its trail does too: at a turn
             // the core walks back out through what it laid down rather than
             // the trail changing sides.
-            const nearest = nearestOffset(posCells, coreCentre, stripDirection, true, countCells);
+            const nearest = nearestOffset(posCells, coreCenter, stripDirection, true, countCells);
             const level = nearest === null ? 0 : coreAt(nearest, p.width, p.edge);
             const trailing = tailAt(
               trailBehind(journeyIn(posCells, mirrored), triangle, halfCore, swingSpan),
               p.width, p.tail);
             accumulated += trailing > level ? trailing : level;
           } else {
-            const nearest = nearestOffset(posCells, coreCentre, stripDirection, p.bounce, countCells);
+            const nearest = nearestOffset(posCells, coreCenter, stripDirection, p.bounce, countCells);
             if (nearest !== null) accumulated += shapeAt(nearest, p.width, p.edge, p.tail);
           }
         }
@@ -509,26 +509,26 @@
         const brightness = profile * jitterLevel * swell;
         if (brightness <= 0.002) continue;
 
-        const centrePos = (pixelIndex + 0.5) / cellLength + jitterOffset;
-        const centreOffset = nearestOffset(centrePos, coreCentre, stripDirection,
+        const centerPos = (pixelIndex + 0.5) / cellLength + jitterOffset;
+        const centerOffset = nearestOffset(centerPos, coreCenter, stripDirection,
                                            p.bounce, countCells);
         let shapeU = 0.5;
         if (bouncing) {
           // The ruler's trailing half has to be the same measure the tail is
-          // drawn from, or colour along a tail paints where the tail is not.
-          const behind = trailBehind(journeyIn(centrePos, mirrored), triangle,
+          // drawn from, or color along a tail paints where the tail is not.
+          const behind = trailBehind(journeyIn(centerPos, mirrored), triangle,
                                      halfCore, swingSpan);
           if (behind < shapeTrail && shapeTrail > 0.0001) {
             shapeU = 0.5 + 0.5 * behind / shapeTrail;
-          } else if (centreOffset !== null && shapeLead > 0.0001) {
-            shapeU = 0.5 - 0.5 * Math.abs(centreOffset) / shapeLead;
+          } else if (centerOffset !== null && shapeLead > 0.0001) {
+            shapeU = 0.5 - 0.5 * Math.abs(centerOffset) / shapeLead;
           }
-        } else if (centreOffset !== null) {
-          const reach = centreOffset < 0 ? shapeLead : shapeTrail;
-          if (reach > 0.0001) shapeU = 0.5 + 0.5 * centreOffset / reach;
+        } else if (centerOffset !== null) {
+          const reach = centerOffset < 0 ? shapeLead : shapeTrail;
+          if (reach > 0.0001) shapeU = 0.5 + 0.5 * centerOffset / reach;
         }
         shapeU = Math.max(0, Math.min(1, shapeU));
-        const tint = colourAt(p, base, stripIndex, pixelIndex, shapeU, profile,
+        const tint = colorAt(p, base, stripIndex, pixelIndex, shapeU, profile,
                               placedDrift, wanderT);
 
         const rgb = hsv2rgb(tint.h & 255, clamp8(tint.s), 255);
@@ -544,7 +544,7 @@
   }
 
   // PC 11, a port of ShowStripOrder() in brain/src/helpers.cpp. Each strip one
-  // flat colour in data-chain order, which is how the left-to-right order and
+  // flat color in data-chain order, which is how the left-to-right order and
   // which end pixel 0 sits at get worked out in the first place.
   const STRIP_ORDER_HUES = [0, 40, 96, 130, 165];
 
@@ -563,8 +563,8 @@
 
   // The PARs never see the generator. dmx_out::tick() takes presetColor —
   // the three faders — converts it at full value, and carries brightness on
-  // the fixture's own dimmer. All four get the same colour.
-  function parColour(p) {
+  // the fixture's own dimmer. All four get the same color.
+  function parColor(p) {
     const level = scale8(p.baseVal, p.washLevel);
     const rgb = hsv2rgb((p.baseHue + p.washHueOffset) & 255, p.baseSat, 255);
     return [scale8v(rgb[0], level), scale8v(rgb[1], level), scale8v(rgb[2], level)];
@@ -667,7 +667,7 @@
           <input type="text" id="pvOrder" value="${WALL_STRIP_ORDER.join(',')}">
         </label>
       </div>
-      <div class="pvNote">Ported from the firmware, not written afresh. <em>Order</em> is this wall's, from PC 11, and it comes from the code — edit it here to try something, edit WALL_STRIP_ORDER to keep it. A flat colour has no end to tell apart, so <em>pixel 0</em> needs a moving shape instead: one narrow shape, slow, no fan.</div>`;
+      <div class="pvNote">Ported from the firmware, not written afresh. <em>Order</em> is this wall's, from PC 11, and it comes from the code — edit it here to try something, edit WALL_STRIP_ORDER to keep it. A flat color has no end to tell apart, so <em>pixel 0</em> needs a moving shape instead: one narrow shape, slow, no fan.</div>`;
     document.body.insertBefore(dock, document.body.firstChild);
     document.body.classList.add('hasPreview');
 
@@ -728,11 +728,11 @@
       } else {
         p = render(s, beats);
       }
-      draw(ctx, glow, order(), flipped, parColour(p));
+      draw(ctx, glow, order(), flipped, parColor(p));
       global.requestAnimationFrame(frame);
     }
     global.requestAnimationFrame(frame);
   }
 
-  global.AuroraPreview = { start, render, renderStripOrder, parColour, wall };
+  global.AuroraPreview = { start, render, renderStripOrder, parColor, wall };
 })(window);

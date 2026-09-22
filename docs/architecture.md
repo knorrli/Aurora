@@ -140,7 +140,7 @@ Four problems, all visible on stage. Position was accumulated, so a long
 frame left the animation permanently behind with nothing to pull it
 back. A tempo change altered slice length but not accumulated position,
 so motion jumped. Every block carried an `- elapsedLoopTime / 2` fudge
-factor tuned by feel. And motion was quantised to whole slices.
+factor tuned by feel. And motion was quantized to whole slices.
 
 MIDI clock supplies what one wire could not: a steadily advancing count.
 So `tempo::` exposes a **monotonic musical position in fractional
@@ -205,14 +205,14 @@ weighed exactly one way of keeping it — streaming strip data back over
 the MIDI link — and rejected that correctly, as precisely the traffic
 the split exists to avoid. What it missed is that **the controller can
 recompute the picture rather than receive it.** It already knows the
-clock, the colour, and which pattern is active, because it is the thing
+clock, the color, and which pattern is active, because it is the thing
 that selected them.
 
 Running the *real* renderers on the controller was considered and
 rejected:
 
 - Every pattern would have to become resolution-independent — written as
-  brightness against normalised position rather than against pixel N —
+  brightness against normalized position rather than against pixel N —
   so both boxes could sample one function at different densities. That
   is a permanent tax on how patterns get written, and it does not work
   at all for Starfield's individual stars or Glitch's random pixels.

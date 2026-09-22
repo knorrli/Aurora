@@ -62,7 +62,7 @@ static int8_t scan_keypad() {
     // don't emit anything special for mute.
     if (pinb == 0b00111111) return -2;
 
-    // Centre key combo — "return to previous". The old firmware tracked
+    // Center key combo — "return to previous". The old firmware tracked
     // previous preset locally; in the MIDI world we'd need the brain to
     // track it. For now, emit nothing.
     if (pinb == 0b00111101) return -3;
@@ -107,7 +107,7 @@ static void scan_faders() {
 }
 
 // ---------------------------------------------------------------------------
-// Preset / palette numpad — behaviour depends on A/B mode switch
+// Preset / palette numpad — behavior depends on A/B mode switch
 // ---------------------------------------------------------------------------
 
 static bool is_palette_mode() {

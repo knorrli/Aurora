@@ -19,7 +19,7 @@ constexpr uint16_t kFirstChannel = 1;
 constexpr uint16_t kChannelCount = 4;
 constexpr uint32_t kHoldMs = 2500;
 
-// Well below full: at 255 the PAR is too bright to judge colour by eye.
+// Well below full: at 255 the PAR is too bright to judge color by eye.
 constexpr uint8_t kLevel = 100;
 
 static void announce(uint8_t blinks) {

@@ -56,19 +56,19 @@ constexpr uint16_t kFlashMs[] = { 200, 100, 50, 25, 12 };
 constexpr uint32_t kStepMs = 3000;
 constexpr uint32_t kRestMs = 1500;
 
-// Matching the strip's colour keeps the brightness comparison honest. A
+// Matching the strip's color keeps the brightness comparison honest. A
 // PAR at full still dwarfs a strip; drop this if that makes the short
 // flashes impossible to judge.
 constexpr uint8_t kFlashLevel = 255;
-const CRGB kColour = CRGB(255, 85, 0);
+const CRGB kColor = CRGB(255, 85, 0);
 
 static void setDimmer(uint8_t level) {
   for (uint16_t base : kFixtures) dmx.set(base + kOffsetDimmer, level);
 }
 
-static void setReference(const CRGB &colour) {
+static void setReference(const CRGB &color) {
   const uint16_t end = kReferenceFirst + kPixelsPerStrip;
-  for (uint16_t i = kReferenceFirst; i < end; i++) pixels[i] = colour;
+  for (uint16_t i = kReferenceFirst; i < end; i++) pixels[i] = color;
 }
 
 static void announce(uint8_t step) {
@@ -88,7 +88,7 @@ static void announce(uint8_t step) {
 // of roughly 6 ms, and a PAR that still looks late is late for real.
 static void edge(bool on) {
   setDimmer(on ? kFlashLevel : 0);
-  setReference(on ? kColour : CRGB::Black);
+  setReference(on ? kColor : CRGB::Black);
   FastLED.show();
 }
 
@@ -126,14 +126,14 @@ void setup() {
                    "the short steps will measure the wire, not the fixture");
   }
 
-  // The dimmer carries the flash, so colour is held at full and the
+  // The dimmer carries the flash, so color is held at full and the
   // fixture's own effects are pinned off. Macro above 50 starts an auto
-  // sequence that overrides colour entirely.
+  // sequence that overrides color entirely.
   for (uint16_t base : kFixtures) {
     dmx.set(base + kOffsetStrobe, 0);
-    dmx.set(base + kOffsetRed, kColour.r);
-    dmx.set(base + kOffsetGreen, kColour.g);
-    dmx.set(base + kOffsetBlue, kColour.b);
+    dmx.set(base + kOffsetRed, kColor.r);
+    dmx.set(base + kOffsetGreen, kColor.g);
+    dmx.set(base + kOffsetBlue, kColor.b);
     dmx.set(base + kOffsetWhite, 0);
     dmx.set(base + kOffsetMacro, 0);
     dmx.set(base + kOffsetSpeed, 0);

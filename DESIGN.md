@@ -40,7 +40,7 @@ Two things fall out of that:
   saved object and one pointer rather than three kinds of thing.
 
 Neither was settled that day; both were, on 2026-09-19, and the nouns
-below are the result. The old model — nine finished looks and a colour
+below are the result. The old model — nine finished looks and a color
 knob — is what made "what is a scene" unanswerable in the first place.
 
 ## The nouns, settled 2026-09-19
@@ -66,17 +66,17 @@ the browser's local storage, which survives nothing.
 ### A morph target
 
 A saved alternate set of values, belonging to one patch, that one fader
-pulls toward. **Absolute** — the far end is a specific look you dialled
+pulls toward. **Absolute** — the far end is a specific look you dialed
 in and judged.
 
 The test for whether something is a morph target: can you build the far
 end and look at it? "This patch flat out" — yes. "This patch's other
-colour" — no, because every colour is equally valid and there is no
+color" — no, because every color is equally valid and there is no
 particular one to save.
 
 ### A shift
 
-A rule applied on top of whatever the patch says — the colour rotated so
+A rule applied on top of whatever the patch says — the color rotated so
 far, the brightness trimmed. **Relative**, patch-independent, and nothing
 is stored for it. Transpose, rather than a second saved arrangement.
 
@@ -84,7 +84,7 @@ The difference from a morph target only ever shows when the patch
 changes. A morph target carries its **meaning** across: 60 % still means
 "fairly intense" on the next patch, over completely different parameters.
 A shift carries **the move itself** across: thirty degrees round is still
-thirty degrees round, applied to whatever the new patch's colour is.
+thirty degrees round, applied to whatever the new patch's color is.
 
 Shifts are also what makes a room adjustable without editing anything,
 which is what lets the box have no editing on it at all.
@@ -101,7 +101,7 @@ thing that is actually *played*. Everything above is written at a desk.
 - **A palette.** Values inside a patch. The nine named ones become saved
   points if they survive at all.
 - **A preset.** A patch.
-- **Shape, as distinct from colour.** A pixel is hue, saturation and
+- **Shape, as distinct from color.** A pixel is hue, saturation and
   brightness; anything varying across the wall is one field over those
   three. Shape is that field routed to brightness. There is no second
   machine — see `docs/generator.md`.
@@ -141,7 +141,7 @@ they do not cover rebuilding one. That is judged the right thing to lose.
 
 Worked out in discussion across two sessions. **None of it has been
 played, and none of it has been seen on the wall.** Where something is a
-judgement about how a thing reads rather than a consequence of the
+judgment about how a thing reads rather than a consequence of the
 constraints, it says so.
 
 ### The division everything else hangs on
@@ -172,11 +172,11 @@ Not three concepts. Three answers to *what carries the increase*, mixed
 against each other so one chorus reads hot and sparse and the next dense
 and cool:
 
-- **Colour** — more means hotter, toward white.
+- **Color** — more means hotter, toward white.
 - **Extent** — more means more of the wall lit.
 - **Motion** — more means faster, harder, more agitated.
 
-Each is a per-patch morph target: the far end is dialled in and judged for
+Each is a per-patch morph target: the far end is dialed in and judged for
 that patch. A route may be weak or absent on a patch with nothing to do
 with it, and that is fine. A fader that does little is safe; a fader that
 does something unexpected is not.
@@ -200,21 +200,21 @@ It was expressive and it wasted the axis: a continuous control with
 hundreds of positions was acting as a five-way switch, so sliding felt
 like stepping.
 
-**Replace selection with a window.** The effect has a *centre* and a
-*width*, with soft edges, and the centre may travel past both ends of the
+**Replace selection with a window.** The effect has a *center* and a
+*width*, with soft edges, and the center may travel past both ends of the
 wall. Each strip's share is how much of the window falls on it, so X
 slides a soft region across the stage instead of snapping between strips.
 "Affect all strips" stops being a mode and becomes the width control at
 maximum.
 
-The share is **how far that strip has travelled toward the destination,
+The share is **how far that strip has traveled toward the destination,
 not how bright it is.** A strip inside a narrow window leaning toward
 Glitch is partly glitchy; the strips outside it are untouched and at full
 brightness. Nothing dims.
 
 The same number is already needed elsewhere: `docs/generator.md`
-§ Open, "Fan is a linear staircase", wants fan generalised to
-`amount × f(strip − centre)` with the centre allowed outside the five
+§ Open, "Fan is a linear staircase", wants fan generalized to
+`amount × f(strip − center)` with the center allowed outside the five
 strips, so that chevron and diagonal become one family. One parameter
 serves both.
 
@@ -318,7 +318,7 @@ document wanted from "a blackout reachable blind" and never solved.
 
 ### What the keypad actually is
 
-**Ten keys: 1–9 for patches, 0 for blackout.** The two unlabelled black
+**Ten keys: 1–9 for patches, 0 for blackout.** The two unlabeled black
 inlays flanking 0 do not press.
 
 **Two keys at once do not read as nothing.** Each key shorts the common
@@ -360,7 +360,7 @@ constraint rather than a starting point.
 **Aim each one at the wall between two strips, not at a strip.** That is
 what "aim them off the strips" becomes for a floor fixture — the strips
 stay against dark wall, so nothing collapses the contrast of the
-graphic, and the pool lands in a gap that is metres wide.
+graphic, and the pool lands in a gap that is meters wide.
 
 ### A PAR is a position, not a second machine
 
@@ -372,7 +372,7 @@ selects them. There is no wash page and no second saved thing.
 
 That splits along the two layers the generator already has:
 
-- **Most of the colour layer is what a one-pixel fixture can render.**
+- **Most of the color layer is what a one-pixel fixture can render.**
   Sampled at each PAR's position, so the four of them differ from each
   other and from the strips instead of being four copies of one hue. The
   wander and a slide measured across the strips both reach a PAR; a ruler
@@ -401,7 +401,7 @@ not a second look.
 
 **Whether they match the strips or contrast against them is per-patch,
 and it lives on the faders.** Each fader's far end already covers the
-whole parameter set, so pushing Colour hot can take the PARs from
+whole parameter set, so pushing Color hot can take the PARs from
 matching the strips to sitting a half turn off them, as one gesture, with
 no switch and no new control. What it costs is that the relationship
 cannot be changed without also moving energy — consistent with the
@@ -411,7 +411,7 @@ change.
 It also retires one of the five anti-overpowering rules in
 `docs/visual-design.md` as a *rule*: washes owning the bottom of the
 energy range and strips the top becomes one shape among others that a far
-end can be dialled to. That file already marks its control statements
+end can be dialed to. That file already marks its control statements
 provisional.
 
 ### On the pad: nine positions, not two zones
@@ -432,13 +432,13 @@ window's X axis runs over nine alternating positions rather than five.
   as a separate thing blinking in turn. Settle by looking; see `TODO.md`.
 
 **Above some travel speed the PARs stop tracking position and hold the
-patch's colour.** They carry the movement while it reads and fall back to
-being the colour layer when it does not, which degrades into something
+patch's color.** They carry the movement while it reads and fall back to
+being the color layer when it does not, which degrades into something
 good rather than into a stutter.
 
 The speed is now measured: a BCC145 stops returning to black below about
 25 ms, and does not lag at any rate. So the comparison is on **how long
-the window dwells on one position** — under 25 ms, hold the colour. That
+the window dwells on one position** — under 25 ms, hold the color. That
 is tempo-independent, which is what it has to be. It works out at a
 window crossing all nine positions in under about half a beat at 120 BPM,
 which is faster than a sweep any song has wanted so far. See
@@ -454,10 +454,10 @@ which is faster than a sweep any song has wanted so far. See
   energy surface, which would make it a global mode changing what every
   patch means.
 - **Splitting the pad vertically** — strips above, PARs below, both at
-  the centre. Three zones on a continuous axis is the same mistake as the
+  the center. Three zones on a continuous axis is the same mistake as the
   old five-way strip selection, one axis over; it takes Y away from
   scrubbing the transition; and it collides with X addressing the PARs by
-  position, since a window centred on a PAR with the thumb in the strip
+  position, since a window centered on a PAR with the thumb in the strip
   half is two contradictory instructions.
 
 ### Switches belong to the patch — 2026-09-22
@@ -472,7 +472,7 @@ never settled is *when* it should change instead, and "at the halfway
 point of the slider" was an arbitrary answer nobody had argued for.
 
 **The touchpad settles it.** Its window gives each strip its own share —
-how far *that strip* has travelled toward the destination — so there is no
+how far *that strip* has traveled toward the destination — so there is no
 single position to compare against a halfway mark. A switch keyed on
 morph position would flip strip by strip as the window slid across, which
 is the stepping the window exists to remove, and it would need per-strip
@@ -555,8 +555,8 @@ reverse the odd strips where they stand rather than mirroring them.
 - **Cut or morph on a patch change.** Both, from one mechanism, chosen by
   the gesture rather than by a setting.
 - **"Return to previous" as a keypad gesture.** The claim that the decode
-  carried a spare centre-key combo for it was an inherited comment, not a
-  fact; there is no centre key. Re-pressing the patch you came from does
+  carried a spare center-key combo for it was an inherited comment, not a
+  fact; there is no center key. Re-pressing the patch you came from does
   the same job, and if the gesture is ever wanted it belongs on the foot
   controller, which is where it lived historically.
 
@@ -566,7 +566,7 @@ Every question gets sorted, the moment it appears, into one of two piles:
 
 - **Settle by argument** — it follows from the purpose or the
   constraints, so reasoning can close it.
-- **Settle by looking** — it is a judgement about how something reads on
+- **Settle by looking** — it is a judgment about how something reads on
   the wall, in a room, with music playing.
 
 Questions in the second pile get **written down with the test that would

@@ -12,7 +12,7 @@ static teensydmx::Sender dmx{Serial4};
 struct Fixture {
     uint16_t address;
     bool hasWhite;
-    uint8_t trim[4];   // R, G, B, W colour balance — 255 is unity
+    uint8_t trim[4];   // R, G, B, W color balance — 255 is unity
     uint8_t master;    // scales the dimmer; a PAR at full dwarfs the strips
 };
 
@@ -44,7 +44,7 @@ void begin() {
 }
 
 void tick() {
-    // Colour is converted at full value and brightness is carried by the
+    // Color is converted at full value and brightness is carried by the
     // fixture's own dimmer, so the emitters stay near full scale where
     // they have the most resolution. Scaling RGBW down instead — the only
     // option the 4-channel personality offers — bands on slow fades at
@@ -58,7 +58,7 @@ void tick() {
     hsv2rgb_rainbow(hsv, rgb);
 
     // Pull the common component out into the white channel: an RGBW
-    // fixture mixing white from its colour emitters is dimmer than its
+    // fixture mixing white from its color emitters is dimmer than its
     // white one and usually tinted.
     const uint8_t common = min(rgb.r, min(rgb.g, rgb.b));
 
@@ -73,7 +73,7 @@ void tick() {
             scale8(rgb.b - white, fixture.trim[2]),
             scale8(white,         fixture.trim[3]),
             // Macro above 50 starts an auto sequence that overrides
-            // colour entirely, so it and its speed channel stay at zero.
+            // color entirely, so it and its speed channel stay at zero.
             0,
             0,
         };

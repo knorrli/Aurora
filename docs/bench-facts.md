@@ -96,18 +96,18 @@ position from elapsed time glide through untouched.
 
 ## DMX
 
-- **The Grove wire colour is not what you would guess.** Teensy pin 17
+- **The Grove wire color is not what you would guess.** Teensy pin 17
   goes to **white / `TXD`**, not yellow. Proven end to end against a
   BCC145. Re-testable with `bench/dmx_bringup/`.
 - **8-channel mode verified** 2026-09-09 with one fixture at `A001`: an
   orange held its shade down to 5 % dimmer, which 4-channel mode cannot
   do, since its only way to dim is to scale RGBW down.
 - **The macro channel at +6 must stay below 50** or the fixture starts
-  an auto sequence that overrides colour entirely.
+  an auto sequence that overrides color entirely.
 - Channel maps for both personalities are in `docs/wiring.md` § "Fixture
   profile — BeamZ BCC145", confirmed with `bench/dmx_channel_map/`.
 - **The washes do not follow the trigger flash.** Observed 2026-09-09:
-  `dmx_out::tick()` reads the preset's base colour while the trigger
+  `dmx_out::tick()` reads the preset's base color while the trigger
   renders from its own, so a kick-driven flash fires on the strips while
   the PARs hold steady.
 
@@ -141,7 +141,7 @@ preset does this.
 ordering bug made it render a full beat ahead and snap back every gate
 frame; computing the gate before `render()` fixed it. Sub-pixel edge
 rendering demonstrably works — shown beside Sweep on adjacent strips,
-Bars read as visibly smoother while travelling more than twice as fast.
+Bars read as visibly smoother while traveling more than twice as fast.
 
 Whether the glide is smooth enough *at real viewing distance* is
 untested. A bench flatters it.
@@ -149,10 +149,10 @@ untested. A bench flatters it.
 ## Known defect: Glitch's white pixels ignore the V fader
 
 Found 2026-09-09, unfixed. Glitch's white pixels are a flat `CRGB::White`
-while its coloured pixels are `CHSV(hue, sat, value)`, and
+while its colored pixels are `CHSV(hue, sat, value)`, and
 `FastLED.setBrightness()` is pinned at `MAX_BRIGHTNESS` and never follows
 the fader. At a fifth of full V the whites are already about twenty times
-the coloured pixels and the preset collapses into white noise.
+the colored pixels and the preset collapses into white noise.
 
 The documented 30 % white share is therefore only true at full V, which
 is why that constant has never been judgeable.
@@ -208,12 +208,12 @@ right and the landing is arbitrary, so the pulse is in time but not on
 time, and a deep slow swell peaks wherever it happens to. Anchoring the
 phase to the bar is the fix; a retrigger division (every beat, every
 two, every four) is the same fix with a control on it. Worth watching
-for while dialling patches in, since observing it costs nothing and
+for while dialing patches in, since observing it costs nothing and
 turns a suspicion into a measurement.
 
 ## Point-sampling a pattern aliases; averaging it does not
 
-The generator originally read one value at each pixel's centre. Once a
+The generator originally read one value at each pixel's center. Once a
 repeating shape got down to a pixel or two across, it strobed as it moved
 instead of fading out — the classic result of sampling detail finer than
 the grid can carry.
@@ -223,22 +223,22 @@ Detail finer than the strip can resolve now washes out smoothly into an
 even glow, which is the honest thing for it to do. The cost is four shape
 evaluations per pixel — 900 per frame — which is nothing on this part.
 
-## Converting a colour at low brightness collapses its hue
+## Converting a color at low brightness collapses its hue
 
 A dim yellow rendered as dim red. The cause is handing a low value
 straight to `CHSV`: the conversion computes each channel at that value and
-one truncates to zero before its neighbour does, so the ratio between them
+one truncates to zero before its neighbor does, so the ratio between them
 breaks and the hue moves.
 
 Converting at full brightness and scaling the resulting RGB with
 `nscale8_video` keeps the ratio, and the video floor keeps a non-zero
 channel from vanishing. The perceptual dimming curve is unaffected.
 
-Worth knowing anywhere colour is scaled, not just in the generator.
+Worth knowing anywhere color is scaled, not just in the generator.
 
 ## Brightness reads far weaker than saturation, and needs an edge either way
 
-Observed 2026-09-19, sweeping a colour field over a full still fill.
+Observed 2026-09-19, sweeping a color field over a full still fill.
 
 **The same numeric depth on brightness and on saturation are nowhere near
 the same change.** A field spanning 255 down to 135 — a real halving of
@@ -247,7 +247,7 @@ took a saturated red to a pale rose and read immediately. Halving
 luminance is roughly a quarter less *perceived* brightness, and the
 change was spread as a smooth gradient with no boundary anywhere; a
 saturation shift of the same size crosses what reads as a change of
-colour, which the eye is enormously more sensitive to.
+color, which the eye is enormously more sensitive to.
 
 **And a smooth gradient of brightness reads as almost nothing whatever
 its depth.** A field running from full down to 2 % — a 50:1 range — was
@@ -259,13 +259,13 @@ ramp with no edge in it has nothing to detect.
 This is the same finding as the pulse needing a shape control, one level
 up: no amount of depth on a sine produces a boundary.
 
-**Hue depth at full destroys the base colour.** A swing of +-128 is the
+**Hue depth at full destroys the base color.** A swing of +-128 is the
 whole wheel, so the hue fader stops meaning anything and the wall becomes
-a spectrum rather than one colour with depth in it. Usable settings
+a spectrum rather than one color with depth in it. Usable settings
 looked to be roughly a fifth to a half of that. Not a measurement, but
 consistent across several sittings.
 
-## How far a pixel can be darkened before its colour jitters
+## How far a pixel can be darkened before its color jitters
 
 Measured 2026-09-19, extending the hue-collapse finding below.
 
@@ -273,11 +273,11 @@ Converting at full brightness and scaling the RGB is necessary but not
 sufficient. At very low output the eight linear bits run out: near the
 bottom one step is a third of the light, and the three channels cross
 their steps at different moments. A pixel whose **hue is also moving**
-therefore lurches between colours instead of sliding.
+therefore lurches between colors instead of sliding.
 
 What was observed:
 
-- **A single-channel colour is immune.** Pure red at full saturation is
+- **A single-channel color is immune.** Pure red at full saturation is
   RGB (255, 0, 0); scaled it stays (N, 0, 0), and one channel can only
   step in brightness. No jitter at any depth. This makes red a useless
   test case for the problem.
@@ -292,7 +292,7 @@ darkening alone. A floor a little above zero plus a moderate hue swing
 stays inside it.
 
 **The knock-on is bigger than the knob.** These strips have a minimum
-usable brightness below which anything quantises this way, which lands on
+usable brightness below which anything quantizes this way, which lands on
 any proposal to express intensity by scaling brightness: a dim wall is a
 wall in the region that falls apart. Untested at rig scale.
 
@@ -315,7 +315,7 @@ them, and blending pulls any result toward the middle, so the output
 clusters around 128 and the ends never arrive. Against stacked sines over
 the same sweep, which fill the range with a gain of 1.04, noise read as
 "a less intense version" with the extreme hues missing. Doubling again
-about the centre gives it comparable authority.
+about the center gives it comparable authority.
 
 **It returns its midpoint exactly on the integer lattice**, and FastLED's
 cells are 256 units wide. Five strips stepped one whole cell apart
@@ -328,14 +328,14 @@ cells fixes it.
 
 Judged 2026-09-19, after the sine path was fixed to be fairly comparable.
 
-A control crossfading a colour field between stacked sines and Perlin
+A control crossfading a color field between stacked sines and Perlin
 noise produced no perceptible change of character — reported as "I could
 probably achieve the very same effect by just changing the base-hue
 slider". Regular versus irregular needs enough repeats across a strip to
 read as regular, and 45 pixels does not supply them at any grain coarse
 enough to look like anything.
 
-**The control was cut on this measurement**, and the redesigned colour
+**The control was cut on this measurement**, and the redesigned color
 layer never grew a noise path. Where it needs variation that does not
 repeat, it beats two sines against each other instead.
 
@@ -347,16 +347,16 @@ A field summing a wave along the strip with a wave across the strips is
 separable: the along term is identical on every strip, so it alone
 decides where the features are, and the across term only shifts their
 level. The wall shows the same blobs at the same pixels on all five
-strips, differing only in colour — which is what was observed, and what
+strips, differing only in color — which is what was observed, and what
 the hand-written Plasma had always done.
 
 Making the across offset **displace the field along the strip** rather
 than shift its level puts the features at different pixels per strip.
 Fanning them from the middle strip rather than from the first also
 matters: from the first, strip 1 never moves and the last does all the
-travelling, which reads as a one-sided ramp rather than the wall opening.
+traveling, which reads as a one-sided ramp rather than the wall opening.
 
-The first half outlived the machine it was measured on: the colour
+The first half outlived the machine it was measured on: the color
 layer's wander adds its across term inside the sine rather than to its
 output.
 
@@ -364,8 +364,8 @@ output.
 worth knowing before applying it anywhere else. Shifting where the zero
 sits only relabels which strip sees which part of the pattern, so a
 wander that is drifting sweeps the same family of walls either way. What
-anchoring at the middle strip actually buys is the behaviour of the
-control that sets feature size: the wall opens outward from the centre
+anchoring at the middle strip actually buys is the behavior of the
+control that sets feature size: the wall opens outward from the center
 instead of hinging on strip 1. Visible at slow rates, invisible at fast
 ones. It was the static fan this was measured on that made it a fault.
 
@@ -382,7 +382,7 @@ lengths of 200, 100, 50, 25 and 12 ms, each run for three seconds.
   would have had to lag by more than that to look late. It did not.
 - **Clean to 25 ms**, perhaps marginally dimmer there.
 - **Broken at 12 ms**: the fixture no longer returns to black between
-  flashes, showing a continuous glow instead. The colour also fell from
+  flashes, showing a continuous glow instead. The color also fell from
   orange to red, which is the green emitter — at 85 of 255 — dropping
   below the fixture's resolution as the effective level collapses.
 
@@ -400,39 +400,39 @@ any rhythm a band plays. The limit only bites on travel — nine positions
 at 25 ms each puts a window crossing the whole wall in about 225 ms, or
 just under half a beat at 120. Faster than that and the pools smear.
 
-## The colour layer's flat state is flat
+## The color layer's flat state is flat
 
 Confirmed on the wall 2026-09-21, the first time any of the redesigned
-colour layer was seen on hardware.
+color layer was seen on hardware.
 
-With every colour control centred, all five strips show exactly the
-colour on the three faders — no tint, no drift, nothing creeping in from
+With every color control centered, all five strips show exactly the
+color on the three faders — no tint, no drift, nothing creeping in from
 the placed field, the wander or the light level.
 
 That is the state the whole layer is measured from, since every control
-is a push away from it, and it is what makes the dialling order work: set
-the colour flat, then open one push and watch it depart from something
+is a push away from it, and it is what makes the dialing order work: set
+the color flat, then open one push and watch it depart from something
 you chose. The previous field could not do this. It never reached its own
-floor, so a colour anchored there appeared nowhere on the wall — asked
+floor, so a color anchored there appeared nowhere on the wall — asked
 for orange, the wall came back green through cyan to blue.
 
 ## The screen and the wall agree, give or take the diffuser
 
-Judged 2026-09-21, playing the colour looks side by side with
+Judged 2026-09-21, playing the color looks side by side with
 `tools/preview.js` open next to the strips.
 
 **The preview matches the wall almost exactly.** One consistent
 difference: the strips read slightly whiter than the screen, because they
 are behind a diffuser and the screen is not. Judged small enough to leave
-alone rather than compensate for — so when dialling on screen, expect the
+alone rather than compensate for — so when dialing on screen, expect the
 wall to come back a touch paler than what you set.
 
 This retires the question the preview was built under. It was trusted for
-geometry and dialling and explicitly *not* trusted for colour, on the
+geometry and dialing and explicitly *not* trusted for color, on the
 strength of three entries in this file where a screen would have got
-colour wrong. Those three were measured at the extremes of the old
+color wrong. Those three were measured at the extremes of the old
 field's controls; at the settings a look actually sits at, the screen is
-good enough to design colour on.
+good enough to design color on.
 
 What that does not license is settling a question at the extremes on
 screen — the dark floor and red's resolution are still hardware facts,
@@ -448,7 +448,7 @@ the preview had already agreed:
   strip's ends; alternate sends the 2nd and 4th columns from the left the
   other way. So CC 45 and 46 land, and the packed CC 79 is gone.
 - **Bounce is per cell.** Four shapes each turn inside their own quarter.
-  Nothing slides through into a neighbour and nothing re-enters at the
+  Nothing slides through into a neighbor and nothing re-enters at the
   far end, which is what it did while the journey was measured along the
   whole strip.
 - **Fan staggers the swing.** With fan up the five strips no longer turn
@@ -462,7 +462,7 @@ the preview had already agreed:
   longer changes sides in one frame.
 
 **Judged the same evening, and kept.** Per-cell bounce and the folding
-tail are new behaviour rather than repairs, so working and wanted were
+tail are new behavior rather than repairs, so working and wanted were
 separate questions; both were answered on the wall. Per-cell bounce in
 particular was read as opening looks rather than repairing one — a row of
 blocks each turning in its own compartment is a shape the machine could

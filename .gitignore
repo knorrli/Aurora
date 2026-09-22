@@ -5,7 +5,7 @@
 .vscode/
 *.pyc
 
-# Arduino CLI / IDE build artefacts
+# Arduino CLI / IDE build artifacts
 build/
 *.hex
 *.elf

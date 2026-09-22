@@ -7,7 +7,7 @@
 // GENERATOR — one parametric pattern, driven entirely over CC.
 //
 // An experiment in replacing the fixed roster with a continuous space:
-// a shape, repeated `count` times along each strip, optionally travelling,
+// a shape, repeated `count` times along each strip, optionally traveling,
 // with the five strips optionally run out of step with each other. Most of
 // the roster sits somewhere inside it — Sweep is a hard-edged shape at
 // count 1, Rain is the same with the strips fanned, Starfield is many
@@ -32,7 +32,7 @@
 #define GEN_PULSE_RATE_OCTAVES 6.0f
 
 // Each pixel averages this many samples across its own width. Point-sampling
-// at the pixel centre aliases once a cell is only a pixel or two across: the
+// at the pixel center aliases once a cell is only a pixel or two across: the
 // shape strobes as it moves instead of fading out. Averaging makes detail
 // finer than the strip can resolve wash out smoothly, which is what it
 // should do.
@@ -88,33 +88,33 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 }
 
 // ---------------------------------------------------------------------------
-// The colour layer
+// The color layer
 //
-// A colour is hue, whiteness and darkness. Everything else is a push on those
+// A color is hue, whiteness and darkness. Everything else is a push on those
 // three, and the pushes add. Three sources push:
 //
 //   the placed field  something aimed — a slide across a ruler, or regions
 //                     sitting on it
 //   the wander        the wall never quite the same in two places, and where
 //                     it differs keeps moving
-//   the light level   colour read off how lit the shape branch left a pixel
+//   the light level   color read off how lit the shape branch left a pixel
 //
 // The layer reads the SHAPE branch's light level and never its own. Feed its
-// own darkness back in and colour depends on colour: pull the wall down for a
+// own darkness back in and color depends on color: pull the wall down for a
 // quiet verse and the hue slides with it.
 //
-// Designed and dialled in tools/preview.js before any of it was flashed; the
+// Designed and dialed in tools/preview.js before any of it was flashed; the
 // numbers here and there are meant to stay identical.
 // ---------------------------------------------------------------------------
 
 // How dark a full push pulls a pixel, as a fraction of what it would
 // otherwise be. It stops short of zero because a WS2812 has eight linear bits
 // and no gamma: at the bottom one step is a third of the light, so brightness
-// quantises into lurches and pixels crossing to zero pop out entirely.
+// quantizes into lurches and pixels crossing to zero pop out entirely.
 #define DARK_FLOOR 0.02f
 
 // Half the wheel each way. Past about half, the hue fader stops meaning
-// anything and the wall becomes a spectrum rather than one colour with depth
+// anything and the wall becomes a spectrum rather than one color with depth
 // in it; the bench put usable settings at a fifth to a half of the wheel.
 #define PLACED_MAX_HUE 128.0f
 #define WANDER_MAX_HUE 128.0f
@@ -127,12 +127,12 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
 #define PLACED_MAX_CELLS_PER_BEAT 1.0f
 
 // Two terms whose rates sit at the golden ratio, so they never come back into
-// step and the wall never repeats. Deliberately not a control: dialling how
+// step and the wall never repeats. Deliberately not a control: dialing how
 // far apart the two speeds are is operating the mechanism rather than the
 // look.
 #define GOLD 0.6180339887f
 
-enum ColourRuler : uint8_t {
+enum ColorRuler : uint8_t {
   RULER_WALL = 0,   // which of the five strips a pixel is on
   RULER_STRIP = 1,  // how far along its strip a pixel is
   RULER_SHAPE = 2,  // leading tip of a shape through to the end of its tail
@@ -179,15 +179,15 @@ static bool litActive() {
       || fabsf(litDarkReach) > 0.001f;
 }
 
-// The base colour sits at zero, so two terms that rarely reach their ends cost
-// nothing: a sum huddled around the middle is the wall sitting at the colour
-// that was dialled. There is no floor here for a colour to fall off.
+// The base color sits at zero, so two terms that rarely reach their ends cost
+// nothing: a sum huddled around the middle is the wall sitting at the color
+// that was dialed. There is no floor here for a color to fall off.
 static float wanderAt(uint8_t stripIndex, float along01, float t) {
   // Measured from the middle strip, not the first. Fanned from the first,
-  // strip one never moves and the last does all the travelling, which reads as
+  // strip one never moves and the last does all the traveling, which reads as
   // a one-sided ramp rather than the wall opening — see docs/bench-facts.md
   // § "A field built as along-plus-across".
-  const float acrossFromCentre =
+  const float acrossFromCenter =
       ((float)stripIndex - (float)(NUMBER_OF_STRIPS - 1) * 0.5f)
       / (float)(NUMBER_OF_STRIPS - 1);
   const float cyclesAlong = 0.12f * powf(180.0f, wanderScale);
@@ -195,13 +195,13 @@ static float wanderAt(uint8_t stripIndex, float along01, float t) {
   if (cyclesAcross > 1.4f) cyclesAcross = 1.4f;
 
   const float a = sinf(2.0f * (float)PI
-      * (cyclesAlong * along01 + cyclesAcross * acrossFromCentre + t));
+      * (cyclesAlong * along01 + cyclesAcross * acrossFromCenter + t));
   const float b = sinf(2.0f * (float)PI
-      * (cyclesAlong * GOLD * along01 - cyclesAcross * 1.37f * acrossFromCentre + t * GOLD));
+      * (cyclesAlong * GOLD * along01 - cyclesAcross * 1.37f * acrossFromCenter + t * GOLD));
   return (a + b) * 0.5f;
 }
 
-// A slide is monotone with the base colour at the ruler's centre, so the reach
+// A slide is monotone with the base color at the ruler's center, so the reach
 // is how far ONE end departs and the two ends land twice that apart. A region
 // is a bump — base, departure, back to base — built from the shape branch's
 // own core and fades, which is what makes count, width and edge mean the same
@@ -212,7 +212,7 @@ static float placedAt(float u, float drift) {
   return shapeAt(fract(cell) - 0.5f, placedWidth, placedEdge, 0.0f);
 }
 
-// Pushes arrive summed and normalised. Darkening rides a geometric taper
+// Pushes arrive summed and normalized. Darkening rides a geometric taper
 // because it is a ratio of light and the eye reads it as one; mapped linearly,
 // nearly the whole travel was imperceptible and everything worth having sat in
 // the last few steps. Brightening is a plain ride to full and only has room
@@ -235,7 +235,7 @@ static CHSV applyPushes(CHSV base, float hue, float white, float dark) {
               (uint8_t)value);
 }
 
-// `offset` is the signed distance from the core's centre, in cells, positive
+// `offset` is the signed distance from the core's center, in cells, positive
 // on the trailing side. Which shape a pixel is measured against is the
 // caller's business, because that is a question about the strip's ends
 // rather than about the shape.
@@ -243,7 +243,7 @@ static CHSV applyPushes(CHSV base, float hue, float white, float dark) {
 // `width` is the solid core. `edge` and `tail` both reach outward from it
 // into the gap rather than eating into it, so softening a shape never makes
 // it smaller. Both are scaled by the gap that is actually available, which
-// means edge at full always closes the gaps to the neighbouring shapes — the
+// means edge at full always closes the gaps to the neighboring shapes — the
 // two fades meet at zero and never have to be summed.
 // The core and its edge fade are geometry: they sit around the core wherever
 // it stands, the same on both sides.
@@ -261,7 +261,7 @@ static float coreAt(float offset, float width, float edge) {
   return 0.0f;
 }
 
-// The tail is not geometry. It is how far the core has travelled since it was
+// The tail is not geometry. It is how far the core has traveled since it was
 // last at this point, so `behind` is a path length and never a straight line.
 static float tailAt(float behind, float width, float tail) {
   if (tail <= 0.0001f) return 0.0f;
@@ -302,7 +302,7 @@ static inline float journeyIn(float posCells, bool mirrored) {
 // turn instead of moving it.
 //
 // Points inside half a core width of the cell's ends are never reached by the
-// centre, only swept by the body at the turn, so they measure from the turn
+// center, only swept by the body at the turn, so they measure from the turn
 // and add the straight remainder.
 static float trailBehind(float journey, float phase, float halfCore,
                          float swingSpan) {
@@ -327,7 +327,7 @@ static float rulerAt(uint8_t stripIndex, uint8_t pixelIndex, float shapeU) {
   return (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
 }
 
-static CHSV colourAt(CHSV base, uint8_t stripIndex, uint8_t pixelIndex,
+static CHSV colorAt(CHSV base, uint8_t stripIndex, uint8_t pixelIndex,
                      float shapeU, float profile, float drift, float wanderT,
                      bool placedOn, bool wanderOn) {
   const float along01 = (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
@@ -345,9 +345,9 @@ static CHSV colourAt(CHSV base, uint8_t stripIndex, uint8_t pixelIndex,
 // are the two standing either side of it. Under bounce the strip is a line and
 // an image off its end is not there to be seen — which is what stops a fade
 // leaving one end of the strip and arriving at the other.
-static bool nearestOffset(float posCells, float coreCentre, float stripDirection,
+static bool nearestOffset(float posCells, float coreCenter, float stripDirection,
                           bool bounce, float countCells, float &out) {
-  const float firstImage = coreCentre + floorf(posCells - coreCentre);
+  const float firstImage = coreCenter + floorf(posCells - coreCenter);
   bool lit = false;
   for (uint8_t image = 0; image < 2; image++) {
     const float imagePos = firstImage + (float)image;
@@ -368,7 +368,7 @@ void Generator(CHSV color) {
 
   // Under bounce the core swings inside its own cell, turning where its own
   // edge meets the cell's boundary the way a ball meets a wall, so nothing
-  // ever crosses into a neighbouring cell. Taking the rate from the cell is
+  // ever crosses into a neighboring cell. Taking the rate from the cell is
   // what keeps speed an absolute distance: adding shapes shrinks the cell and
   // quickens the turn, and the core still crosses the wall at the pixels per
   // beat on the dial. At full width the swing closes to nothing, which is
@@ -378,7 +378,7 @@ void Generator(CHSV color) {
   const bool bouncing = genBounce && fabsf(genSpeedPixels) > 0.0001f;
 
   float travelCycles = 0.0f;
-  float centreCells = 0.5f;
+  float centerCells = 0.5f;
   const float direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
   if (bouncing) {
     const float rate = (swingSpan > 0.0001f)
@@ -388,23 +388,23 @@ void Generator(CHSV color) {
   } else {
     // Half a cell, so a still shape sits in the middle of its cell rather than
     // straddling the boundary — which at count 1 is the strip's two ends.
-    centreCells = 0.5f + trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
+    centerCells = 0.5f + trackedPhase(travelPhase, beats, genSpeedPixels / cellLength);
   }
 
   const float pulse = trackedPhase(pulsePhase, beats, 1.0f / genPulseBeats);
 
   const bool placedOn = placedActive();
   const bool wanderOn = wanderActive();
-  const bool colourFlat = !placedOn && !wanderOn && !litActive();
+  const bool colorFlat = !placedOn && !wanderOn && !litActive();
 
-  // Both colour rates go through the tracker for the same reason travel and
+  // Both color rates go through the tracker for the same reason travel and
   // the pulse do: beats only grows, so a small change of rate multiplied by a
   // large beat count is a large jump.
   const float wanderT = trackedPhase(wanderPhase, beats, wanderCycles);
   const float placedDrift = trackedPhase(placedPhase, beats, placedCells);
 
   // The two sides of a shape are not the same length — a tail reaches much
-  // further than an edge fade — so they are normalised separately. Halfway
+  // further than an edge fade — so they are normalized separately. Halfway
   // between the two tips is not the core, and a region asked to sit at the
   // middle of a shape means the core every time.
   const float shapeGap = 1.0f - genWidth;
@@ -443,7 +443,7 @@ void Generator(CHSV color) {
     // instead: an image standing past the strip's end is clipped away by
     // nearestOffset, so displacing it there shortens a strip rather than
     // staggering it.
-    float coreCentre;
+    float coreCenter;
     float stripDirection;
     float triangle = 0.0f;
     if (bouncing) {
@@ -451,12 +451,12 @@ void Generator(CHSV color) {
       const bool rising = triangle < 0.5f;
       const float swing = rising ? (triangle * 2.0f) : ((1.0f - triangle) * 2.0f);
       const float place = halfCore + swing * swingSpan;
-      coreCentre = mirrored ? (1.0f - place) : place;
+      coreCenter = mirrored ? (1.0f - place) : place;
       stripDirection = rising ? 1.0f : -1.0f;
       if (mirrored) stripDirection = -stripDirection;
     } else {
-      const float centreHere = mirrored ? (countCells - centreCells) : centreCells;
-      coreCentre = fract(centreHere + stripPhase);
+      const float centerHere = mirrored ? (countCells - centerCells) : centerCells;
+      coreCenter = fract(centerHere + stripPhase);
       stripDirection = mirrored ? -direction : direction;
     }
 
@@ -494,7 +494,7 @@ void Generator(CHSV color) {
           const float journey = journeyIn(posCells, mirrored);
           float level = 0.0f;
           float nearest = 0.0f;
-          if (nearestOffset(posCells, coreCentre, stripDirection, true, countCells, nearest)) {
+          if (nearestOffset(posCells, coreCenter, stripDirection, true, countCells, nearest)) {
             level = coreAt(nearest, width, genEdge);
           }
           const float trailing = tailAt(
@@ -502,7 +502,7 @@ void Generator(CHSV color) {
           accumulated += (trailing > level) ? trailing : level;
         } else {
           float nearest = 0.0f;
-          if (nearestOffset(posCells, coreCentre, stripDirection, genBounce, countCells, nearest)) {
+          if (nearestOffset(posCells, coreCenter, stripDirection, genBounce, countCells, nearest)) {
             accumulated += shapeAt(nearest, width, genEdge, genTail);
           }
         }
@@ -514,31 +514,31 @@ void Generator(CHSV color) {
 
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
       // where it was set: converting at a low value lets a channel truncate to
-      // zero before its neighbour, which is what turns a dim yellow red.
+      // zero before its neighbor, which is what turns a dim yellow red.
       CHSV tint = color;
-      if (!colourFlat) {
-        const float centrePos = ((float)pixelIndex + 0.5f) / cellLength + jitterOffset;
-        float centreOffset = 0.0f;
-        const bool onShape = nearestOffset(centrePos, coreCentre, stripDirection,
-                                           genBounce, countCells, centreOffset);
+      if (!colorFlat) {
+        const float centerPos = ((float)pixelIndex + 0.5f) / cellLength + jitterOffset;
+        float centerOffset = 0.0f;
+        const bool onShape = nearestOffset(centerPos, coreCenter, stripDirection,
+                                           genBounce, countCells, centerOffset);
         float shapeU = 0.5f;
         if (bouncing) {
           // The ruler's trailing half has to be the same measure the tail is
-          // drawn from, or colour along a tail paints where the tail is not.
+          // drawn from, or color along a tail paints where the tail is not.
           const float behind =
-              trailBehind(journeyIn(centrePos, mirrored), triangle, halfCore, swingSpan);
+              trailBehind(journeyIn(centerPos, mirrored), triangle, halfCore, swingSpan);
           if (behind < shapeTrail && shapeTrail > 0.0001f) {
             shapeU = 0.5f + 0.5f * behind / shapeTrail;
           } else if (onShape && shapeLead > 0.0001f) {
-            shapeU = 0.5f - 0.5f * fabsf(centreOffset) / shapeLead;
+            shapeU = 0.5f - 0.5f * fabsf(centerOffset) / shapeLead;
           }
         } else if (onShape) {
-          const float reach = (centreOffset < 0.0f) ? shapeLead : shapeTrail;
-          if (reach > 0.0001f) shapeU = 0.5f + 0.5f * centreOffset / reach;
+          const float reach = (centerOffset < 0.0f) ? shapeLead : shapeTrail;
+          if (reach > 0.0001f) shapeU = 0.5f + 0.5f * centerOffset / reach;
         }
         if (shapeU < 0.0f) shapeU = 0.0f;
         else if (shapeU > 1.0f) shapeU = 1.0f;
-        tint = colourAt(color, stripIndex, pixelIndex, shapeU, profile,
+        tint = colorAt(color, stripIndex, pixelIndex, shapeU, profile,
                         placedDrift, wanderT, placedOn, wanderOn);
       }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
@@ -574,16 +574,16 @@ void setGeneratorPulseRate(uint8_t value) {
 void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
 void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); }
 
-// Bipolar around 64: the centre has to be "no departure at all", because
-// these are what decide how far a push sits from the colour on the faders.
+// Bipolar around 64: the center has to be "no departure at all", because
+// these are what decide how far a push sits from the color on the faders.
 static inline float ccBipolar(uint8_t value) {
   return value < 64 ? ((float)value - 64.0f) / 64.0f
                     : ((float)value - 64.0f) / 63.0f;
 }
 
-void setColourRegion(uint8_t value) { placedIsRegion = aurora_cc_is_on(value); }
+void setColorRegion(uint8_t value) { placedIsRegion = aurora_cc_is_on(value); }
 
-void setColourRuler(uint8_t value) {
+void setColorRuler(uint8_t value) {
   const uint8_t ruler = aurora_cc_band3(value);
   placedRuler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 }
@@ -599,7 +599,7 @@ void setPlacedCount(uint8_t value) {
 }
 
 // Bipolar and squared like the shape branch's travel, for the same reason:
-// the slow end is where a colour that reads as depth rather than as an effect
+// the slow end is where a color that reads as depth rather than as an effect
 // actually lives.
 void setPlacedSpeed(uint8_t value) {
   const float x = ((float)value - 64.0f) / 63.0f;

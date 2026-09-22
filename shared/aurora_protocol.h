@@ -34,7 +34,7 @@
 //   1. Pick the next free slot in the right range.
 //   2. Add an enum entry AND a short comment describing what the message
 //      does.
-//   3. If it changes behaviour: update the matching doc under docs/.
+//   3. If it changes behavior: update the matching doc under docs/.
 //   4. Implement on both controller (emit) and brain (consume).
 //
 // ===========================================================================
@@ -112,7 +112,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // Layout:
 //      0 –   9 : AVOID (standard MIDI: bank select, modulation, etc.)
 //     10 –  19 : transport / meta control
-//     20 –  29 : colour — three faders plus the colour field
+//     20 –  29 : color — three faders plus the color field
 //     30 –  39 : touchpad / sculpt mode
 //     40 –  49 : mode flags & switches
 //     50 –  59 : per-preset parameter slots (interpretation is per preset)
@@ -120,7 +120,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     70 –  79 : generator shape parameters
 //           80 : generator pulse shape
 //     81 –  89 : RESERVED for band / song-specific automation
-//     90 –  99 : colour, second half (twenty controls will not fit in ten)
+//     90 –  99 : color, second half (twenty controls will not fit in ten)
 //    100 – 119 : RESERVED
 //    120 – 127 : AVOID (standard MIDI: channel mode messages)
 //
@@ -132,19 +132,19 @@ enum AuroraCC : uint8_t {
                                  // value is an AuroraTempoDivision index
     // 11–19 reserved (transport / meta)
 
-    // 20–29 — colour, first half. 20–22 are the three faders; 23–29 carry
+    // 20–29 — color, first half. 20–22 are the three faders; 23–29 carry
     // the placed field. The second half is at 90–99.
     //
-    // A colour is hue, whiteness and darkness. Everything below is a push on
+    // A color is hue, whiteness and darkness. Everything below is a push on
     // those three, measured from the faders, and the pushes add — so with
-    // every one of them centred the wall is exactly the colour on the faders.
-    // See P_Generator.cpp § "The colour layer".
-    CC_HUE                 = 20, // hue centre / H fader
+    // every one of them centered the wall is exactly the color on the faders.
+    // See P_Generator.cpp § "The color layer".
+    CC_HUE                 = 20, // hue center / H fader
     CC_SATURATION          = 21, // saturation / S fader
     CC_VALUE               = 22, // brightness / V fader
 
     // The placed field is something aimed: a slide running one way across a
-    // ruler with the faders' colour at its centre, or regions sitting on that
+    // ruler with the faders' color at its center, or regions sitting on that
     // ruler. Count, width and edge mean here exactly what they mean in the
     // shape block below.
     // 23 free — the primitive and the ruler moved to 47 and 48, where a
@@ -188,8 +188,8 @@ enum AuroraCC : uint8_t {
     // ruler, which is banded like CC_TOUCHPAD_STRIP_MODE above.
     CC_GEN_ALTERNATE       = 45, // odd strips run the journey backwards
     CC_GEN_BOUNCE          = 46, // turn at the cell's edge instead of wrapping
-    CC_COLOUR_REGION       = 47, // 0 = one slide across the ruler, 127 = regions
-    CC_COLOUR_RULER        = 48, // 0 = across the five strips, 64 = along a
+    CC_COLOR_REGION       = 47, // 0 = one slide across the ruler, 127 = regions
+    CC_COLOR_RULER        = 48, // 0 = across the five strips, 64 = along a
                                  // strip, 127 = within a shape
     // 49 reserved (mode flags)
 
@@ -239,17 +239,17 @@ enum AuroraCC : uint8_t {
 
     // 81–89 reserved (band / song-specific automation)
 
-    // 90–99 — colour, second half. Twenty controls will not fit in ten slots,
-    // so colour stays in two blocks; what makes this a half rather than an
+    // 90–99 — color, second half. Twenty controls will not fit in ten slots,
+    // so color stays in two blocks; what makes this a half rather than an
     // overflow is that the split falls between whole ideas. 23–29 is the
     // placed field, this is everything that is not aimed anywhere.
     CC_PLACED_SPEED        = 90, // bipolar: 64 is still, either side drifts
                                  // the regions along the ruler
 
-    // The wander: colour never quite the same in two places, with the
+    // The wander: color never quite the same in two places, with the
     // difference always moving. Two terms at the golden ratio, so it cannot
-    // come back into step and never repeats — built in rather than dialled,
-    // because dialling how far apart two speeds sit is operating the
+    // come back into step and never repeats — built in rather than dialed,
+    // because dialing how far apart two speeds sit is operating the
     // mechanism rather than the look.
     CC_WANDER_HUE          = 91, // bipolar: how far the hue wanders either side
     CC_WANDER_WHITE        = 92, // bipolar: how far whiteness wanders
@@ -258,7 +258,7 @@ enum AuroraCC : uint8_t {
     CC_WANDER_SCALE        = 95, // 0 = the whole wall moving as one, 127 =
                                  // individual pixels shimmering
 
-    // Colour read off how lit the shape branch left a pixel. The one source
+    // Color read off how lit the shape branch left a pixel. The one source
     // that reaches the pulse and jitter, since neither has a position for a
     // ruler to measure. Anchored at the dim end: the faders are what a fade
     // runs out to, and the core is the departure.
@@ -266,7 +266,7 @@ enum AuroraCC : uint8_t {
     CC_LIT_WHITE           = 97, // 0 = none, up = white at the core
     CC_LIT_DARK            = 98, // bipolar: 64 = none, down takes the core
                                  // toward dark and up toward full
-    // 99 reserved (colour)
+    // 99 reserved (color)
 
     // 100–119 reserved
 };
@@ -283,7 +283,7 @@ enum AuroraCC : uint8_t {
 //
 // QUARTER is 0 so that a controller which has not yet sent this CC, or
 // which sends 0 on connect, lands on the ordinary one-pulse-per-beat
-// behaviour rather than something exotic. The order here is therefore not
+// behavior rather than something exotic. The order here is therefore not
 // musical; the controller maps its rotary positions onto it.
 //
 // ---------------------------------------------------------------------------
@@ -331,11 +331,11 @@ static inline uint8_t aurora_cc_band3(uint8_t value) {
     return 2;
 }
 
-enum AuroraColourRuler : uint8_t {
-    COLOUR_RULER_WALL  = 0, // position is which of the five strips a pixel is on
-    COLOUR_RULER_STRIP = 1, // position is how far along its strip a pixel is
-    COLOUR_RULER_SHAPE = 2, // a shape's leading tip through to the end of its
-                            // tail, travelling with it
+enum AuroraColorRuler : uint8_t {
+    COLOR_RULER_WALL  = 0, // position is which of the five strips a pixel is on
+    COLOR_RULER_STRIP = 1, // position is how far along its strip a pixel is
+    COLOR_RULER_SHAPE = 2, // a shape's leading tip through to the end of its
+                            // tail, traveling with it
 };
 
 // ---------------------------------------------------------------------------

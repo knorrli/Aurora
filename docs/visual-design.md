@@ -16,11 +16,11 @@ settled part.
 > decided, and every pattern below still exists and still runs. But the
 > nine slots are no longer the only way to get at this material, and the
 > pattern pairs below turned out to be evidence for the generator rather
-> than a fact about how patterns have to be organised.
+> than a fact about how patterns have to be organized.
 
 ## The pattern roster
 
-Nine slots organised by intensity, each with a default and a variant:
+Nine slots organized by intensity, each with a default and a variant:
 
 | Row | Slot 1 | Slot 2 | Slot 3 |
 |---|---|---|---|
@@ -52,7 +52,7 @@ the nine pairs, not a crossfade between two renderers:
 | Pair | What the number physically changes |
 |---|---|
 | Fill → Starfield | Gaps open between lit pixels; twinkle depth rises from zero |
-| Breathe → Wave | How far the phase spreads along the strip. At zero the wall breathes in unison; wound up, the breath becomes a travelling wave |
+| Breathe → Wave | How far the phase spreads along the strip. At zero the wall breathes in unison; wound up, the breath becomes a traveling wave |
 | Plasma → Aurora | Mixes the two hue sources — stacked sines into Perlin noise |
 | Pulse → Bars | A crossfade. The one pair with nothing structural in common |
 | Sweep → Rain | How far the strips run out of step, and the tail fade with it. At zero, hard-edged blocks scrolling in lockstep; wound up, staggered comets |
@@ -93,10 +93,10 @@ harder rather than easier: the two ends differ in tail length (45 px vs
 no midpoint, so one of them would have to be used at both ends. Comet
 earns its slot on looks alone — whether the *pair* survives is open.
 
-## Palettes are shapes, not colours
+## Palettes are shapes, not colors
 
 > **None of this is built as a palette**, and most of it no longer needs
-> to be. The colour layer in `docs/generator.md` decides colour from where
+> to be. The color layer in `docs/generator.md` decides color from where
 > a pixel is *and* from how lit it is, which is the split these nine were
 > divided along — Ember, Deep and Two-pole are brightness-driven, Haze and
 > Banded positional. Both are now reachable, and reachable together. What
@@ -111,25 +111,25 @@ is everything hue cannot: how wide the spread is, what shape it travels,
 whether brightness and saturation move along with the hue, and whether
 it is a smooth gradient or hard steps.
 
-They are stored as **offsets from a centre** — hue offset, saturation and
-value per entry — rather than as absolute colours, so rotating one costs
+They are stored as **offsets from a center** — hue offset, saturation and
+value per entry — rather than as absolute colors, so rotating one costs
 nothing at sample time. A plain `CRGBPalette16` is therefore the wrong
 container.
 
-Names describe behaviour, not scenery. Calling one "Lava" would be a lie
+Names describe behavior, not scenery. Calling one "Lava" would be a lie
 the moment it is rotated to blue.
 
 | # | Name | What it does |
 |---|------|--------------|
 | 1 | **Flat** | No variation at all. Monochrome, as a palette something can commit to |
-| 2 | **Narrow** | About ±15° around the centre, full saturation, even brightness. One colour with depth. The everyday one |
+| 2 | **Narrow** | About ±15° around the center, full saturation, even brightness. One color with depth. The everyday one |
 | 3 | **Wide** | About ±60°. A real gradient, still one family — blue through purple into magenta, wherever it is placed |
-| 4 | **Two-pole** | The centre hue and its opposite, transitioning fast rather than blending through the muddy middle |
-| 5 | **Ember** | Hue barely moves; brightness and saturation do. Dark and deep at one end, bright and near-white at the other. Gives comet tails and rain trails real colour instead of just dimming |
+| 4 | **Two-pole** | The center hue and its opposite, transitioning fast rather than blending through the muddy middle |
+| 5 | **Ember** | Hue barely moves; brightness and saturation do. Dark and deep at one end, bright and near-white at the other. Gives comet tails and rain trails real color instead of just dimming |
 | 6 | **Haze** | Saturation falls away toward white while brightness stays up. Airy and pale — made for the ambient row |
 | 7 | **Deep** | Full saturation throughout, brightness falling to near-dark at one end. The opposite move to Ember |
 | 8 | **Banded** | Four hard steps instead of a smooth ramp. Reads as stripes and blocks — for Bars, chase and moving blocks, where a gradient turns to mush at speed |
-| 9 | **Spark** | Mostly the base colour with a small hot accent of the opposite hue. Pops and glints without becoming a rainbow |
+| 9 | **Spark** | Mostly the base color with a small hot accent of the opposite hue. Pops and glints without becoming a rainbow |
 
 Two rules, both chosen for simplicity and both easy to revisit:
 
@@ -138,14 +138,14 @@ Two rules, both chosen for simplicity and both easy to revisit:
   watch is that Ember and Deep lose their dark ends at low spread, which
   is either correct or annoying depending on how they read on the wall.
 - **All nine rotate with hue.** None are anchored. That is what makes
-  them shapes rather than colours; the cost is that Ember placed on blue
+  them shapes rather than colors; the cost is that Ember placed on blue
   is a cold thing that no longer reads as fire. Add an anchor flag only
   if one turns out to need it.
 
-At zero spread everything collapses to single-colour behaviour, so the
+At zero spread everything collapses to single-color behavior, so the
 clean monochrome look is preserved as one end of a knob.
 
-*Considered and left out:* a **Triad** — centre plus ±120° — as a
+*Considered and left out:* a **Triad** — center plus ±120° — as a
 deliberately loud option for a peak. It sits closest to the
 rainbow-across-the-stage look we are trying to avoid, and covers similar
 ground to Wide more aggressively. It is the obvious tenth if one is
@@ -175,9 +175,9 @@ Three sources feed it, and they compose:
   without hands.
 - **Ear** — the mic envelope, as an offset.
 
-**The discipline is that audio drives energy only** — never colour,
+**The discipline is that audio drives energy only** — never color,
 never pattern. That is the difference between lights running during a
-song and lights playing it, without the flickering-visualiser look.
+song and lights playing it, without the flickering-visualizer look.
 
 Brightness stops being a live performer control and becomes a soundcheck
 trim, because absolute brightness is set once per room and energy scales
@@ -196,7 +196,7 @@ let it run" feel breathing rather than looping:
    Replaces the current hue-oscillation alt-mode, which is too strong to
    leave on.
 2. **Per-strip micro-offsets** — each strip carries a small hue offset,
-   about ±5°. Reads as depth, not as different colours.
+   about ±5°. Reads as depth, not as different colors.
 3. **Breath on brightness** — an 8–16-beat LFO adds a barely-perceptible
    inhale and exhale.
 
@@ -204,7 +204,7 @@ let it run" feel breathing rather than looping:
 
 Four BeamZ BCC145 of our own, driven over DMX in 8-channel mode.
 
-**They stopped being a colour echo** on 2026-09-06. Driving them at the
+**They stopped being a color echo** on 2026-09-06. Driving them at the
 strips' own hue makes the rig read as one light source; the single change
 that most stops that is holding them a half turn off the strips. Worth
 more than it looks on paper.
@@ -219,7 +219,7 @@ more than it looks on paper.
    scale at soundcheck so washes-at-full read as equal *weight* to
    strips-at-full, never exceeded afterwards. A separate number from the
    RGBW trims: those correct hue, this one caps authority.
-3. **Different colour, not the same colour.** Two fixtures on one hue
+3. **Different color, not the same color.** Two fixtures on one hue
    means the brighter wins and the dimmer disappears. Strips saturated,
    washes low and desaturated or complementary, and they read as two
    layers rather than one thing plus glare.
@@ -238,12 +238,12 @@ than one adding to the other:
 
 - A soft, dim, complementary wash against saturated strips.
 - Alternating quickly between broad wash and strip accents.
-- The strips holding a fixed colour or white while the wash changes
+- The strips holding a fixed color or white while the wash changes
   underneath them.
 
-The third is the interesting one: the colour performance moves off the
+The third is the interesting one: the color performance moves off the
 strips entirely and they become pure shape. It is also the cheapest
-source of variety over a long set, because a wash changing colour under
+source of variety over a long set, because a wash changing color under
 a running pattern re-reads the whole wall without touching the pattern.
 
 **Open — how far the washes may carry a look.** An earlier rule said
@@ -267,16 +267,16 @@ Each of these needs looking at, not arguing about.
    sliding up and down. The in-sync version was judged too static.
    Sweeping coverage from full down to half confirmed the axis behaves —
    at full coverage the alternation is invisible, and as it winds down
-   dark wedges enter from opposite ends on neighbouring strips until the
+   dark wedges enter from opposite ends on neighboring strips until the
    permanently-lit middle band vanishes. Needs a second look at proper
-   viewing distance before it replaces current behaviour.
+   viewing distance before it replaces current behavior.
 3. **Strobe's duty cycle.** Currently a flash of a quarter of the beat,
    clamped to 20–200 ms, so 125 ms at 120 BPM. A shorter flash reads as
    more percussive, a longer one as more of a pulse. One constant, and
    only the wall can settle it.
 4. **Glitch's white share.** Reviewed 2026-09-09 on a clean data link
    and it holds up — 12 pixels per frame reads as a dense fast shimmer
-   rather than countable dots, and it works across the whole colour
+   rather than countable dots, and it works across the whole color
    wheel, best between cyan and magenta. But the 30 % white share cannot
    be judged until the V-fader defect in `docs/bench-facts.md` is fixed.
 5. **Whether a per-strip variation axis reads as an effect or a fault**

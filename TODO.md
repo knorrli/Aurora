@@ -24,15 +24,15 @@ untouched.
   `A009`, 2026-09-21.
 - **The nine hand-written patterns and all nine variants** render, on
   PC 1–9. See `docs/visual-design.md`.
-- **The parametric generator** on PC 10, with the redesigned colour layer
+- **The parametric generator** on PC 10, with the redesigned color layer
   in the firmware as of 2026-09-21. See `docs/generator.md`.
 - **The bench panel** — `tools/index.html`, drawn as the signal flow,
-  with patch save/recall, the morph control and a row of colour looks.
+  with patch save/recall, the morph control and a row of color looks.
 - **The wall on screen** — `tools/preview.js`, five strips and four PARs
-  rendered from a port of the firmware, so a look can be dialled with
-  nothing plugged in. The colour layer was designed here before it was
+  rendered from a port of the firmware, so a look can be dialed with
+  nothing plugged in. The color layer was designed here before it was
   flashed.
-- **A strip-order rigging aid** on PC 11 — each strip a flat colour in
+- **A strip-order rigging aid** on PC 11 — each strip a flat color in
   data-chain order.
 
 Measurements in `docs/bench-facts.md`.
@@ -124,29 +124,29 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
 
-**The colour layer has been seen on a wall and holds up**, and the
+**The color layer has been seen on a wall and holds up**, and the
 preview it was designed in matches the strips closely enough to keep
 designing there. See `docs/bench-facts.md`.
 
-- [x] **Judge the colour layer on the wall.** Done 2026-09-21. Flat is
+- [x] **Judge the color layer on the wall.** Done 2026-09-21. Flat is
       flat, and the preview matches the strips almost exactly — a touch
       paler on the wall, which is the diffuser. See `docs/bench-facts.md`
-      § "The colour layer's flat state is flat" and § "The screen and the
+      § "The color layer's flat state is flat" and § "The screen and the
       wall agree".
 - [ ] **Average the placed field across each pixel**, as the shape branch
-      already does. It is read once at the pixel centre, so it aliases
+      already does. It is read once at the pixel center, so it aliases
       above a region count the grid can carry. Same fault and same fix as
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
 - [ ] **Turn a region inside out.** One boolean, and it is what "base
-      colour on the centre strip, outer ones departing" needs. See
+      color on the center strip, outer ones departing" needs. See
       `docs/generator.md` § Open, item 8.
 - [ ] **Thread the placed field's parameters as an argument.** A second
       placed field is a small refactor until this is done, and was
       designed for on the assumption it would be free. See
       `docs/generator.md` § Open, item 10.
-- [ ] **Jitter in colour** — a starfield in hue rather than in
-      brightness. The only randomness the colour layer has no way to
-      make. See `docs/generator.md` § "The colour layer has no jitter".
+- [ ] **Jitter in color** — a starfield in hue rather than in
+      brightness. The only randomness the color layer has no way to
+      make. See `docs/generator.md` § "The color layer has no jitter".
 - [ ] **Give the PARs their own saturation.** CC 62; the wash block has
       room. A scale down from the strips' saturation rather than a setting
       of its own, per `DESIGN.md` § "The PAR cans".
@@ -155,7 +155,7 @@ designing there. See `docs/bench-facts.md`.
       strips. Both asked for, neither reachable. See `DESIGN.md` § "The
       PAR cans".
 - [ ] **Fan shape and jitter scale — one piece of work.** Fan gains a
-      centre and a random setting; jitter gains a scale from pixel to
+      center and a random setting; jitter gains a scale from pixel to
       cell, and a rate that is not the pulse's. Together they are the
       chaotic strobe, and the fan half is also why Rain and Comet are the
       same look. See `docs/generator.md` § Open, "Fan is a linear
@@ -176,7 +176,7 @@ designing there. See `docs/bench-facts.md`.
 - [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
       for bounce, open for wrap. See `docs/generator.md` § Open, "Is a
       strip a loop or a line?".
-- [ ] **Decide the colour layer's usable ranges.** The test is a set, not
+- [ ] **Decide the color layer's usable ranges.** The test is a set, not
       a bench. See `docs/generator.md` § Open, item 6.
 - [ ] **Test the touchpad window from the laptop, before any rewire.**
       See `DESIGN.md` § "Which strips — a window, not a selection".
@@ -197,13 +197,6 @@ designing there. See `docs/bench-facts.md`.
 
 ## Housekeeping
 
-- [ ] **Rename everything to American English.** Not only `colour` — the
-      new code and all the docs are British throughout: `centre`,
-      `normalised`, `behaviour`, `travelled`, `dialled`, `judgement`.
-      Code, comments and prose. Leave library names alone
-      (`ColorFromPalette`, `addColorStop`). Do it before the controller
-      starts consuming `shared/aurora_protocol.h`, so it is one pass and
-      not two.
 - [ ] **Regroup the CC table.** The blocks were laid out before most of
       what uses them existed, and have only been added to since. Go
       through the whole list and realign it. See

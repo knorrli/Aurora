@@ -67,7 +67,7 @@ extern void showBootIndicatorReady();
 extern uint8_t mirroredStrip(uint8_t stripIndex);
 extern void ShowStripOrder();
 
-// --- INPUT Colour
+// --- INPUT Color
 extern void setCurrentColor();
 extern void setHueFromCC(uint8_t value);
 extern void setSaturationFromCC(uint8_t value);
@@ -127,12 +127,12 @@ extern void setGeneratorPulseRate(uint8_t value);
 extern void setGeneratorPulseShape(uint8_t value);
 extern void setGeneratorAlternate(uint8_t value);
 extern void setGeneratorBounce(uint8_t value);
-// The colour layer — CC 24–29, 47–48 and 90–98. Hue, whiteness and darkness pushed
+// The color layer — CC 24–29, 47–48 and 90–98. Hue, whiteness and darkness pushed
 // away from the three faders by a placed field, a wander and the light level.
-// With every one centred the wall is exactly what the faders say. See
-// P_Generator.cpp § "The colour layer".
-extern void setColourRegion(uint8_t value);
-extern void setColourRuler(uint8_t value);
+// With every one centered the wall is exactly what the faders say. See
+// P_Generator.cpp § "The color layer".
+extern void setColorRegion(uint8_t value);
+extern void setColorRuler(uint8_t value);
 extern void setPlacedHue(uint8_t value);
 extern void setPlacedWhite(uint8_t value);
 extern void setPlacedDark(uint8_t value);

@@ -2,7 +2,7 @@
 //
 // Wraps the Arduino MIDI Library (forty-seven effects). Responsibilities:
 //
-//   * Initialise the hardware UART for MIDI.
+//   * Initialize the hardware UART for MIDI.
 //   * Receive clock / PC / CC / note from upstream (DAW, foot controller)
 //     and dispatch to handlers in other modules.
 //   * Send clock / PC / CC / note to the brain.
@@ -18,7 +18,7 @@
 
 namespace midi_io {
 
-// Call once from setup(). Initialises the UART at MIDI speed and registers
+// Call once from setup(). Initializes the UART at MIDI speed and registers
 // incoming-message handlers.
 void begin();
 

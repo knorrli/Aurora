@@ -49,7 +49,7 @@ MIDI circuits. Before moving a wire, move the line here first.
                           │ (225 pixels)             │
                           └──────────────────────────┘
 
-The 12 UI pixels — 10 touchpad feedback + 2 colour indicators — used to
+The 12 UI pixels — 10 touchpad feedback + 2 color indicators — used to
 sit at the head of this same chain. They live in the controller box, which
 the brain can no longer reach once it stands at the LEDs, so they are the
 controller's to drive. It has no pin free for them yet; see "Reserved
@@ -116,7 +116,7 @@ starts rounding off the signal edges.
 
 ### Connectors
 
-Three barrel jacks per box. **The two data jacks use a wider centre pin
+Three barrel jacks per box. **The two data jacks use a wider center pin
 than the power jack**, so a power plug cannot be forced into a data
 socket.
 
@@ -174,7 +174,7 @@ DIP-14 numbering runs counter-clockwise seen from above. With the notch
 at the left end, pin 1 is **bottom**-left and the bottom row counts 1–7
 left to right; the top row is 8–14 counting right to left, so pin 14
 sits directly above pin 1. Some packages also carry a round divot, which
-may be a moulding mark rather than a pin-1 dot — trust the notch.
+may be a molding mark rather than a pin-1 dot — trust the notch.
 
 | Chip pin  | To                                                    |
 |-----------|-------------------------------------------------------|
@@ -182,7 +182,7 @@ may be a moulding mark rather than a pin-1 dot — trust the notch.
 | 7 `GND`   | common ground                                         |
 | 1 `1OE`   | GND — enables the channel                             |
 | 2 `1A`    | Teensy pin 2                                          |
-| 3 `1Y`    | data-in pigtail, centre pin                           |
+| 3 `1Y`    | data-in pigtail, center pin                           |
 | 5, 9, 12  | GND — unused inputs, never leave them floating        |
 | 4, 10, 13 | VCC — unused output-enables, floating just as badly   |
 | 14 ↔ 7    | 0.1 µF ceramic, short leads, at the chip body          |
@@ -205,7 +205,7 @@ expansion pins reserved above. The controller needs the same part for
 its indicator pixels, so buy two.
 
 The chip also sits between the Teensy and a connector that gets plugged
-and unplugged in the dark. A barrel plug shorts centre to sleeve as it
+and unplugged in the dark. A barrel plug shorts center to sleeve as it
 slides in, so whatever drives that line is briefly shorted to ground —
 better a one-franc buffer than the Teensy.
 
@@ -217,7 +217,7 @@ cleanly, and the proximity flicker is gone, two-prong charger included.
 
 **The data chain runs right to left across the room.** Strip 5 stands at
 the left-hand end and strip 1 at the right. Read off PC 11 on
-2026-09-22, which paints each strip one flat colour — red, orange,
+2026-09-22, which paints each strip one flat color — red, orange,
 green, cyan, blue in chain order — and came back blue on the left.
 
 Nothing in the firmware knows this. It matters in two places:
@@ -229,8 +229,8 @@ Nothing in the firmware knows this. It matters in two places:
   left on this wall, and reversing the rigging would reverse it.
 
 PC 11 cannot tell you which end of a strip pixel 0 sits at — every strip
-is one flat colour, so there is no end to tell apart. That takes a
-single narrow shape travelling slowly with fan at zero: whichever end it
+is one flat color, so there is no end to tell apart. That takes a
+single narrow shape traveling slowly with fan at zero: whichever end it
 sets off from is pixel 0.
 
 ---
@@ -278,7 +278,7 @@ Mostly inherited from the current Aurora wiring. The only moves are:
 |  A3  | Foot pedal — 4 switches on a resistor ladder | analog  | See § "Foot pedal" in this file                                     |
 |  A4  | Touchpad YP (also I²C SDA)                 | analog    | 4-wire resistive, unchanged            |
 |  A5  | Touchpad XM (also I²C SCL)                 | analog    | 4-wire resistive, unchanged            |
-|  A6  | Touchpad strip mode switch                 | analog    | 3-way rocker (left / centre / right)   |
+|  A6  | Touchpad strip mode switch                 | analog    | 3-way rocker (left / center / right)   |
 |  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; read as 2-state in firmware today        |
 
 **There is exactly one rotary in the rig** — the 12-position tempo
@@ -346,7 +346,7 @@ divider is non-linear in conductance, which bunches the
 many-buttons-pressed end together. The values above were found by
 searching for the widest *minimum* separation over the 1 % kit on hand.
 They spread the sixteen levels between 2.777 V (all four down) and
-5.000 V (none), with the closest neighbours 79 mV apart — about 16
+5.000 V (none), with the closest neighbors 79 mV apart — about 16
 counts on a 10-bit ADC.
 
 **Decode by nearest match against a table of the sixteen levels, never
@@ -514,10 +514,10 @@ lower voltage needs lower resistance to hit MIDI's ~5 mA target current.
 
 ---
 
-## DMX OUT — venue fixture colour echo (brain only)
+## DMX OUT — venue fixture color echo (brain only)
 
-Scope is colour echo, nothing else: every frame the brain writes the
-active palette's centre colour × V to 1–2 hardcoded fixture addresses.
+Scope is color echo, nothing else: every frame the brain writes the
+active palette's center color × V to 1–2 hardcoded fixture addresses.
 See `docs/architecture.md` § "DMX is for the wash fixtures, never for
 the strips" for why the strips are not driven this way.
 
@@ -552,7 +552,7 @@ white = pin 2. Only three of the four wires are needed.
 of view, not the module's**, so the Teensy transmits on `TXD` / white.
 Verified on the bench: yellow leaves the fixture dark, white lights it.
 The labels follow M5Stack's Port C convention, where Grove pin 1 is the
-host's RXD and pin 2 the host's TXD — a unit labelling its own receiver
+host's RXD and pin 2 the host's TXD — a unit labeling its own receiver
 `RXD` on pin 1 would face the host's receiver and could never work
 plugged into a Port C.
 
@@ -618,7 +618,7 @@ below were also confirmed on the bench with `bench/dmx_channel_map/`.
 | +3     | Green        |                                            |
 | +4     | Blue         |                                            |
 | +5     | White        |                                            |
-| +6     | Macro        | ≤50 off; above that fixed colour, jump, pulse, gradient, voice-activated |
+| +6     | Macro        | ≤50 off; above that fixed color, jump, pulse, gradient, voice-activated |
 | +7     | Speed        | Macro speed                                |
 
 At `D001` the 4-channel block is channels 1–4, so a second fixture
@@ -629,12 +629,12 @@ comes from the dimmer at +0 while RGBW stays at full scale; the strobe
 channel also comes with it, which is what any tempo-synced fixture
 effect would need. The cost is the macro channel at +6, which must be
 held below 50 or the fixture starts an auto sequence that overrides
-colour entirely — `dmx_out.cpp` pins it and its speed channel at zero.
+color entirely — `dmx_out.cpp` pins it and its speed channel at zero.
 
 Verified on the bench 2026-09-09 with one fixture at `A001`. An orange
 of red 255 / green 85 held its shade all the way down to 5 % dimmer,
 with only a slight loss of yellow that is as easily the eye as the
-fixture. Dimming the same colour in 4-channel mode would have left
+fixture. Dimming the same color in 4-channel mode would have left
 green with four levels of resolution — one step is a 25 % change in
 green against an 8 % change in red, which is the hue drift and banding
 the switch was made to avoid.
