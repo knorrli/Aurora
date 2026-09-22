@@ -85,6 +85,11 @@
   }
   button:hover { border-color: var(--accent); }
   button.on { background: var(--accent); color: #14151a; border-color: var(--accent); }
+  .branch-head .bypass { margin-left: auto; font-size: 11px; }
+  .branch-color .bypass.on { background: var(--color); border-color: var(--color); }
+  /* Dimmed rather than disabled: the settings are still there and still
+     readable, they are simply not what the wall is showing. */
+  .branch.bypassed .groups, .branch.bypassed .open { opacity: .5; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
   select { background: #262934; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 6px; font: inherit; width: 100%; }
@@ -136,6 +141,7 @@
     <div class="branch-head">
       <span class="branch-name">Shape</span>
       <span class="branch-does">decides whether a pixel is lit, and how much</span>
+      <button id="shapeBypass" class="bypass" title="Flatten the shape to a lit wall, so only the color layer is moving. Settings are kept.">bypass</button>
     </div>
     <div class="groups">
       <div class="group">
@@ -168,6 +174,7 @@
     <div class="branch-head">
       <span class="branch-name">Color</span>
       <span class="branch-does">decides what color that pixel is</span>
+      <button id="colorBypass" class="bypass" title="Drop the color layer to the base color, so only the shape is moving. Settings are kept.">bypass</button>
     </div>
     <div class="groups">
       <div class="group">
@@ -469,6 +476,62 @@ for (const name of Object.keys(COLOR_LOOKS)) {
   COLOR_LOOKS[name] = { ...COLOR_OFF, ...COLOR_LOOKS[name] };
 }
 
+// The shape branch flattened: one shape filling the cell, still, not
+// swelling. What is left on the wall is the color layer alone.
+const SHAPE_OFF = {
+  width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 0, jitter: 0,
+  pulseDepth: 0, pulseRate: 64, pulseSkew: 64, pulseShape: 127,
+  alternate: OFF, bounce: OFF,
+};
+
+// Either branch can be switched out of the way to read the other one. The
+// settings come back untouched, because the question being asked is always
+// "what was that one doing?" — which a one-way trip to Flat or Fill cannot
+// answer.
+const BYPASS = {
+  shape: { flat: SHAPE_OFF, button: 'shapeBypass', branch: 'branch-shape' },
+  color: { flat: COLOR_OFF, button: 'colorBypass', branch: 'branch-color' },
+};
+const stashed = { shape: null, color: null };
+
+function paintBypass(branch) {
+  const { button, branch: cls } = BYPASS[branch];
+  document.getElementById(button).classList.toggle('on', !!stashed[branch]);
+  document.querySelector('.' + cls).classList.toggle('bypassed', !!stashed[branch]);
+}
+
+function setBypass(branch, on) {
+  if (on === !!stashed[branch]) return;
+  const flat = BYPASS[branch].flat;
+  if (on) {
+    stashed[branch] = {};
+    for (const name of Object.keys(flat)) stashed[branch][name] = state[name];
+  }
+  const values = on ? flat : stashed[branch];
+  if (!on) stashed[branch] = null;
+  for (const [name, value] of Object.entries(values)) {
+    state[name] = value;
+    if (controls[name]) controls[name].set(value);
+  }
+  syncFlagButtons();
+  paintSwitches();
+  drawPulseWave();
+  paintBypass(branch);
+  sendAll();
+}
+
+// A patch sets the branch outright, so whatever is stashed is stale — drop it
+// without putting it back, or recalling a look would be undone on the next
+// toggle.
+function dropBypass(patch) {
+  for (const [branch, { flat }] of Object.entries(BYPASS)) {
+    if (!stashed[branch]) continue;
+    if (!Object.keys(patch).some(name => name in flat)) continue;
+    stashed[branch] = null;
+    paintBypass(branch);
+  }
+}
+
 const state = { ...ANCHORS.Sweep, ...COLOR_OFF,
                 hue: 20, saturation: 100, value: 100,
                 washLevel: 127, washHueOffset: 0 };
@@ -531,6 +594,7 @@ function setPreset(pc) {
 
 function applyPatch(patch) {
   if (activePreset !== 10) setPreset(10);
+  dropBypass(patch);
   for (const [name, value] of Object.entries(patch)) {
     state[name] = value;
     if (controls[name]) controls[name].set(value);
@@ -883,6 +947,11 @@ document.getElementById('save').addEventListener('click', () => {
   savePatches(all);
   renderPatches();
 });
+
+for (const branch of Object.keys(BYPASS)) {
+  document.getElementById(BYPASS[branch].button)
+    .addEventListener('click', () => setBypass(branch, !stashed[branch]));
+}
 
 const anchorHost = document.getElementById('anchors');
 for (const [name, patch] of Object.entries(ANCHORS)) {
