@@ -742,12 +742,17 @@ it becomes a build item.
       needs no pin. The rest of that shortfall disappears with the second
       board.
 
-- [ ] **Meter the phone's cradle button.** `readKeypad()` mutes the wall on
-      `0b00111111`, a code on the five keypad lines, and the cradle is the
-      only other momentary on the phone body — so it is probably read
-      there and costs no pin. That last step is inference; confirm it with
-      a meter before the Teensy reader is written. See
-      `docs/controls.md`.
+- [ ] **Decide what the phone's cradle does, and whether there is a
+      handset.** It is wired into the numpad's own five lines, confirmed
+      2026-09-23, so it costs no pin. `DESIGN.md` § "Blackout has two
+      forms" already gives it to the master kill on the grounds that a hook
+      is a *maintained* state — hang up and the wall stays out, and it
+      cannot be left wrong without noticing. Two things unsettle that. An
+      accent trigger, a white flash, is an event rather than a state and
+      spends exactly that property. And the cradle is empty in both photos:
+      without a handset the hook is momentary in practice and the argument
+      does not hold. Settle the handset first; it decides which designs are
+      available. See `docs/controls.md`.
 
 - [ ] **The foot pedal and the keypad's hold have no message.** Four
       momentary switches on the pedal are events, so they want notes; 62-69

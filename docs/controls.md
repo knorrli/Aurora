@@ -42,7 +42,7 @@ firmware and never will be.**
 | | What it is | v1 job |
 |---|---|---|
 | Left indicator pixel | single NeoPixel, left of the phone | Showed the color set by the faders. Blinks an RGB sequence at power-on to say the controller is ready. |
-| Phone cradle button | momentary, under where the earpiece hangs | Every strip black, instantly. A performance control, rarely used. |
+| Phone cradle switch | under where the earpiece hangs, **wired into the numpad's own lines** | Pressed, switch to preset 0 and go black; released, back to the previous preset. Rarely used, because it was not instant. |
 | Phone keypad | **10 keys** | 1–9 chose the hard-coded presets; 0 was "off", every strip black. |
 | Right indicator pixel | single NeoPixel, right of the phone | Showed the color on the strips the touchpad was modifying. Same ready-blink. |
 
@@ -89,11 +89,20 @@ no-press. There are not. Reading `readKeypad()` at `aurora-nano-final`,
 - **`0b00111101`, which returns the previous preset** — the resting state, so
   that reading the pad while nothing is held changes nothing.
 - **`0b00111111`, which sets `muted`**, and `muted` is what
-  `Aurora.ino:98` gates the whole render on. That is the blackout, and the
-  only momentary on the phone body besides the keys is the cradle button — so
-  **the cradle button is almost certainly read on these same five lines**,
-  costing no pin of its own. Meter it before relying on it; everything else
-  in this section is read off the code, and that one sentence is inference.
+  `Aurora.ino:98` gates the whole render on. **That is the cradle switch**,
+  confirmed 2026-09-23: it was hardwired into the same five lines, so it
+  costs no pin of its own, and the code above is exactly the press-to-black,
+  release-to-previous-preset behavior.
+
+### Why it was not instant, and why that is already fixed
+
+The blackout went through the preset mechanism, and a preset change is
+beat-quantized. So the wall went dark on the next beat rather than under the
+hand. The end-of-frame gate built 2026-09-23 fixes this for key 0 —
+`DESIGN.md` § "Blackout has two forms" — by reading `selectedPreset` rather
+than the quantized `currentPreset`, and by throwing the finished frame away
+after every renderer instead of branching upstream. Anything the cradle drives
+through that gate is instant by construction.
 
 ## Seven toggles, four inputs — and it may not matter
 
@@ -128,6 +137,26 @@ of them; see `docs/cc-regroup.md`.
 - **The foot pedal's four switches.** Not on the panel — it is a separate
   pedal on a guitar cable, four bare switches on a resistor ladder into A3.
   No note, no CC.
+
+## The cradle switch is spoken for, and by an argument worth re-reading
+
+`DESIGN.md` § "Blackout has two forms" settles it: **the telephone hook is the
+master kill**, and the reason is that a hook is a *maintained state* rather
+than an event. Hang up and the wall is out until the handset is lifted. It
+works regardless of patch, it is unmistakable by feel, and it cannot be left
+wrong without noticing — which is what "a blackout reachable blind" always
+wanted and never got.
+
+**An accent trigger is the opposite kind of control.** A white flash is an
+event: it happens and it is over, and afterwards the switch tells you nothing.
+Putting both on the hook spends the one property that made it the master kill.
+
+**And the design assumes a handset that neither photo shows.** The cradle is
+empty in `top.jpeg` and `front.jpeg` — two brass prongs and nothing resting on
+them. Without a handset the hook can only be held down by a finger, which
+makes it momentary in practice and takes the "cannot be left wrong" argument
+with it. Whether a handset exists, and whether it is tethered to the box,
+decides which of the two designs is even available.
 
 ## Still not written down anywhere
 
