@@ -771,14 +771,14 @@ is right.
 
 ### The scatter — named and rendered 2026-09-23
 
-Settled, and built in `tools/preview.js` rather than in the firmware. The name
+Designed in `tools/preview.js` and ported to the firmware the same day. The name
 is the third one in the family rather than a description of one of its looks:
 the pulse is regular in time and has no place on the wall, the wander is smooth
 over both, **the scatter is random over both**. "Sparkle" was the other
 candidate and was dropped for naming the cheerful end of a range whose other
 end is a thunderstorm and rain running down a strip.
 
-Nine CCs at 81–89 in `shared/aurora_protocol.h`: Rate, Count, Width, Edge,
+Nine CCs at 83–91 in `shared/aurora_protocol.h`: Rate, Count, Width, Edge,
 Stagger and Drift shape the source, and three amounts aim it at the strips'
 brightness, at hue and at whiteness. It is nine rather than the eight to ten the
 fork below priced because of one move.
@@ -824,9 +824,15 @@ control.
 
 **Jitter is gone**, removed 2026-09-23 with the CC regroup rather than kept
 alive until this ships. It was the mechanism this replaces, and a map being
-rebuilt is the wrong place to carry the thing being replaced. The cost is
-stated: until the scatter is in the firmware, the wall has no texture at all,
-and Starfield and Glitch are unreachable on it.
+rebuilt is the wrong place to carry the thing being replaced. The wall was
+without texture of any kind for the hours between that removal and this
+landing.
+
+The port is checked against the preview rather than eyeballed: both `scatterAt`
+implementations driven over eight settings and 36 000 samples agree everywhere
+but one, a sample 1.2e-15 inside the core boundary at full width, where a float
+rounds onto the other side of the comparison. What is still unjudged is the
+wall — nobody has seen a spot on a strip yet.
 
 ### The fan is a wave — built 2026-09-23
 

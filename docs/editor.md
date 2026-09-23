@@ -196,8 +196,5 @@ The brain cannot recall a patch yet, so pushing a library stores it and nothing
 plays it. The editor drives the wall live over CC, which is what makes it
 useful before that exists.
 
-The scatter has no firmware. It renders in the preview only, and the card says
-so.
-
 Palette is a number with nothing behind it. Patch variants, tags and grouping
 are deferred, not rejected.

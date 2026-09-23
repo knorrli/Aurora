@@ -406,8 +406,7 @@ enum AuroraCC : uint8_t {
     // 83–100 — the scatter. The third source in the family: the pulse is
     // regular in time and has no place on the wall, the wander is smooth over
     // both, the scatter is random over both. Six controls shape it and three
-    // amounts aim it. Designed in tools/preview.js and not yet in the
-    // firmware — see docs/generator.md § "The scatter".
+    // amounts aim it. See docs/generator.md § "The scatter".
     CC_SCATTER_RATE        = 83, // [patch] how often a cell relights
     CC_SCATTER_COUNT       = 84, // [patch] cells along a strip, 1–20; the
                                  // scatter's own grid, not the shape's

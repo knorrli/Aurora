@@ -150,10 +150,10 @@ extern void setGeneratorBounce(uint8_t value);
 extern void setPulseAmount(uint8_t target, uint8_t value);
 extern void setPulseShape(uint8_t target, uint8_t value);
 extern void setPulseSkew(uint8_t target, uint8_t value);
-// The color layer — CC 24–29, 47–48 and 90–98. Hue, whiteness and darkness pushed
-// away from the three faders by a placed field, a wander and the light level.
-// With every one centered the wall is exactly what the faders say. See
-// P_Generator.cpp § "The color layer".
+// The color layer — CC 41–57, and the scatter at 83–91. Hue, whiteness and
+// darkness pushed away from the three faders by a placed field, a wander, the
+// light level and the scatter. With every one centered the wall is exactly what
+// the faders say. See P_Generator.cpp § "The color layer".
 extern void setColorRegion(uint8_t value);
 extern void setColorRuler(uint8_t value);
 extern void setPlacedHue(uint8_t value);
@@ -171,6 +171,15 @@ extern void setWanderScale(uint8_t value);
 extern void setLitHue(uint8_t value);
 extern void setLitWhite(uint8_t value);
 extern void setLitDark(uint8_t value);
+extern void setScatterRate(uint8_t value);
+extern void setScatterCount(uint8_t value);
+extern void setScatterWidth(uint8_t value);
+extern void setScatterEdge(uint8_t value);
+extern void setScatterStagger(uint8_t value);
+extern void setScatterDrift(uint8_t value);
+extern void setScatterLight(uint8_t value);
+extern void setScatterHue(uint8_t value);
+extern void setScatterWhite(uint8_t value);
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

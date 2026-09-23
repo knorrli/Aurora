@@ -354,13 +354,19 @@ static float fanWave(uint8_t stripIndex) {
 // The color layer
 //
 // A color is hue, whiteness and darkness. Everything else is a push on those
-// three, and the pushes add. Three sources push:
+// three, and the pushes add. Four sources push:
 //
 //   the placed field  something aimed — a gradient across a ruler, or regions
 //                     sitting on it
 //   the wander        the wall never quite the same in two places, and where
 //                     it differs keeps moving
 //   the light level   color read off how lit the shape branch left a pixel
+//   the scatter       spots on a grid of cells, each on its own clock
+//
+// The scatter also reaches the light level itself, which none of the others
+// do — they only push darkness, which is the color's own value. That push
+// happens outside this layer, on what the shape branch left and before an
+// unlit pixel is culled, which is what lets a spot appear in a gap.
 //
 // The layer reads the SHAPE branch's light level and never its own. Feed its
 // own darkness back in and color depends on color: pull the wall down for a
@@ -388,6 +394,14 @@ static float fanWave(uint8_t stripIndex) {
 
 #define WANDER_MAX_CYCLES_PER_BEAT 0.5f
 #define PLACED_MAX_CELLS_PER_BEAT 1.0f
+
+// The scatter's fastest clock. Four relights a beat is a sixteenth note,
+// which is where a flicker stops reading as separate events at stage
+// distance.
+#define SCATTER_MAX_CYCLES_PER_BEAT 4.0f
+
+// Half the wheel each way, like the placed field and the wander.
+#define SCATTER_MAX_HUE 128.0f
 
 // Two terms whose rates sit at the golden ratio, so they never come back into
 // step and the wall never repeats. Deliberately not a control: dialing how
@@ -434,6 +448,18 @@ static float litDarkReach = 0.0f;
 
 static PhaseTracker wanderPhase = { 0.0f, 0.0f };
 
+static float scatterRate = 0.0f;
+static uint8_t scatterCount = 1;
+static float scatterWidth = 0.5f;
+static float scatterEdge = 0.5f;
+static float scatterStagger = 0.0f;
+static float scatterDrift = 0.0f;
+static float scatterLightReach = 0.0f;
+static float scatterHueReach = 0.0f;
+static float scatterWhiteReach = 0.0f;
+
+static PhaseTracker scatterPhase = { 0.0f, 0.0f };
+
 static bool placedActive(const PlacedField &field) {
   return fabsf(field.hueReach) > 0.5f
       || fabsf(field.whiteReach) > 0.001f
@@ -450,6 +476,15 @@ static bool litActive() {
   return fabsf(litHueReach) > 0.5f
       || fabsf(litWhiteReach) > 0.001f
       || fabsf(litDarkReach) > 0.001f;
+}
+
+static bool scatterTints() {
+  return fabsf(scatterHueReach) > 0.5f
+      || fabsf(scatterWhiteReach) > 0.001f;
+}
+
+static bool scatterActive() {
+  return fabsf(scatterLightReach) > 0.001f || scatterTints();
 }
 
 // The base color sits at zero, so two terms that rarely reach their ends cost
@@ -604,19 +639,53 @@ static float rulerAt(const PlacedField &field, uint8_t stripIndex,
   return alongPixels / (float)(PIXELS_PER_STRIP - 1);
 }
 
-// `pulseHue` arrives already summed rather than as a fourth source, because
-// the pulse pushes the layer's output: one push after the three have added,
+// The one source with a position of its own. The pulse is a value over time
+// with nowhere on the wall; the wander is smooth over both. This one is random
+// over both — a grid of cells, each with its own clock, each lighting a spot
+// that appears, holds, fades, and may slide across its own cell while it does.
+//
+// Stateless: a cell's clock is its hash, so there is no particle list and
+// nothing to advance. Width is the spot's core on both axes at once — how much
+// of its cell it covers, and how much of its cycle it is lit — and edge softens
+// both the same way.
+//
+// Moving stagger re-keys every cell, so everything in flight jumps. That is the
+// price of holding no state, and it is confined to that one control: the rate
+// runs through the phase tracker like every other rate here.
+static float scatterAt(uint8_t stripIndex, float alongPixels, float t) {
+  const float cellF = (alongPixels / (float)PIXELS_PER_STRIP) * (float)scatterCount;
+  const uint8_t cell = (uint8_t)cellF;
+  const float u = cellF - (float)cell;
+
+  const float rateSpread = (float)hash8(stripIndex, cell, 17) / 255.0f - 0.5f;
+  const float phaseOffset = (float)hash8(stripIndex, cell, 43) / 255.0f;
+  const float age = fract(t * (1.0f + scatterStagger * rateSpread)
+                          + scatterStagger * phaseOffset);
+
+  // Centered on the middle of the cycle, so a cell runs dark, lights, holds and
+  // fades rather than being cut off at the wrap.
+  const float alive = coreAt(age - 0.5f, scatterWidth, scatterEdge);
+  if (alive <= 0.0001f) return 0.0f;
+
+  const float center = 0.5f + scatterDrift * (age - 0.5f);
+  return alive * coreAt(u - center, scatterWidth, scatterEdge);
+}
+
+// `pulseHue` arrives already summed rather than as a source of its own, because
+// the pulse pushes the layer's output: one push after the four have added,
 // which leaves the color layer's own design alone.
 static CHSV colorAt(CHSV base, const PlacedField &field, float placedLevel,
                      uint8_t stripIndex, uint8_t pixelIndex,
                      float profile, float wanderT, float pulseHue,
-                     bool wanderOn) {
+                     float scatter, bool wanderOn) {
   const float along01 = (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
   const float wander = wanderOn ? wanderAt(stripIndex, along01, wanderT) : 0.0f;
 
   return applyPushes(base,
-      placedLevel * field.hueReach + wander * wanderHueReach + profile * litHueReach + pulseHue,
-      placedLevel * field.whiteReach + wander * wanderWhiteReach + profile * litWhiteReach,
+      placedLevel * field.hueReach + wander * wanderHueReach + profile * litHueReach
+          + scatter * scatterHueReach + pulseHue,
+      placedLevel * field.whiteReach + wander * wanderWhiteReach + profile * litWhiteReach
+          + scatter * scatterWhiteReach,
       placedLevel * field.darkReach + wander * wanderDarkReach + profile * litDarkReach);
 }
 
@@ -679,13 +748,16 @@ void Generator(CHSV color) {
   const bool placedOn = placedActive(placed);
   const bool wanderOn = wanderActive();
   const bool pulseHueOn = fabsf(pulseSends[PULSE_TO_HUE].amount) > 0.001f;
-  const bool colorFlat = !placedOn && !wanderOn && !litActive() && !pulseHueOn;
+  const bool scatterOn = scatterActive();
+  const bool colorFlat = !placedOn && !wanderOn && !litActive() && !pulseHueOn
+      && !scatterTints();
 
   // Both color rates go through the tracker for the same reason travel and
   // the pulse do: beats only grows, so a small change of rate multiplied by a
   // large beat count is a large jump.
   const float wanderT = trackedPhase(wanderPhase, beats, wanderCycles);
   const float placedDrift = trackedPhase(placed.phase, beats, placed.cellsPerBeat);
+  const float scatterT = trackedPhase(scatterPhase, beats, scatterRate);
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
     const float wave = fanWave(stripIndex);
@@ -789,6 +861,7 @@ void Generator(CHSV color) {
       // averaged profile already.
       float accumulated = 0.0f;
       float placedAccumulated = 0.0f;
+      float scatterAccumulated = 0.0f;
       for (uint8_t sampleIndex = 0; sampleIndex < GEN_SUBSAMPLES; sampleIndex++) {
         const float acrossPixel =
             ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES - 0.5f;
@@ -838,10 +911,29 @@ void Generator(CHSV color) {
                                   (float)pixelIndex + acrossPixel, shapeU);
           placedAccumulated += placedAt(placed, u, placedDrift);
         }
+
+        // Read at the same samples the shape and the placed field are, and for
+        // the same reason: at twenty cells a cell is 2.2 pixels, and a spot
+        // that size aliases into a flicker if it is read once.
+        if (scatterOn) {
+          scatterAccumulated +=
+              scatterAt(stripIndex, (float)pixelIndex + 0.5f + acrossPixel, scatterT);
+        }
       }
 
       const float profile = accumulated / (float)GEN_SUBSAMPLES;
-      const float brightness = profile * swell;
+      const float scatter = scatterAccumulated / (float)GEN_SUBSAMPLES;
+
+      // The push runs from what the shape branch left toward one of the two
+      // limits, which is what makes a spot invisible inside a fully lit shape
+      // and visible in the gap beside it — no occlusion rule anywhere. It
+      // therefore has to be applied before an unlit pixel is culled, or the one
+      // place a spot has the furthest to travel is the one place it could never
+      // appear.
+      float brightness = profile * swell;
+      if (scatterOn) {
+        brightness = pushToward(brightness, scatter * scatterLightReach, 0.0f, 1.0f);
+      }
       if (brightness <= 0.002f) continue;
 
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
@@ -850,7 +942,8 @@ void Generator(CHSV color) {
       CHSV tint = color;
       if (!colorFlat) {
         tint = colorAt(color, placed, placedAccumulated / (float)GEN_SUBSAMPLES,
-                        stripIndex, pixelIndex, profile, wanderT, pulseHue, wanderOn);
+                        stripIndex, pixelIndex, profile, wanderT, pulseHue,
+                        scatter, wanderOn);
       }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
       strip[stripIndex][pixelIndex] =
@@ -982,3 +1075,28 @@ void setWanderScale(uint8_t value) { wanderScale = ccUnit(value); }
 void setLitHue(uint8_t value)   { litHueReach = ccBipolar(value) * LIT_MAX_HUE; }
 void setLitWhite(uint8_t value) { litWhiteReach = ccUnit(value); }
 void setLitDark(uint8_t value)  { litDarkReach = ccBipolar(value); }
+
+// Squared like every other rate here, and for the same reason: a texture that
+// reads as the wall breathing rather than as an effect lives at the slow end,
+// and spread evenly that end is a few steps of the fader.
+void setScatterRate(uint8_t value) {
+  const float x = ccUnit(value);
+  scatterRate = x * x * SCATTER_MAX_CYCLES_PER_BEAT;
+}
+
+// The scatter's own grid, not the shape branch's, so a fine texture can lie
+// over one wide bar.
+void setScatterCount(uint8_t value) { scatterCount = ccCount(value); }
+
+void setScatterWidth(uint8_t value)   { scatterWidth = ccUnit(value); }
+void setScatterEdge(uint8_t value)    { scatterEdge = ccUnit(value); }
+void setScatterStagger(uint8_t value) { scatterStagger = ccUnit(value); }
+
+// A displacement rather than a rate — how far, and which way, a spot slides
+// across its own cell over its life. Which is why it is not called speed,
+// everywhere else here a number of pixels per beat.
+void setScatterDrift(uint8_t value) { scatterDrift = ccBipolar(value); }
+
+void setScatterLight(uint8_t value) { scatterLightReach = ccBipolar(value); }
+void setScatterHue(uint8_t value)   { scatterHueReach = ccBipolar(value) * SCATTER_MAX_HUE; }
+void setScatterWhite(uint8_t value) { scatterWhiteReach = ccBipolar(value); }

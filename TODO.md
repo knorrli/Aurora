@@ -49,6 +49,11 @@ Everything lives on **`main`**. The last v1 commit is tagged
   rendered from a port of the firmware, so a look can be dialed with
   nothing plugged in. The color layer was designed here before it was
   flashed.
+- **The scatter**, 2026-09-23. Nine CCs at 83–91: a grid of cells, each on
+  its own clock, each lighting a spot that pushes the strips' brightness, hue
+  and whiteness. Ported from `tools/preview.js`, where it was designed, and
+  checked sample for sample against it. Flashed but **not yet seen on the
+  wall**. See `docs/generator.md` § "The scatter".
 - **A strip-order rigging aid** on PC 11 — each strip a flat color in
   data-chain order.
 
@@ -205,8 +210,8 @@ one that is not a look at all, listed first because it gates the rest.
       white should start from pale. See `DESIGN.md` § "The PAR cans".
 - [ ] **Sweep the V fader under a scattered look.** The white pixels
       should dim with the colored ones. Then judge the 30 % white share,
-      which has never been judgeable. Waits on the scatter reaching the
-      firmware, since Glitch left the roster with jitter. See
+      which has never been judgeable. Reachable now the scatter is flashed:
+      count high, width and edge low, the light amount up. See
       `docs/bench-facts.md`.
 - [ ] **Take Lit White from center down to zero**, on a flat fill with the
       S fader at full. At zero the wall should be exactly the color on the
@@ -547,14 +552,14 @@ it becomes a build item.
       Settle by looking, with the faders in hand. Whatever wins, the editor and
       the firmware have to say the same thing.
 
-- [ ] **Render the scatter in the firmware.** Settled and named 2026-09-23 —
-      `docs/generator.md` § "The scatter" — with nine CCs at 81–89 and a
-      working implementation in `tools/preview.js` that all five of the looks
-      it was measured against come out of. `brain/src/P_Generator.cpp` has none
-      of it, so the editor's card is marked as having no firmware behind it and
-      the wall has no texture at all. The port is the preview's
-      `scatterAt`, the three reaches in `colorAt`, and the one `pushToward` on
-      brightness that has to happen before an unlit pixel is culled.
+- [x] **Render the scatter in the firmware.** Done 2026-09-23, the same day it
+      was settled. `scatterAt`, the two reaches in `colorAt` and the
+      `pushToward` on brightness that runs before an unlit pixel is culled.
+      Checked against `tools/preview.js` rather than argued: both `scatterAt`
+      implementations were driven over eight settings and 36 000 samples and
+      agree everywhere but one, a sample sitting 1.2e-15 inside the core
+      boundary at full width, where a float rounds onto the other side of the
+      comparison. The wall has texture again.
 
 - [ ] **Use the new editor at the bench, and delete the old one.**
       `tools/editor.html` was built in one night, runs clean in a browser and

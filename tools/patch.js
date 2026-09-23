@@ -422,7 +422,6 @@
     {
       key: 'scatter', name: 'The scatter', tone: 'scatter',
       when: 'random in space and in time',
-      unbuilt: 'The firmware does not render this yet \u2014 the preview does. It replaces CC 76 jitter, which no longer has a control: a patch leaves that byte at zero, so nothing a patch does can reach the old mechanism.',
       source: define([
         C('scatterRate', 'Rate', 'how often a cell relights'),
         C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
@@ -436,7 +435,7 @@
         C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
         C('scatterWhite', 'To white', 'toward white, or toward a pure hue'),
       ]),
-      note: 'A grid of cells along each strip, each with its own clock, each lighting a spot that appears, holds, fades, and may slide across its cell as it does. It pushes what the shape lane left, so it needs a gap to light and light to darken \u2014 which is also why a spot inside an already-full shape is invisible and the shape covers it with no occlusion rule anywhere. Moving Stagger re-keys every cell, so everything in flight jumps.',
+      note: 'A grid of cells along each strip, each with its own clock, each lighting a spot that appears, holds, fades, and may slide across its cell as it does. It pushes what the shape lane left, so it needs a gap to light and light to darken \u2014 which is also why a spot inside an already-full shape is invisible and the shape covers it with no occlusion rule anywhere. Moving Stagger re-keys every cell, so everything in flight jumps. It replaces jitter, which no longer has a control anywhere.',
     },
     {
       key: 'placed', name: 'The placed field', tone: 'color',

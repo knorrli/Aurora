@@ -58,6 +58,15 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_LIT_HUE:         setLitHue(value); break;
         case CC_LIT_WHITE:       setLitWhite(value); break;
         case CC_LIT_DARK:        setLitDark(value); break;
+        case CC_SCATTER_RATE:    setScatterRate(value); break;
+        case CC_SCATTER_COUNT:   setScatterCount(value); break;
+        case CC_SCATTER_WIDTH:   setScatterWidth(value); break;
+        case CC_SCATTER_EDGE:    setScatterEdge(value); break;
+        case CC_SCATTER_STAGGER: setScatterStagger(value); break;
+        case CC_SCATTER_DRIFT:   setScatterDrift(value); break;
+        case CC_SCATTER_LIGHT:   setScatterLight(value); break;
+        case CC_SCATTER_HUE:     setScatterHue(value); break;
+        case CC_SCATTER_WHITE:   setScatterWhite(value); break;
         case CC_GEN_WIDTH:       setGeneratorWidth(value); break;
         case CC_GEN_COUNT:       setGeneratorCount(value); break;
         case CC_GEN_EDGE:        setGeneratorEdge(value); break;
