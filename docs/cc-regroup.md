@@ -119,7 +119,7 @@ the next time a lane wants three numbers.
 | Range | Slots | Category | Used | Spare |
 |---|---|---|---|---|
 | 2–9 | 7 | Transport / meta | 1 | 6 |
-| 12–31 | 20 | The controller — what each control stands at | 11 | 9 |
+| 12–31 | 20 | The controller — what each control stands at | 11–14 | 6–9 |
 | 33–37 | 5 | Washes / DMX | 3 | 2 |
 | 38–59 | 22 | Color | 20 | 2 |
 | 60–82 | 23 | Generator — shape, fan, pulse source | 18 | 5 |
@@ -139,16 +139,25 @@ named for them — kept anyway, deliberately. CC 7 is the hole in the middle.
 Every control on the controller, reported as the value it stands at. The
 patch decides what a value means; nothing here names a target.
 
-Counted from `docs/controls.md`, which is itself a reconstruction and wants
-confirming — the v1 pin map it is built from does not list the rotary and
-disagrees with `pins.h` about A3. Eleven controls, nine spare:
+Counted from `docs/controls.md`, which is the confirmed inventory — walked by
+hand and checked against the photos. Eleven controls today, fourteen if the
+audio section moves onto the Teensy when the secondary board goes:
 
 | What | How many | Today |
 |---|---|---|
 | The three faders — Color, Extent, Motion | 3 | **no CC exists** |
 | Touchpad X, Y, pressure | 3 | CC 30–32 |
 | Touchpad engage | 1 | CC 33, and CC 43 for hold |
-| Switch positions — 2-way on D4, D5, A7; 3-way on A6 | 4 | CC 41, 42, 44 and CC 40's bits |
+| The four rockers at the touchpad | 4 | CC 41, 42, 44 and CC 40's bits |
+| The fader-mode rocker | 1 | shared A7 with preset-alt in v1 |
+| *Maybe:* peak-follower on/off, and the audio threshold pot | 0–2 | in-circuit today, undecided |
+
+**Nothing on the box is short of a home.** Twenty slots against fourteen at
+the outside. What is not here goes elsewhere by shape rather than for want of
+room: the keypad and the cradle are Program Changes and share five lines, the
+tap tempo button and the mic trigger are notes, the foot pedal wants notes,
+the rotary's value is the tempo division at 2–9, and ON/OFF is hardwired to
+the 9 V and read by nothing.
 
 **The three faders are the gap, and it is not a small one.** `DESIGN.md`
 § "The three faders are three routes to 'more'" makes each fader a per-patch

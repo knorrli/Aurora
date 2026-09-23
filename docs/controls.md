@@ -42,7 +42,8 @@ firmware and never will be.**
 | | What it is | v1 job |
 |---|---|---|
 | Left indicator pixel | single NeoPixel, left of the phone | Showed the color set by the faders. Blinks an RGB sequence at power-on to say the controller is ready. |
-| Phone cradle switch | under where the earpiece hangs, **wired into the numpad's own lines** | Pressed, switch to preset 0 and go black; released, back to the previous preset. Rarely used, because it was not instant. |
+| Phone cradle switch | under where the earpiece hangs, **wired into the numpad's own lines** | Pressed, switch to preset 0 and go black; released, back to the previous preset. Rarely used, because it was not instant. **Stays a blackout** — settled 2026-09-23. |
+| Handset | modded: the earpiece is wired as a microphone, out through a guitar jack | Plugs into the audio-in jack as a crude mic. **Almost never rests on the cradle**, so the hook is pressed by a finger. |
 | Phone keypad | **10 keys** | 1–9 chose the hard-coded presets; 0 was "off", every strip black. |
 | Right indicator pixel | single NeoPixel, right of the phone | Showed the color on the strips the touchpad was modifying. Same ready-blink. |
 
@@ -138,25 +139,17 @@ of them; see `docs/cc-regroup.md`.
   pedal on a guitar cable, four bare switches on a resistor ladder into A3.
   No note, no CC.
 
-## The cradle switch is spoken for, and by an argument worth re-reading
+## The cradle stays a blackout
 
-`DESIGN.md` § "Blackout has two forms" settles it: **the telephone hook is the
-master kill**, and the reason is that a hook is a *maintained state* rather
-than an event. Hang up and the wall is out until the handset is lifted. It
-works regardless of patch, it is unmistakable by feel, and it cannot be left
-wrong without noticing — which is what "a blackout reachable blind" always
-wanted and never got.
+Settled 2026-09-23. It keeps the job it had, now driven through the
+end-of-frame gate so it is instant.
 
-**An accent trigger is the opposite kind of control.** A white flash is an
-event: it happens and it is over, and afterwards the switch tells you nothing.
-Putting both on the hook spends the one property that made it the master kill.
-
-**And the design assumes a handset that neither photo shows.** The cradle is
-empty in `top.jpeg` and `front.jpeg` — two brass prongs and nothing resting on
-them. Without a handset the hook can only be held down by a finger, which
-makes it momentary in practice and takes the "cannot be left wrong" argument
-with it. Whether a handset exists, and whether it is tethered to the box,
-decides which of the two designs is even available.
+One piece of the reasoning in `DESIGN.md` § "Blackout has two forms" was
+wrong and is corrected there: it argued the hook is a *maintained* state, so
+the wall stays out until the handset is lifted. The handset is a microphone —
+earpiece rewired, guitar jack, plugged into the audio-in — and almost never
+sits on the cradle. The hook is held by a finger. It is still the master kill;
+it just is not a state you can leave wrong without noticing.
 
 ## Still not written down anywhere
 

@@ -565,11 +565,19 @@ Three things follow, and each one closes a path that was open before.
 Built 2026-09-23 and **not seen on hardware.** The bench check is in
 `TODO.md`.
 
-**The telephone hook switch is the master kill.** A hook is a maintained
-state rather than an event: hang up and the wall is out until the handset
-is lifted. It works regardless of patch, it is unmistakable by feel, and
-it cannot be left wrong without noticing — which is what the old
-document wanted from "a blackout reachable blind" and never solved.
+**The telephone hook switch is the master kill**, settled 2026-09-23. It
+works regardless of patch and it is unmistakable by feel, which is what
+the old document wanted from "a blackout reachable blind" and never
+solved.
+
+**It is held by a finger, not by the handset.** The reasoning first
+written here — that a hook is a maintained state, so hanging up leaves
+the wall out until the handset is lifted — does not survive the hardware:
+the handset was modded into a crude microphone, wired through a guitar
+jack into the audio-in, and almost never sits on the cradle. So the hook
+is momentary in practice, and "it cannot be left wrong without noticing"
+is not a property it has. It stays the master kill on the other two
+grounds.
 
 ### What the keypad actually is
 
