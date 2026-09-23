@@ -473,13 +473,14 @@ it becomes a build item.
 
 - [ ] **Apply the regrouped CC map.** `docs/cc-regroup.md` assigns every
       number and nothing in it is open. What is left is mechanical: the
-      header, the two literal CC maps in `tools/patch.js` and
-      `tools/index.html`, and a format version plus an old-to-new remap on
-      the editor's stored library, which is the only thing that breaks.
-      Both firmwares follow by symbol. It also adds six CCs that never
-      existed — the three fader routes, and the fader-mode rocker — and
-      renames CC 30-33 and 41-44 to report what a control stands at rather
-      than what v1 meant by it. The
+      header and the two literal CC maps in `tools/patch.js` and
+      `tools/index.html`. Both firmwares follow by symbol, and nothing
+      needs migrating: the editor's stored library gets cleared and
+      rebuilt by hand, and no library has ever reached the brain. It adds
+      seven CCs that never existed — the three fader routes, the
+      fader-mode rocker, the keypad's held gate, and two for the audio
+      section — and renames CC 30-33 and 41-44 to report what a control
+      stands at rather than what v1 meant by it. The
       map is not out of numbers — 34 below 120 have
       no assignment. What it is out of is *room in the right categories*,
       which is what the rule at the top of `shared/aurora_protocol.h`

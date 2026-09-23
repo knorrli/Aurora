@@ -120,7 +120,7 @@ the next time a lane wants three numbers.
 | Range | Slots | Category | Assigned | Spare |
 |---|---|---|---|---|
 | 2–9 | 7 | Transport / meta | 1 | 6 |
-| 12–31 | 20 | The controller | 14 | 6 |
+| 12–31 | 20 | The controller | 15 | 5 |
 | 33–37 | 5 | Washes / DMX | 3 | 2 |
 | 38–59 | 22 | Color | 20 | 2 |
 | 60–82 | 23 | Generator — shape, fan, pulse source | 18 | 5 |
@@ -132,7 +132,7 @@ between 2 and 119 is in a block.
 
 ## The map
 
-Every number, assigned. 80 spoken for, 34 spare, and nothing on the box
+Every number, assigned. 81 spoken for, 33 spare, and nothing on the box
 or in the patch without a home.
 
 ### 2–9 · Transport / meta
@@ -161,8 +161,9 @@ Spare: 3, 4, 5, 6, 8, 9.
 | **23** | `ROCKER_FADERS` | [ambient] | new | rocker below the fader panel |
 | **24** | `AUDIO_FOLLOWER` | [ambient] | new | peak-follower on/off, if it lands on the Teensy |
 | **25** | `AUDIO_THRESHOLD` | [ambient] | new | audio-in gate threshold, if it lands on the Teensy |
+| **26** | `KEY_HELD` | [gesture] | new | is the key the last Program Change named still down |
 
-Spare: 26, 27, 28, 29, 30, 31.
+Spare: 27, 28, 29, 30, 31.
 
 ### 33–37 · Washes / DMX
 
@@ -263,7 +264,6 @@ Spare: 92, 93, 94, 95, 96, 97, 98, 99, 100.
 | **115** | `PULSE_PAR_SAT_SKEW` | [patch] | 114 | skew |
 
 Spare: 116, 117, 118, 119.
-
 ## What is not a CC, and why
 
 - **Patch selection and the blackout** — Program Change. The keypad and the
@@ -271,9 +271,13 @@ Spare: 116, 117, 118, 119.
 - **Tap tempo, the mic trigger, the TRIG button, the foot pedal's four
   switches** — notes. They are events, not positions. 62–69 and 74–79 are
   reserved and empty in the note map; the pedal and TRIG are unassigned.
-- **The keypad's hold and release** — needs a note and has none. "A morph you
-  stretch by holding" requires the brain to know a key went down and came up,
-  and a Program Change cannot say it.
+- **Which key the keypad names** — Program Change. *Whether it is still
+  held* is CC 26, because that is a state rather than an event: the morph
+  stretches for as long as it reads 127 and lands when it reads 0. A note-on
+  and note-off pair would carry the same fact and repeat the key's identity in
+  a second place, where the Program Change has already said it and the model
+  is "toward whatever key you last pressed" — one destination at a time, so
+  one gate is enough.
 - **ON/OFF** — hardwired to the 9 V, read by nothing, and never will be.
 - **The 12-position rotary** — its value *is* the tempo division at CC 2.
 - **The indicator pixels and the ten under the pad** — outputs, recomputed on
@@ -289,16 +293,17 @@ Spare: 116, 117, 118, 119.
 4. `tools/patch.js` and `tools/index.html` — both carry a literal CC map.
    `patch.js` also drops its `SLOTS` block and the editor loses the collapsed
    per-pattern section that showed slots A–J.
-5. **The editor's stored library.** `localStorage` under
-   `aurora.editor.library`, written CC-indexed by `libToWire`. It needs a
-   format version and an old→new remap on load, or every saved patch comes
-   back scrambled. **This is the only thing that breaks.**
+5. **The editor's stored library is cleared, not migrated.** It lives in
+   `localStorage` under `aurora.editor.library`, CC-indexed by `libToWire`,
+   and Simon will empty it and rebuild by hand — settled 2026-09-23. The
+   model is still being built; there is no library worth carrying across, so
+   no format version and no remap.
 6. Re-flash both devices. Nothing else holds a number.
 
-**No patch library has ever reached hardware** — "Run the patch sync against
-the brain" is still unchecked on the wall list — so there is no device state
-to migrate. That is why now is cheaper than later, and later is only ever
-more expensive.
+**Nothing breaks, because nothing is stored anywhere that matters.** No patch
+library has ever reached hardware — "Run the patch sync against the brain" is
+still unchecked on the wall list — and the editor's is disposable. That is why
+now is cheaper than later, and later is only ever more expensive.
 
 ---
 
