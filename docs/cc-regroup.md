@@ -118,41 +118,58 @@ the next time a lane wants three numbers.
 
 | Range | Slots | Category | Used | Spare |
 |---|---|---|---|---|
-| 2–6 | 5 | Transport / meta | 1 | 4 |
-| 12–31 | 20 | The controller — what each control stands at | 9 | 11 |
+| 2–9 | 7 | Transport / meta | 1 | 6 |
+| 12–31 | 20 | The controller — what each control stands at | 11 | 9 |
 | 33–37 | 5 | Washes / DMX | 3 | 2 |
 | 38–59 | 22 | Color | 20 | 2 |
 | 60–82 | 23 | Generator — shape, fan, pulse source | 18 | 5 |
 | 83–100 | 18 | Scatter / texture | 9 | 9 |
 | 101–119 | 19 | Where the pulse reaches — three apiece | 15 | 4 |
 
-112 numbers, 75 of them spoken for. 0, 1, 7, 10, 11 and 32 skipped; 8 and 9
-left free.
+114 numbers — every usable one — with 77 spoken for. Only 0, 1, 7, 10, 11 and
+32 are left out, and each for a stated reason above.
 
-### 2–6 · Transport / meta
+### 2–9 · Transport / meta
 
-Tempo division, moved off CC 10 and away from pan. Four spare, and nothing
-named for them — kept anyway, deliberately.
+Tempo division, moved off CC 10 and away from pan. Six spare, and nothing
+named for them — kept anyway, deliberately. CC 7 is the hole in the middle.
 
 ### 12–31 · The controller
 
 Every control on the controller, reported as the value it stands at. The
 patch decides what a value means; nothing here names a target.
 
-- Touchpad X, touchpad Y, touchpad pressure — positions that persist
-- Touchpad engage — separate from the axes, so hold works and a knob-only
-  sender can ignore it
-- Five switch positions: the 3-way rocker on A6, the 2-way rockers on D4, D5
-  and A7, and the fourth rocker `DESIGN.md` § Open is still deciding a job for
+Counted from `docs/controls.md`, which is itself a reconstruction and wants
+confirming — the v1 pin map it is built from does not list the rotary and
+disagrees with `pins.h` about A3. Eleven controls, nine spare:
 
-Eleven spare, because the controller is being rebuilt around a Teensy and
-already has more switches than jobs for them.
+| What | How many | Today |
+|---|---|---|
+| The three faders — Color, Extent, Motion | 3 | **no CC exists** |
+| Touchpad X, Y, pressure | 3 | CC 30–32 |
+| Touchpad engage | 1 | CC 33, and CC 43 for hold |
+| Switch positions — 2-way on D4, D5, A7; 3-way on A6 | 4 | CC 41, 42, 44 and CC 40's bits |
 
-**The foot pedal is not here.** Four momentary switches are events, not
-positions, so they belong in the note map beside the trigger and preset
-events. **The 12-position rotary is not here either** — it is the tempo
-switch, and its value is the tempo division at 2–6. It has never been in the
-*pin* map, which is a `docs/wiring.md` problem, not a CC one.
+**The three faders are the gap, and it is not a small one.** `DESIGN.md`
+§ "The three faders are three routes to 'more'" makes each fader a per-patch
+morph route, and the patch format carries their far ends as the Color, Extent
+and Motion sets. The brain holds the patches and therefore does the morphing,
+so it needs to know where each fader stands — and nothing carries that. CC
+20–22 are not it: they are `[patch]` base hue, saturation and value, saved and
+recalled and slid by a morph. The header still calls them "H fader / S fader /
+V fader", which is the v1 meaning, and the controller still sends the faders
+straight to them. Three `[ambient]` numbers are wanted here.
+
+**The 12-position rotary is not in this block** — it is the tempo switch, and
+its value is the tempo division at 2–9. It has never been in the *pin* map,
+which is a `docs/wiring.md` problem, not a CC one.
+
+**Two more controls have no message at all, both outside the CC map.** The
+foot pedal's four momentary switches are events rather than positions, so they
+belong in the note map, where 62–69 and 74–79 are reserved and empty. And the
+keypad's **hold and release** carry "a morph you stretch by holding", but a
+Program Change has no release and no note carries one. Room exists for both;
+neither is assigned. See TODO.md.
 
 ### 33–37 · Washes / DMX
 
@@ -218,4 +235,9 @@ more expensive.
 
 ## To mark up
 
-- **Whether 8 and 9 stay empty** or join the transport block.
+Nothing. CC 8 and 9 joined the transport block, so the map has no stray
+holes left. The layout is ready to apply.
+
+**None of it is final.** The model will move again — the scatter has an
+unbuilt fork, the touchpad has no job yet, and the fan has been rebuilt once
+already. This map is sized for the next stretch, not for ever.

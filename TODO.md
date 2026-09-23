@@ -714,19 +714,39 @@ it becomes a build item.
       Neither receiver does: `brain/src/midi_in.cpp` and
       `controller/src/midi_io.cpp` both take the channel byte and drop it
       with `(void)channel`, the latter commenting that it is permissive
-      "for now". So every CC, Program Change and Note On in the rig reaches
-      Aurora, on all sixteen channels.
+      "for now". So the protection that comment describes has never
+      existed, and on a shared cable every CC, Program Change and Note On
+      in the rig reaches Aurora.
 
-      The sharpest case is the **RPN null** — `CC 101 = 127, CC 100 = 127`,
-      which a keyboard or DAW sends after setting a pitch bend range. Aurora
-      holds the pulse's width amount and wave there, so that sequence pushes
-      the width to full and the wave to a sine, from traffic aimed at
-      another instrument. Pan on CC 10 reaching the tempo division is the
-      same class.
+      Two lines, one per receiver, and the constant already exists. It
+      does *not* protect against traffic on Aurora's own channel, which is
+      why the CC map dodges pan, volume, expression and bank select
+      anyway. It is also what makes a second channel available as 128 more
+      numbers when the map runs out — see `docs/cc-regroup.md`.
 
-      Two lines to fix, one per receiver, and the constant already exists.
-      It is also what makes a second channel available as 128 more numbers
-      when the CC map runs out — see `docs/cc-regroup.md`.
+- [ ] **The three faders have no CC.** `DESIGN.md` § "The three faders are
+      three routes to 'more'" makes each fader a per-patch morph route, and
+      the patch format carries their far ends as the Color, Extent and
+      Motion sets. The brain holds the patches, so it does the morphing and
+      needs to know where each fader stands. Nothing carries that. CC 20-22
+      are `[patch]` base hue, saturation and value — the v1 meaning, which
+      the header still uses and the controller still sends. Three
+      `[ambient]` numbers are reserved for them in `docs/cc-regroup.md`.
+
+- [ ] **Confirm the control inventory.** `docs/controls.md` reconstructs
+      every switch, button, fader and axis on the box and what each one
+      puts on the wire, because the list made in conversation on about
+      2026-09-21 was never written down and is gone. Every row is
+      assembled from a stale source and three things are marked unknown:
+      whether the list is complete, which physical fader is Color, Extent
+      and Motion, and where the rotary lands on the Teensy.
+
+- [ ] **The foot pedal and the keypad's hold have no message.** Four
+      momentary switches on the pedal are events, so they want notes; 62-69
+      and 74-79 are reserved and empty. And "a morph you stretch by
+      holding" needs the brain to know a key is down and then released,
+      which a Program Change cannot say and no note carries. Both are room
+      that exists and assignments that do not.
 
 ## Housekeeping
 
