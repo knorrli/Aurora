@@ -437,10 +437,6 @@
     $('timingGroup').innerHTML = '';
     buildRows($('timingGroup'), P.TIMING.controls);
     $('timingNote').textContent = P.TIMING.note;
-
-    $('slotGroup').innerHTML = '';
-    buildRows($('slotGroup'), P.SLOTS.controls);
-    $('slotNote').textContent = P.SLOTS.note;
   }
 
   // ---- the matrix, read from the target's end ----------------------------

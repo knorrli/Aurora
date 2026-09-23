@@ -70,7 +70,6 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_GEN_FAN_FREQ:    setGeneratorFanFreq(value); break;
         case CC_GEN_FAN_PHASE:   setGeneratorFanPhase(value); break;
         case CC_GEN_FAN_RANDOM:  setGeneratorFanRandom(value); break;
-        case CC_GEN_JITTER:      setGeneratorJitter(value); break;
         case CC_GEN_PULSE_RATE:  setGeneratorPulseRate(value); break;
         case CC_GEN_ALTERNATE:   setGeneratorAlternate(value); break;
         case CC_GEN_BOUNCE:      setGeneratorBounce(value); break;
@@ -101,11 +100,6 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_PULSE_PAR_SAT:       setPulseAmount(PULSE_TO_PAR_SAT, value); break;
         case CC_PULSE_PAR_SAT_SHAPE: setPulseShape(PULSE_TO_PAR_SAT, value); break;
         case CC_PULSE_PAR_SAT_SKEW:  setPulseSkew(PULSE_TO_PAR_SAT, value); break;
-
-        case CC_MODE_FLAGS:
-            faderAltModeEnabled = value & MODE_BIT_FADER_ALT;
-            presetAltModeEnabled = value & MODE_BIT_PRESET_ALT;
-            break;
     }
 }
 

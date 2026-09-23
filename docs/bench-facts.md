@@ -323,12 +323,12 @@ full value:
 
 | base hue fader | rendered RGB | relative light |
 |----|----|----|
-| CC 0 | 255, 0, 0 | 55 |
-| CC 24 | 171, 125, 0 | 120 |
-| CC 48 | 11, 250, 0 | 169 |
-| CC 72 | 0, 102, 154 | 86 |
-| CC 84 | 13, 0, 242 | 32 |
-| CC 108 | 138, 0, 118 | 44 |
+| 0 | 255, 0, 0 | 55 |
+| 24 | 171, 125, 0 | 120 |
+| 48 | 11, 250, 0 | 169 |
+| 72 | 0, 102, 154 | 86 |
+| 84 | 13, 0, 242 | 32 |
+| 108 | 138, 0, 118 | 44 |
 
 Brightest to dimmest is 5.4 to 1 — yellow-green against blue — with red
 a little under a third of the brightest.
@@ -519,7 +519,8 @@ the preview had already agreed:
 
 - **Alternate and bounce arrive on their own CCs.** Bars turns at the
   strip's ends; alternate sends the 2nd and 4th columns from the left the
-  other way. So CC 45 and 46 land, and the packed CC 79 is gone.
+  other way. So alternate and bounce land on CCs of their own — 60 and 61
+  since the regroup — and the packed CC that held them is gone.
 - **Bounce is per cell.** Four shapes each turn inside their own quarter.
   Nothing slides through into a neighbor and nothing re-enters at the
   far end, which is what it did while the journey was measured along the

@@ -32,12 +32,12 @@ Everything lives on **`main`**. The last v1 commit is tagged
   phase is anchored to the bar and its rate is stepped to the periods a bar
   can hold. Flashed but **not yet seen on the wall**. See
   `docs/generator.md` § "Where the pulse reaches".
-- **The washes' own saturation**, 2026-09-22, on CC 62. A scale down from
+- **The washes' own saturation**, 2026-09-22, on CC 35. A scale down from
   the strips' saturation, and the origin the pulse's push toward white
   measures from. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
   cans".
 - **Position**, 2026-09-22. Where a still pattern stands in its cell, on
-  CC 115. What travel left over eases away while the pattern stands still,
+  CC 66. What travel left over eases away while the pattern stands still,
   so a patch saved still comes back to the same place instead of standing
   wherever the last traveling one ran out. See `docs/generator.md` § "A
   still pattern stands where it is told".
@@ -200,7 +200,7 @@ one that is not a look at all, listed first because it gates the rest.
 - [ ] **Wind the placed field's region count up**, on the strip ruler with
       a hard edge. It should wash out smoothly rather than strobe. See
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
-- [ ] **Pull CC 62 down, then open the pulse's PAR saturation.** Full
+- [ ] **Pull CC 35 down, then open the pulse's PAR saturation.** Full
       should look like the strips as before; pulled down, the flash toward
       white should start from pale. See `DESIGN.md` § "The PAR cans".
 - [ ] **Sweep the V fader under Glitch.** The white pixels should dim with
@@ -252,7 +252,7 @@ designing there. See `docs/bench-facts.md`.
       is one destination rather than a project of its own. See
       `docs/generator.md` § "The color layer has no jitter" and § "What
       jitter is for".
-- [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 62.
+- [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 35.
       A scale down from the strips' saturation: full matches them, zero is
       white. The pulse's push toward white measures from it, and the
       "the pulse reaches this" marker now has somewhere to sit for every
@@ -443,7 +443,7 @@ it becomes a build item.
       wave is square, and putting it anywhere else on the fader would mean
       shifting the threshold at the sine end, which flat-bottoms the swell
       and stops it reaching full. Costs: the sine half loses a quarter of
-      the fader, so the midpoint drifts from CC 93 back to about 102, and
+      the fader, so the midpoint drifts from 93 back to about 102, and
       Strobe, Stutter and Glitch all move off 0.
       **Bounded by the frame rate, not by taste.** At 7-8 ms per frame
       (`docs/bench-facts.md`) and the fastest rate of 0.25 beats, a 6 %
@@ -471,43 +471,31 @@ it becomes a build item.
       three numbers in the pulse's own range, which is full at 100-114.
       See the regroup below.
 
-- [ ] **Apply the regrouped CC map.** `docs/cc-regroup.md` assigns every
-      number and nothing in it is open. What is left is mechanical: the
-      header and the two literal CC maps in `tools/patch.js` and
-      `tools/index.html`. Both firmwares follow by symbol, and nothing
-      needs migrating: the editor's stored library gets cleared and
-      rebuilt by hand, and no library has ever reached the brain. It adds
-      seven CCs that never existed — the three fader routes, the
-      fader-mode rocker, the keypad's held gate, and two for the audio
-      section — and renames CC 30-33 and 41-44 to report what a control
-      stands at rather than what v1 meant by it. The
-      map is not out of numbers — 34 below 120 have
-      no assignment. What it is out of is *room in the right categories*,
-      which is what the rule at the top of `shared/aurora_protocol.h`
-      protects: every one of those 34 sits in a reserved gap belonging to
-      some other category, and only CC 23 is marked free outright.
+- [x] **Apply the regrouped CC map.** Done 2026-09-23, and
+      `docs/cc-regroup.md` is the map. Every number assigned, every
+      consumer checked against the header — both firmwares by symbol,
+      `tools/patch.js` and `tools/index.html` number by number. It added
+      seven CCs that never existed: the three fader routes at 12-14, the
+      fader-mode rocker at 23, the keypad's held gate at 26, and two for
+      the audio section at 24-25 if the peak follower ever lands on a pin.
+      CC 40's packed bitmap, the ten per-preset slots and jitter all
+      retired. The editor's stored library was cleared rather than
+      migrated, and no library had ever reached the brain.
 
-      Two things want fixing when it happens. **CC 99 is in the wrong
-      category** — it is the fan's pulse amount sitting in the color
-      layer's 90-99 range, put there because the fan's own 70-79 and
-      116-119 had no room left. And **the pulse cannot take a sixth
-      destination**, because 100-114 is exactly five destinations of three
-      and 115 onward is spoken for.
+      **The map is not out of numbers and never was** — what it had run
+      out of was room in the right categories, which is the rule at the
+      top of `shared/aurora_protocol.h`. It now stands at 81 assigned and
+      33 spare, with room for one more pulse destination and nine more in
+      the scatter.
 
-      The cheapest opening is CC 76: jitter is superseded by the scatter
-      and the header already says the two are not meant to coexist for
-      long, so retiring it frees a number inside the generator's own
-      range, where the fan belongs.
-
-- [ ] **Decide what happens to the parked CCs.** Four are wired to
-      nothing and describe a box that no longer exists: CC 41-44, the
-      standing positions of the v1 switches — touchpad strip mode,
-      touchpad effect, hold mode and vertical mode. Four more, CC 30-33,
-      are the touchpad's own gestures and wait on a decision that
-      `DESIGN.md` § Open deliberately has not made. None of them is in the
-      way of anything today, and reclaiming a number is not a reason to
-      settle a design question. Listed so the regroup does not quietly
-      assume they are alive.
+- [x] **Decide what happens to the parked CCs.** Done 2026-09-23 with the
+      regroup. The four v1 mode switches kept their slots and lost their
+      meanings — they are `CC_ROCKER_PAD_A` through `_D` now, reporting
+      where a rocker stands and saying nothing about what that does. The
+      four touchpad gestures became `CC_PAD_X`, `_Y`, `_PRESSURE` and
+      `_ENGAGE`, which is the right shape under every answer to what the
+      pad is for, so numbering did not have to wait on that question.
+      Nothing was reclaimed to settle a design question.
 
 - [x] **Classify every CC as patch state, gesture or ambient.** Done
       2026-09-22. All 72 assigned CCs carry a tag in
@@ -563,7 +551,7 @@ it becomes a build item.
       working implementation in `tools/preview.js` that all five of the looks
       it was measured against come out of. `brain/src/P_Generator.cpp` has none
       of it, so the editor's card is marked as having no firmware behind it and
-      CC 76 jitter is still what the wall renders. The port is the preview's
+      the wall has no texture at all. The port is the preview's
       `scatterAt`, the three reaches in `colorAt`, and the one `pushToward` on
       brightness that has to happen before an unlit pixel is culled.
 

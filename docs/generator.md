@@ -169,7 +169,7 @@ washes breathing while the strips strobe.
 Every destination is measured from a control the performer set, which is
 what makes the wall rest at exactly what was dialed. PAR saturation was
 the one without such a control and measured from the strips' S fader
-instead; it measures from CC 62 now.
+instead; it measures from CC 35 now.
 
 **A push runs from the dialed value toward one of its two limits, and the
 amount's sign picks which.** Nothing can clip, a control already sitting
@@ -822,8 +822,11 @@ as sampling the color layer there. And moving Stagger re-keys every cell, so
 everything in flight jumps — the price of holding no state, confined to one
 control.
 
-**Jitter at CC 76 stays until the firmware renders this.** The two are not meant
-to coexist for long.
+**Jitter is gone**, removed 2026-09-23 with the CC regroup rather than kept
+alive until this ships. It was the mechanism this replaces, and a map being
+rebuilt is the wrong place to carry the thing being replaced. The cost is
+stated: until the scatter is in the firmware, the wall has no texture at all,
+and Starfield and Glitch are unreachable on it.
 
 ### The fan is a wave — built 2026-09-23
 
@@ -901,7 +904,7 @@ number could carry them.
 is full and 116–119 held four of the five, so the pulse amount sits alone
 at 99 — inside the color layer's range, which breaks the map's own rule
 about staying in your category. It is a stated debt rather than a
-precedent: CC 76 is where it belongs once jitter retires. See TODO.md
+precedent: it came home to CC 73 in the regroup. See TODO.md
 § "Regroup the CC map".
 
 **Not built: a modulator aimed at the fan.** "The bars drift apart, come
@@ -990,7 +993,8 @@ nearly free and the question shrinks to what 4 and 5 need.
    2026-09-23 by § "The scatter", which names it, settles its controls and
    renders it in `tools/preview.js`. All five looks come out of the preview,
    including the two the plain grid could not reach. **The firmware does not
-   have it**, and until it does, CC 76 is still what the wall renders.
+   have it**, and until it does the wall has no texture at all — jitter was
+   removed with the regroup rather than kept alive beside its replacement.
 
    The two wall findings that started it stand, both 2026-09-21. Solid
    blocks, whole and full on, appearing in random places were asked for,
@@ -1016,8 +1020,8 @@ nearly free and the question shrinks to what 4 and 5 need.
 5. **Where the pulse shape fader's midpoint should sit.** The sweep is
    linear, because the visible swelling tracks softness in proportion:
    measured as the fraction of a cycle the swell spends moving rather than
-   pinned, half the visible travel lands at CC 93. Spread geometrically
-   over the same range it landed at CC 117, with the whole middle of the
+   pinned, half the visible travel lands at 93 of 127. Spread geometrically
+   over the same range it landed at 117, with the whole middle of the
    fader reading as one flat square. Whether 93 is where it should sit is
    still a feel judgment nobody has made with music playing.
 6. **Where the color layer's controls should stop.** Combinations that
@@ -1077,11 +1081,11 @@ nearly free and the question shrinks to what 4 and 5 need.
 
    | Wander White | mean saturation | mean light |
    |----|----|----|
-   | CC 0 (reach −1) | 87.4 % | 79.7 |
-   | CC 32 (−0.5) | 96.8 % | 61.1 |
-   | CC 64 | 100 % | 54.6 |
-   | CC 96 (+0.5) | 96.6 % | 61.4 |
-   | CC 127 (+1) | 87.3 % | 80.1 |
+   | 0 (reach −1) | 87.4 % | 79.7 |
+   | 32 (−0.5) | 96.8 % | 61.1 |
+   | 64 | 100 % | 54.6 |
+   | 96 (+0.5) | 96.6 % | 61.4 |
+   | 127 (+1) | 87.3 % | 80.1 |
 
    Wander Dark mirrors the same way. Both spend 128 steps expressing 64
    settings.

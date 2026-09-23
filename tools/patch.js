@@ -34,41 +34,39 @@
   // Every [patch] and [switch] CC in shared/aurora_protocol.h, and nothing
   // else. A name here is the only handle the rest of the editor uses.
   const CC = {
-    tempoDivision: 10,
+    tempoDivision: 2,
 
-    hue: 20, saturation: 21, value: 22,
+    hue: 38, saturation: 39, value: 40,
 
-    placedHue: 24, placedWhite: 25, placedDark: 26,
-    placedCount: 27, placedWidth: 28, placedEdge: 29, placedSpeed: 90,
+    placedHue: 43, placedWhite: 44, placedDark: 45,
+    placedCount: 46, placedWidth: 47, placedEdge: 48, placedSpeed: 49,
 
-    alternate: 45, bounce: 46, colorRegion: 47, colorRuler: 48,
+    alternate: 60, bounce: 61, colorRegion: 41, colorRuler: 42,
 
-    slotA: 50, slotB: 51, slotC: 52, slotD: 53, slotE: 54,
-    slotF: 55, slotG: 56, slotH: 57, slotI: 58, slotJ: 59,
 
-    washLevel: 60, washHueOffset: 61, washSaturation: 62,
+    washLevel: 33, washHueOffset: 34, washSaturation: 35,
 
-    width: 70, count: 71, edge: 72, tail: 73, speed: 74,
-    position: 115,
+    width: 62, count: 63, edge: 64, tail: 65, speed: 67,
+    position: 66,
 
-    fan: 75, fanPulse: 99, fanRate: 119,
-    fanFreq: 116, fanPhase: 117, fanRandom: 118,
+    fan: 71, fanPulse: 73, fanRate: 72,
+    fanFreq: 68, fanPhase: 69, fanRandom: 70,
 
-    pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
-    pulseWidth: 100, pulseWidthShape: 101, pulseWidthSkew: 102,
-    pulseHue: 103, pulseHueShape: 104, pulseHueSkew: 105,
-    pulseParLevel: 106, pulseParLevelShape: 107, pulseParLevelSkew: 108,
-    pulseParHue: 109, pulseParHueShape: 110, pulseParHueSkew: 111,
-    pulseParSat: 112, pulseParSatShape: 113, pulseParSatSkew: 114,
+    pulseDepth: 74, pulseRate: 75, pulseSkew: 76, pulseShape: 77,
+    pulseWidth: 101, pulseWidthShape: 102, pulseWidthSkew: 103,
+    pulseHue: 104, pulseHueShape: 105, pulseHueSkew: 106,
+    pulseParLevel: 107, pulseParLevelShape: 108, pulseParLevelSkew: 109,
+    pulseParHue: 110, pulseParHueShape: 111, pulseParHueSkew: 112,
+    pulseParSat: 113, pulseParSatShape: 114, pulseParSatSkew: 115,
 
-    scatterRate: 81, scatterCount: 82, scatterWidth: 83, scatterEdge: 84,
-    scatterStagger: 85, scatterDrift: 86,
-    scatterLight: 87, scatterHue: 88, scatterWhite: 89,
+    scatterRate: 83, scatterCount: 84, scatterWidth: 85, scatterEdge: 86,
+    scatterStagger: 87, scatterDrift: 88,
+    scatterLight: 89, scatterHue: 90, scatterWhite: 91,
 
-    wanderHue: 91, wanderWhite: 92, wanderDark: 93,
-    wanderRate: 94, wanderScale: 95,
+    wanderHue: 50, wanderWhite: 51, wanderDark: 52,
+    wanderRate: 53, wanderScale: 54,
 
-    litHue: 96, litWhite: 97, litDark: 98,
+    litHue: 55, litWhite: 56, litDark: 57,
   };
 
   const NAMES = Object.keys(CC);
@@ -239,8 +237,6 @@
                    'pulseParHueShape', 'pulseParSatShape']) DERIVED[n] = DERIVED.pulseShape;
   for (const n of ['pulseWidthSkew', 'pulseHueSkew', 'pulseParLevelSkew',
                    'pulseParHueSkew', 'pulseParSatSkew']) DERIVED[n] = DERIVED.pulseSkew;
-  for (const n of ['slotA', 'slotB', 'slotC', 'slotD', 'slotE',
-                   'slotF', 'slotG', 'slotH', 'slotI', 'slotJ']) DERIVED[n] = v => String(v);
 
   // ---- what a control is -------------------------------------------------
   //
@@ -533,21 +529,7 @@
     note: 'Part of every parameter set, so a far end may sit at another division and a morph will step through the ones between. A half-time look is a real musical idea and a song that wants one wants it for every patch in that song.',
   };
 
-  const SLOTS = {
-    controls: define([
-      C('slotA', 'Slot A', 'per-pattern parameter, CC 50'),
-      C('slotB', 'Slot B', 'per-pattern parameter, CC 51'),
-      C('slotC', 'Slot C', 'per-pattern parameter, CC 52'),
-      C('slotD', 'Slot D', 'per-pattern parameter, CC 53'),
-      C('slotE', 'Slot E', 'per-pattern parameter, CC 54'),
-      C('slotF', 'Slot F', 'per-pattern parameter, CC 55'),
-      C('slotG', 'Slot G', 'per-pattern parameter, CC 56'),
-      C('slotH', 'Slot H', 'per-pattern parameter, CC 57'),
-      C('slotI', 'Slot I', 'per-pattern parameter, CC 58'),
-      C('slotJ', 'Slot J', 'per-pattern parameter, CC 59'),
-    ]),
-    note: 'Each pattern decides what its own slots mean, so these are generic by design and say nothing under the generator. They are here because a patch carries them and an editor that could not set them could not build a complete patch.',
-  };
+;
 
   // ---- starting points ---------------------------------------------------
 
@@ -640,7 +622,7 @@
     OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
     unit, bip, ccCount, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
-    LANES, MODULATORS, PULSE_DESTS, DESTINATIONS, PARS, TIMING, SLOTS,
+    LANES, MODULATORS, PULSE_DESTS, DESTINATIONS, PARS, TIMING,
     ANCHORS, FAN_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

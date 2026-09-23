@@ -141,7 +141,6 @@ extern void setGeneratorFanRate(uint8_t value);
 extern void setGeneratorFanFreq(uint8_t value);
 extern void setGeneratorFanPhase(uint8_t value);
 extern void setGeneratorFanRandom(uint8_t value);
-extern void setGeneratorJitter(uint8_t value);
 extern void setGeneratorPulseRate(uint8_t value);
 extern void setGeneratorAlternate(uint8_t value);
 extern void setGeneratorBounce(uint8_t value);

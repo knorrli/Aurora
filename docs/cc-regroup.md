@@ -1,7 +1,8 @@
 # The CC map, regrouped
 
-**Nothing here has been applied.** This is the map to build from; every
-number is assigned and nothing is left "reserved for" something. Drafted
+**Applied 2026-09-23.** This is the map as it now stands in
+`shared/aurora_protocol.h`; both firmwares, `tools/patch.js` and
+`tools/index.html` agree with it, checked number by number. Drafted
 2026-09-23, after the fan took the last numbers at the end of the map and
 showed that the map is not short of numbers but short of room in the right
 places.
@@ -28,7 +29,16 @@ that rule stays followable instead of being bent one control at a time.
 - **Hold comes back.** v1's `R_Touchpad.cpp` held the last position when the
   finger lifted, and it was useful. So the axes are *positions that persist*,
   and engage is a separate signal rather than "a finger is down".
-- **CC 76 (jitter) retires** once the scatter reaches the firmware.
+- **Jitter is gone**, out of the map and out of both renderers. Keeping it
+  alive until the scatter ships would have been carrying the replaced
+  mechanism through the rebuild that exists to stop exactly that. The cost is
+  real and accepted: until the scatter is in the firmware the wall has no
+  texture at all, and Starfield and Glitch come off the bench page's roster
+  until it does.
+- **The foot pedal needs nothing here.** It hangs off the controller, which
+  reads its four switches and emits messages that already exist — a Program
+  Change, a note, a CC. It is a second button for a control that has one, not
+  a function of its own, the same way the tap tempo button is.
 - **The per-preset parameter slots retire outright.** CC 50–59 held ten
   generic numbers a hand-written pattern could read however it liked.
   `CC_PRESET_PARAM_A` through `_J` appear in exactly one file — the header
@@ -132,14 +142,13 @@ between 2 and 119 is in a block.
 
 ## The map
 
-Every number, assigned. 81 spoken for, 33 spare, and nothing on the box
-or in the patch without a home.
+Every number, assigned. 81 spoken for, 33 spare.
 
 ### 2–9 · Transport / meta
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **2** | `TEMPO_DIVISION` | [patch] | 10 | note value one tempo pulse stands for |
+| **2** | `TEMPO_DIVISION` | [patch] | — | note value one tempo pulse stands for |
 
 Spare: 3, 4, 5, 6, 8, 9.
 
@@ -147,21 +156,21 @@ Spare: 3, 4, 5, 6, 8, 9.
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **12** | `FADER_COLOR` | [ambient] | new | fader 1 position — the Color route |
-| **13** | `FADER_EXTENT` | [ambient] | new | fader 2 position — the Extent route |
-| **14** | `FADER_MOTION` | [ambient] | new | fader 3 position — the Motion route |
-| **15** | `PAD_X` | [gesture] | new | touchpad X, a position that persists |
-| **16** | `PAD_Y` | [gesture] | new | touchpad Y, a position that persists |
-| **17** | `PAD_PRESSURE` | [gesture] | new | touchpad pressure, 0-127 |
-| **18** | `PAD_ENGAGE` | [gesture] | new | is the pad's effect live; separate from a finger being down |
-| **19** | `ROCKER_PAD_A` | [ambient] | new | rocker below-left of the pad |
-| **20** | `ROCKER_PAD_B` | [ambient] | new | rocker above the pad, left |
-| **21** | `ROCKER_PAD_C` | [ambient] | new | rocker above the pad, center |
-| **22** | `ROCKER_PAD_D` | [ambient] | new | rocker above the pad, right |
-| **23** | `ROCKER_FADERS` | [ambient] | new | rocker below the fader panel |
-| **24** | `AUDIO_FOLLOWER` | [ambient] | new | peak-follower on/off, if it lands on the Teensy |
-| **25** | `AUDIO_THRESHOLD` | [ambient] | new | audio-in gate threshold, if it lands on the Teensy |
-| **26** | `KEY_HELD` | [gesture] | new | is the key the last Program Change named still down |
+| **12** | `FADER_COLOR` | [ambient] | — | fader 1 position — the Color route |
+| **13** | `FADER_EXTENT` | [ambient] | — | fader 2 position — the Extent route |
+| **14** | `FADER_MOTION` | [ambient] | — | fader 3 position — the Motion route |
+| **15** | `PAD_X` | [gesture] | — | touchpad X, a position that persists |
+| **16** | `PAD_Y` | [gesture] | — | touchpad Y, a position that persists |
+| **17** | `PAD_PRESSURE` | [gesture] | — | touchpad pressure, 0-127 |
+| **18** | `PAD_ENGAGE` | [gesture] | — | is the pad's effect live; separate from a finger being down |
+| **19** | `ROCKER_PAD_A` | [ambient] | — | rocker below-left of the pad |
+| **20** | `ROCKER_PAD_B` | [ambient] | — | rocker above the pad, left |
+| **21** | `ROCKER_PAD_C` | [ambient] | — | rocker above the pad, center |
+| **22** | `ROCKER_PAD_D` | [ambient] | — | rocker above the pad, right |
+| **23** | `ROCKER_FADERS` | [ambient] | — | rocker below the fader panel |
+| **24** | `AUDIO_FOLLOWER` | [ambient] | — | peak-follower on/off, if it lands on the Teensy |
+| **25** | `AUDIO_THRESHOLD` | [ambient] | — | audio-in gate threshold, if it lands on the Teensy |
+| **26** | `KEY_HELD` | [gesture] | — | is the key the last Program Change named still down |
 
 Spare: 27, 28, 29, 30, 31.
 
@@ -169,9 +178,9 @@ Spare: 27, 28, 29, 30, 31.
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **33** | `WASH_LEVEL` | [patch] | 60 | wash master |
-| **34** | `WASH_HUE_OFFSET` | [patch] | 61 | rotates the washes off the strips' hue |
-| **35** | `WASH_SATURATION` | [patch] | 62 | scales the washes down from the strips' saturation |
+| **33** | `WASH_LEVEL` | [patch] | — | wash master |
+| **34** | `WASH_HUE_OFFSET` | [patch] | — | rotates the washes off the strips' hue |
+| **35** | `WASH_SATURATION` | [patch] | — | scales the washes down from the strips' saturation |
 
 Spare: 36, 37.
 
@@ -179,26 +188,26 @@ Spare: 36, 37.
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **38** | `HUE` | [patch] | 20 | hue center |
-| **39** | `SATURATION` | [patch] | 21 | saturation |
-| **40** | `VALUE` | [patch] | 22 | brightness |
-| **41** | `COLOR_REGION` | [switch] | 47 | one gradient across the ruler / regions |
-| **42** | `COLOR_RULER` | [switch] | 48 | across the strips / along a strip / within a shape |
-| **43** | `PLACED_HUE` | [patch] | 24 | how far one end of the ruler departs |
-| **44** | `PLACED_WHITE` | [patch] | 25 | toward white, or toward a pure hue |
-| **45** | `PLACED_DARK` | [patch] | 26 | toward dark, or toward full |
-| **46** | `PLACED_COUNT` | [patch] | 27 | regions along the ruler |
-| **47** | `PLACED_WIDTH` | [patch] | 28 | region width |
-| **48** | `PLACED_EDGE` | [patch] | 29 | region softness |
-| **49** | `PLACED_SPEED` | [patch] | 90 | bipolar; the field drifting along its ruler |
-| **50** | `WANDER_HUE` | [patch] | 91 | bipolar; how far the hue wanders |
-| **51** | `WANDER_WHITE` | [patch] | 92 | bipolar |
-| **52** | `WANDER_DARK` | [patch] | 93 | bipolar |
-| **53** | `WANDER_RATE` | [patch] | 94 | 0 = frozen |
-| **54** | `WANDER_SCALE` | [patch] | 95 | the whole wall as one, through to fine grain |
-| **55** | `LIT_HUE` | [patch] | 96 | bipolar; hue at the core of a shape |
-| **56** | `LIT_WHITE` | [patch] | 97 | white at the core |
-| **57** | `LIT_DARK` | [patch] | 98 | bipolar; the core toward dark or toward full |
+| **38** | `HUE` | [patch] | — | hue center |
+| **39** | `SATURATION` | [patch] | — | saturation |
+| **40** | `VALUE` | [patch] | — | brightness |
+| **41** | `COLOR_REGION` | [switch] | — | one gradient across the ruler / regions |
+| **42** | `COLOR_RULER` | [switch] | — | across the strips / along a strip / within a shape |
+| **43** | `PLACED_HUE` | [patch] | — | how far one end of the ruler departs |
+| **44** | `PLACED_WHITE` | [patch] | — | toward white, or toward a pure hue |
+| **45** | `PLACED_DARK` | [patch] | — | toward dark, or toward full |
+| **46** | `PLACED_COUNT` | [patch] | — | regions along the ruler |
+| **47** | `PLACED_WIDTH` | [patch] | — | region width |
+| **48** | `PLACED_EDGE` | [patch] | — | region softness |
+| **49** | `PLACED_SPEED` | [patch] | — | bipolar; the field drifting along its ruler |
+| **50** | `WANDER_HUE` | [patch] | — | bipolar; how far the hue wanders |
+| **51** | `WANDER_WHITE` | [patch] | — | bipolar |
+| **52** | `WANDER_DARK` | [patch] | — | bipolar |
+| **53** | `WANDER_RATE` | [patch] | — | 0 = frozen |
+| **54** | `WANDER_SCALE` | [patch] | — | the whole wall as one, through to fine grain |
+| **55** | `LIT_HUE` | [patch] | — | bipolar; hue at the core of a shape |
+| **56** | `LIT_WHITE` | [patch] | — | white at the core |
+| **57** | `LIT_DARK` | [patch] | — | bipolar; the core toward dark or toward full |
 
 Spare: 58, 59.
 
@@ -206,24 +215,24 @@ Spare: 58, 59.
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **60** | `GEN_ALTERNATE` | [switch] | 45 | odd strips run the journey backwards |
-| **61** | `GEN_BOUNCE` | [switch] | 46 | turn at the cell's edge instead of wrapping |
-| **62** | `GEN_WIDTH` | [patch] | 70 | the solid core, as a proportion of one cell |
-| **63** | `GEN_COUNT` | [patch] | 71 | shapes along the strip, 1-20 |
-| **64** | `GEN_EDGE` | [patch] | 72 | glow into the gap, both sides |
-| **65** | `GEN_TAIL` | [patch] | 73 | trail behind, into the gap |
-| **66** | `GEN_POSITION` | [patch] | 115 | bipolar; where a still pattern stands in its cell |
-| **67** | `GEN_SPEED` | [patch] | 74 | bipolar; center is still |
-| **68** | `GEN_FAN_FREQ` | [patch] | 116 | stepped; 0 to two turns across the wall |
-| **69** | `GEN_FAN_PHASE` | [patch] | 117 | where the wave sits on the strips |
-| **70** | `GEN_FAN_RANDOM` | [patch] | 118 | the wave, through to a fixed draw per strip |
-| **71** | `GEN_FAN` | [patch] | 75 | bipolar; how far apart the strips stand in their cells |
-| **72** | `GEN_FAN_RATE` | [patch] | 119 | bipolar; how far apart their speeds stand |
-| **73** | `GEN_FAN_PULSE` | [patch] | 99 | bipolar; how far apart they stand in the swell |
-| **74** | `GEN_PULSE_DEPTH` | [patch] | 77 | how far the trough digs below full light |
-| **75** | `GEN_PULSE_RATE` | [patch] | 78 | stepped; beats per swell |
-| **76** | `GEN_PULSE_SKEW` | [patch] | 79 | bipolar; slides the peak through the cycle |
-| **77** | `GEN_PULSE_SHAPE` | [patch] | 80 | square through to sine |
+| **60** | `GEN_ALTERNATE` | [switch] | — | odd strips run the journey backwards |
+| **61** | `GEN_BOUNCE` | [switch] | — | turn at the cell's edge instead of wrapping |
+| **62** | `GEN_WIDTH` | [patch] | — | the solid core, as a proportion of one cell |
+| **63** | `GEN_COUNT` | [patch] | — | shapes along the strip, 1-20 |
+| **64** | `GEN_EDGE` | [patch] | — | glow into the gap, both sides |
+| **65** | `GEN_TAIL` | [patch] | — | trail behind, into the gap |
+| **66** | `GEN_POSITION` | [patch] | — | bipolar; where a still pattern stands in its cell |
+| **67** | `GEN_SPEED` | [patch] | — | bipolar; center is still |
+| **68** | `GEN_FAN_FREQ` | [patch] | — | stepped; 0 to two turns across the wall |
+| **69** | `GEN_FAN_PHASE` | [patch] | — | where the wave sits on the strips |
+| **70** | `GEN_FAN_RANDOM` | [patch] | — | the wave, through to a fixed draw per strip |
+| **71** | `GEN_FAN` | [patch] | — | bipolar; how far apart the strips stand in their cells |
+| **72** | `GEN_FAN_RATE` | [patch] | — | bipolar; how far apart their speeds stand |
+| **73** | `GEN_FAN_PULSE` | [patch] | — | bipolar; how far apart they stand in the swell |
+| **74** | `GEN_PULSE_DEPTH` | [patch] | — | how far the trough digs below full light |
+| **75** | `GEN_PULSE_RATE` | [patch] | — | stepped; beats per swell |
+| **76** | `GEN_PULSE_SKEW` | [patch] | — | bipolar; slides the peak through the cycle |
+| **77** | `GEN_PULSE_SHAPE` | [patch] | — | square through to sine |
 
 Spare: 78, 79, 80, 81, 82.
 
@@ -231,15 +240,15 @@ Spare: 78, 79, 80, 81, 82.
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **83** | `SCATTER_RATE` | [patch] | 81 | how often a cell relights |
-| **84** | `SCATTER_COUNT` | [patch] | 82 | cells along a strip, 1-20 |
-| **85** | `SCATTER_WIDTH` | [patch] | 83 | the spot's core, in space and in time at once |
-| **86** | `SCATTER_EDGE` | [patch] | 84 | hard through to a fade, both axes |
-| **87** | `SCATTER_STAGGER` | [patch] | 85 | one clock for every cell, through to spread |
-| **88** | `SCATTER_DRIFT` | [patch] | 86 | bipolar; how far a spot slides across its cell |
-| **89** | `SCATTER_LIGHT` | [patch] | 87 | bipolar; amount toward full light or toward dark |
-| **90** | `SCATTER_HUE` | [patch] | 88 | bipolar; amount, up to half the wheel |
-| **91** | `SCATTER_WHITE` | [patch] | 89 | bipolar; toward white or toward a pure hue |
+| **83** | `SCATTER_RATE` | [patch] | — | how often a cell relights |
+| **84** | `SCATTER_COUNT` | [patch] | — | cells along a strip, 1-20 |
+| **85** | `SCATTER_WIDTH` | [patch] | — | the spot's core, in space and in time at once |
+| **86** | `SCATTER_EDGE` | [patch] | — | hard through to a fade, both axes |
+| **87** | `SCATTER_STAGGER` | [patch] | — | one clock for every cell, through to spread |
+| **88** | `SCATTER_DRIFT` | [patch] | — | bipolar; how far a spot slides across its cell |
+| **89** | `SCATTER_LIGHT` | [patch] | — | bipolar; amount toward full light or toward dark |
+| **90** | `SCATTER_HUE` | [patch] | — | bipolar; amount, up to half the wheel |
+| **91** | `SCATTER_WHITE` | [patch] | — | bipolar; toward white or toward a pure hue |
 
 Spare: 92, 93, 94, 95, 96, 97, 98, 99, 100.
 
@@ -247,21 +256,21 @@ Spare: 92, 93, 94, 95, 96, 97, 98, 99, 100.
 
 | CC | | | Was | |
 |---|---|---|---|---|
-| **101** | `PULSE_WIDTH` | [patch] | 100 | amount |
-| **102** | `PULSE_WIDTH_SHAPE` | [patch] | 101 | wave |
-| **103** | `PULSE_WIDTH_SKEW` | [patch] | 102 | skew |
-| **104** | `PULSE_HUE` | [patch] | 103 | amount |
-| **105** | `PULSE_HUE_SHAPE` | [patch] | 104 | wave |
-| **106** | `PULSE_HUE_SKEW` | [patch] | 105 | skew |
-| **107** | `PULSE_PAR_LEVEL` | [patch] | 106 | amount |
-| **108** | `PULSE_PAR_LEVEL_SHAPE` | [patch] | 107 | wave |
-| **109** | `PULSE_PAR_LEVEL_SKEW` | [patch] | 108 | skew |
-| **110** | `PULSE_PAR_HUE` | [patch] | 109 | amount |
-| **111** | `PULSE_PAR_HUE_SHAPE` | [patch] | 110 | wave |
-| **112** | `PULSE_PAR_HUE_SKEW` | [patch] | 111 | skew |
-| **113** | `PULSE_PAR_SAT` | [patch] | 112 | amount |
-| **114** | `PULSE_PAR_SAT_SHAPE` | [patch] | 113 | wave |
-| **115** | `PULSE_PAR_SAT_SKEW` | [patch] | 114 | skew |
+| **101** | `PULSE_WIDTH` | [patch] | — | amount |
+| **102** | `PULSE_WIDTH_SHAPE` | [patch] | — | wave |
+| **103** | `PULSE_WIDTH_SKEW` | [patch] | — | skew |
+| **104** | `PULSE_HUE` | [patch] | — | amount |
+| **105** | `PULSE_HUE_SHAPE` | [patch] | — | wave |
+| **106** | `PULSE_HUE_SKEW` | [patch] | — | skew |
+| **107** | `PULSE_PAR_LEVEL` | [patch] | — | amount |
+| **108** | `PULSE_PAR_LEVEL_SHAPE` | [patch] | — | wave |
+| **109** | `PULSE_PAR_LEVEL_SKEW` | [patch] | — | skew |
+| **110** | `PULSE_PAR_HUE` | [patch] | — | amount |
+| **111** | `PULSE_PAR_HUE_SHAPE` | [patch] | — | wave |
+| **112** | `PULSE_PAR_HUE_SKEW` | [patch] | — | skew |
+| **113** | `PULSE_PAR_SAT` | [patch] | — | amount |
+| **114** | `PULSE_PAR_SAT_SHAPE` | [patch] | — | wave |
+| **115** | `PULSE_PAR_SAT_SKEW` | [patch] | — | skew |
 
 Spare: 116, 117, 118, 119.
 ## What is not a CC, and why
@@ -285,13 +294,16 @@ Spare: 116, 117, 118, 119.
 
 ---
 
-## Migration
+## What applying it took
 
 1. `shared/aurora_protocol.h` — the enum, the range comments, the rule.
-2. `brain/src/midi_in.cpp` — the switch is by symbol, so it follows for free.
-3. `controller/src/` — eleven references, all by symbol. Follows for free.
-4. `tools/patch.js` and `tools/index.html` — both carry a literal CC map.
-   `patch.js` also drops its `SLOTS` block and the editor loses the collapsed
+2. `brain/src/midi_in.cpp` — by symbol, so it followed for free; only the
+   retired CCs needed their cases removing.
+3. `controller/src/` — by symbol too. The three rocker sends were renamed to
+   the panel positions they report, and the fifth rocker goes unsent because
+   v1 has no pin for it.
+4. `tools/patch.js` and `tools/index.html` — both carried a literal CC map.
+   `patch.js` also dropped its `SLOTS` block and the editor lost the collapsed
    per-pattern section that showed slots A–J.
 5. **The editor's stored library is cleared, not migrated.** It lives in
    `localStorage` under `aurora.editor.library`, CC-indexed by `libToWire`,

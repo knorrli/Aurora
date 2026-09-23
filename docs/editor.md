@@ -184,11 +184,10 @@ a DAW's automation lane does not, and the page says so when you do it.
 
 ## What went away
 
-**Jitter has no control.** CC 76 is still in the protocol and the firmware
-still renders it, but no patch can reach it: a parameter set leaves that byte
-at zero. The scatter replaces it, and until the scatter is in the firmware the
-rig has no texture a patch can ask for. That is deliberate — jitter cannot be
-aimed anywhere and its grain can only ever be one pixel wide, so keeping a
+**Jitter is gone**, out of the protocol and out of both renderers as of
+2026-09-23. The scatter replaces it, and until the scatter is in the firmware
+the rig has no texture a patch can ask for. That is deliberate — jitter cannot
+be aimed anywhere and its grain can only ever be one pixel wide, so keeping a
 control for it would mean building patches around something already replaced.
 
 ## Not built

@@ -35,7 +35,6 @@ static bool     s_tap_prev_state         = false;
 static uint32_t s_last_trigger_ms        = 0;
 static bool     s_trigger_prev_state     = false;
 
-static uint8_t  s_last_mode_flags        = 0xFF;
 static uint8_t  s_last_strip_mode        = 0xFF;
 static uint8_t  s_last_effect_mode       = 0xFF;
 static uint8_t  s_last_hold_mode         = 0xFF;
@@ -188,32 +187,33 @@ static uint8_t read_strip_mode() {
     else               return   0; // mirrored
 }
 
+// A rocker reports where it stands and says nothing about what that means —
+// the patch decides. So these send positions under names that describe where
+// the switch *is* on the panel, not what v1 made it do.
+//
+// The pin names still carry v1's meanings and the mapping from pin to panel
+// position is not recorded anywhere; docs/controls.md says so. Correct these
+// three when the box is metered.
+//
+// The fifth switch has no pin. v1 read five rockers on four inputs by packing
+// fader-alt and preset-alt onto A7, which is why CC_ROCKER_FADERS goes unsent
+// until the rebuild gives it one.
 static void scan_switches() {
     const uint8_t effect = digitalRead(PIN_TOUCHPAD_EFFECT) ? 127 : 0;
     const uint8_t hold   = digitalRead(PIN_HOLD_MODE)        ? 127 : 0;
     const uint8_t strip  = read_strip_mode();
 
     if (effect != s_last_effect_mode) {
-        midi_io::send_control_change(CC_TOUCHPAD_EFFECT, effect);
+        midi_io::send_control_change(CC_ROCKER_PAD_B, effect);
         s_last_effect_mode = effect;
     }
     if (hold != s_last_hold_mode) {
-        midi_io::send_control_change(CC_HOLD_MODE, hold);
+        midi_io::send_control_change(CC_ROCKER_PAD_C, hold);
         s_last_hold_mode = hold;
     }
     if (strip != s_last_strip_mode) {
-        midi_io::send_control_change(CC_TOUCHPAD_STRIP_MODE, strip);
+        midi_io::send_control_change(CC_ROCKER_PAD_A, strip);
         s_last_strip_mode = strip;
-    }
-
-    // Packed mode-flags CC. Currently only a couple bits are populated;
-    // most bits are reserved for future use (see MODE_BIT_RESERVED_*).
-    uint8_t flags = 0;
-    // (Examples — wire these to real switches as they come online.)
-    // if (palette_animation_enabled) flags |= MODE_BIT_PALETTE_ANIMATION;
-    if (flags != s_last_mode_flags) {
-        midi_io::send_control_change(CC_MODE_FLAGS, flags);
-        s_last_mode_flags = flags;
     }
 }
 
@@ -223,10 +223,10 @@ static void scan_switches() {
 // Stubbed for now — the Adafruit TouchScreen library + 4-wire read is
 // identical to what the brain does today; porting is straightforward but
 // bulky. When we're ready to flesh this out, emit:
-//   CC_SCULPT_X     (strip index or 0..127)
-//   CC_SCULPT_Y     (per-preset axis)
-//   CC_TOUCH_PRESSURE
-//   CC_TOUCH_ACTIVE (0 / 127)
+//   CC_PAD_X, CC_PAD_Y  — positions that persist when the finger lifts
+//   CC_PAD_PRESSURE
+//   CC_PAD_ENGAGE       — whether the pad reaches anything at all, which is
+//                         a control of its own and not "a finger is down"
 
 static void scan_touchpad() {
     // TODO: move R_Touchpad logic here, convert to CC emission.

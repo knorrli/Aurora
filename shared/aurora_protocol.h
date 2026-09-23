@@ -110,30 +110,33 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // Control Change — continuous parameters
 // ---------------------------------------------------------------------------
 //
-// Layout:
-//      0 –   9 : AVOID (standard MIDI: bank select, modulation, etc.)
-//     10 –  19 : transport / meta control
-//     20 –  29 : color — three faders plus the color field
-//     30 –  39 : touchpad / sculpt mode
-//     40 –  49 : mode flags & switches
-//     50 –  59 : per-preset parameter slots (interpretation is per preset)
-//     60 –  69 : washes / DMX fixtures
-//     70 –  79 : generator shape parameters
-//           80 : generator pulse shape
-//     81 –  89 : the scatter — a texture source and its three amounts
-//     90 –  99 : color, second half (twenty controls will not fit in ten)
-//    100 – 114 : the pulse's destinations, three apiece
-//           115 : where a still pattern stands — a shape control that did
-//                 not fit in 70–79
-//    116 – 119 : RESERVED
-//    120 – 127 : AVOID (standard MIDI: channel mode messages)
+// Layout. Regrouped 2026-09-23; the reasoning is in docs/cc-regroup.md.
 //
-// Eighteen of these have no case in the brain's handleControlChange: the
-// sculpt axes at 30–33, the touchpad and hold modes at 41–44, and the
-// per-preset slots at 50–59. They are controller controls, and the
-// controller's feature set is not finalized — the wiring waits on that, not
-// on a decision here. Not dead numbering, and not a question about the
-// protocol.
+//      0,  1 : AVOID — bank select MSB and modulation
+//      2 –   9 : transport / meta                        (7 = AVOID, volume)
+//     10,  11 : AVOID — pan and expression
+//     12 –  31 : the controller — what each control stands at
+//           32 : AVOID — bank select LSB
+//     33 –  37 : washes / DMX fixtures
+//     38 –  59 : color — the three faders, the placed field, the wander,
+//                 the lit reach, and the two color switches
+//     60 –  82 : the generator — shape, the fan, and the pulse's own source
+//     83 – 100 : the scatter — a texture source and its three amounts
+//    101 – 119 : where else the pulse reaches, three apiece
+//    120 – 127 : AVOID — channel mode messages
+//
+// Nothing between 2 and 119 is outside a block, and no block is split.
+//
+// The four AVOIDed numbers in the middle are the ones a DAW writes without
+// being asked: volume, pan, expression and bank select, which travels with
+// the Program Changes Mainstage sends. Aurora answers on every channel today
+// — see TODO.md § Known defects — so dodging them is the only protection
+// there is until both receivers filter.
+//
+// 12–31 is the modwheel model and the reason this block exists: a control
+// reports the value it stands at and says nothing about what that does. The
+// patch decides. Every one of them is [ambient] or [gesture], because where
+// a hand has left a fader is not something a patch holds.
 //
 // ---------------------------------------------------------------------------
 
@@ -184,127 +187,84 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // ---------------------------------------------------------------------------
 
 enum AuroraCC : uint8_t {
-    // 10–19 — transport / meta
+    // 2–9 — transport / meta
     //
     // A half-time look is a real musical idea, and a song that wants one
     // wants it for every patch in that song — so a patch that needs the
     // other feel is a duplicate with a different division, not a reason to
     // keep this out of a patch.
-    CC_TEMPO_DIVISION      = 10, // [patch] note value one tempo pulse stands
-                                 // for; value is an AuroraTempoDivision
-                                 // index
-    // 11–19 reserved (transport / meta)
-
-    // 20–29 — color, first half. 20–22 are the three faders; 23–29 carry
-    // the placed field. The second half is at 90–99.
     //
-    // A color is hue, whiteness and darkness. Everything below is a push on
-    // those three, measured from the faders, and the pushes add — so with
-    // every one of them centered the wall is exactly the color on the faders.
-    // See P_Generator.cpp § "The color layer".
-    CC_HUE                 = 20, // [patch] hue center / H fader
-    CC_SATURATION          = 21, // [patch] saturation / S fader
-    CC_VALUE               = 22, // [patch] brightness / V fader
+    // The 12-position rotary on the box is this control; it has no CC of its
+    // own. Moved off 10, where it shared a number with pan.
+    CC_TEMPO_DIVISION      = 2,  // [patch] note value one tempo pulse stands
+                                 // for; value is an AuroraTempoDivision index
+    // 3–9 reserved (transport / meta), skipping 7
 
-    // The placed field is something aimed: a gradient running one way across a
-    // ruler with the faders' color at its center, or regions sitting on that
-    // ruler. Count, width and edge mean here exactly what they mean in the
-    // shape block below.
-    // 23 free — the primitive and the ruler moved to 47 and 48, where a
-    // sender can set one without having to know the other.
-    CC_PLACED_HUE          = 24, // [patch] bipolar: 64 is flat, either side
-                                 // is how far ONE end departs — the two ends
-                                 // land twice that far apart
-    CC_PLACED_WHITE        = 25, // [patch] bipolar: up is toward white at one
-                                 // end, down is toward a pure hue
-    CC_PLACED_DARK         = 26, // [patch] bipolar: down is toward dark, up
-                                 // toward full — which needs the V fader left
-                                 // below the top to have anywhere to go
-    CC_PLACED_COUNT        = 27, // [patch] regions along the ruler, 1–20.
-                                 // Ignored by a gradient, which spans the
-                                 // ruler once
-    CC_PLACED_WIDTH        = 28, // [patch] a region's solid core, as a
-                                 // proportion of one cell
-    CC_PLACED_EDGE         = 29, // [patch] hard-edged region through to a
-                                 // smooth fade
-
-    // 30–39 — touchpad / sculpt
-    CC_SCULPT_Y            = 30, // [gesture] touchpad Y in sculpt mode
-                                 // (per-preset axis)
-    CC_SCULPT_X            = 31, // [gesture] touchpad X in sculpt mode
-                                 // (usually strip select)
-    CC_TOUCH_PRESSURE      = 32, // [gesture] raw pressure, 0–127
-    CC_TOUCH_ACTIVE        = 33, // [gesture] 0 = not touched, 127 = touched
-    // 34–39 reserved (touchpad)
-
-    // 40–49 — mode flags & switches. 41–44 are the standing positions of
-    // switches on the box, which is what makes them [ambient].
-    CC_MODE_FLAGS          = 40, // [legacy] v1 flag bitmap. Not a pattern to
-                                 // follow and not an open question — see
-                                 // "CC_MODE_FLAGS bits" below before raising
-                                 // it.
-    CC_TOUCHPAD_STRIP_MODE = 41, // [ambient] 0 = mirrored, 64 = all,
-                                 // 127 = exclusive
-    CC_TOUCHPAD_EFFECT     = 42, // [ambient] 0 = paint/fill, 64 =
-                                 // paint/invert, 127 = sculpt
-    CC_HOLD_MODE           = 43, // [ambient] 0 = off, 127 = on
-    CC_VERTICAL_MODE       = 44, // [ambient] 0 = Y-modulates-saturation,
-                                 // 127 = Y-modulates-hue
-
-    // One switch per CC, because a CC cannot be read back: nothing here can
-    // ask the brain what the other switches are currently set to, so a sender
-    // that packed several into one byte would have to know all of them to
-    // change any one of them. A sequencer setting "regions" would silently
-    // put the ruler back across the wall. Splitting them also makes each one
-    // an ordinary switch lane in a DAW rather than a number to be looked up.
+    // 12–31 — the controller
     //
-    // Everything here reads as off below 64 and on from 64 up, except the
-    // ruler, which is banded like CC_TOUCHPAD_STRIP_MODE above.
+    // Every control on the box, reporting the value it stands at and nothing
+    // about what that value does. The patch decides the meaning; a sender
+    // with two knobs and no touchpad can drive the axes without knowing a pad
+    // exists. docs/controls.md is the inventory these come from.
     //
-    // These four are the ones DESIGN.md § "Switches belong to the patch"
-    // argues about: saved and recalled, never interpolated.
-    CC_GEN_ALTERNATE       = 45, // [switch] odd strips run the journey
-                                 // backwards
-    CC_GEN_BOUNCE          = 46, // [switch] turn at the cell's edge instead
-                                 // of wrapping
-    CC_COLOR_REGION       = 47, // [switch] 0 = one gradient across the ruler,
-                                 // 127 = regions
-    CC_COLOR_RULER        = 48, // [switch] 0 = across the five strips, 64 =
-                                 // along a strip, 127 = within a shape
-    // 49 reserved (mode flags)
+    // None of them is [patch]. A fader position is where a hand left it, not
+    // something a look holds.
 
-    // 50–59 — per-preset parameter slots
-    //
-    // These are deliberately generic. Each preset decides what its own
-    // slots A–J mean. The controller shouldn't need to know — it just
-    // passes the value through. Brain-side documentation lives next to
-    // the preset implementation.
-    //
-    // All ten are [patch]. A slot means different things under two presets,
-    // so morphing between patches that sit on different presets interpolates
-    // a number whose meaning changes underneath it — which is true of the
-    // whole parameter set when the preset differs, not of these slots alone.
-    CC_PRESET_PARAM_A      = 50, // [patch]
-    CC_PRESET_PARAM_B      = 51, // [patch]
-    CC_PRESET_PARAM_C      = 52, // [patch]
-    CC_PRESET_PARAM_D      = 53, // [patch]
-    CC_PRESET_PARAM_E      = 54, // [patch]
-    CC_PRESET_PARAM_F      = 55, // [patch]
-    CC_PRESET_PARAM_G      = 56, // [patch]
-    CC_PRESET_PARAM_H      = 57, // [patch]
-    CC_PRESET_PARAM_I      = 58, // [patch]
-    CC_PRESET_PARAM_J      = 59, // [patch]
+    // The three sticks on the left of the box. Each is a route to "more" for
+    // the patch that is up — see DESIGN.md § "The three faders are three
+    // routes to 'more'" — so the brain needs to know where each one stands in
+    // order to morph toward that patch's Color, Extent and Motion sets. These
+    // are not the color at 38–40, which is what a patch holds.
+    CC_FADER_COLOR         = 12, // [ambient] more means hotter, toward white
+    CC_FADER_EXTENT        = 13, // [ambient] more means more of the wall lit
+    CC_FADER_MOTION        = 14, // [ambient] more means faster, harder
 
-    // 60–69 — washes / DMX fixtures. All three are [patch]: DESIGN.md
+    // Positions that persist. v1 held the last one when the finger lifted and
+    // it was useful, so engage is a control of its own rather than "a finger
+    // is down": the axes keep their value and engage says whether the pad's
+    // effect is live at all.
+    CC_PAD_X               = 15, // [gesture]
+    CC_PAD_Y               = 16, // [gesture]
+    CC_PAD_PRESSURE        = 17, // [gesture] raw, 0–127, never yet measured
+    CC_PAD_ENGAGE          = 18, // [gesture] 0 = the pad reaches nothing
+
+    // The four rockers around the touchpad and the one under the faders.
+    // Named for where they sit, because what each one does is undecided —
+    // v1's meanings retired with the model that needed them. Which physical
+    // rocker is which, and which are 2-way against 3-way, is not recorded
+    // anywhere; see docs/controls.md.
+    CC_ROCKER_PAD_A        = 19, // [ambient] below-left of the pad
+    CC_ROCKER_PAD_B        = 20, // [ambient] above the pad, left
+    CC_ROCKER_PAD_C        = 21, // [ambient] above the pad, center
+    CC_ROCKER_PAD_D        = 22, // [ambient] above the pad, right
+    CC_ROCKER_FADERS       = 23, // [ambient] below the fader panel. Shared a
+                                 // pin with preset-alt in v1 and now has its
+                                 // own number; the pin comes with the rebuild
+
+    // Only if the peak follower moves onto the controller when the secondary
+    // board goes. If it stays a circuit that never reaches a pin, these two
+    // go back to spare.
+    CC_AUDIO_FOLLOWER      = 24, // [ambient] peak follower on/off
+    CC_AUDIO_THRESHOLD     = 25, // [ambient] the level the gate fires at
+
+    // Which key the keypad names arrives as a Program Change. This is whether
+    // that key is still down — a state, not an event, because the morph
+    // stretches for as long as it reads 127 and lands when it reads 0. A note
+    // pair would say the key's identity a second time, and the model names
+    // one destination at a time. See DESIGN.md § "Changing patch".
+    CC_KEY_HELD            = 26, // [gesture] 127 while the key is held
+    // 27–31 reserved (the controller)
+
+    // 33–37 — washes / DMX fixtures. All three are [patch]: DESIGN.md
     // § "What a patch holds for them" names level, hue offset and saturation
     // as the whole of what a patch keeps for the PARs.
-    CC_WASH_LEVEL          = 60, // [patch] wash master, independent of the
+    CC_WASH_LEVEL          = 33, // [patch] wash master, independent of the
                                  // strips so the washes can be pulled down
                                  // under a running pattern. PRESET_OFF
                                  // overrides it and darkens them: numpad 0 is
                                  // an emergency stop, and one key has to kill
                                  // the rig on its own.
-    CC_WASH_HUE_OFFSET     = 61, // [patch] rotates the washes off the strips'
+    CC_WASH_HUE_OFFSET     = 34, // [patch] rotates the washes off the strips'
                                  // hue, so they can sit complementary or
                                  // merely adjacent instead of matching. 0
                                  // matches; 64 of 127 is the opposite side of
@@ -312,241 +272,201 @@ enum AuroraCC : uint8_t {
     // Scales the washes down from the strips' saturation: 127 matches them,
     // 0 is white. A relationship rather than a color of their own, like
     // every other wash control — see DESIGN.md § "The PAR cans". It is also
-    // where the pulse's push at 112–114 measures from, which it could not do
-    // while the only saturation in the rig was the strips' own fader.
-    CC_WASH_SATURATION     = 62, // [patch]
-    // 63–69 reserved (washes)
+    // where the pulse's push at 113–115 measures from.
+    CC_WASH_SATURATION     = 35, // [patch]
+    // 36–37 reserved (washes)
 
-    // 70–79 — generator shape. Only read while PRESET_GENERATOR is active.
-    // All [patch]: this block is the look, and the three fader routes are
-    // built out of it.
-    CC_GEN_WIDTH           = 70, // [patch] how much of one cell the shape
-                                 // covers
-    CC_GEN_COUNT           = 71, // [patch] how many shapes along the strip,
-                                 // 1–20
-    CC_GEN_EDGE            = 72, // [patch] symmetric softness at both ends
-    CC_GEN_TAIL            = 73, // [patch] asymmetric fade behind the shape
-                                 // only
-    CC_GEN_SPEED           = 74, // [patch] bipolar: 64 is still, either side
-                                 // travels
-    // 75, 99 and 119 are the fan's three amounts, and 116-118 shape the wave
-    // they share. One wave runs across the five strips; each amount decides
-    // how far it pushes one quantity, so a wall of staggered bars can strobe
-    // in unison. A single offset reaching everything cyclic could not.
+    // 38–59 — color. One block, where it used to be split across 20–29 and
+    // 90–99 because twenty controls do not fit in ten.
     //
-    // Bipolar, and 100 % spreads the five strips over exactly one cell. Both
-    // ends of the range are the same wall with the wave turned over, and at
-    // the very top the two outer strips come back into step with each other,
-    // for the same reason CC 115's two ends are one place.
-    CC_GEN_FAN             = 75, // [patch] how far apart the five strips
+    // 38–40 are what a patch holds; the three sticks that used to set them
+    // are at 12–14 now and mean something else. The placed field, the wander
+    // and the lit reach are all departures measured from these three, and the
+    // pushes add — so with every one of them centered the wall is exactly the
+    // color here.
+    CC_HUE                 = 38, // [patch] hue center
+    CC_SATURATION          = 39, // [patch]
+    CC_VALUE               = 40, // [patch] brightness
+
+    // One switch per CC, because a CC cannot be read back: nothing here can
+    // ask the brain what the other switches are currently set to, so a sender
+    // that packed several into one byte would have to know all of them to
+    // change any one of them. Splitting them also makes each one an ordinary
+    // switch lane in a DAW rather than a number to be looked up.
+    //
+    // Off below 64 and on from 64 up, except the ruler, which is banded into
+    // thirds. These two and the generator's at 60–61 are what DESIGN.md
+    // § "Switches belong to the patch" argues about: saved and recalled,
+    // never interpolated.
+    CC_COLOR_REGION        = 41, // [switch] 0 = one gradient across the
+                                 // ruler, 127 = regions
+    CC_COLOR_RULER         = 42, // [switch] 0 = across the five strips,
+                                 // 64 = along a strip, 127 = within a shape
+    CC_PLACED_HUE          = 43, // [patch] bipolar: how far one end of the
+                                 // ruler departs from the base hue
+    CC_PLACED_WHITE        = 44, // [patch] bipolar: toward white, or toward
+                                 // a pure hue
+    CC_PLACED_DARK         = 45, // [patch] bipolar: toward dark, or toward
+                                 // full
+    CC_PLACED_COUNT        = 46, // [patch] regions along the ruler, 1–20
+    CC_PLACED_WIDTH        = 47, // [patch]
+    CC_PLACED_EDGE         = 48, // [patch] hard through to a fade
+    CC_PLACED_SPEED        = 49, // [patch] bipolar: the field drifting along
+                                 // its own ruler
+    CC_WANDER_HUE          = 50, // [patch] bipolar: how far the hue wanders
+    CC_WANDER_WHITE        = 51, // [patch] bipolar
+    CC_WANDER_DARK         = 52, // [patch] bipolar
+    CC_WANDER_RATE         = 53, // [patch] 0 = frozen, up to two beats per
+                                 // cycle
+    CC_WANDER_SCALE        = 54, // [patch] 0 = the whole wall moving as one,
+                                 // up to a fine grain
+    // Anchored at the dim end: the faders are what a fade runs out to, and
+    // the core is the departure.
+    CC_LIT_HUE             = 55, // [patch] bipolar: 64 = none, ±64 hue at
+                                 // the core
+    CC_LIT_WHITE           = 56, // [patch] 0 = none, up = white at the core
+    CC_LIT_DARK            = 57, // [patch] bipolar: 64 = none, down takes the
+                                 // core toward dark and up toward full
+    // 58–59 reserved (color)
+
+    // 60–82 — the generator. Only read while PRESET_GENERATOR is active.
+    CC_GEN_ALTERNATE       = 60, // [switch] odd strips run the journey
+                                 // backwards
+    CC_GEN_BOUNCE          = 61, // [switch] turn at the cell's edge instead
+                                 // of wrapping
+    CC_GEN_WIDTH           = 62, // [patch] how much of one cell the shape's
+                                 // solid core takes
+    CC_GEN_COUNT           = 63, // [patch] how many shapes along the strip,
+                                 // 1–20, geometric so a morph doubles
+    CC_GEN_EDGE            = 64, // [patch] symmetric softness at both ends
+    CC_GEN_TAIL            = 65, // [patch] asymmetric fade behind the shape
+    // Bipolar: 64 is the middle of the cell, and half a cell each way covers
+    // every place a shape can stand, because the pattern repeats once per
+    // cell. Read only while the pattern is still; travel sets its own place.
+    // One thing to watch in a morph: the two ends of this control are the
+    // same place on the wall, so interpolating from one toward the other
+    // slides the shape the long way across the cell rather than across the
+    // seam.
+    CC_GEN_POSITION        = 66, // [patch] where a still pattern stands in
+                                 // its cell
+    CC_GEN_SPEED           = 67, // [patch] bipolar: 64 is still, either side
+                                 // travels
+
+    // 68–73 — the fan, whole and in one place. One wave runs across the five
+    // strips; each amount decides how far it pushes one quantity, so a wall
+    // of staggered bars can strobe in unison. A single offset reaching
+    // everything cyclic could not. See docs/generator.md § "The fan is a
+    // wave".
+    //
+    // Frequency is stepped to eighths of a turn and the phase runs on 128ths
+    // of one, because the two together have to read *exactly* zero on a
+    // strip: read near zero and a strip is not still, it crawls. Still has to
+    // mean still here for the same reason it does on CC 67.
+    //
+    // Two things to know at the top of the frequency range, where every strip
+    // sits opposite its neighbors: the phase only scales how deep the
+    // alternation is rather than moving it, and a quarter turn either side of
+    // it every strip reads zero and the fan goes quiet.
+    CC_GEN_FAN_FREQ        = 68, // [patch] 0 = all five alike, up to two
+                                 // turns across the wall
+    CC_GEN_FAN_PHASE       = 69, // [patch] where the wave sits on the strips:
+                                 // a staircase through a chevron
+    CC_GEN_FAN_RANDOM      = 70, // [patch] 0 = the wave, 127 = a fixed draw
+                                 // per strip
+    // The three amounts. Bipolar, and 100 % spreads the five strips over
+    // exactly one cell or one swell — both ends of a range are the same wall
+    // with the wave turned over. The rate is an absolute speed added to
+    // CC 67's, on CC 67's own squared curve, so mirroring one fader about its
+    // center against the other cancels exactly: that is what stands one strip
+    // still while the rest run.
+    CC_GEN_FAN             = 71, // [patch] how far apart the five strips
                                  // stand in their cells
-    // Superseded by the scatter at 81–89 and kept only while the firmware
-    // still renders it. See the note there.
-    CC_GEN_JITTER          = 76, // [patch] randomness in position and
-                                 // brightness
-    // The pulse is one oscillator with one rate, and 77/79/80 are its
-    // amount and its wave where it reaches the strips' brightness. Every
-    // other destination carries its own three at 100–114.
-    CC_GEN_PULSE_DEPTH     = 77, // [patch] how far the trough digs below full
+    CC_GEN_FAN_RATE        = 72, // [patch] how far apart their speeds stand,
+                                 // either side of Speed
+    CC_GEN_FAN_PULSE       = 73, // [patch] how far apart they stand in the
+                                 // swell. The washes take the unfanned phase
+                                 // whatever this says: a PAR is one position
+                                 // with no strip to be offset from.
+
+    // The pulse is one oscillator with one rate, and 74/76/77 are its amount
+    // and its wave where it reaches the strips' brightness. Every other
+    // destination carries its own three at 101–119.
+    CC_GEN_PULSE_DEPTH     = 74, // [patch] how far the trough digs below full
                                  // light
-    CC_GEN_PULSE_RATE      = 78, // [patch] beats per swell; stepped, see
-                                 // AURORA_PULSE_PERIODS below
-    CC_GEN_PULSE_SKEW      = 79, // [patch] bipolar: 64 is an even rise and
-                                 // fall, either side slides the peak toward a
-                                 // ramp
-    CC_GEN_PULSE_SHAPE     = 80, // [patch] 0 = hard on/off square, 127 =
+    CC_GEN_PULSE_RATE      = 75, // [patch] beats per swell; stepped, see
+                                 // AURORA_PULSE_PERIODS
+    CC_GEN_PULSE_SKEW      = 76, // [patch] bipolar: 64 is an even rise and
+                                 // fall, either side slides the peak toward
+                                 // a ramp
+    CC_GEN_PULSE_SHAPE     = 77, // [patch] 0 = hard on/off square, 127 =
                                  // smooth sine
 
-    // 81–89 — the scatter.
-    //
-    // The third modulation source, and the first one with a position: the
-    // pulse is a value over time with nowhere on the wall, the wander is
-    // smooth over both, and this one is random over both. A grid of cells
-    // along a strip, each with its own clock, each lighting a spot that
-    // appears, holds, fades, and may slide across its own cell as it does.
-    // Stateless — a cell's clock comes out of a hash, so there is no
-    // particle list to keep.
-    //
-    // It is what CC_GEN_JITTER should have been. Jitter deforms the shape
-    // branch from inside its own sampling and is therefore not a value that
-    // can be aimed anywhere, which is why it can only ever take light away
-    // and why its grain is always one pixel wide. See docs/generator.md
-    // § "What jitter is for". CC 76 stays where it is until the firmware
-    // renders this block; the two are not meant to coexist for long.
-    //
-    // All [patch]. The three amounts are bipolar with 64 as no push, and the
-    // sign picks which limit the push runs toward, exactly as the pulse's do
-    // at 100–114 — so a spot inside an already-full shape has nowhere to go
-    // and is covered by it with no occlusion rule anywhere.
-    CC_SCATTER_RATE        = 81, // [patch] how often a cell relights
-    CC_SCATTER_COUNT       = 82, // [patch] cells along a strip, 1–20; the
-                                 // same unit as CC_GEN_COUNT
-    // The spot's core on both axes at once: how much of its cell it covers,
-    // and how much of its cycle it is lit. One quantity rather than a size
-    // and a duration, which is what keeps this block to nine slots.
-    CC_SCATTER_WIDTH       = 83, // [patch]
-    CC_SCATTER_EDGE        = 84, // [patch] hard through to a fade, in space
-                                 // and in time alike
+    // 78–82 reserved (the generator)
+
+    // 83–100 — the scatter. The third source in the family: the pulse is
+    // regular in time and has no place on the wall, the wander is smooth over
+    // both, the scatter is random over both. Six controls shape it and three
+    // amounts aim it. Designed in tools/preview.js and not yet in the
+    // firmware — see docs/generator.md § "The scatter".
+    CC_SCATTER_RATE        = 83, // [patch] how often a cell relights
+    CC_SCATTER_COUNT       = 84, // [patch] cells along a strip, 1–20; the
+                                 // scatter's own grid, not the shape's
+    // Width is the spot's core on both axes at once — how much of its cell it
+    // covers and how much of its cycle it is lit — and edge softens both the
+    // same way. A separate size and duration were two controls saying one
+    // thing.
+    CC_SCATTER_WIDTH       = 85, // [patch]
+    CC_SCATTER_EDGE        = 86, // [patch] hard through to a fade, in space
+                                 // and in time together
     // 0 puts every cell on one clock, so the whole wall flashes as one; full
-    // scatters their phases and rates and they stop blinking together.
-    // Moving it re-keys every cell, so everything in flight jumps — the
-    // price of holding no state, and confined to this one control.
-    CC_SCATTER_STAGGER     = 85, // [patch]
-    CC_SCATTER_DRIFT       = 86, // [patch] bipolar: how far, and which way, a
+    // spreads their phases and rates out of the hash and they stop blinking
+    // together. Moving it re-keys every cell, so everything in flight jumps —
+    // the price of holding no state.
+    CC_SCATTER_STAGGER     = 87, // [patch]
+    CC_SCATTER_DRIFT       = 88, // [patch] bipolar: how far, and which way, a
                                  // spot slides across its own cell over its
-                                 // life. A displacement, not a rate, which is
-                                 // why it is not named Speed
-    CC_SCATTER_LIGHT       = 87, // [patch] amount toward full light / toward
-                                 // dark. It pushes what the shape branch
-                                 // left, so it needs a gap to light and
-                                 // light to darken
-    CC_SCATTER_HUE         = 88, // [patch] amount, bipolar, up to half the
-                                 // wheel each way
-    CC_SCATTER_WHITE       = 89, // [patch] amount toward white / toward a
+                                 // life. A displacement, not a rate.
+    CC_SCATTER_LIGHT       = 89, // [patch] amount toward full light / toward
+                                 // dark
+    CC_SCATTER_HUE         = 90, // [patch] amount, bipolar, up to half the
+                                 // wheel
+    CC_SCATTER_WHITE       = 91, // [patch] amount toward white / toward a
                                  // pure hue
+    // 92–100 reserved (the scatter). The largest allowance in the map, and
+    // the only one backed by a costed plan: spots with a birth and a death,
+    // which raindrops and shooting stars need, is priced at eight to ten
+    // controls in docs/generator.md.
 
-    // 90–99 — color, second half. Twenty controls will not fit in ten slots,
-    // so color stays in two blocks; what makes this a half rather than an
-    // overflow is that the split falls between whole ideas. 23–29 is the
-    // placed field, this is everything that is not aimed anywhere. All
-    // [patch].
-    CC_PLACED_SPEED        = 90, // [patch] bipolar: 64 is still, either side
-                                 // drifts the regions along the ruler
-
-    // The wander: color never quite the same in two places, with the
-    // difference always moving. Two terms at the golden ratio, so it cannot
-    // come back into step and never repeats — built in rather than dialed,
-    // because dialing how far apart two speeds sit is operating the
-    // mechanism rather than the look.
-    CC_WANDER_HUE          = 91, // [patch] bipolar: how far the hue wanders
-                                 // either side
-    CC_WANDER_WHITE        = 92, // [patch] bipolar: how far whiteness wanders
-    CC_WANDER_DARK         = 93, // [patch] bipolar: how far darkness wanders
-    CC_WANDER_RATE         = 94, // [patch] 0 = frozen, up to two beats per
-                                 // cycle
-    CC_WANDER_SCALE        = 95, // [patch] 0 = the whole wall moving as one,
-                                 // 127 = individual pixels shimmering
-
-    // Color read off how lit the shape branch left a pixel. The one source
-    // that reaches the pulse and jitter, since neither has a position for a
-    // ruler to measure. Anchored at the dim end: the faders are what a fade
-    // runs out to, and the core is the departure.
-    CC_LIT_HUE             = 96, // [patch] bipolar: 64 = none, +-64 hue at
-                                 // the core
-    CC_LIT_WHITE           = 97, // [patch] 0 = none, up = white at the core
-    CC_LIT_DARK            = 98, // [patch] bipolar: 64 = none, down takes the
-                                 // core toward dark and up toward full
-    // Bipolar. The one amount that does nothing to where a shape stands: it
-    // offsets where each strip sits in the swell, which is what turns a
-    // strobe into a chase across the wall. The washes take the unfanned
-    // phase whatever it says — a PAR is one position with no strip to be
-    // offset from.
-    //
-    // It sits here, in the color layer's range and away from the rest of the
-    // fan, which breaks the rule at the top of this file. The fan's own
-    // 70-79 is full and 116-119 held only four of the five it needed. CC 76
-    // is where it belongs once jitter retires; until then this is a stated
-    // debt, not a precedent. See TODO.md § "Regroup the CC map".
-    CC_GEN_FAN_PULSE       = 99, // [patch] how far the five strips run out of
-                                 // step in the swell
-
-    // 100–114 — where else the pulse reaches. One oscillator, one rate: a
+    // 101–119 — where else the pulse reaches. One oscillator, one rate: a
     // destination sets how far it is pushed and what wave pushes it, never
     // how fast. Three per destination, always in the order amount, shape,
     // skew, so the block reads as a table.
     //
-    // Every destination is always connected and its amount may be zero,
-    // because a morph can interpolate an amount and cannot snap a
-    // connection on — see DESIGN.md § "Switches belong to the patch". That
-    // is also why all fifteen are [patch] and none of them is a [switch].
-    //
-    // Amounts are bipolar and 64 is no push. The sign picks which of the
-    // destination's two limits the push runs toward, so it can never clip
-    // and a control already sitting at a limit has nowhere to go that way.
-    // The strips' brightness at 77 is the exception and is unipolar: there
-    // is nothing above full light, so its only direction is down.
-    CC_PULSE_WIDTH         = 100, // [patch] toward full width / toward nothing
-    CC_PULSE_WIDTH_SHAPE   = 101, // [patch]
-    CC_PULSE_WIDTH_SKEW    = 102, // [patch]
-
-    // Added after the placed field, the wander and the light level have
-    // summed — one push on the color layer's output rather than one per
-    // source, which leaves that layer's design alone.
-    CC_PULSE_HUE           = 103, // [patch] bipolar, up to half the wheel
-                                  // each way
-    CC_PULSE_HUE_SHAPE     = 104, // [patch]
-    CC_PULSE_HUE_SKEW      = 105, // [patch]
-
-    // The washes. A PAR is one position with no length, so the shape branch
-    // cannot reach it and the pulse can — see DESIGN.md § "The PAR cans".
-    CC_PULSE_PAR_LEVEL     = 106, // [patch] toward full / toward dark
-    CC_PULSE_PAR_LEVEL_SHAPE = 107, // [patch]
-    CC_PULSE_PAR_LEVEL_SKEW  = 108, // [patch]
-
-    CC_PULSE_PAR_HUE       = 109, // [patch] bipolar, up to half the wheel
-                                  // each way
-    CC_PULSE_PAR_HUE_SHAPE = 110, // [patch]
-    CC_PULSE_PAR_HUE_SKEW  = 111, // [patch]
-
-    // Toward white is the flash between strip strobes that DESIGN.md
-    // records as asked for. Measured from CC 62, so pulling the washes
-    // pale leaves the flash less far to travel.
-    CC_PULSE_PAR_SAT       = 112, // [patch] toward a pure hue / toward white
-    CC_PULSE_PAR_SAT_SHAPE = 113, // [patch]
-    CC_PULSE_PAR_SAT_SKEW  = 114, // [patch]
-
-    // A shape control, and it belongs in the 70–79 block. That block was
-    // full before this was wanted, and moving one control on its own would
-    // mean renumbering a controller twice — once now and once at the
-    // regroup. It waits here for the regroup.
-    //
-    // Bipolar: 64 is the middle of the cell, and half a cell each way covers
-    // every place a shape can stand, because the pattern repeats once per
-    // cell. Read only while the pattern is still; travel sets its own place.
-    //
-    // [patch], with one thing to watch when a morph is built: the two ends
-    // of this control are the same place on the wall, so interpolating from
-    // one end toward the other slides the shape the long way across the cell
-    // rather than across the seam.
-    CC_GEN_POSITION        = 115, // [patch] where a still pattern stands in
-                                  // its cell
-
-    // 116-119 — the fan's wave, shared by all three amounts at 75, 99 and
-    // 119. Frequency and phase are one LFO running across the strips instead
-    // of through time; randomize crossfades the five toward a fixed draw.
-    //
-    // Frequency stops at half a cycle per strip because five strips cannot
-    // sample anything faster: there every strip sits opposite its neighbors,
-    // which is alternate. Two things to know at that end of the fader — the
-    // phase only scales how deep the alternation is rather than moving it,
-    // and at a quarter and three quarters of a turn it reads zero on every
-    // strip and the fan goes quiet.
-    // Stepped to eighths of a turn across the wall, seventeen positions, and
-    // the phase runs on 128ths of a turn rather than 127ths. Both because the
-    // two together have to read *exactly* zero on a strip: a strip the wave
-    // reads near zero at is not still, it crawls, and half a pixel a beat
-    // crosses the strip in a minute. Still has to mean still here for the
-    // same reason it does on CC 74, and an eighth of a turn is not a number
-    // 127 steps can land on. A whole turn is the same wall as none, which is
-    // what makes 128 the right divisor for the phase.
-    CC_GEN_FAN_FREQ        = 116, // [patch] 0 = all five alike, up to two
-                                  // turns across the wall
-    CC_GEN_FAN_PHASE       = 117, // [patch] where the wave sits on the
-                                  // strips: a staircase through a chevron
-    CC_GEN_FAN_RANDOM      = 118, // [patch] 0 = the wave, 127 = a fixed draw
-                                  // per strip
-    // Bipolar, and an absolute speed added to CC 74's, not a proportion of
-    // it. So Speed is what the strip the wave reads zero at travels at, and
-    // this is how far the others differ from it — which is what puts a still
-    // strip in the middle of a moving wall, or at its ends.
-    //
-    // On the same squared curve as CC 74, so that mirroring one about its
-    // center against the other cancels exactly. Standing the wave's *peak*
-    // still needs that cancellation, and two controls on different curves can
-    // only ever nearly cancel — which leaves a crawl rather than a standstill.
-    CC_GEN_FAN_RATE        = 119, // [patch] how far apart the five strips'
-                                  // speeds stand
+    // Room for one more destination at 116–118. The one waiting for it aims
+    // the pulse at the fan's rate amount, which makes the strips drift apart
+    // and come back into alignment rather than drifting for ever — see
+    // TODO.md.
+    CC_PULSE_WIDTH         = 101, // [patch] bipolar: toward full width /
+                                  // toward nothing
+    CC_PULSE_WIDTH_SHAPE   = 102, // [patch]
+    CC_PULSE_WIDTH_SKEW    = 103, // [patch]
+    CC_PULSE_HUE           = 104, // [patch] bipolar, up to half the wheel
+    CC_PULSE_HUE_SHAPE     = 105, // [patch]
+    CC_PULSE_HUE_SKEW      = 106, // [patch]
+    CC_PULSE_PAR_LEVEL     = 107, // [patch] bipolar: toward full / toward
+                                  // dark
+    CC_PULSE_PAR_LEVEL_SHAPE = 108, // [patch]
+    CC_PULSE_PAR_LEVEL_SKEW  = 109, // [patch]
+    CC_PULSE_PAR_HUE       = 110, // [patch] bipolar
+    CC_PULSE_PAR_HUE_SHAPE = 111, // [patch]
+    CC_PULSE_PAR_HUE_SKEW  = 112, // [patch]
+    CC_PULSE_PAR_SAT       = 113, // [patch] toward a pure hue / toward white,
+                                  // measured from CC 35
+    CC_PULSE_PAR_SAT_SHAPE = 114, // [patch]
+    CC_PULSE_PAR_SAT_SKEW  = 115, // [patch]
+    // 116–119 reserved (the pulse's destinations)
 };
+
 
 // ---------------------------------------------------------------------------
 // Tempo division (carried on CC_TEMPO_DIVISION)
@@ -629,7 +549,7 @@ static inline uint16_t aurora_ticks_per_gate(uint8_t division) {
 static inline bool aurora_cc_is_on(uint8_t value) { return value >= 64; }
 static inline uint8_t aurora_cc_switch(bool on)   { return on ? 127 : 0; }
 
-// Three-way, banded the way CC_TOUCHPAD_STRIP_MODE is: a third of the range
+// Three-way, banded the way CC_ROCKER_PAD_A is: a third of the range
 // each, so 0, 64 and 127 land squarely in the middle of their own band.
 static inline uint8_t aurora_cc_band3(uint8_t value) {
     if (value < 43) return 0;
@@ -644,32 +564,6 @@ enum AuroraColorRuler : uint8_t {
                             // tail, traveling with it
 };
 
-// ---------------------------------------------------------------------------
-// CC_MODE_FLAGS bits — LEGACY. Do not extend, do not copy, do not reopen.
-// ---------------------------------------------------------------------------
-//
-// THE RULE, settled: one flag, switch or banded choice per CC. Nothing packs
-// several into one byte. A CC cannot be read back, so a sender wanting to
-// change one packed flag would have to already know all the others — the
-// argument is written out in full at CC 45–48.
-//
-// CC 40 is the one thing in the protocol that breaks that rule. It predates
-// it. It survives only because the bits below still reach v1 code paths that
-// have not been ripped out yet, and the features behind them are retired:
-// variant switching is v1 functionality, not something waiting to be
-// finished. There are deliberately no spare bits here. A new flag gets its
-// own CC in 40–49.
-//
-// ---------------------------------------------------------------------------
-
-enum AuroraModeBits : uint8_t {
-    MODE_BIT_FADER_ALT         = 1 << 0, // retired: hue oscillation around
-                                         // base, superseded by the wander at
-                                         // CC 91–95
-    MODE_BIT_PRESET_ALT        = 1 << 1, // retired: variant switching
-    MODE_BIT_PALETTE_ANIMATION = 1 << 2, // never built; nothing reads it
-    // bit 7 is the high bit of a 7-bit CC value and must stay 0
-};
 
 // ---------------------------------------------------------------------------
 // Note On — transient events

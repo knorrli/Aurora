@@ -12,7 +12,7 @@
 // with the five strips optionally run out of step with each other. Most of
 // the roster sits somewhere inside it — Sweep is a hard-edged shape at
 // count 1, Rain is the same with the strips fanned, Starfield is many
-// narrow shapes with jitter, Strobe is full width pulsed to zero.
+// narrow shapes scattered, Strobe is full width pulsed to zero.
 //
 // Everything is recomputed each frame from tempo::beats(), so there is no
 // state to reset and a tempo change is a change of rate, not a jump.
@@ -94,7 +94,6 @@ static float genFanRate = 0.0f;
 static float genFanFreq = 0.125f;
 static float genFanPhase = 0.0f;
 static float genFanRandom = 0.0f;
-static float genJitter = 0.0f;
 static float genPulseBeats = 4.0f;
 static bool genAlternate = false;
 static bool genBounce = false;
@@ -320,7 +319,7 @@ static uint8_t ccCount(uint8_t value) {
 }
 
 // Stable per-pixel noise: the same (strip, pixel, bucket) always hashes to
-// the same byte, so jitter holds still between re-rolls instead of boiling.
+// the same byte, so a draw holds still between re-rolls instead of boiling.
 static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
   uint32_t h = (uint32_t)a * 73856093u ^ (uint32_t)b * 19349663u ^ (uint32_t)c * 83492791u;
   h ^= h >> 13;
@@ -780,22 +779,7 @@ void Generator(CHSV color) {
       stripDirection = mirrored ? -direction : direction;
     }
 
-    // Jitter re-rolls once per swell, at the point in the cycle where the
-    // pulse is darkest, so a flashing shape lands somewhere new each time
-    // instead of being smeared where it stands. On a grid of its own it
-    // could never coincide with a flash, which is all it used to do.
-    const uint8_t jitterBucket = (uint8_t)((int32_t)floorf(stripPulse) & 0xFF);
-
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
-      float jitterOffset = 0.0f;
-      float jitterLevel = 1.0f;
-      if (genJitter > 0.0001f) {
-        const uint8_t offsetNoise = hash8(stripIndex, pixelIndex, jitterBucket);
-        jitterOffset = genJitter * ((offsetNoise / 255.0f) - 0.5f);
-        const uint8_t levelNoise = hash8(pixelIndex, stripIndex, jitterBucket ^ 0x5A);
-        jitterLevel = 1.0f - genJitter * (levelNoise / 255.0f);
-      }
-
       // The placed field is read at the same samples the shape is, and for
       // the same reason: read once at the pixel's center it aliases as soon
       // as its regions get down to a pixel or two across, which is the fault
@@ -809,7 +793,7 @@ void Generator(CHSV color) {
         const float acrossPixel =
             ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES - 0.5f;
         const float posCells =
-            ((float)pixelIndex + 0.5f + acrossPixel) / cellLength + jitterOffset;
+            ((float)pixelIndex + 0.5f + acrossPixel) / cellLength;
         float shapeU = 0.5f;
 
         // The shape repeats once per cell, so the only images that can light
@@ -857,7 +841,7 @@ void Generator(CHSV color) {
       }
 
       const float profile = accumulated / (float)GEN_SUBSAMPLES;
-      const float brightness = profile * jitterLevel * swell;
+      const float brightness = profile * swell;
       if (brightness <= 0.002f) continue;
 
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
@@ -908,7 +892,6 @@ void setGeneratorFanFreq(uint8_t value) {
 }
 void setGeneratorFanPhase(uint8_t value) { genFanPhase = (float)value / 128.0f; }
 void setGeneratorFanRandom(uint8_t value) { genFanRandom = ccUnit(value); }
-void setGeneratorJitter(uint8_t value) { genJitter = ccUnit(value); }
 
 void setGeneratorCount(uint8_t value) { genCount = ccCount(value); }
 

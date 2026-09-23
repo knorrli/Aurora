@@ -122,22 +122,19 @@ in-circuit and needs no pin at all. Its own discussion, not this file's.
 
 ## What has nowhere to send
 
-Three controls are live on the box and carry no message. Room exists for all
-of them; see `docs/cc-regroup.md`.
+Everything on the panel has a number since the regroup of 2026-09-23.
 
-- **The three faders.** `DESIGN.md` § "The three faders are three routes to
-  'more'" makes each one a per-patch morph route, and the patch format carries
-  their far ends as the Color, Extent and Motion sets. The brain holds the
-  patches, so it does the morphing and needs to know where each fader stands.
-  CC 20–22 are not that: they are `[patch]` base hue, saturation and value,
-  saved and recalled and slid by a morph — the v1 meaning, which the header
-  still uses and the controller still sends.
-- **The keypad's hold and release.** "A morph you stretch by holding" needs
-  the brain to know a key went down and then came up. A Program Change cannot
-  say that and no note carries it.
-- **The foot pedal's four switches.** Not on the panel — it is a separate
-  pedal on a guitar cable, four bare switches on a resistor ladder into A3.
-  No note, no CC.
+- **The three faders** are CC 12, 13 and 14 — their *positions*, which the
+  brain morphs from. `DESIGN.md` § "The three faders are three routes to
+  'more'" makes each one a per-patch route, and the patch carries their far
+  ends as its Color, Extent and Motion sets. The color at 38–40 is a separate
+  thing: what a patch holds, not where a hand left a stick.
+- **The keypad's hold** is CC 26. Which key it names is a Program Change;
+  whether that key is still down is a state, so it is a gate rather than a
+  note.
+- **The foot pedal needs nothing.** It hangs off the controller, which reads
+  its four switches and emits messages that already exist. A second button for
+  a control that has one, the way the tap tempo button is.
 
 ## The cradle stays a blackout
 

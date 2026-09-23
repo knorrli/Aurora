@@ -224,7 +224,6 @@
       // controls on different curves can only ever nearly cancel.
       fanRate: ccSquared(orMid(s.fanRate), GEN_MAX_SPEED_PIXELS_PER_BEAT),
       fanPulse: ccBipolar(orMid(s.fanPulse)) * 0.5,
-      jitter: ccUnit(or0(s.jitter)),
       pulseBeats: pulsePeriod(s.pulseRate),
 
       // One oscillator with one rate reaching six places, each with its own
@@ -876,18 +875,8 @@
         coreCenter = fract(centerHere + stripOffset);
         stripDirection = mirrored ? -direction : direction;
       }
-      const jitterBucket = Math.floor(stripPulse) & 255;
 
       for (let pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
-        let jitterOffset = 0;
-        let jitterLevel = 1;
-        if (p.jitter > 0.0001) {
-          const offsetNoise = hash8(stripIndex, pixelIndex, jitterBucket);
-          jitterOffset = p.jitter * (offsetNoise / 255 - 0.5);
-          const levelNoise = hash8(pixelIndex, stripIndex, jitterBucket ^ 0x5a);
-          jitterLevel = 1 - p.jitter * (levelNoise / 255);
-        }
-
         // The placed field is read at the same samples the shape is, and for
         // the same reason: read once at the pixel's center it aliases as soon
         // as its regions get down to a pixel or two across, which is the
@@ -900,7 +889,7 @@
         let scatterAccumulated = 0;
         for (let sampleIndex = 0; sampleIndex < SUBSAMPLES; sampleIndex++) {
           const acrossPixel = (sampleIndex + 0.5) / SUBSAMPLES - 0.5;
-          const posCells = (pixelIndex + 0.5 + acrossPixel) / cellLength + jitterOffset;
+          const posCells = (pixelIndex + 0.5 + acrossPixel) / cellLength;
           let shapeU = 0.5;
 
           if (bouncing) {
@@ -954,7 +943,7 @@
         // anywhere. It therefore has to be applied before an unlit pixel is
         // culled, or the one place a spot has the furthest to travel is the
         // one place it could never appear.
-        let brightness = profile * jitterLevel * swell;
+        let brightness = profile * swell;
         if (p.scatterActive) {
           brightness = pushToward(brightness, scatter * p.scatterLightReach, 0, 1);
         }

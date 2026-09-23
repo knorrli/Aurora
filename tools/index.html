@@ -196,10 +196,6 @@
         <div id="shapeFan"></div>
         <div class="note">One wave running across the five strips, and three amounts aiming it at three places. Frequency at zero leaves all five alike; wound to the top every strip sits opposite its neighbors, which is alternate — and there the phase only scales how deep that is, and goes quiet a quarter turn either side of it. Speed is what the strip the wave reads zero at travels at; <em>Rate</em> is how far the others differ from it, so a still strip can sit in the middle of a moving wall or at its ends.</div>
       </div>
-      <div class="group">
-        <h3>Unplaced</h3>
-        <div id="shapeOpen"></div>
-        <div class="note">Re-rolls once per swell, at the darkest point of the cycle — so with a deep square pulse the shape lands somewhere new on every flash rather than being smeared where it stands. Still has no settled home: reach for it to lift a chorus and it is Travel, reach for it to change how a section feels and it belongs on the character surface. Being clocked by the pulse is an argument for filing it under Pulse; that is not the same question. Settle by looking.</div>
       </div>
     </div>
   </div>
@@ -228,7 +224,7 @@
         <div class="group">
           <h3>From the light level<button class="reset" id="litReset" title="Put this section back to neutral">reset</button></h3>
           <div id="litGroup"></div>
-          <div class="note">Color read off how lit the shape branch left a pixel — the one source that reaches the pulse and jitter, since neither has any position for a ruler to measure. Reads the shape's profile only, never the color layer's own darkness: feed that back and pulling the wall down for a quiet verse would slide its hue.</div>
+          <div class="note">Color read off how lit the shape branch left a pixel — the one source that reaches the pulse and the scatter, since neither has any position for a ruler to measure. Reads the shape's profile only, never the color layer's own darkness: feed that back and pulling the wall down for a quiet verse would slide its hue.</div>
         </div>
       </div>
       <div style="margin-top:12px">
@@ -340,29 +336,29 @@
 
 <script>
 const CC = {
-  width: 70, count: 71, edge: 72, tail: 73, position: 115, speed: 74,
-  fan: 75, fanPulse: 99, fanRate: 119, fanFreq: 116, fanPhase: 117, fanRandom: 118,
-  jitter: 76, pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
-  alternate: 45, bounce: 46,
+  width: 62, count: 63, edge: 64, tail: 65, position: 66, speed: 67,
+  fan: 71, fanPulse: 73, fanRate: 72, fanFreq: 68, fanPhase: 69, fanRandom: 70,
+  pulseDepth: 74, pulseRate: 75, pulseSkew: 76, pulseShape: 77,
+  alternate: 60, bounce: 61,
 
   // Where else the pulse reaches — the 100–114 block in
   // shared/aurora_protocol.h, three apiece in the order amount, shape, skew.
-  pulseWidth: 100, pulseWidthShape: 101, pulseWidthSkew: 102,
-  pulseHue: 103, pulseHueShape: 104, pulseHueSkew: 105,
-  pulseParLevel: 106, pulseParLevelShape: 107, pulseParLevelSkew: 108,
-  pulseParHue: 109, pulseParHueShape: 110, pulseParHueSkew: 111,
-  pulseParSat: 112, pulseParSatShape: 113, pulseParSatSkew: 114,
+  pulseWidth: 101, pulseWidthShape: 102, pulseWidthSkew: 103,
+  pulseHue: 104, pulseHueShape: 105, pulseHueSkew: 106,
+  pulseParLevel: 107, pulseParLevelShape: 108, pulseParLevelSkew: 109,
+  pulseParHue: 110, pulseParHueShape: 111, pulseParHueSkew: 112,
+  pulseParSat: 113, pulseParSatShape: 114, pulseParSatSkew: 115,
 
-  hue: 20, saturation: 21, value: 22,
-  washLevel: 60, washHueOffset: 61, washSaturation: 62,
+  hue: 38, saturation: 39, value: 40,
+  washLevel: 33, washHueOffset: 34, washSaturation: 35,
 
   // The color layer, matching shared/aurora_protocol.h.
-  colorRegion: 47, colorRuler: 48,
-  placedHue: 24, placedWhite: 25, placedDark: 26,
-  placedCount: 27, placedWidth: 28, placedEdge: 29, placedSpeed: 90,
-  wanderHue: 91, wanderWhite: 92, wanderDark: 93,
-  wanderRate: 94, wanderScale: 95,
-  litHue: 96, litWhite: 97, litDark: 98,
+  colorRegion: 41, colorRuler: 42,
+  placedHue: 43, placedWhite: 44, placedDark: 45,
+  placedCount: 46, placedWidth: 47, placedEdge: 48, placedSpeed: 49,
+  wanderHue: 50, wanderWhite: 51, wanderDark: 52,
+  wanderRate: 53, wanderScale: 54,
+  litHue: 55, litWhite: 56, litDark: 57,
 };
 
 // One switch per CC, matching shared/aurora_protocol.h: off below 64, on from
@@ -452,7 +448,6 @@ const DERIVED = {
   fanPhase:   v => (v / 128 * 100).toFixed(0) + '% of a turn',
   fanRandom:  v => v === 0 ? 'the wave' : v > 125 ? 'a fixed draw per strip'
                    : (v / 127 * 100).toFixed(0) + '% scrambled',
-  jitter:     v => (v / 127 * 100).toFixed(0) + '%',
   pulseDepth: v => v === 0 ? 'not reached' : (v / 127 * 100).toFixed(0) + '% down at the trough',
   pulseRate:  v => PULSE_PERIOD_NAMES[PULSE_PERIODS.indexOf(AuroraPreview.pulsePeriod(v))],
   pulseSkew:  v => { const k = 0.5 + 0.48 * bip(v);
@@ -541,9 +536,6 @@ const GROUPS = {
   pulseSource: [
     ['pulseRate',  'Rate',        'how often the swell lands. Stepped, so it can sit on the bar'],
   ],
-  shapeOpen: [
-    ['jitter',     'Jitter',      'randomness in position and brightness'],
-  ],
   placedAmount: [
     ['placedHue',   'Hue',       'how far one end of the ruler departs from the base hue'],
     ['placedWhite', 'To white',  'how far one end departs toward white, or toward a pure hue'],
@@ -602,19 +594,17 @@ function fanAmount(v, unit) {
 }
 
 const ANCHORS = {
-  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:100, jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseSkew:64, pulseShape:127 },
-  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,  jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:104, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:114, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:28 },
-  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:114, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Starfield:  { width:4,   count:119, edge:60, tail:0,  speed:64, fan:64,  jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
-  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:88, jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
-  Glitch:     { width:6,   count:122, edge:0,  tail:0,  speed:64, fan:64,  jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:100,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseSkew:64, pulseShape:127 },
+  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:104,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:114,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:28 },
+  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:114,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:88,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
 };
 
 // The looks the fan rework was built against, dialed rather than argued. The
@@ -677,7 +667,7 @@ for (const name of Object.keys(COLOR_LOOKS)) {
 // The shape branch flattened: one shape filling the cell, still, not
 // traveling. What is left on the wall is the color layer alone.
 const SHAPE_OFF = {
-  width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, jitter: 0,
+  width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64,
   fan: 64, fanPulse: 64, fanRate: 64, fanFreq: 32, fanPhase: 0, fanRandom: 0,
   alternate: OFF, bounce: OFF,
 };
@@ -709,7 +699,7 @@ const PULSE_OFF = {
 const FAN_OFF = { fan: 64, fanPulse: 64, fanRate: 64, fanFreq: 32, fanPhase: 0, fanRandom: 0 };
 
 for (const name of Object.keys(FAN_LOOKS)) {
-  FAN_LOOKS[name] = { ...PULSE_OFF, ...FAN_OFF, position: 64, jitter: 0,
+  FAN_LOOKS[name] = { ...PULSE_OFF, ...FAN_OFF, position: 64,
                       alternate: OFF, bounce: OFF, ...FAN_LOOKS[name] };
 }
 
