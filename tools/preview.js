@@ -372,8 +372,22 @@
       scatterPhase: makeTracker(),
       lastBouncing: false,
       lastCoreCells: 0.5,
+      lastPulseBeats: 0,
+      lastTravelBeats: 0,
     };
   }
+
+  const cloneMotion = m => ({
+    travelPhase: { ...m.travelPhase },
+    pulsePhase: { ...m.pulsePhase },
+    wanderPhase: { ...m.wanderPhase },
+    placedPhase: { ...m.placedPhase },
+    scatterPhase: { ...m.scatterPhase },
+    lastBouncing: m.lastBouncing,
+    lastCoreCells: m.lastCoreCells,
+    lastPulseBeats: m.lastPulseBeats,
+    lastTravelBeats: m.lastTravelBeats,
+  });
 
   let M = makeMotion();
 
@@ -384,10 +398,9 @@
   // couple of cycles walks the pulse back onto the grid without ever
   // jumping. The peak sits at mid-cycle, so the offset that lands one on a
   // bar line is a half-integer rather than a whole one.
-  let lastPulseBeats = 0;
   function anchoredPulsePhase(beats, rate) {
-    const elapsed = beats - lastPulseBeats;
-    lastPulseBeats = beats;
+    const elapsed = beats - M.lastPulseBeats;
+    M.lastPulseBeats = beats;
 
     // The transport restarted, and beat zero is a bar line by definition.
     if (elapsed < 0) {
@@ -412,10 +425,9 @@
   // fraction has to go and home is never further than half a cell away.
   // While travel is running the offset is where the pattern stands, so there
   // is nothing to settle and this leaves it alone.
-  let lastTravelBeats = 0;
   function settledTravel(beats, rate) {
-    const elapsed = beats - lastTravelBeats;
-    lastTravelBeats = beats;
+    const elapsed = beats - M.lastTravelBeats;
+    M.lastTravelBeats = beats;
 
     const travel = trackedPhase(M.travelPhase, beats, rate);
     if (Math.abs(rate) > 0.0001 || elapsed <= 0) return travel;
@@ -1093,6 +1105,6 @@
 
   global.AuroraPreview = {
     start, restart, render, renderStripOrder, parColor, wall, pulseWave, pulsePeriod,
-    draw, hsv2rgb, makeMotion, STRIPS, PIXELS, WALL_STRIP_ORDER,
+    draw, hsv2rgb, makeMotion, cloneMotion, STRIPS, PIXELS, WALL_STRIP_ORDER,
   };
 })(window);

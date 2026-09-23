@@ -98,6 +98,16 @@ trip over a set number of seconds, and loop runs it back and forth.
 Three walls are on screen while a far end is up: the live one, which is
 whatever is being sent, and small stills of the base and the far end.
 
+**The small ones are drawn at the big one's instant.** A phase in the renderer
+carries an offset so that moving a rate does not teleport the wall, which is
+what makes Speed usable with a fader. The cost is that the offset is a history:
+two walls that have seen different rate changes sit a constant distance apart
+for ever. Left alone, the stills read as exactly off-phase from the live wall
+from the first time Speed is touched, and a comparison you cannot trust is
+worse than no comparison. So each still renders from a throwaway copy of the
+live wall's phases. What that gives up is that a far end differing only in a
+rate looks identical in a still; the audition is what shows that.
+
 ### Three faders at once
 
 One tab shows one far end, which is not how the rig is played: three faders sit

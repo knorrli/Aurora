@@ -1122,22 +1122,37 @@
     return parsed.length === V.STRIPS ? parsed : V.WALL_STRIP_ORDER.map(n => n - 1);
   }
 
-  function drawOne(wall, named, beats, pattern) {
+  function drawOne(wall, named, beats, pattern, motion) {
     let p = null;
     if (pattern === 11) V.renderStripOrder();
     else if (pattern === 0) V.wall.fill(0);
-    else p = V.render(named, beats, wall.motion);
+    else p = V.render(named, beats, motion || wall.motion);
     V.draw(wall.ctx, wall.glow, order(), flipped,
            p ? V.parColor(p) : [0, 0, 0], wall.w, wall.h);
   }
 
+  // The two small walls are drawn on the big wall's clock, not on clocks of
+  // their own.
+  //
+  // A phase here carries an offset so that moving a rate does not teleport the
+  // wall — the thing that makes Speed usable with a fader. The cost is that
+  // the offset is a history: two walls that have seen different rate changes
+  // sit a constant distance apart for ever, which is what made the small wall
+  // read as exactly off-phase from the big one the moment Speed was touched.
+  //
+  // So each small wall renders from a throwaway copy of the big wall's phases,
+  // which puts all three at the same instant. What that gives up is that a far
+  // end differing only in a rate looks identical in the still: you see that
+  // difference by running the audition, which is what it is for.
   function frame() {
     const beats = ((performance.now() - startedAt) / 60000) * bpm();
     const pattern = patch().pattern;
     drawOne(walls.main, liveNamed(), beats, pattern);
     if (isFarEnd()) {
-      drawOne(walls.base, L.namedFromSet(baseSet()), beats, pattern);
-      drawOne(walls.far, L.blend(baseSet(), L.materialize(patch(), setIndex), 1, switchSource()), beats, pattern);
+      const now = V.cloneMotion(walls.main.motion);
+      drawOne(walls.base, L.namedFromSet(baseSet()), beats, pattern, V.cloneMotion(now));
+      drawOne(walls.far, L.blend(baseSet(), L.materialize(patch(), setIndex), 1, switchSource()),
+              beats, pattern, V.cloneMotion(now));
     }
     requestAnimationFrame(frame);
   }
