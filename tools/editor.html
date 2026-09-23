@@ -79,20 +79,25 @@
   }
   .patchlist .item:hover { background: #22252f; color: var(--text); border-color: transparent; }
   .patchlist .item.on { background: #2b2f3c; border-color: var(--rail); }
-  .patchlist .item .pc { color: var(--faint); font-size: 10.5px; min-width: 22px; }
-  .patchlist .item .keys { margin-left: auto; color: var(--accent); font-size: 10.5px; }
+  .patchlist .item .pc { color: var(--faint); font-size: 10.5px; flex: 0 0 auto; min-width: 22px; }
+  .patchlist .item .name {
+    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .patchlist .item .keys { flex: 0 0 auto; color: var(--accent); font-size: 10.5px; white-space: nowrap; }
 
-  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .keypad .key {
     background: var(--sunk); border: 1px solid var(--line); border-radius: 4px;
-    padding: 5px 6px; min-height: 46px; display: flex; flex-direction: column; gap: 2px;
+    padding: 5px 6px; min-height: 52px; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
     cursor: pointer; text-align: left; color: var(--text);
   }
   .keypad .key:hover { border-color: var(--accent); }
   .keypad .key .n { color: var(--accent); font-size: 10.5px; }
   .keypad .key .who {
-    font-size: 10.5px; color: var(--dim); overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 10.5px; line-height: 1.25; color: var(--dim); min-width: 0;
+    overflow: hidden; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   }
   .keypad .zero { grid-column: 1 / -1; opacity: .55; cursor: default; }
   .keypad .zero:hover { border-color: var(--line); }

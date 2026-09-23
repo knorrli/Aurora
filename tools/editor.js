@@ -801,12 +801,14 @@
     const host = $('patchList');
     host.innerHTML = '';
     lib.patches.forEach((p, i) => {
-      const keys = lib.keymap.map((k, n) => k === i ? n + 1 : null).filter(Boolean);
+      const keys = lib.keymap.map((k, n) => (k === i ? n + 1 : null)).filter(Boolean);
       const b = el('button', 'item' + (i === patchIndex ? ' on' : ''));
       b.append(
         el('span', 'pc', String(i)),
-        el('span', null, p.name || '(unnamed)'),
-        el('span', 'keys', keys.length ? 'key ' + keys.join(',') : ''));
+        el('span', 'name', p.name || '(unnamed)'),
+        el('span', 'keys', !keys.length ? ''
+          : keys.length > 3 ? `${keys.length} keys` : 'key ' + keys.join(',')));
+      b.title = keys.length ? `${p.name} \u2014 on keypad ${keys.join(', ')}` : p.name;
       b.addEventListener('click', () => selectPatch(i));
       host.appendChild(b);
     });
@@ -823,7 +825,8 @@
       const b = el('button', 'key');
       b.append(el('span', 'n', String(key)),
                el('span', 'who', who ? who.name : '—'));
-      b.title = `Put the selected patch on key ${key}`;
+      b.title = (who ? `Key ${key} plays "${who.name}". ` : '')
+              + `Click to put "${patch().name}" here.`;
       b.addEventListener('click', () => {
         lib.keymap[key - 1] = patchIndex;
         save(); paintList();
