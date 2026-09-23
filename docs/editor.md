@@ -136,9 +136,11 @@ firmware have to change together. See `TODO.md`.
 ### Moving a far end to another surface
 
 A far end dialed under Extent that turns out to be a Motion idea does not have
-to be rebuilt. The far-end tabs carry **copy from**, **move onto** and **swap
-with**. Only the override map travels — the base is the patch and stays where
-it is — which is what makes this three lines rather than a merge.
+to be rebuilt. All four far-end tabs carry **copy from**, **move onto** and
+**swap with**, the accent included: it belongs to no fader, but it is a far end
+like the other three and a look is as likely to end up there as anywhere. Only
+the override map travels — the base is the patch and stays where it is — which
+is what makes this three lines rather than a merge.
 
 On the base tab the same machinery auditions a **journey to another patch**,
 which is the patch-change morph rather than a fader. The switches stay at the

@@ -768,31 +768,44 @@
     readout.textContent = 'far end';
     host.appendChild(readout);
 
-    if (setIndex === P.SET_ACCENT) {
-      const wrap = el('label', 'field');
-      wrap.appendChild(el('span', null, 'as heard from'));
-      const pick = el('select');
-      lib.patches.forEach((p, i) => {
-        const o = el('option', null, `${i} · ${p.name}`);
-        o.value = i;
-        pick.appendChild(o);
-      });
-      pick.value = audition.from == null ? patchIndex : audition.from;
-      pick.addEventListener('change', () => {
-        audition.from = +pick.value;
-        paint(); sendLive();
-      });
-      wrap.appendChild(pick);
-      host.appendChild(wrap);
-      host.appendChild(el('p', 'note', 'An accent plays with the switches of the patch you came from, because the destination’s land on the release and not on arrival. Dial it against the patch it will actually follow.'));
-    } else if (!isFarEnd()) {
+    if (isFarEnd()) {
+      // The accent belongs to no fader, but it is a far end like the other
+      // three and a look dialed under one of them is as likely to belong here
+      // as anywhere.
+      if (setIndex === P.SET_ACCENT) {
+        const wrap = el('label', 'field');
+        wrap.appendChild(el('span', null, 'as heard from'));
+        const pick = el('select');
+        lib.patches.forEach((p, i) => {
+          const o = el('option', null, `${i} \u00b7 ${p.name}`);
+          o.value = i;
+          pick.appendChild(o);
+        });
+        pick.value = audition.from == null ? patchIndex : audition.from;
+        pick.addEventListener('change', () => {
+          audition.from = +pick.value;
+          paint(); sendLive();
+        });
+        wrap.appendChild(pick);
+        host.appendChild(wrap);
+      }
+
+      host.appendChild(slotMoves());
+
+      host.appendChild(el('p', 'note', P.SET_BLURB[setIndex]
+        + '. Hold the scrubber to watch the trip; let go and you are editing the far end again. Only the overrides move between surfaces \u2014 the base is the patch and stays where it is.'));
+
+      if (setIndex === P.SET_ACCENT) {
+        host.appendChild(el('p', 'note', 'An accent plays with the switches of the patch you came from, because the destination\u2019s land on the release and not on arrival. Dial it against the patch it will actually follow.'));
+      }
+    } else {
       const wrap = el('label', 'field');
       wrap.appendChild(el('span', null, 'journey to'));
       const pick = el('select');
-      pick.appendChild(el('option', null, '— nowhere —')).value = '';
+      pick.appendChild(el('option', null, '\u2014 nowhere \u2014')).value = '';
       lib.patches.forEach((p, i) => {
         if (i === patchIndex) return;
-        const o = el('option', null, `${i} · ${p.name}`);
+        const o = el('option', null, `${i} \u00b7 ${p.name}`);
         o.value = i;
         pick.appendChild(o);
       });
@@ -803,37 +816,39 @@
       });
       wrap.appendChild(pick);
       host.appendChild(wrap);
-      host.appendChild(el('p', 'note', 'A patch change, so the switches stay at this patch’s the whole way and land only when the key is let go. Which patch precedes which is compositional: the reveal fires only where the two differ in a switch at all.'));
-    } else {
-      const move = el('div', 'slotmove');
-      const other = () => [1, 2, 3, 4].filter(i => i !== setIndex);
-      const picker = (text, act) => {
-        const wrap = el('label', 'field');
-        const sel = el('select');
-        const head = el('option', null, text);
-        head.value = '';
-        sel.appendChild(head);
-        for (const i of other()) {
-          const o = el('option', null, P.SET_NAMES[i]);
-          o.value = i;
-          sel.appendChild(o);
-        }
-        sel.addEventListener('change', () => {
-          if (sel.value === '') return;
-          act(+sel.value);
-          sel.value = '';
-          save(); buildAudition(); buildSurfaces(); paint(); sendLive();
-        });
-        wrap.appendChild(sel);
-        return wrap;
-      };
-      move.append(
-        picker('copy from\u2026', from => L.copyOverrides(patch(), from, setIndex)),
-        picker('move onto\u2026', to => L.moveOverrides(patch(), setIndex, to, false)),
-        picker('swap with\u2026', to => L.moveOverrides(patch(), setIndex, to, true)));
-      host.appendChild(move);
-      host.appendChild(el('p', 'note', P.SET_BLURB[setIndex] + '. Hold the scrubber to watch the trip; let go and you are editing the far end again. Only the overrides move between surfaces \u2014 the base is the patch and stays where it is.'));
+      host.appendChild(el('p', 'note', 'A patch change, so the switches stay at this patch\u2019s the whole way and land only when the key is let go. Which patch precedes which is compositional: the reveal fires only where the two differ in a switch at all.'));
     }
+  }
+
+  // Moving a far end between the four surfaces. Only the override map travels.
+  function slotMoves() {
+    const move = el('div', 'slotmove');
+    const others = [1, 2, 3, 4].filter(i => i !== setIndex);
+    const picker = (text, act) => {
+      const wrap = el('label', 'field');
+      const sel = el('select');
+      const head = el('option', null, text);
+      head.value = '';
+      sel.appendChild(head);
+      for (const i of others) {
+        const o = el('option', null, P.SET_NAMES[i]);
+        o.value = i;
+        sel.appendChild(o);
+      }
+      sel.addEventListener('change', () => {
+        if (sel.value === '') return;
+        act(+sel.value);
+        sel.value = '';
+        save(); buildAudition(); buildSurfaces(); paint(); sendLive();
+      });
+      wrap.appendChild(sel);
+      return wrap;
+    };
+    move.append(
+      picker('copy from\u2026', from => L.copyOverrides(patch(), from, setIndex)),
+      picker('move onto\u2026', to => L.moveOverrides(patch(), setIndex, to, false)),
+      picker('swap with\u2026', to => L.moveOverrides(patch(), setIndex, to, true)));
+    return move;
   }
 
   // ---- the patch head ----------------------------------------------------
