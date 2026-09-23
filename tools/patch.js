@@ -48,7 +48,7 @@
 
     washLevel: 60, washHueOffset: 61, washSaturation: 62,
 
-    width: 70, count: 71, edge: 72, tail: 73, speed: 74, fan: 75, jitter: 76,
+    width: 70, count: 71, edge: 72, tail: 73, speed: 74, fan: 75,
     position: 115,
 
     pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
@@ -131,7 +131,6 @@
     speed: v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
                   return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
     fan: v => pct(v) + ' apart',
-    jitter: pct,
 
     hue: v => Math.round(v / 127 * 250) + '/255',
     saturation: pct, value: pct,
@@ -235,7 +234,7 @@
 
   const NEUTRAL = {
     tempoDivision: 0,
-    width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, fan: 0, jitter: 0,
+    width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, fan: 0,
     alternate: OFF, bounce: OFF,
 
     hue: 20, saturation: 100, value: 110,
@@ -308,14 +307,6 @@
               { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
           ]),
           note: 'Bring Speed to a stop and the pattern walks home to Position over a beat or two, so a patch saved comes back to the same place. Under bounce the swing is anchored to the cell and Position does nothing.',
-        },
-        {
-          key: 'texture', title: 'Texture',
-          controls: define([
-            C('jitter', 'Jitter', 'per-pixel random displacement, re-rolled once per swell',
-              { legacy: true }),
-          ]),
-          note: 'Jitter is not a source and cannot be aimed anywhere: it deforms this lane from inside its own sampling, which is why its grain is always one pixel wide and why it can only ever take light away. The scatter below is what replaces it. This control stays only while the firmware still renders it.',
         },
       ],
     },
@@ -396,7 +387,7 @@
     {
       key: 'scatter', name: 'The scatter', tone: 'scatter',
       when: 'random in space and in time',
-      unbuilt: 'The firmware does not render this yet \u2014 the preview does. It is what CC 76 jitter should have been.',
+      unbuilt: 'The firmware does not render this yet \u2014 the preview does. It replaces CC 76 jitter, which no longer has a control: a patch leaves that byte at zero, so nothing a patch does can reach the old mechanism.',
       source: define([
         C('scatterRate', 'Rate', 'how often a cell relights'),
         C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
@@ -522,7 +513,7 @@
   // ---- starting points ---------------------------------------------------
 
   const SHAPE_FLAT = {
-    width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, fan: 0, jitter: 0,
+    width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, fan: 0,
     alternate: OFF, bounce: OFF,
   };
 

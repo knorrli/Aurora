@@ -76,6 +76,15 @@ deliberately push. What you get on screen:
 - a far end dialed back onto the base value stops being an override, so the
   count never lies
 
+## The library saves itself
+
+Every edit writes the whole library to `localStorage` as you make it. There is
+no save button for it and there should not be: a patch editor that can lose an
+evening to a closed tab is not one you would use at a desk. The two buttons
+that look like saving are both exports — **save a file** is the copy that
+survives the browser and belongs in the repo, **push the library** is the copy
+the brain holds.
+
 ## Auditioning
 
 A far end is never seen on its own. It is a destination, judged by how the trip
@@ -88,6 +97,38 @@ trip over a set number of seconds, and loop runs it back and forth.
 
 Three walls are on screen while a far end is up: the live one, which is
 whatever is being sent, and small stills of the base and the far end.
+
+### Three faders at once
+
+One tab shows one far end, which is not how the rig is played: three faders sit
+on the box and a key may be held on top of them. **The surfaces, all at once**
+on the Base tab is four sliders that place all of them and shows what comes
+out.
+
+**The departures add.** Each surface contributes its position times the
+distance from the patch to its own far end, and the sum is clamped per byte.
+One surface alone is exactly what its own tab shows, so nothing changed for the
+case that already worked. Two far ends that move different controls — the usual
+case, since each moves about four — do not interact at all. Where two move the
+same control they pull against each other and the sum is what you get.
+
+Adding is the reading the rest of Aurora already uses: the color lane's sources
+push on the same three qualities and their pushes add. The alternatives are a
+weighted average, which makes one fader weaker as another comes up, and a
+per-parameter winner, which needs a rule about who wins that nothing else in
+the rig has.
+
+**This is the editor proposing a rule, not showing one.** `DESIGN.md` says each
+fader is a morph target and never says what three of them at once come to, and
+the brain does not combine them yet. If the rule changes, this panel and the
+firmware have to change together. See `TODO.md`.
+
+### Moving a far end to another surface
+
+A far end dialed under Extent that turns out to be a Motion idea does not have
+to be rebuilt. The far-end tabs carry **copy from**, **move onto** and **swap
+with**. Only the override map travels — the base is the patch and stays where
+it is — which is what makes this three lines rather than a merge.
 
 On the base tab the same machinery auditions a **journey to another patch**,
 which is the patch-change morph rather than a fader. The switches stay at the
@@ -128,6 +169,15 @@ musical duration in the rig rather than a second convention.
 
 **Moving a patch in the library moves its Program Change.** The keypad follows;
 a DAW's automation lane does not, and the page says so when you do it.
+
+## What went away
+
+**Jitter has no control.** CC 76 is still in the protocol and the firmware
+still renders it, but no patch can reach it: a parameter set leaves that byte
+at zero. The scatter replaces it, and until the scatter is in the firmware the
+rig has no texture a patch can ask for. That is deliberate — jitter cannot be
+aimed anywhere and its grain can only ever be one pixel wide, so keeping a
+control for it would mean building patches around something already replaced.
 
 ## Not built
 

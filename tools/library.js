@@ -162,6 +162,54 @@
     return named;
   }
 
+  // Three faders at once, plus the accent if a key is being held.
+  //
+  // **The departures add.** Each surface contributes its position times the
+  // distance from the patch to its own far end, and the sum is clamped per
+  // byte. One surface alone is exactly the blend above, so nothing changes for
+  // the case that already worked.
+  //
+  // Adding is the reading the rest of Aurora already uses — the color layer's
+  // three sources push on the same three qualities and their pushes add — and
+  // it is the one that does nothing surprising in the common case, which is
+  // two far ends moving different controls. Where two far ends do move the
+  // same control they fight, and summing is the honest answer to that rather
+  // than a rule about which one wins.
+  //
+  // UNTESTED AND UNBUILT: the brain does not do this yet, so this is the
+  // editor proposing a rule rather than showing one. See docs/editor.md.
+  function mix(patch, positions, switchesFrom) {
+    const base = patch.base;
+    const named = {};
+    for (const name of P.CONTINUOUS) {
+      const from = base[P.CC[name]] | 0;
+      let value = from;
+      for (const [setIndex, position] of positions) {
+        if (!position) continue;
+        const over = patch.overrides[setIndex];
+        const to = over && over[name] !== undefined ? over[name] : from;
+        value += position * (to - from);
+      }
+      named[name] = P.clamp7(Math.round(value));
+    }
+    const sw = switchesFrom || base;
+    for (const name of P.SWITCHES) named[name] = sw[P.CC[name]] | 0;
+    return named;
+  }
+
+  // Moving a far end onto another surface, or trading two. Only the override
+  // map travels: the base is the patch and does not move with them.
+  function moveOverrides(patch, from, to, swap) {
+    const a = patch.overrides[from] || {};
+    const b = patch.overrides[to] || {};
+    patch.overrides[to] = Object.assign({}, a);
+    patch.overrides[from] = swap ? Object.assign({}, b) : {};
+  }
+
+  const copyOverrides = (patch, from, to) => {
+    patch.overrides[to] = Object.assign({}, patch.overrides[from] || {});
+  };
+
   // ---- the file ----------------------------------------------------------
   //
   // Hand-laid out rather than JSON.stringify'd so that one parameter set is
@@ -396,6 +444,7 @@
     T, STATUS, LIB_STATE, HEAD_LEN,
     emptySet, setFromNamed, namedFromSet, readCC, writeCC,
     newPatch, clonePatch, newLibrary, materialize, overriddenIn,
+    mix, moveOverrides, copyOverrides,
     toWire, fromWire, libToWire, libFromWire, blend,
     serialize, validate, headBytes, nameOf, Link,
   };

@@ -38,6 +38,9 @@
   let setIndex = P.SET_BASE;
 
   const audition = { pos: 1, raf: null, seconds: 2, loop: false, from: null, to: null };
+  // Where the three faders and a held key are standing, on the Base tab.
+  const surfaces = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const surfacesUp = () => Object.values(surfaces).some(v => v > 0);
   const link = new L.Link();
   const rows = {};
   const lastSent = new Array(P.CC_COUNT).fill(-1);
@@ -81,6 +84,7 @@
       if (dest && audition.pos < 1) {
         return L.blend(p.base, dest.base, audition.pos, p.base);
       }
+      if (surfacesUp()) return L.mix(p, Object.entries(surfaces).map(([k, v]) => [+k, v]), p.base);
       return L.namedFromSet(p.base);
     }
     return L.blend(p.base, L.materialize(p, setIndex), audition.pos, switchSource());
@@ -294,6 +298,10 @@
     if (!label) return;
     if (audition.pos < 1) {
       label.textContent = Math.round(audition.pos * 100) + '% of the way';
+    } else if (!isFarEnd() && surfacesUp()) {
+      label.textContent = Object.entries(surfaces)
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => `${P.SET_NAMES[k]} ${Math.round(v * 100)}%`).join(' + ');
     } else if (isFarEnd()) {
       label.textContent = P.SET_NAMES[setIndex] + ' \u2014 the far end';
     } else {
@@ -583,6 +591,7 @@
     audition.pos = 1;
     if (audition.from === null) audition.from = patchIndex;
     buildAudition();
+    buildSurfaces();
     paint();
     paintList();
     sendLive();
@@ -601,13 +610,22 @@
   // scrubber back there first. Without it the wall and the sliders would be
   // showing two different things the moment you reached for one.
   function snap() {
-    if (audition.pos >= 1) return;
+    if (audition.pos >= 1 && !surfacesUp()) return;
     stopRun();
     audition.pos = 1;
     const s = $('auditionScrub');
     if (s) s.value = 1000;
+    clearSurfaces();
     paint();
     sendLive();
+  }
+
+  function clearSurfaces() {
+    for (const k of Object.keys(surfaces)) surfaces[k] = 0;
+    for (let i = 1; i < P.SETS; i++) {
+      const s = $('surface' + i);
+      if (s) s.value = 0;
+    }
   }
 
   function animate(from, to, ms, done) {
@@ -661,6 +679,53 @@
         : audition.pos >= 1 ? 'far end' : Math.round(audition.pos * 100) + '%';
     }
     sendLive();
+  }
+
+  // The three faders and a held key, all at once. It only exists on the Base
+  // tab: there you are looking at the patch as a whole, and on a far-end tab
+  // you are dialing one destination and want to see that destination.
+  function buildSurfaces() {
+    const host = $('surfaceBar');
+    host.hidden = isFarEnd();
+    if (isFarEnd()) return;
+    host.innerHTML = '';
+
+    const head = el('h2', null, 'The surfaces, all at once');
+    const clear = el('button', 'tiny', 'all down');
+    clear.addEventListener('click', () => { clearSurfaces(); paint(); sendLive(); });
+    head.appendChild(clear);
+    host.appendChild(head);
+
+    const rows2 = el('div', 'srows');
+    for (let i = 1; i < P.SETS; i++) {
+      const row = el('div', 'row');
+      const label = el('label', null,
+        `<b>${P.SET_NAMES[i]}</b><span class="cc">${i === P.SET_ACCENT ? 'a held key' : 'fader'}</span>`);
+      label.title = P.SET_BLURB[i];
+      const track = el('div', 'track');
+      const slider = el('input');
+      slider.type = 'range'; slider.min = 0; slider.max = 1000; slider.step = 1;
+      slider.id = 'surface' + i;
+      slider.value = Math.round(surfaces[i] * 1000);
+      const out = el('output');
+      const show = () => {
+        const n = L.overriddenIn(patch(), i).length;
+        out.innerHTML = `<b>${Math.round(surfaces[i] * 100)}%</b>`
+          + `<span class="cc">${n ? n + ' overridden' : 'nothing to reach'}</span>`;
+      };
+      show();
+      slider.addEventListener('input', () => {
+        surfaces[i] = +slider.value / 1000;
+        show();
+        paintShowing();
+        paintLive();
+      });
+      track.append(slider);
+      row.append(label, track, out);
+      rows2.appendChild(row);
+    }
+    host.appendChild(rows2);
+    host.appendChild(el('p', 'note', 'Each surface contributes its position times the distance from the patch to its own far end, and the departures add. One alone is exactly what its own tab shows. Two that move different controls do not interact at all, which is the usual case; where two move the same control they pull against each other, and the sum is what you get. Touch any control and they all drop, because dialing happens at the patch. \u26a0 The brain does not do this yet \u2014 this is the editor proposing the rule.'));
   }
 
   function buildAudition() {
@@ -740,7 +805,34 @@
       host.appendChild(wrap);
       host.appendChild(el('p', 'note', 'A patch change, so the switches stay at this patch’s the whole way and land only when the key is let go. Which patch precedes which is compositional: the reveal fires only where the two differ in a switch at all.'));
     } else {
-      host.appendChild(el('p', 'note', P.SET_BLURB[setIndex] + '. Hold the scrubber to watch the trip; let go and you are editing the far end again.'));
+      const move = el('div', 'slotmove');
+      const other = () => [1, 2, 3, 4].filter(i => i !== setIndex);
+      const picker = (text, act) => {
+        const wrap = el('label', 'field');
+        const sel = el('select');
+        const head = el('option', null, text);
+        head.value = '';
+        sel.appendChild(head);
+        for (const i of other()) {
+          const o = el('option', null, P.SET_NAMES[i]);
+          o.value = i;
+          sel.appendChild(o);
+        }
+        sel.addEventListener('change', () => {
+          if (sel.value === '') return;
+          act(+sel.value);
+          sel.value = '';
+          save(); buildAudition(); buildSurfaces(); paint(); sendLive();
+        });
+        wrap.appendChild(sel);
+        return wrap;
+      };
+      move.append(
+        picker('copy from\u2026', from => L.copyOverrides(patch(), from, setIndex)),
+        picker('move onto\u2026', to => L.moveOverrides(patch(), setIndex, to, false)),
+        picker('swap with\u2026', to => L.moveOverrides(patch(), setIndex, to, true)));
+      host.appendChild(move);
+      host.appendChild(el('p', 'note', P.SET_BLURB[setIndex] + '. Hold the scrubber to watch the trip; let go and you are editing the far end again. Only the overrides move between surfaces \u2014 the base is the patch and stays where it is.'));
     }
   }
 
@@ -846,6 +938,7 @@
     audition.from = i;
     audition.to = null;
     buildAudition();
+    buildSurfaces();
     paint();
     paintList();
     link.sendPC(patch().pattern);
@@ -897,7 +990,7 @@
       if (r.error) { say(r.error, 'bad'); return; }
       lib = L.libFromWire(r.lib);
       patchIndex = 0; setIndex = P.SET_BASE;
-      save(); buildAudition(); paint(); paintList();
+      save(); buildAudition(); buildSurfaces(); paint(); paintList();
       say(`the editor now holds what the brain holds — ${lib.patches.length} patches`, 'ok');
     }));
 
@@ -919,7 +1012,7 @@
       if (fault) { say(`${file.name}: ${fault}`, 'bad'); return; }
       lib = L.libFromWire(loaded);
       patchIndex = 0; setIndex = P.SET_BASE;
-      save(); buildAudition(); paint(); paintList();
+      save(); buildAudition(); buildSurfaces(); paint(); paintList();
       say(`loaded ${lib.patches.length} patches from ${file.name}`, 'ok');
     }));
   }
@@ -1105,12 +1198,21 @@
   $('rigBlackout').addEventListener('click', () => { link.sendPC(0); say('PC 0 — blackout'); });
   $('rigOrder').addEventListener('click', () => { link.sendPC(11); say('PC 11 — strip order'); });
 
+  // The header wraps at narrow widths, so how far down the rails have to sit
+  // is a measurement rather than a number.
+  const topbar = $('topbar');
+  const measureTop = () => document.documentElement.style
+    .setProperty('--topbar', Math.round(topbar.getBoundingClientRect().height) + 'px');
+  new ResizeObserver(measureTop).observe(topbar);
+  measureTop();
+
   walls.main = makeWall('wallMain', 300, 480);
   walls.base = makeWall('wallBase', 150, 240);
   walls.far = makeWall('wallFar', 150, 240);
 
   audition.from = patchIndex;
   buildAudition();
+  buildSurfaces();
   paint();
   paintList();
   requestAnimationFrame(frame);

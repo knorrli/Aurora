@@ -172,7 +172,7 @@
       positionCells: ccBipolar(s.position) * 0.5,
       speedPixels: stillBelowThreshold(ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT)),
       fan: ccUnit(s.fan),
-      jitter: ccUnit(s.jitter),
+      jitter: ccUnit(or0(s.jitter)),
       pulseBeats: pulsePeriod(s.pulseRate),
 
       // One oscillator with one rate reaching six places, each with its own

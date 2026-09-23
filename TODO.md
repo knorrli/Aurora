@@ -467,6 +467,26 @@ it becomes a build item.
       more than raising it: below that size the core hands over each
       message whole in one callback and nothing is reassembled.
 
+- [ ] **Decide what three faders at once come to.** Found 2026-09-23 while
+      building the editor's fader panel, and it is a gap rather than a
+      question anyone had parked: `DESIGN.md` § "The three faders are three
+      routes to more" says each fader is a per-patch morph target and never
+      says what two or three of them held together produce. The brain does not
+      combine them at all yet, so nothing is wrong on the wall — but the first
+      time two faders are up it will be.
+
+      `tools/editor.html` proposes **the departures add**: each surface
+      contributes its position times the distance from the patch to its own far
+      end, and the sum is clamped per byte. It reduces to today's behavior for
+      one fader, it leaves disjoint far ends alone, and it is the reading the
+      color lane already uses for its three sources. The two alternatives are a
+      weighted average, which makes one fader go weaker as another comes up,
+      and a per-parameter winner, which needs a precedence rule nothing else in
+      the rig has.
+
+      Settle by looking, with the faders in hand. Whatever wins, the editor and
+      the firmware have to say the same thing.
+
 - [ ] **Render the scatter in the firmware.** Settled and named 2026-09-23 —
       `docs/generator.md` § "The scatter" — with nine CCs at 81–89 and a
       working implementation in `tools/preview.js` that all five of the looks

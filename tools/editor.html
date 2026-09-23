@@ -11,9 +11,9 @@
     --accent: #d98c3f; --ok: #4a9e6a; --bad: #cf5c5c;
     --shape: #d98c3f; --color: #6fa8dc; --pulse: #cf7d93; --scatter: #7bc4a4;
     --out: #8f7fd4;
+    --topbar: 56px;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
@@ -64,7 +64,7 @@
     gap: 16px; padding: 16px; align-items: start;
   }
 
-  .rail, .dock { position: sticky; top: 61px; }
+  .rail, .dock { position: sticky; top: calc(var(--topbar) + 10px); }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 13px; }
   .panel + .panel { margin-top: 14px; }
   .work > * + * { margin-top: 16px; }
@@ -141,6 +141,12 @@
   .audition .readout { min-width: 58px; text-align: right; color: var(--accent); }
   .audition .field { flex-direction: row; align-items: center; gap: 7px; }
   .audition > .note { flex-basis: 100%; margin-top: 0; }
+  .audition .slotmove { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+
+  #surfaceBar[hidden] { display: none; }
+  #surfaceBar .srows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
+  #surfaceBar h2 { display: flex; align-items: baseline; gap: 10px; }
+  #surfaceBar h2 .tiny { margin-left: auto; }
 
   /* ---- lanes and groups ------------------------------------------------ */
 
@@ -284,7 +290,7 @@
 </head>
 <body>
 
-<header class="top">
+<header class="top" id="topbar">
   <h1>Aurora &mdash; patch editor</h1>
   <div class="group">
     <select id="port"><option>no MIDI</option></select>
@@ -341,6 +347,7 @@
           <input type="file" id="filePick" accept=".json,application/json" hidden>
         </div>
       </div>
+      <p class="note">The library saves itself in this browser as you work &mdash; there is no save button for it. <b>save a file</b> is the copy that survives the browser, and <b>push the library</b> is the copy the brain holds.</p>
       <div id="log"></div>
     </section>
   </aside>
@@ -359,6 +366,7 @@
     <nav class="sets" id="setTabs"></nav>
 
     <section class="panel audition" id="auditionBar"></section>
+    <section class="panel" id="surfaceBar" hidden></section>
 
     <section class="panel">
       <details class="starts">
