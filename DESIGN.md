@@ -374,14 +374,14 @@ already in the generator. A travel *easing* — linear through to slow at
 the ends and fast through the middle, so a shape reads as a bouncing ball
 — does not exist and would have to be built.
 
-**Where jitter belongs is unsettled, and it is a settle-by-looking
+**Where the scatter belongs is unsettled, and it is a settle-by-looking
 question.** Scattering a clean strobe into a chaotic one could be a lift
 or a character change. *The test:* with music, notice which one you reach
 for it to do. If it raises a chorus it is motion and it is a fader. If it
 changes the feel of one, it belongs on the pad.
 
-The question survives the rework of what jitter should be, and what it is
-asked about changes with it. The scatter — `docs/generator.md` § "The
+The question survived jitter being replaced, and what it is asked about
+changed with it. The scatter — `docs/generator.md` § "The
 scatter", settled and rendered 2026-09-23 — has an amount per destination
 rather than one knob, so the question becomes which of those amounts a route
 reaches. Its Rate and Stagger are motion by any reading; its Brightness amount

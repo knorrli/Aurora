@@ -114,7 +114,7 @@ Checked items are confirmed in the drawer.
 ## The test that closes the performance controls
 
 Nothing about how Aurora is *played* can be settled at a desk. The
-performance controls — what the touchpad is for, where jitter belongs,
+performance controls — what the touchpad is for, where the scatter belongs,
 whether the fourth rocker has a job, what a fader does when it disagrees
 with the state — all wait on the same thing.
 
@@ -203,9 +203,11 @@ one that is not a look at all, listed first because it gates the rest.
 - [ ] **Pull CC 35 down, then open the pulse's PAR saturation.** Full
       should look like the strips as before; pulled down, the flash toward
       white should start from pale. See `DESIGN.md` § "The PAR cans".
-- [ ] **Sweep the V fader under Glitch.** The white pixels should dim with
-      the colored ones. Then judge the 30 % white share, which has never
-      been judgeable. See `docs/bench-facts.md`.
+- [ ] **Sweep the V fader under a scattered look.** The white pixels
+      should dim with the colored ones. Then judge the 30 % white share,
+      which has never been judgeable. Waits on the scatter reaching the
+      firmware, since Glitch left the roster with jitter. See
+      `docs/bench-facts.md`.
 - [ ] **Take Lit White from center down to zero**, on a flat fill with the
       S fader at full. At zero the wall should be exactly the color on the
       faders; at center it should wash every lit pixel to about 74 %
@@ -246,12 +248,11 @@ designing there. See `docs/bench-facts.md`.
       2026-09-22. A second field is now a second `PlacedField` rather than
       a second set of file statics. What the two would sum to is still
       open. See `docs/generator.md` § Open, item 10.
-- [ ] **Jitter in color** — a starfield in hue rather than in
-      brightness. The only randomness the color layer has no way to
-      make. Absorbed 2026-09-22 into the texture source below, where it
-      is one destination rather than a project of its own. See
-      `docs/generator.md` § "The color layer has no jitter" and § "What
-      jitter is for".
+- [ ] **Randomness in color** — a starfield in hue rather than in
+      brightness. The only randomness the color layer has no way to make.
+      Absorbed 2026-09-22 into the scatter, where it is one destination
+      rather than a project of its own, and the scatter's hue amount is
+      already designed. See `docs/generator.md` § "The scatter".
 - [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 35.
       A scale down from the strips' saturation: full matches them, zero is
       white. The pulse's push toward white measures from it, and the
@@ -282,13 +283,13 @@ designing there. See `docs/bench-facts.md`.
       `tools/preview.js`, and it decides how much of the texture source
       below has to be built. Nothing else on that topic moves until this
       has been looked at.
-- [ ] **Replace jitter with a texture source.** A value over time and
-      over the strip, routed to brightness or to color the way the pulse
-      is, rather than welded into how the shape branch samples itself.
-      Five looks are written down to measure it against; four of them
-      land on one mechanism, and whether the fifth — raindrops, which
-      need a spot that outlives its cell — is worth its controls is the
-      open fork. See `docs/generator.md` § "What jitter is for".
+- [ ] **Decide whether the scatter needs spots with a lifetime.** Four of
+      the five looks it was designed against land on the grid it already
+      has; the fifth — raindrops, a spot born somewhere that then travels
+      and outlives its cell — is the open fork, priced at eight to ten
+      controls. The scatter's block has nine spare for exactly this. Judge
+      it once the scatter is on the wall, not before. See
+      `docs/generator.md` § "The fork this answered".
 - [ ] **Judge the pulse's destinations on the wall.** Everything else about
       them is guesswork until this happens. Three looks are what it was
       built for, and each is one patch: the washes swelling under still
@@ -719,14 +720,12 @@ it becomes a build item.
       anyway. It is also what makes a second channel available as 128 more
       numbers when the map runs out — see `docs/cc-regroup.md`.
 
-- [ ] **The three faders have no CC.** `DESIGN.md` § "The three faders are
-      three routes to 'more'" makes each fader a per-patch morph route, and
-      the patch format carries their far ends as the Color, Extent and
-      Motion sets. The brain holds the patches, so it does the morphing and
-      needs to know where each fader stands. Nothing carries that. CC 20-22
-      are `[patch]` base hue, saturation and value — the v1 meaning, which
-      the header still uses and the controller still sends. Three
-      `[ambient]` numbers are reserved for them in `docs/cc-regroup.md`.
+- [x] **The three faders have no CC.** Fixed 2026-09-23 in the regroup:
+      CC 12, 13 and 14 carry their positions, `[ambient]`, so the brain can
+      morph toward the patch's Color, Extent and Motion sets. What a patch
+      holds is separate, at 38-40. The controller still sends the sticks to
+      the color, which is the next thing to change in
+      `controller/src/controls.cpp`.
 
 - [ ] **Decide where the peak-follower switch goes.** `docs/controls.md`
       is the record of every control on the box. The one thing it leaves
@@ -737,36 +736,25 @@ it becomes a build item.
       needs no pin. The rest of that shortfall disappears with the second
       board.
 
-- [ ] **Decide what the phone's cradle does, and whether there is a
-      handset.** It is wired into the numpad's own five lines, confirmed
-      2026-09-23, so it costs no pin. `DESIGN.md` § "Blackout has two
-      forms" already gives it to the master kill on the grounds that a hook
-      is a *maintained* state — hang up and the wall stays out, and it
-      cannot be left wrong without noticing. Two things unsettle that. An
-      accent trigger, a white flash, is an event rather than a state and
-      spends exactly that property. And the cradle is empty in both photos:
-      without a handset the hook is momentary in practice and the argument
-      does not hold. Settle the handset first; it decides which designs are
-      available. See `docs/controls.md`.
+- [x] **Decide what the phone's cradle does.** Settled 2026-09-23: it
+      stays the blackout, now driven through the end-of-frame gate so it is
+      finally instant. There is a handset, but it was modded into a crude
+      microphone on a guitar jack and almost never sits on the cradle, so
+      the hook is held by a finger — `DESIGN.md` is corrected where it
+      argued the hook is a state you cannot leave wrong.
 
-- [ ] **The foot pedal and the keypad's hold have no message.** Four
-      momentary switches on the pedal are events, so they want notes; 62-69
-      and 74-79 are reserved and empty. And "a morph you stretch by
-      holding" needs the brain to know a key is down and then released,
-      which a Program Change cannot say and no note carries. Both are room
-      that exists and assignments that do not.
+- [ ] **The foot pedal has no assignment.** Four momentary switches, and
+      nothing in the map needs to change for them: the controller reads
+      them and emits messages that already exist, the way the tap tempo
+      button does. What is open is which four jobs they get. The keypad's
+      hold is no longer part of this — it became CC 26 in the regroup.
 
 ## Housekeeping
 
-- [ ] **Regroup the CC table.** The blocks were laid out before most of
-      what uses them existed, and have only been added to since. Go
-      through the whole list and realign it. The pulse now reads as two
-      blocks — 77 to 80 for the strips' brightness and 100 to 114 for
-      everything else — which is the clearest case in the file for a
-      regroup and the reason not to do one piecemeal. Position sits at 115
-      for the same reason: it is a shape control, 70–79 was full before it
-      was wanted, and moving one control on its own would renumber a
-      controller twice. See `shared/aurora_protocol.h`.
+- [x] **Regroup the CC table.** Done 2026-09-23. `docs/cc-regroup.md` is
+      the map, the blocks are contiguous and sized from what each grew
+      into, and the two-block pulse and the stranded Position are both
+      gone.
 
 ## Key files
 
