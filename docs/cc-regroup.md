@@ -19,8 +19,8 @@ that rule stays followable instead of being bent one control at a time.
   already permanently false; the v1 paths that read them stay and simply lose
   a setter.
 - **CC 41–44 lose their meanings, not their slots.** The switches are still
-  on the box. They report position; what a position *does* is decided by the
-  patch, the way a modwheel reports a modwheel.
+  on the controller. They report what they stand at; what that *does* is
+  decided by the patch, the way a modwheel reports a modwheel.
 - **The touchpad sends three independent values** — X, Y and pressure — plus
   an engage signal. No mode, no presumed target. Any sender with two knobs
   can drive the axes without knowing a pad exists.
@@ -28,6 +28,13 @@ that rule stays followable instead of being bent one control at a time.
   finger lifted, and it was useful. So the axes are *positions that persist*,
   and engage is a separate signal rather than "a finger is down".
 - **CC 76 (jitter) retires** once the scatter reaches the firmware.
+- **The per-preset parameter slots retire outright.** CC 50–59 held ten
+  generic numbers a hand-written pattern could read however it liked.
+  `CC_PRESET_PARAM_A` through `_J` appear in exactly one file — the header
+  that defines them. No brain code, no controller code, no pattern has ever
+  read one. They are also the extension point of the model the generator
+  replaced: a patch is a position in one continuous space now, not a preset
+  with bespoke knobs. Ten numbers back.
 
 ## What this does not settle
 
@@ -57,25 +64,29 @@ both sit inside blocks below. They only fire if a keyboard or an
 NRPN-speaking device is routed onto Aurora's channel. Say so if you would
 rather spend the fragmentation.
 
-That leaves **113 usable numbers**: 2–6, 8–9, and 12–119 without 32.
+That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ---
 
-## The budget, which is the real finding
+## The budget
 
-Aurora needs **85 numbers** once CC 40 and jitter retire and the fourth
-rocker gets a slot. There are 113 safe ones. The map is three-quarters full,
-and a regroup can give every category contiguous, correctly-sized space — but
-it cannot give every category room to double. The layout below spends 112 of
-the 113 and buys, in total:
+Aurora needs **75 numbers** once CC 40, jitter and the per-preset slots retire
+and the fourth rocker gets a slot. There are 114 safe ones, so the layout
+below spends 112 and leaves 37 spare — about a third of the map.
 
-- one more pulse destination, which is exactly what the modulator aimed at
-  the fan's rate amount needs
-- eleven spare in the box, for a controller being rebuilt
-- two to four spare in each of color, the generator and the washes
-- nothing at all spare in the per-preset slots
+**Where that spare goes is the one real judgement here**, and the evidence
+says it is not the modulation matrix. The scatter's open fork — spots with a
+birth and a death, which is what raindrops and shooting stars need — is
+priced in `docs/generator.md` at **eight to ten new controls**. That is the
+only growth in the rig that anyone has costed. So the ten numbers the preset
+slots give back go to the scatter, not to the pulse.
 
-**The ceiling is real and worth naming now.** When 113 runs out the options
+The pulse destinations keep four spare, which is one more destination: the
+modulator aimed at the fan's rate amount, and nothing beyond it. A seventh
+destination and the scatter's lifetime fork cannot both happen without the
+ceiling decision below.
+
+**The ceiling is real and worth naming now.** When 114 runs out the options
 are NRPN, or a second MIDI channel — the brain ignores the channel byte
 entirely today (`handleControlChange` takes it and drops it), so a second
 channel is free for the taking but nothing is built to tell them apart. Not a
@@ -89,24 +100,25 @@ the next time a lane wants three numbers.
 | Range | Slots | Category | Used | Spare |
 |---|---|---|---|---|
 | 2–6 | 5 | Transport / meta | 1 | 4 |
-| 12–31 | 20 | The box — positions, meaning decided elsewhere | 9 | 11 |
-| 33–42 | 10 | Per-preset parameter slots | 10 | 0 |
-| 43–47 | 5 | Washes / DMX | 3 | 2 |
-| 48–69 | 22 | Color | 20 | 2 |
-| 70–91 | 22 | Generator — shape, fan, pulse source | 18 | 4 |
-| 92–101 | 10 | Scatter / texture | 9 | 1 |
-| 102–119 | 18 | Where the pulse reaches — three apiece | 15 | 3 |
+| 12–31 | 20 | The controller — what each control stands at | 9 | 11 |
+| 33–37 | 5 | Washes / DMX | 3 | 2 |
+| 38–59 | 22 | Color | 20 | 2 |
+| 60–82 | 23 | Generator — shape, fan, pulse source | 18 | 5 |
+| 83–100 | 18 | Scatter / texture | 9 | 9 |
+| 101–119 | 19 | Where the pulse reaches — three apiece | 15 | 4 |
 
-112 numbers. 0, 1, 7, 10, 11 and 32 skipped; 8 and 9 left free.
+112 numbers, 75 of them spoken for. 0, 1, 7, 10, 11 and 32 skipped; 8 and 9
+left free.
 
 ### 2–6 · Transport / meta
 
-Tempo division, moved off CC 10 and away from pan. Four spare.
+Tempo division, moved off CC 10 and away from pan. Four spare, and nothing
+named for them — kept anyway, deliberately.
 
-### 12–31 · The box
+### 12–31 · The controller
 
-Everything the box physically has, reported as a value. The patch decides
-what a value means; nothing here names a target.
+Every control on the controller, reported as the value it stands at. The
+patch decides what a value means; nothing here names a target.
 
 - Touchpad X, touchpad Y, touchpad pressure — positions that persist
 - Touchpad engage — separate from the axes, so hold works and a knob-only
@@ -114,8 +126,8 @@ what a value means; nothing here names a target.
 - Five switch positions: the 3-way rocker on A6, the 2-way rockers on D4, D5
   and A7, and the fourth rocker `DESIGN.md` § Open is still deciding a job for
 
-Eleven spare, which is the largest allowance here and deliberately so: this
-is the block a box being rebuilt around a Teensy will grow into.
+Eleven spare, because the controller is being rebuilt around a Teensy and
+already has more switches than jobs for them.
 
 **The foot pedal is not here.** Four momentary switches are events, not
 positions, so they belong in the note map beside the trigger and preset
@@ -123,35 +135,31 @@ events. **The 12-position rotary is not here either** — it is the tempo
 switch, and its value is the tempo division at 2–6. It has never been in the
 *pin* map, which is a `docs/wiring.md` problem, not a CC one.
 
-### 33–42 · Per-preset parameter slots
-
-Unchanged, ten slots, no spare. They are deliberately generic and the count
-was always arbitrary; ten is what the patch format already carries.
-
-### 43–47 · Washes / DMX
+### 33–37 · Washes / DMX
 
 Level, hue offset, saturation. Two spare. The old 60–69 reservation was seven
 spare for three controls, which is more than the PARs have ever wanted.
 
-### 48–69 · Color
+### 38–59 · Color
 
 The one category that was split across the map — 20–29 and 90–99 — because it
 did not fit either. Twenty controls in one block: the three faders, the placed
 field with its two switches, the wander, the lit reach.
 
-### 70–91 · Generator — shape, fan, pulse source
+### 60–82 · Generator — shape, fan, pulse source
 
 Shape and its two switches, the fan's six, the pulse's own four. **The fan is
 whole again**: its pulse amount comes home from CC 99, which is the debt this
 regroup was called for. Jitter does not reappear.
 
-### 92–101 · Scatter / texture
+### 83–100 · Scatter / texture
 
-Nine as built, one spare. The scatter is settled and rendered in
-`tools/preview.js`; the firmware does not have it yet, which is the reason
-jitter is still alive and holding a number in the block above.
+Nine as built, nine spare — the largest growth allowance in the map, and the
+only one backed by a costed plan rather than a guess. The scatter is settled
+and rendered in `tools/preview.js`; the firmware does not have it yet, which
+is the reason jitter is still alive and holding a number in the block above.
 
-### 102–119 · Where the pulse reaches
+### 101–119 · Where the pulse reaches
 
 Three apiece — amount, shape, skew — so the block reads as a table. Five
 destinations today and room for exactly one more, which is the one the fan's
@@ -165,6 +173,8 @@ rate amount has been waiting on. A seventh needs the ceiling decision.
 2. `brain/src/midi_in.cpp` — the switch is by symbol, so it follows for free.
 3. `controller/src/` — eleven references, all by symbol. Follows for free.
 4. `tools/patch.js` and `tools/index.html` — both carry a literal CC map.
+   `patch.js` also drops its `SLOTS` block and the editor loses the collapsed
+   per-pattern section that showed slots A–J.
 5. **The editor's stored library.** `localStorage` under
    `aurora.editor.library`, written CC-indexed by `libToWire`. It needs a
    format version and an old→new remap on load, or every saved patch comes
@@ -180,12 +190,10 @@ more expensive.
 
 ## To mark up
 
-- **The block sizes.** The box gets eleven spare and the destinations get
-  three. If that is backwards, say so — it is the one judgement here that is
-  about where Aurora grows next rather than about arithmetic.
-- **Whether the per-preset slots still want ten.** They serve the
-  hand-written presets, which are parked. Four of them back would give the
-  destinations a seventh.
+- **Where the spare goes.** The scatter gets nine and the pulse destinations
+  four. That backs the one costed plan in the rig over a matrix that has not
+  asked for anything beyond the fan's rate amount. If you expect the
+  modulation side to grow first, the two should trade.
 - **Whether to spend fragmentation dodging 64 and 96–101.**
 - **Whether the fourth rocker gets a slot before its job is decided.**
 - **Whether 8 and 9 stay empty** or join the transport block.
