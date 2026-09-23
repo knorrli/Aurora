@@ -1,83 +1,135 @@
 # Every control on the box
 
-**Reconstructed 2026-09-23 and not yet confirmed.** A full inventory was made
-in conversation two or three days earlier and never written down, so it was
-lost. This file exists so that cannot happen twice: it is the list of physical
-things a hand can move, and what each one puts on the wire.
+**The inventory, written down 2026-09-23 from Simon's own walk across the
+panel and cross-checked against `images/top.jpeg` and `images/front.jpeg`.**
+It was made once before in conversation and never committed, so it was lost.
+This is the record; keep it current when the box is rebuilt.
 
-**Correct it rather than trusting it.** Every row is assembled from a source
-that is partial or stale, and each row says which:
-
-- `docs/wiring.md` § "Controller pin map" is the **v1 Nano** map. The doc
-  itself says the Teensy assignment will be "a fresh assignment rather than a
-  translation", and it does not list the 12-position rotary at all, because
-  that sat on a *second* Nano doing tempo.
-- `controller/src/pins.h` calls itself "the single source of truth" and
-  already disagrees with the wiring doc: it says A3 is free, the doc says A3
-  is the foot-pedal ladder.
-- `docs/architecture.md` has the only complete-sounding sentence anywhere —
-  "keypad, three faders, touchpad, switches, foot pedal, tap tempo, mic
-  trigger" — and it is a sentence, not a list.
-- `docs/wiring.md` § "Reserved room, by category" says 23 Control Changes are
-  in use. It is 86.
+Layout is top-left to right, then the rows below — the way a hand finds them.
+"v1" throughout means the single-box Arduino rig, tagged `aurora-nano-final`.
 
 ---
 
-## What a hand can move
+## Top row
 
-| Control | Where | What it sends today | Home |
-|---|---|---|---|
-| Keypad, 13 codes | D8–D12, static parallel code | Program Change — the patch you are heading toward | yes |
-| Keypad **hold and release** | same | nothing | **none** |
-| Fader 1 — Color | A0 | CC 21, saturation | **none for the route** |
-| Fader 2 — Extent | A1 | CC 20, hue | **none for the route** |
-| Fader 3 — Motion | A2 | CC 22, brightness | **none for the route** |
-| Touchpad X | D6 / A5 | CC 31 | yes |
-| Touchpad Y | D7 / A4 | CC 30 | yes |
-| Touchpad pressure | same | CC 32, never measured | yes |
-| Touchpad engage | — | CC 33 | yes |
-| Rocker — touchpad effect, 2-way | D4 | CC 42 | yes |
-| Rocker — hold mode, 2-way | D5 | CC 43 | yes |
-| Rocker — strip mode, 3-way | A6 | CC 41 | yes |
-| Rocker — A/B bank, 2-way | A7 | CC 40's bits, retiring | needs its own |
-| Rotary, 12 positions — tempo | **no pin**, was a second Nano | CC 10, tempo division | yes, CC only |
-| Tap tempo button | D2 | Note 61 | yes |
-| Foot pedal, 4 switches | A3, resistor ladder | nothing | **none** |
+### Audio-in section, top left
 
-Not controls, listed so the inventory is complete: the **mic trigger** on D3
-is a sensor and sends Note 60; the **tempo LED** on D13, the **two indicator
-pixels** and the **ten pixels under the pad** are outputs, recomputed on the
-controller and never streamed.
+| | What it is | v1 job |
+|---|---|---|
+| Jack socket | audio in | Feeds a standalone peak-follower circuit, which feeds the secondary tempo Arduino. That board decided tempo source and division and sent a gate at the resulting frequency to the main Arduino. |
+| 2-way toggle | peak-follower on/off | Off makes the peak-follower hold LOW to the tempo board. |
+| Pushbutton with LED — **TRIG** | gate indicator and manual trigger | LED shows the audio-in gate; the button fires it by hand. |
+| Potentiometer, likely 10 k linear | gate threshold | Sets the level the peak-follower fires at. |
 
-## The three faders are the interesting gap
+### 12-step rotary
 
-`DESIGN.md` § "The three faders are three routes to 'more'" makes each fader a
-per-patch morph route — Color, Extent, Motion — and the patch format carries
-their far ends as three of its five sets. The brain holds the patches, so the
-brain does the morphing, so it needs to know where each fader stands.
+Tempo source *and* division in one switch. The hand-drawn ring on the panel
+reads **MIDI** down one side and **TOUCH** / **TRIG** on the other: several
+MIDI-clock divisions from sixteenths and dotted sixteenths through quarter to
+half-time, quarter or eighth from TRIG, and half, quarter or eighth from the
+tap tempo button.
 
-Nothing carries that. CC 20–22 are `[patch]` base hue, saturation and value:
-saved, recalled, and slid by a morph. The header still calls them "H fader /
-S fader / V fader", which is the v1 meaning, and the controller still sends
-the faders straight to them. **Three `[ambient]` numbers are wanted**, and
-`docs/cc-regroup.md` reserves room for them.
+### ON/OFF
 
-## What is missing besides
+Big 2-way rocker, top right. Hardwired — it cuts the 9 V to the Arduino and,
+after a 5 V step-down, to the controller's pixels. **Not read by any
+firmware and never will be.**
 
+---
+
+## Middle
+
+| | What it is | v1 job |
+|---|---|---|
+| Left indicator pixel | single NeoPixel, left of the phone | Showed the color set by the faders. Blinks an RGB sequence at power-on to say the controller is ready. |
+| Phone cradle button | momentary, under where the earpiece hangs | Every strip black, instantly. A performance control, rarely used. |
+| Phone keypad | 12 keys | 1–9 chose the hard-coded presets; 0 was "off", every strip black. |
+| Right indicator pixel | single NeoPixel, right of the phone | Showed the color on the strips the touchpad was modifying. Same ready-blink. |
+
+---
+
+## Bottom
+
+### Left
+
+| | What it is | v1 job |
+|---|---|---|
+| Three faders | green, red, black caps, left to right | One hue, one saturation, one brightness — which is which is not recorded. In an alternative mode one spread color along the strips and one moved the color; the third is not remembered. |
+| Rocker, 2- or 3-way | below and right of the fader panel | Selected that alternative mode for the faders. |
+
+### Center
+
+| | What it is | v1 job |
+|---|---|---|
+| Pushbutton with LED | amber, below the phone | LED showed tempo after division; the button recorded tap tempo. |
+
+### Right
+
+| | What it is | v1 job |
+|---|---|---|
+| Four rockers | one below-left of the touchpad, three above it; a mix of 2- and 3-way | Hold last touchpad position · touchpad alternative mode · touchpad affects all strips / selected+mirror / selected+mirror with the underlying pattern blanked · preset alt mode, which switched to a variation of the hard-coded preset. **Which switch is which is not recorded.** |
+| Touchpad | 4-wire resistive, in the cream panel | Modified the running preset. X usually chose a strip; Y shifted hue, or faded to white above center and to black below. |
+| Ten pixels | 5 columns × 2 rows, at the pad | See the discrepancies below — not visible in either photo. |
+
+---
+
+## What the photos do not confirm
+
+Recorded as open rather than silently resolved.
+
+1. **The keypad has twelve keys, and only ten have a job.** Both photos show
+   a fourth row wider than "0" alone, and `docs/wiring.md` says the firmware
+   matched `PINB` against **a table of thirteen values** — twelve keys plus
+   no-press. Simon's walk accounts for 1–9 and 0. **Two keys exist and have
+   never been assigned anything**, which on a phone body would be the `*` and
+   `#` positions.
+
+2. **There are seven toggles on the box and the pin map reads four.** Counted
+   from the photos: peak-follower on/off, ON/OFF, the fader-mode rocker, and
+   four at the touchpad. Two of those are not the main Arduino's to read —
+   ON/OFF is hardwired and the peak-follower switch feeds the tempo board — so
+   **five want reading against four pins** (D4, D5, A6, A7). A7 is described
+   in `docs/wiring.md` as "formerly fader-alt + preset-alt", which is two jobs
+   on one input, and is probably where the shortfall was absorbed.
+
+3. **The ten pixels at the pad are not visible in either photo.** Both
+   indicator pixels are, clearly, either side of the phone. `DESIGN.md` § Open
+   lists "the two indicator pixels, the ten pixels under the pad" among things
+   still to be decided, so they are most likely planned for the Teensy rebuild
+   rather than fitted today.
+
+4. **The audio-in TRIG item may be an indicator only.** In the photos it is a
+   small amber dot, noticeably smaller than the tap tempo button below the
+   phone, which has an obvious bezel and cap. Whether it is an illuminated
+   pushbutton or a bare LED needs a hand on it.
+
+---
+
+## What has nowhere to send
+
+Three controls are live on the box and carry no message. Room exists for all
+of them; see `docs/cc-regroup.md`.
+
+- **The three faders.** `DESIGN.md` § "The three faders are three routes to
+  'more'" makes each one a per-patch morph route, and the patch format carries
+  their far ends as the Color, Extent and Motion sets. The brain holds the
+  patches, so it does the morphing and needs to know where each fader stands.
+  CC 20–22 are not that: they are `[patch]` base hue, saturation and value,
+  saved and recalled and slid by a morph — the v1 meaning, which the header
+  still uses and the controller still sends.
 - **The keypad's hold and release.** "A morph you stretch by holding" needs
-  the brain to know a key is down and then let go. A Program Change cannot
+  the brain to know a key went down and then came up. A Program Change cannot
   say that and no note carries it.
-- **The foot pedal.** Four momentary switches are events, so they want notes.
-  62–69 and 74–79 are reserved and empty.
+- **The foot pedal's four switches.** Not on the panel — it is a separate
+  pedal on a guitar cable, four bare switches on a resistor ladder into A3.
+  No note, no CC.
 
-Room exists for all three. Neither is assigned.
+## Still not written down anywhere
 
-## To confirm
-
-- **Is this everything?** Four rockers matches `DESIGN.md` § Open, "What the
-  fourth rocker does", which says three of four are spoken for. If the list
-  made in conversation had more, this is where it goes.
-- **Which fader is which route.** The pin map labels A0/A1/A2 saturation, hue
-  and value, which is the v1 meaning. Which physical fader becomes Color,
-  Extent and Motion has never been written down.
-- **Where the rotary lands on the Teensy.** It has never been in a pin map.
+- **Which fader is Color, Extent and Motion.** The pin map labels A0, A1 and
+  A2 saturation, hue and value, which is the v1 meaning of the same three
+  sticks. The mapping to the three routes has never been decided.
+- **Which of the four touchpad rockers does what**, and which are 2-way and
+  which 3-way.
+- **Where the rotary lands on the Teensy.** It has never been in a pin map,
+  because in v1 it sat on the second Arduino.

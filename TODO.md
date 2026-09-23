@@ -733,13 +733,16 @@ it becomes a build item.
       the header still uses and the controller still sends. Three
       `[ambient]` numbers are reserved for them in `docs/cc-regroup.md`.
 
-- [ ] **Confirm the control inventory.** `docs/controls.md` reconstructs
-      every switch, button, fader and axis on the box and what each one
-      puts on the wire, because the list made in conversation on about
-      2026-09-21 was never written down and is gone. Every row is
-      assembled from a stale source and three things are marked unknown:
-      whether the list is complete, which physical fader is Color, Extent
-      and Motion, and where the rotary lands on the Teensy.
+- [ ] **Settle the four things the control inventory could not.**
+      `docs/controls.md` is now the record of every switch, button, fader
+      and axis on the box, walked by hand and cross-checked against
+      `images/top.jpeg` and `images/front.jpeg`. Four things a photo
+      cannot answer: whether the phone's **two unassigned keys** get a job,
+      since the keypad has twelve and only ten are spoken for; where the
+      **fifth readable switch** goes, since seven toggles sit on the panel
+      and the pin map has four inputs; whether the **ten pixels at the pad**
+      are fitted or planned; and whether the audio-in **TRIG** item is an
+      illuminated button or a bare LED.
 
 - [ ] **The foot pedal and the keypad's hold have no message.** Four
       momentary switches on the pedal are events, so they want notes; 62-69
