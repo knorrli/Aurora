@@ -181,6 +181,22 @@ one that is not a look at all, listed first because it gates the rest.
       heading for, and so should every strip with the fan up, since each
       now carries its own travel phase. A pattern entered with bounce
       already on still starts its swing somewhere new, which is expected. See `DESIGN.md` § "Switches belong to the patch".
+- [ ] **Dial the ten fan looks**, in the *Fan looks* row of either page.
+      Built 2026-09-23, seen by nothing but the preview, and the whole
+      rework rests on them. Four of them answer something on their own:
+      **Chevron ∧** is whether a quarter turn of phase gets Rain back,
+      which is what put the chevron on the list in the first place;
+      **Bars, unison strobe** is the patch the rework exists for;
+      **Hypno together** is whether strips at different rates read as
+      alive or as a pattern coming apart; **Comets** is whether the fixed
+      hash draw looks unplanned or merely arbitrary, and whether it wants
+      a seed. See `docs/generator.md` § "The fan is a wave".
+- [ ] **Wind the frequency fader to the top and sweep the phase.** Two
+      warts live there and neither has been seen: the phase stops sliding
+      the pattern and only scales how deep the alternation is, and a
+      quarter turn either side of the top every strip reads zero and the
+      fan goes silent. Judge whether that reads as a control going quiet
+      or as a fault.
 - [ ] **Wind the placed field's region count up**, on the strip ruler with
       a hard edge. It should wash out smoothly rather than strobe. See
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
@@ -452,13 +468,37 @@ it becomes a build item.
       The objection that rates are not destinations does not bind here —
       a bipolar push integrates back to nothing once a cycle, so the
       strips realign rather than drifting permanently. What blocks it is
-      three CCs that do not exist. See the note below on the regroup.
+      three numbers in the pulse's own range, which is full at 100-114.
+      See the regroup below.
 
-- [ ] **Regroup the CC map.** 116-119 were the last four free numbers and
-      the fan took them, so its pulse amount sits alone at 99 and the next
-      control to want a number has nowhere to go.
-      `shared/aurora_protocol.h` § CC 115 has been waiting for this; it is
-      now what blocks work rather than merely being untidy.
+- [ ] **Regroup the CC map, and put the fan's pulse amount back with the
+      rest of the fan.** The map is not out of numbers — 34 below 120 have
+      no assignment. What it is out of is *room in the right categories*,
+      which is what the rule at the top of `shared/aurora_protocol.h`
+      protects: every one of those 34 sits in a reserved gap belonging to
+      some other category, and only CC 23 is marked free outright.
+
+      Two things want fixing when it happens. **CC 99 is in the wrong
+      category** — it is the fan's pulse amount sitting in the color
+      layer's 90-99 range, put there because the fan's own 70-79 and
+      116-119 had no room left. And **the pulse cannot take a sixth
+      destination**, because 100-114 is exactly five destinations of three
+      and 115 onward is spoken for.
+
+      The cheapest opening is CC 76: jitter is superseded by the scatter
+      and the header already says the two are not meant to coexist for
+      long, so retiring it frees a number inside the generator's own
+      range, where the fan belongs.
+
+- [ ] **Decide what happens to the parked CCs.** Four are wired to
+      nothing and describe a box that no longer exists: CC 41-44, the
+      standing positions of the v1 switches — touchpad strip mode,
+      touchpad effect, hold mode and vertical mode. Four more, CC 30-33,
+      are the touchpad's own gestures and wait on a decision that
+      `DESIGN.md` § Open deliberately has not made. None of them is in the
+      way of anything today, and reclaiming a number is not a reason to
+      settle a design question. Listed so the regroup does not quietly
+      assume they are alive.
 
 - [x] **Classify every CC as patch state, gesture or ambient.** Done
       2026-09-22. All 72 assigned CCs carry a tag in

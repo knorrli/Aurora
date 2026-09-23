@@ -442,9 +442,11 @@ enum AuroraCC : uint8_t {
     // phase whatever it says — a PAR is one position with no strip to be
     // offset from.
     //
-    // It sits here, away from the rest of the fan, because 116-119 were the
-    // last four free numbers and the family needs five. The regroup CC 115
-    // waits for is where it should join them.
+    // It sits here, in the color layer's range and away from the rest of the
+    // fan, which breaks the rule at the top of this file. The fan's own
+    // 70-79 is full and 116-119 held only four of the five it needed. CC 76
+    // is where it belongs once jitter retires; until then this is a stated
+    // debt, not a precedent. See TODO.md § "Regroup the CC map".
     CC_GEN_FAN_PULSE       = 99, // [patch] how far the five strips run out of
                                  // step in the swell
 

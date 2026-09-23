@@ -897,10 +897,12 @@ and Comet spend it on position, Wave, Chase and Stutter on the pulse. All
 five are full-width or narrow-traveling, never both, which is why one
 number could carry them.
 
-**What it cost.** Five CCs where there was one, and 116–119 were the last
-four free numbers in the map — so the pulse amount sits alone at 99. Any
-further growth here needs the regroup that `shared/aurora_protocol.h`
-§ CC 115 already waits for.
+**What it cost.** Five CCs where there was one. The generator's own 70–79
+is full and 116–119 held four of the five, so the pulse amount sits alone
+at 99 — inside the color layer's range, which breaks the map's own rule
+about staying in your category. It is a stated debt rather than a
+precedent: CC 76 is where it belongs once jitter retires. See TODO.md
+§ "Regroup the CC map".
 
 **Not built: a modulator aimed at the fan.** "The bars drift apart, come
 back into alignment, drift the other way" needs the rate amount swinging
