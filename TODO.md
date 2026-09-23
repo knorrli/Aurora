@@ -336,6 +336,16 @@ designing there. See `docs/bench-facts.md`.
 Raised in conversation and not yet settled. Each needs a decision before
 it becomes a build item.
 
+- [ ] **Modulation routing — one clock, and routes to anything.** Raised
+      2026-09-23 and half settled; `docs/modulation.md` is the whole of it.
+      Settled there: one clock with a per-route ratio rather than several
+      oscillators, ratios that multiply and never divide, no free-running
+      modulator, a destination named by its own CC number, the pulse's
+      eighteen destination CCs retired and the fifteen single-byte amounts
+      kept. Six questions remain, and the one that decides the others is
+      the wave — a selector at four CCs a route and twelve routes, or a
+      detented sweep at six and eight. Resume there.
+
 - [ ] **Patch variants — one patch, a few overrides.** Raised 2026-09-22.
       Tempo division and palette are both per-patch, so the same look at
       half time, or in a cooler palette, is a second patch today. Three
