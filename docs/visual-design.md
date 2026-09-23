@@ -60,14 +60,17 @@ the nine pairs, not a crossfade between two renderers:
 | Strobe → Stutter | How much of the wall each flash covers, from all of it down to half. The alternating half only becomes visible as you wind it in |
 | Chaos → Glitch | Blocks shrink, update faster, and white creeps in |
 
-**In the generator, Rain and Comet arrive at the same look.** Found on
-screen 2026-09-21 with `tools/preview.js`. Their anchor settings differ by
-four nudges — width 40 to 30, edge 18 to 30, tail 74 to 99, fan 90 to 127
-— and nothing changes in kind. The cause is the fan: the offsets below are
-a chevron, and the generator's fan is linear, so it can only make a
-diagonal, and a diagonal with a tail is what Comet already is. Rain did
-not survive the move into the generator; it arrived as Comet. The fix is
-`docs/generator.md` § Open, "Fan is a linear staircase".
+**In the generator, Rain and Comet arrived at the same look.** Found on
+screen 2026-09-21 with `tools/preview.js`. Their anchor settings differed
+by four nudges — width 40 to 30, edge 18 to 30, tail 74 to 99, and the fan
+— and nothing changed in kind. The cause was the fan: the offsets below
+are a chevron, and the fan was linear, so it could only make a diagonal,
+and a diagonal with a tail is what Comet already is. Rain did not survive
+the move into the generator; it arrived as Comet.
+
+The fan takes a phase now — `docs/generator.md` § "The fan is a wave" —
+and a quarter turn of it is the chevron. **Whether that gets Rain back is
+unjudged**, and it is the one thing the rework has to prove on the wall.
 
 **Rain is mechanically Sweep fanned out.** Both scroll a block along
 every strip, same direction, same speed, same four steps per beat. Sweep

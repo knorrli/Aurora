@@ -424,6 +424,7 @@
       }
     };
     add('shapeStarts', P.ANCHORS);
+    add('fanStarts', P.FAN_LOOKS);
     add('colorStarts', P.COLOR_LOOKS);
   }
 
@@ -1129,6 +1130,7 @@
   }
 
   let flipped = false;
+  let showFan = true;
 
   function order() {
     const parsed = $('pvOrder').value.split(',')
@@ -1137,13 +1139,16 @@
     return parsed.length === V.STRIPS ? parsed : V.WALL_STRIP_ORDER.map(n => n - 1);
   }
 
+  // The overlay goes on the big wall only. On a small one the five dots land
+  // within a few pixels of each other and report nothing.
   function drawOne(wall, named, beats, pattern, motion) {
     let p = null;
     if (pattern === 11) V.renderStripOrder();
     else if (pattern === 0) V.wall.fill(0);
     else p = V.render(named, beats, motion || wall.motion);
     V.draw(wall.ctx, wall.glow, order(), flipped,
-           p ? V.parColor(p) : [0, 0, 0], wall.w, wall.h);
+           p ? V.parColor(p) : [0, 0, 0], wall.w, wall.h,
+           showFan && p && wall === walls.main ? V.fanReading(p) : null);
   }
 
   // The two small walls are drawn on the big wall's clock, not on clocks of
@@ -1219,6 +1224,11 @@
   wireLibraryButtons();
 
   $('pvOrder').value = V.WALL_STRIP_ORDER.join(',');
+  $('pvFan').classList.toggle('on', showFan);
+  $('pvFan').addEventListener('click', () => {
+    showFan = !showFan;
+    $('pvFan').classList.toggle('on', showFan);
+  });
   $('pvFlip').addEventListener('click', () => {
     flipped = !flipped;
     $('pvFlip').textContent = flipped ? 'pixel 0 at top' : 'pixel 0 at bottom';

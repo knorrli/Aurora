@@ -29,6 +29,33 @@
   const GEN_MAX_COUNT = 20;
   const GEN_MAX_SPEED_PIXELS_PER_BEAT = 60;
 
+  // The fan's wave runs across the strips, and five of them cannot sample
+  // anything faster than half a cycle each: at that setting every strip lands
+  // on the opposite point of the wave from its neighbors, which is alternate,
+  // and above it the wave folds back onto slower ones. So the fader stops
+  // there.
+  //
+  // Stepped to eighths of a turn across the wall, with the phase on 128ths of
+  // one, because the two together have to be able to read *exactly* zero on a
+  // strip. Read near zero and a strip is not still, it crawls: a wave of 0.04
+  // against a rate amount of ±12 px/beat is half a pixel a beat, which is a
+  // quarter of the strip in a minute and five strip-lengths in a song. Still
+  // has to mean still here for the same reason it does on Speed, and 0.125
+  // cycles a strip is not a number 127 steps can land on.
+  //
+  // The phase divides by 128 rather than 127 because a whole turn is the same
+  // wall as none, so the fader covers the turn and stops short of repeating
+  // its own start.
+  const GEN_FAN_FREQ_STEPS = 16;
+  const GEN_FAN_MAX_CYCLES_PER_STRIP = 0.5;
+
+  // Which salt the random fan draws its five offsets through. Of the 256,
+  // this one puts the strips 0.094, 0.137, 0.200, 0.239 and 0.329 of a cycle
+  // apart round the circle: none close enough to read as two strips in
+  // unison, and no two gaps alike, which is what stops a random spread
+  // arriving as just another pattern.
+  const GEN_FAN_HASH_SALT = 118;
+
   // Half the wheel each way, matching the placed field's reach.
   const GEN_PULSE_MAX_HUE = 128;
 
@@ -160,8 +187,18 @@
     };
   }
 
+  const fanFrequency = v =>
+    Math.round(v * GEN_FAN_FREQ_STEPS / 127)
+      * (GEN_FAN_MAX_CYCLES_PER_STRIP / GEN_FAN_FREQ_STEPS);
+
   const or0 = v => (v === undefined ? 0 : v);
   const orMid = v => (v === undefined ? 64 : v);
+  const orElse = (v, d) => (v === undefined ? d : v);
+
+  // Where the wave sits when nothing has been dialed: one eighth of a cycle
+  // per strip, which spreads the five across exactly one rising edge, and a
+  // phase of zero, which starts them at its bottom. That is the staircase.
+  const GEN_FAN_FREQ_DEFAULT = 32;
 
   function readParams(s) {
     return {
@@ -171,7 +208,22 @@
       tail: ccUnit(s.tail),
       positionCells: ccBipolar(s.position) * 0.5,
       speedPixels: stillBelowThreshold(ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT)),
-      fan: ccUnit(s.fan),
+      // One wave across the five strips, with three amounts aiming it at three
+      // places. Position and pulse are offsets into a cycle, so only the
+      // spread between strips is visible and 100 % spreads them over exactly
+      // one cell or one swell. Rate is an absolute speed added to Speed's, so
+      // the strip the wave reads zero at travels at exactly what Speed says
+      // and the others are measured from it.
+      fanFreq: fanFrequency(orElse(s.fanFreq, GEN_FAN_FREQ_DEFAULT)),
+      fanPhase: or0(s.fanPhase) / 128,
+      fanRandom: ccUnit(or0(s.fanRandom)),
+      fanPosition: ccBipolar(s.fan) * 0.5,
+      // The same squared curve Speed runs on, so that mirroring one fader
+      // about its center against the other cancels *exactly*: a still strip
+      // at the wave's peak needs Speed to be the fan's opposite, and two
+      // controls on different curves can only ever nearly cancel.
+      fanRate: ccSquared(orMid(s.fanRate), GEN_MAX_SPEED_PIXELS_PER_BEAT),
+      fanPulse: ccBipolar(orMid(s.fanPulse)) * 0.5,
       jitter: ccUnit(or0(s.jitter)),
       pulseBeats: pulsePeriod(s.pulseRate),
 
@@ -365,26 +417,30 @@
   // stuttering whenever a second one is on screen.
   function makeMotion() {
     return {
-      travelPhase: makeTracker(),
+      // One per strip, because the fan's rate destination gives each its own
+      // speed. Scaling a single shared phase five ways instead would jump
+      // every strip the moment the fan amount moved, which is the teleport
+      // the tracker exists to prevent.
+      travelPhase: Array.from({ length: STRIPS }, makeTracker),
       pulsePhase: makeTracker(),
       wanderPhase: makeTracker(),
       placedPhase: makeTracker(),
       scatterPhase: makeTracker(),
       lastBouncing: false,
-      lastCoreCells: 0.5,
+      lastCoreCells: new Array(STRIPS).fill(0.5),
       lastPulseBeats: 0,
       lastTravelBeats: 0,
     };
   }
 
   const cloneMotion = m => ({
-    travelPhase: { ...m.travelPhase },
+    travelPhase: m.travelPhase.map(t => ({ ...t })),
     pulsePhase: { ...m.pulsePhase },
     wanderPhase: { ...m.wanderPhase },
     placedPhase: { ...m.placedPhase },
     scatterPhase: { ...m.scatterPhase },
     lastBouncing: m.lastBouncing,
-    lastCoreCells: m.lastCoreCells,
+    lastCoreCells: m.lastCoreCells.slice(),
     lastPulseBeats: m.lastPulseBeats,
     lastTravelBeats: m.lastTravelBeats,
   });
@@ -425,18 +481,15 @@
   // fraction has to go and home is never further than half a cell away.
   // While travel is running the offset is where the pattern stands, so there
   // is nothing to settle and this leaves it alone.
-  function settledTravel(beats, rate) {
-    const elapsed = beats - M.lastTravelBeats;
-    M.lastTravelBeats = beats;
-
-    const travel = trackedPhase(M.travelPhase, beats, rate);
+  function settledTravel(tracker, beats, elapsed, rate) {
+    const travel = trackedPhase(tracker, beats, rate);
     if (Math.abs(rate) > 0.0001 || elapsed <= 0) return travel;
 
-    const drift = M.travelPhase.offset - Math.round(M.travelPhase.offset);
+    const drift = tracker.offset - Math.round(tracker.offset);
     if (Math.abs(drift) < 0.0001) return travel;
 
     const pull = Math.min(1, elapsed / GEN_POSITION_SETTLE_BEATS);
-    M.travelPhase.offset -= drift * pull;
+    tracker.offset -= drift * pull;
     return travel - drift * pull;
   }
 
@@ -444,23 +497,44 @@
   // cell and back, once per cycle.
   const triangleSwing = phase => (phase < 0.5 ? phase * 2 : (1 - phase) * 2);
 
+  // The fan's wave, running across the strips rather than through time. A
+  // triangle rather than a sine because it is what stands five strips at
+  // evenly spaced offsets; a sine bunches the middle three and a staircase
+  // stops looking straight.
+  //
+  // At the top of the frequency range neighbors sit half a cycle apart, so
+  // the wave reads the same two points whatever the phase — moving Phase
+  // there only scales how deep the alternation is, and at a quarter and three
+  // quarters it reads zero on every strip and the fan goes quiet.
+  //
+  // Randomize crossfades each strip toward a fixed draw. It is the one
+  // arrangement no frequency reaches: every setting of a wave is orderly, and
+  // what the wall asked for was comets that do not look placed.
+  function fanWave(p, stripIndex) {
+    const u = fract(p.fanPhase + p.fanFreq * stripIndex);
+    const ordered = u < 0.5 ? 4 * u - 1 : 3 - 4 * u;
+    if (p.fanRandom < 0.0001) return ordered;
+    const drawn = hash8(stripIndex, 0, GEN_FAN_HASH_SALT) / 255 * 2 - 1;
+    return ordered + (drawn - ordered) * p.fanRandom;
+  }
+
   // Which phase stands the core where it already stands, for the mode being
   // entered. Position is read out of the travel phase differently in each — a
   // fraction of a cell under wrap, a triangle between the cell's two walls
   // under bounce — and the tracker keeps the phase continuous rather than the
   // position, so flipping the switch teleported the shape.
   //
-  // Two things it cannot preserve. Fan enters the two modes as an offset of
-  // different quantities, so only the unfanned strip is solved for and the
-  // other four still move with fan up. And bounce cannot put a core within
-  // half its own width of a cell wall, because that is where it turns — a
-  // shape standing there snaps out to the wall, by at most half its width.
-  function reanchorTravel(beats, bouncing, p, coreCells, halfCore, swingSpan,
-                          direction, cellLength) {
+  // One thing it cannot preserve: bounce cannot put a core within half its
+  // own width of a cell wall, because that is where it turns — a shape
+  // standing there snaps out to the wall, by at most half its width. Every
+  // strip is solved for separately, so a fanned wall keeps its stagger across
+  // the flip rather than only the strip the wave reads zero at.
+  function reanchorTravel(tracker, beats, bouncing, p, speedPixels, coreCells,
+                          halfCore, swingSpan, direction, cellLength) {
     let rate, wanted;
     if (bouncing) {
       rate = swingSpan > 0.0001
-        ? Math.abs(p.speedPixels) / (2 * swingSpan * cellLength) : 0;
+        ? Math.abs(speedPixels) / (2 * swingSpan * cellLength) : 0;
       const swing = swingSpan > 0.0001
         ? Math.max(0, Math.min(1, (coreCells - halfCore) / swingSpan)) : 0;
 
@@ -468,11 +542,11 @@
       // carries on and turns at the end it was heading for.
       wanted = direction >= 0 ? swing * 0.5 : 1 - swing * 0.5;
     } else {
-      rate = p.speedPixels / cellLength;
+      rate = speedPixels / cellLength;
       wanted = coreCells - 0.5 - p.positionCells;
     }
-    M.travelPhase.rate = rate;
-    M.travelPhase.offset = wanted - beats * rate;
+    tracker.rate = rate;
+    tracker.offset = wanted - beats * rate;
   }
 
   // Skew slides the peak through the cycle, so one side of the swell
@@ -686,35 +760,19 @@
     // is right — a shape filling its cell has nowhere to go.
     const halfCore = p.width * 0.5;
     const swingSpan = 1 - p.width;
-    const bouncing = p.bounce && Math.abs(p.speedPixels) > 0.0001;
 
-    const direction = p.speedPixels >= 0 ? 1 : -1;
-
-    // A switch belongs to the patch, so the one moment it moves is an arrival
-    // the performer caused and is watching — see DESIGN.md § "Switches belong
-    // to the patch". That is the moment a jump would be most visible, so the
-    // phase is solved for rather than carried across.
-    if (bouncing !== M.lastBouncing) {
-      reanchorTravel(beats, bouncing, p, M.lastCoreCells, halfCore, swingSpan,
-                     direction, cellLength);
-      M.lastBouncing = bouncing;
+    // Speed is what the strip the wave reads zero at travels at; the fan's
+    // rate amount is measured from there. So a wall can be turning with
+    // Speed at a standstill, and bounce has to ask the five rather than the
+    // one dial.
+    const stripSpeeds = [];
+    for (let i = 0; i < STRIPS; i++) {
+      stripSpeeds.push(stillBelowThreshold(p.speedPixels + p.fanRate * fanWave(p, i)));
     }
+    const bouncing = p.bounce && stripSpeeds.some(v => v !== 0);
 
-    let travelCycles = 0;
-    let centerCells = 0.5;
-    if (bouncing) {
-      const rate = swingSpan > 0.0001
-        ? Math.abs(p.speedPixels) / (2 * swingSpan * cellLength)
-        : 0;
-      travelCycles = trackedPhase(M.travelPhase, beats, rate);
-    } else {
-      centerCells = 0.5 + p.positionCells
-          + settledTravel(beats, p.speedPixels / cellLength);
-    }
-
-    M.lastCoreCells = bouncing
-      ? halfCore + triangleSwing(fract(travelCycles)) * swingSpan
-      : fract(centerCells);
+    const travelElapsed = beats - M.lastTravelBeats;
+    M.lastTravelBeats = beats;
 
     const pulse = anchoredPulsePhase(beats, 1 / p.pulseBeats);
     p.pulse = pulse;
@@ -741,15 +799,44 @@
     const scatterT = trackedPhase(M.scatterPhase, beats, p.scatterRate);
 
     for (let stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
-      const stripPhase = p.fan * (stripIndex / STRIPS);
+      const wave = fanWave(p, stripIndex);
+      const stripOffset = p.fanPosition * wave;
 
       const mirrored = p.alternate && (stripIndex & 1);
 
-      // Fan is where a strip stands in the cycle, so every destination
-      // landing on a strip inherits it and the three stay in step with each
-      // other. The washes take the unfanned phase: a PAR is one position
-      // with no strip to be offset from.
-      const stripPulse = pulse + stripPhase;
+      // One wave, three amounts, so where a strip stands, how fast it runs
+      // and where it is in the swell are dialed apart — a wall of staggered
+      // bars can strobe in unison, which one shared offset could never do.
+      // The washes take the unfanned phase whatever these say: a PAR is one
+      // position with no strip to be offset from.
+      const stripPulse = pulse + p.fanPulse * wave;
+
+      // A switch belongs to the patch, so the one moment it moves is an
+      // arrival the performer caused and is watching — see DESIGN.md
+      // § "Switches belong to the patch". That is the moment a jump would be
+      // most visible, so the phase is solved for rather than carried across.
+      const stripSpeed = stripSpeeds[stripIndex];
+      const direction = stripSpeed >= 0 ? 1 : -1;
+      const tracker = M.travelPhase[stripIndex];
+      if (bouncing !== M.lastBouncing) {
+        reanchorTravel(tracker, beats, bouncing, p, stripSpeed,
+                       M.lastCoreCells[stripIndex], halfCore, swingSpan,
+                       direction, cellLength);
+      }
+
+      let travelCycles = 0;
+      let centerCells = 0.5;
+      if (bouncing) {
+        const rate = swingSpan > 0.0001
+          ? Math.abs(stripSpeed) / (2 * swingSpan * cellLength) : 0;
+        travelCycles = trackedPhase(tracker, beats, rate);
+      } else {
+        centerCells = 0.5 + p.positionCells
+          + settledTravel(tracker, beats, travelElapsed, stripSpeed / cellLength);
+      }
+      M.lastCoreCells[stripIndex] = bouncing
+        ? halfCore + triangleSwing(fract(travelCycles)) * swingSpan
+        : fract(centerCells);
 
       // Nothing sits above full light, so brightness is the one destination
       // with no sign: its amount is how far the trough digs below what the
@@ -771,14 +858,14 @@
       const shapeLead = width * 0.5 + p.edge * shapeGap * 0.5;
       const shapeTrail = width * 0.5 + Math.max(p.edge * shapeGap * 0.5, p.tail * shapeGap);
 
-      // Under bounce fan offsets where a strip stands in its own swing, so the
-      // five turn at different moments. It cannot offset the core's position
-      // instead: an image standing past the strip's end is clipped away by
-      // nearestOffset, so displacing it there shortens a strip rather than
-      // staggering it.
+      // Under bounce the position amount offsets where a strip stands in its
+      // own swing, so the five turn at different moments. It cannot offset
+      // the core's position instead: an image standing past the strip's end
+      // is clipped away by nearestOffset, so displacing it there shortens a
+      // strip rather than staggering it.
       let coreCenter, stripDirection, triangle = 0;
       if (bouncing) {
-        triangle = fract(travelCycles + stripPhase);
+        triangle = fract(travelCycles + stripOffset);
         const rising = triangle < 0.5;
         const place = halfCore + triangleSwing(triangle) * swingSpan;
         coreCenter = mirrored ? 1 - place : place;
@@ -786,10 +873,10 @@
         if (mirrored) stripDirection = -stripDirection;
       } else {
         const centerHere = mirrored ? countCells - centerCells : centerCells;
-        coreCenter = fract(centerHere + stripPhase);
+        coreCenter = fract(centerHere + stripOffset);
         stripDirection = mirrored ? -direction : direction;
       }
-      const jitterBucket = Math.floor(pulse + stripPhase) & 255;
+      const jitterBucket = Math.floor(stripPulse) & 255;
 
       for (let pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
         let jitterOffset = 0;
@@ -885,6 +972,7 @@
         wall[at + 2] = scale8v(rgb[2], level);
       }
     }
+    M.lastBouncing = bouncing;
 
     return p;
   }
@@ -943,7 +1031,7 @@
 
   // The room's proportions are fixed and the picture scales inside them, so
   // a small copy of the wall beside a large one is the same wall.
-  function draw(ctx, glow, order, flipped, par, W = 300, H = 480) {
+  function draw(ctx, glow, order, flipped, par, W = 300, H = 480, fan = null) {
     const PAR_BAND = H * 0.2;
     const WALL_TOP = H * 0.025;
     const WALL_H = H - PAR_BAND - WALL_TOP - H * 0.025;
@@ -997,6 +1085,123 @@
     ctx.moveTo(0, H - PAR_BAND);
     ctx.lineTo(W, H - PAR_BAND);
     ctx.stroke();
+
+    if (fan) drawFan(ctx, fan, order, flipped, columnW, WALL_TOP, WALL_H);
+  }
+
+  // Drawn against the wall's own left-to-right order, so it reads the way the
+  // room does rather than the way the data chain runs. The curve between the
+  // strips can only be drawn where that order is a straight run in one
+  // direction; anywhere else the strips are not in the wave's order and the
+  // dots alone are the truth.
+  function drawFan(ctx, fan, order, flipped, columnW, WALL_TOP, WALL_H) {
+    const mid = WALL_TOP + WALL_H / 2;
+
+    // Follows the flip, so a positive amount aimed at position always draws
+    // the curve through the bars it puts there rather than through their
+    // mirror image.
+    const reach = WALL_H * 0.3 * (flipped ? -1 : 1);
+    const xAt = column => columnW * (column + 1);
+
+    const step = order[1] - order[0];
+    const runs = (step === 1 || step === -1)
+      && order.every((s, i) => i === 0 || s - order[i - 1] === step);
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xAt(-0.4), mid);
+    ctx.lineTo(xAt(STRIPS - 0.6), mid);
+    ctx.stroke();
+
+    if (fan.stillAt !== null) {
+      const y = mid - fan.stillAt * reach;
+      ctx.strokeStyle = 'rgba(232,168,90,0.6)';
+      ctx.beginPath();
+      ctx.moveTo(xAt(-0.4), y);
+      ctx.lineTo(xAt(STRIPS - 0.6), y);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(232,168,90,0.8)';
+      ctx.font = '9px ui-monospace, monospace';
+      ctx.fillText('still', xAt(-0.4) + 2, y - 3);
+    }
+    ctx.setLineDash([]);
+
+    if (runs) {
+      const columnOf = index => (step === 1 ? index - order[0] : order[0] - index);
+      ctx.strokeStyle = 'rgba(120,200,255,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      fan.curve.forEach(([index, value], i) => {
+        const x = xAt(columnOf(index));
+        const y = mid - value * reach;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    for (let column = 0; column < STRIPS; column++) {
+      const value = fan.values[order[column]];
+      ctx.fillStyle = 'rgba(150,215,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(xAt(column), mid - value * reach, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(150,215,255,0.75)';
+    ctx.font = '10px ui-monospace, monospace';
+    const spent = fan.spent.length
+      ? fan.spent.map(([where, amount]) =>
+          where + ' ' + (amount > 0 ? '+' : '\u2212') + Math.round(Math.abs(amount) * 100) + '%').join('  ')
+      : 'spent nowhere';
+    ctx.fillText(fan.turns.toFixed(2) + ' turns across the wall', 8, WALL_TOP + 12);
+    ctx.fillText(spent, 8, WALL_TOP + 24);
+    if (fan.scrambled > 0.005) {
+      ctx.fillText(Math.round(fan.scrambled * 100) + '% scrambled', 8, WALL_TOP + 36);
+    }
+  }
+
+  // What the fan is doing, for the overlay to draw. The curve is the wave
+  // between the strips, which nothing on the wall can show: five strips read
+  // five points off it, and a wave that turns between two of them is a wave
+  // whose shape the wall cannot report. Seeing where the dots sit on it is
+  // the whole of why the frequency fader has a usable end and a mushy one.
+  function fanReading(p) {
+    const values = [];
+    for (let i = 0; i < STRIPS; i++) values.push(fanWave(p, i));
+
+    // Sampled finely enough to show a turn that falls between two strips.
+    const curve = [];
+    for (let i = 0; i <= (STRIPS - 1) * 24; i++) {
+      const at = i / 24;
+      const u = fract(p.fanPhase + p.fanFreq * at);
+      curve.push([at, u < 0.5 ? 4 * u - 1 : 3 - 4 * u]);
+    }
+    // Where a strip has to sit for the fan to cancel Speed exactly. The zero
+    // line is not it: a strip there travels at Speed, which is a standstill
+    // only while Speed is centered. Without this, a dot plainly above the
+    // zero line can be running backwards and the overlay looks like it is
+    // lying.
+    let stillAt = null;
+    if (Math.abs(p.fanRate) > 0.0001) {
+      const at = -p.speedPixels / p.fanRate;
+      if (Math.abs(at) <= 1) stillAt = at;
+    }
+
+    return {
+      values,
+      curve,
+      stillAt,
+      scrambled: p.fanRandom,
+      turns: p.fanFreq * (STRIPS - 1),
+      spent: [
+        ['position', p.fanPosition * 2],
+        ['rate', p.fanRate / GEN_MAX_SPEED_PIXELS_PER_BEAT],
+        ['pulse', p.fanPulse * 2],
+      ].filter(([, amount]) => Math.abs(amount) > 0.005),
+    };
   }
 
   // ---- panel ------------------------------------------------------------
@@ -1032,6 +1237,7 @@
       <canvas id="pvCanvas"></canvas>
       <div class="pvRow">
         <button id="pvFlip">pixel 0 at bottom</button>
+        <button id="pvFan">fan wave</button>
         <label style="color:#8b8fa3;font-size:11px">order
           <input type="text" id="pvOrder" value="${WALL_STRIP_ORDER.join(',')}">
         </label>
@@ -1059,19 +1265,32 @@
       flip.textContent = flipped ? 'pixel 0 at top' : 'pixel 0 at bottom';
     });
 
+    // On unless it has been turned off, because it explains the two fan
+    // controls that have nothing on the wall to read them from.
+    let showFan = true;
+    const fanToggle = dock.querySelector('#pvFan');
+    const paintFanToggle = () => {
+      fanToggle.style.color = showFan ? '#96d7ff' : '';
+    };
+    fanToggle.addEventListener('click', () => { showFan = !showFan; paintFanToggle(); });
+
     const orderInput = dock.querySelector('#pvOrder');
 
     // Only the flip is remembered. The order is settled, so it lives in the
     // code, where a value left in one browser cannot quietly override it.
+    const remember = () => {
+      try {
+        localStorage.setItem('aurora.preview', JSON.stringify({ flipped, showFan }));
+      } catch {}
+    };
     try {
       const saved = JSON.parse(localStorage.getItem('aurora.preview') || '{}');
       if (saved.flipped) flip.click();
+      if (saved.showFan === false) showFan = false;
     } catch {}
-    flip.addEventListener('click', () => {
-      try {
-        localStorage.setItem('aurora.preview', JSON.stringify({ flipped }));
-      } catch {}
-    });
+    paintFanToggle();
+    flip.addEventListener('click', remember);
+    fanToggle.addEventListener('click', remember);
 
     function order() {
       const parsed = orderInput.value.split(',')
@@ -1097,7 +1316,8 @@
       } else {
         p = render(s, beats);
       }
-      draw(ctx, glow, order(), flipped, parColor(p));
+      draw(ctx, glow, order(), flipped, parColor(p), W, H,
+           showFan ? fanReading(p) : null);
       global.requestAnimationFrame(frame);
     }
     global.requestAnimationFrame(frame);
@@ -1105,6 +1325,6 @@
 
   global.AuroraPreview = {
     start, restart, render, renderStripOrder, parColor, wall, pulseWave, pulsePeriod,
-    draw, hsv2rgb, makeMotion, cloneMotion, STRIPS, PIXELS, WALL_STRIP_ORDER,
+    draw, fanReading, hsv2rgb, makeMotion, cloneMotion, STRIPS, PIXELS, WALL_STRIP_ORDER,
   };
 })(window);

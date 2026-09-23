@@ -176,11 +176,11 @@ one that is not a look at all, listed first because it gates the rest.
       confirm the wall comes back with nothing latched. See `DESIGN.md`
       § "Blackout has two forms".
 
-- [ ] **Turn bounce on and off** at count 1, fan 0, a narrow shape. The
+- [ ] **Turn bounce on and off** at count 1, no fan, a narrow shape. The
       shape should stand still across the flip and turn at the end it was
-      heading for. With fan up the other strips still move, and a pattern
-      entered with bounce already on starts its swing somewhere new — both
-      expected. See `DESIGN.md` § "Switches belong to the patch".
+      heading for, and so should every strip with the fan up, since each
+      now carries its own travel phase. A pattern entered with bounce
+      already on still starts its swing somewhere new, which is expected. See `DESIGN.md` § "Switches belong to the patch".
 - [ ] **Wind the placed field's region count up**, on the strip ruler with
       a hard edge. It should wash out smoothly rather than strobe. See
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
@@ -248,10 +248,18 @@ designing there. See `docs/bench-facts.md`.
       between strip strobes, the other half of this, became reachable on
       2026-09-22 when the pulse gained their saturation. See `DESIGN.md`
       § "The PAR cans".
-- [ ] **Fan gains a shape and a center.** A random setting alongside the
-      staircase, so per-strip timing can stop being orderly. This is also
-      why Rain and Comet are the same look. See `docs/generator.md`
-      § Open, "Fan is a linear staircase", and `docs/visual-design.md`.
+- [x] **Fan gains a shape and a center.** Done 2026-09-23, as a wave with
+      a frequency and a phase rather than a curve with a center — a V
+      changes sign at most once across the wall, so it could not reach
+      strips running opposite their neighbors. See `docs/generator.md`
+      § "The fan is a wave".
+
+- [ ] **Put the nine fan looks on the wall.** Dialed in the bench page's
+      *Fan looks* row and rendered in `tools/preview.js` and the firmware,
+      judged on neither. Four things it would settle are listed in
+      `docs/generator.md` § Open, item 1 — the one that matters most is
+      whether a quarter turn of phase gets Rain back, since Rain arriving
+      as Comet is what started this.
 - [ ] **Dial the placed field's approximation of the sprinkle.** Region,
       strip ruler, count around 12, width and edge low, dark pushed up,
       over a full-width wall with V around half. Thirty seconds in
@@ -431,12 +439,26 @@ it becomes a build item.
       the linear taper, since the dead bottom of the fader that made this
       attractive is largely what the taper reclaimed.
 
-- [ ] **Fan's full shape, and a rate offset beside it.** `docs/generator.md`
-      § Open, item 1 argues the two are one piece of work, and that a rate
-      ratio of -1 on the odd strips reproduces alternate exactly. Whether
-      that should dissolve the alternate switch is already settled as no,
-      in `DESIGN.md` § "Switches belong to the patch"; the look itself is
-      undiscussed.
+- [x] **Fan's full shape, and a rate offset beside it.** Done 2026-09-23,
+      the two together as one wave with three amounts. The claim that a
+      rate of the opposite sign reproduces alternate holds under wrap and
+      not under bounce, where a reversed strip stands in the same place at
+      every instant — so the switch survives. `DESIGN.md` § "Alternate
+      keeps its jump" said it would not; that is corrected there.
+
+- [ ] **A modulator aimed at the fan's rate amount.** "The bars drift
+      apart, come back into alignment, drift the other way" needs that
+      amount swinging through zero, which is a sixth pulse destination.
+      The objection that rates are not destinations does not bind here —
+      a bipolar push integrates back to nothing once a cycle, so the
+      strips realign rather than drifting permanently. What blocks it is
+      three CCs that do not exist. See the note below on the regroup.
+
+- [ ] **Regroup the CC map.** 116-119 were the last four free numbers and
+      the fan took them, so its pulse amount sits alone at 99 and the next
+      control to want a number has nowhere to go.
+      `shared/aurora_protocol.h` § CC 115 has been waiting for this; it is
+      now what blocks work rather than merely being untidy.
 
 - [x] **Classify every CC as patch state, gesture or ambient.** Done
       2026-09-22. All 72 assigned CCs carry a tag in

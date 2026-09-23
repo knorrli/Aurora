@@ -224,13 +224,14 @@ Nothing in the firmware knows this. It matters in two places:
 
 - `tools/preview.js` draws the wall, and carries the order as
   `WALL_STRIP_ORDER`. Change it there if the rig is ever re-strung.
-- **Fan counts from strip 1**, so its zero end is the wall's right and
-  its staircase climbs leftward. A fan diagonal therefore runs up to the
-  left on this wall, and reversing the rigging would reverse it.
+- **The fan's wave counts from strip 1**, so its phase starts at the
+  wall's right and a staircase climbs leftward. Reversing the rigging
+  would reverse it; so does turning the fan's amount through zero to the
+  other side, which is what that control is bipolar for.
 
 PC 11 cannot tell you which end of a strip pixel 0 sits at — every strip
 is one flat color, so there is no end to tell apart. That takes a
-single narrow shape traveling slowly with fan at zero: whichever end it
+single narrow shape traveling slowly with no fan: whichever end it
 sets off from is pixel 0.
 
 ---

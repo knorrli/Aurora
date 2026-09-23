@@ -54,7 +54,12 @@ That is the whole thing. Everything below is a parameter of it.
 | 72 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
 | 73 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
 | 74 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
-| 75 | Fan | How far the five strips run out of step | 0–100 % of a cell |
+| 75 | Fan · Position | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
+| 99 | Fan · Pulse | How far apart they stand in the swell | bipolar, ±100 % of a swell |
+| 119 | Fan · Rate | How far apart their speeds stand, either side of Speed | bipolar, ±60 px/beat |
+| 116 | Fan · Frequency | All five alike → every strip opposite its neighbors | 0 – ½ cycle per strip |
+| 117 | Fan · Phase | Where the wave sits on the strips | one turn |
+| 118 | Fan · Randomize | The wave → a fixed draw per strip | 0–100 % |
 | 76 | Jitter | Randomness in position and brightness, re-rolled once per swell | 0–100 % |
 | 77 | Pulse depth | How far the trough digs below full light | 0–100 % |
 | 78 | Pulse rate | How long one swell takes. Stepped | 16 → 0.25 beats |
@@ -126,8 +131,9 @@ the pulse's anchoring, one section down, against the same cause.
 walls — that is what keeps the turn where Width puts it — so there is no
 offset to give it without pushing the core out of its own cell.
 
-Fan still spreads the five strips from wherever Position puts them. Centered
-on all five means Position centered and Fan at zero.
+The fan still spreads the five strips from wherever Position puts them.
+Centered on all five means Position centered and the fan's position amount
+at its middle.
 
 **Still has to mean still, or Position cannot hold.** The settle runs at a
 standstill and nothing else, so one step either side of center used to be a
@@ -186,15 +192,15 @@ bounce the turn stays where the *dialed* width puts it: letting the swell
 move it would put the pulse into the travel rate, which is the one thing a
 destination may never be.
 
-**The washes take the unfanned phase.** Fan is where a strip stands in the
-cycle, and a PAR is one position with no strip to be offset from. Reaching
-the four of them separately is a different job — see `DESIGN.md` § "The
-PAR cans".
+**The washes take the unfanned phase.** A PAR is one position with no strip
+to be offset from. Reaching the four of them separately is a different job
+— see `DESIGN.md` § "The PAR cans".
 
-**Fan is not a destination**, and waits on the fan rework. It is the one
-that is not a plain push: the pulse's own per-strip phase is
-`fract(pulse + stripPhase)`, so aiming it at fan feeds the pulse back into
-itself.
+**The fan's pulse amount is not a destination.** It is the one that is not
+a plain push: the pulse's own per-strip phase is `fract(pulse + fan)`, so
+aiming the pulse at it feeds the pulse back into itself. The position and
+rate amounts carry no such loop and could be pushed — see § "The fan is a
+wave" for what that costs and why it is not built.
 
 **Rates are not destinations at all.** Speed, placed speed and wander rate
 all feed a running total, so a pulse aimed at one shifts position
@@ -243,23 +249,28 @@ Thirteen of the roster, approximately, from nine knobs and two switches:
 |---|---|
 | Fill | width full, not moving |
 | Sweep | a third width, hard edge, traveling, fan zero |
-| Rain | the same with fan up and some tail |
+| Rain | the same with the fan's position amount up and some tail |
 | CrossSweep | Sweep with alternate direction |
 | Bars | Sweep on bounce instead of wrap |
 | Breathe | width full, not moving, pulse deep and slow, sine |
-| Wave | the same with fan up |
-| Chase | width full, pulse at maximum, fan at maximum |
+| Wave | the same with the fan's pulse amount up |
+| Chase | width full, pulse at maximum, the fan's pulse amount at maximum |
 | Comet | a narrow shape with a long tail, traveling, strips fanned |
 | Starfield | tiny shapes, high count, jitter up |
 | Strobe | width full, pulse at maximum, fast, square |
-| Stutter | Strobe with alternate direction and some fan |
+| Stutter | Strobe with alternate direction and some fan on the pulse |
 | Glitch | tiny, high count, jitter at maximum |
 
-**Fan is doing three jobs at once** — it is the Sweep→Rain axis, the
+**Fan was doing three jobs at once** — it was the Sweep→Rain axis, the
 Breathe→Wave axis, *and* the thing that turns a pulse into a chase across
-the strips. The first two were already known to be one number; that the
-third falls out of the same parameter is the strongest evidence the
-decomposition is real rather than fitted after the fact.
+the strips. The first two were already known to be one number, and that
+the third fell out of the same parameter read as evidence the
+decomposition was real rather than fitted after the fact.
+
+It was half right. The three are one *shape* — one wave across the five
+strips — and they are not one *amount*: welded together, a wall of
+staggered bars could never strobe in unison. They are three amounts on one
+wave now. See § "The fan is a wave".
 
 **Plasma and Aurora are not in here and should not be.** They are a color
 field rather than a moving shape, so they are either a second generator or
@@ -506,11 +517,11 @@ aimed at.
   of fan and speed, and the first argument anyone has made for keeping
   the control.
 
-**Fan's name is wrong.** It reads as "vertical offset between strips" and
-it is really a per-strip phase offset applied to everything cyclic,
-travel and pulse alike. That it turns a pulse into a chase is recorded
-above as evidence the decomposition is real; it is also the part nobody
-guesses from the word.
+**Fan's name was wrong.** It read as "vertical offset between strips" and
+was really a per-strip phase offset applied to everything cyclic, travel
+and pulse alike — the part nobody guessed from the word. Settled by
+§ "The fan is a wave": the three quantities it reaches now have an amount
+each, and the controls are named for the place they reach.
 
 ### What the wall found, 2026-09-22
 
@@ -609,12 +620,12 @@ shape already was, so it carries on and turns at the end it was heading for.
 Measurements are in `DESIGN.md` § "Switches belong to the patch", which is also
 where a switch moving only on arrival is argued.
 
-Two things it cannot preserve, both geometry. **Bounce has nowhere to put a
-core standing within half its own width of a cell wall**, since that is where
-it turns, so a shape standing there is put out onto the wall — the bound on
-what is left, and largest at the widths where the swing is shortest anyway.
-And **fan offsets a different quantity in each mode**, so only the unfanned
-strip can be solved for and the other four still move with fan up.
+One thing it cannot preserve, and it is geometry. **Bounce has nowhere to put
+a core standing within half its own width of a cell wall**, since that is
+where it turns, so a shape standing there is put out onto the wall — the bound
+on what is left, and largest at the widths where the swing is shortest anyway.
+Every strip is solved for separately, so a fanned wall keeps its stagger
+across the flip.
 
 ### Modulation, settled 2026-09-21
 
@@ -814,6 +825,89 @@ control.
 **Jitter at CC 76 stays until the firmware renders this.** The two are not meant
 to coexist for long.
 
+### The fan is a wave — built 2026-09-23
+
+Started from a patch that could not be built: several bars a strip, the
+five strips standing apart, strobing in unison. Fan could not do it,
+because one offset was added to the travel *and* to the pulse, so
+staggering the bars staggered the flash with them. Full width was the only
+escape hatch — it hides the position offset, which is the whole reason
+Chase works — and there is no matching trick on the other side.
+
+**One wave across the strips, three amounts.** The offset a strip takes is
+`amount × wave(phase + frequency × strip)`, and there are three amounts:
+position, rate and pulse. The wave is a triangle rather than a sine, since
+a triangle is what stands five strips at evenly spaced offsets.
+
+**Frequency is what puts alternating direction on a fader.** What was built
+before was `fan × strip / 5`, a straight ramp; what was planned to replace
+it was `amount × |strip − center|`, a V. Neither changes sign more than
+once across the wall, so strips running opposite their neighbors were out
+of reach at every setting of either. A periodic wave reaches them at one
+cycle per two strips. It does not retire the Alternate switch, which does
+something under bounce that no rate can — see `DESIGN.md` § "Alternate
+keeps its jump".
+
+Five strips cannot sample anything faster than that, so the fader stops
+there. Two warts at that end, both real and both cheaper than the control
+that would remove them:
+
+- **Phase stops moving anything.** The wave reads the same two points
+  whatever the phase, so phase only scales how deep the alternation is.
+- **A quarter turn either side of it, the fan goes quiet.** Both points
+  land on the wave's zero and no strip is offset at all.
+
+**Both wave controls are quantized, because "still" has to be dialable.**
+Frequency steps to eighths of a turn across the wall and phase runs on
+128ths of one, so the wave can read *exactly* zero on a strip. Read near
+zero and a strip is not still, it crawls: at 0.126 cycles a strip — which
+is what 127 steps land on when a staircase wants 0.125 — the middle strip
+reads 0.008 rather than 0, and against a rate amount of ±30 px/beat that
+is a quarter of a pixel a beat. Two strip-lengths over a song, on the
+strip the patch is built around standing still. A whole turn is the same
+wall as none, which is what makes 128 the right divisor for the phase.
+
+**Rate is added to Speed, not multiplied by it, and runs on Speed's own
+squared curve.** So Speed is what the strip the wave reads zero at travels
+at, and the fan says how far the others differ from it.  Sharing the curve
+is what lets one fader cancel the other exactly: standing the wave's
+*peak* still — the center strip fixed while the sides run — needs Speed to
+be the fan's opposite, and two controls on different curves can only ever
+nearly cancel. That is what puts a still strip in the middle of a
+moving wall — and, with Speed wound the other way, at its ends instead.
+The two ends of that family were described independently as two versions
+of one look, and they differ by nothing but where the phase sits, which is
+the best evidence the decomposition holds.
+
+**Each strip carries its own travel phase.** Scaling one shared phase five
+ways would have been cheaper, but a shared phase multiplied per strip
+jumps every strip the moment the amount moves, which is exactly what the
+tracker exists to prevent.
+
+**Randomize is the one arrangement no frequency reaches.** Every setting
+of a wave is orderly, and what the wall wanted was comets whose spacing
+does not read as placed. It crossfades each strip toward a fixed draw from
+the hash, so it morphs rather than switching. The draw is fixed, so the
+same patch always comes back to the same arrangement; whether that wants a
+seed is a wall question, not a bench one.
+
+**What the roster gave up, and what it gained.** The old single fan number
+split in two, and the split fell along a line already in the table: Rain
+and Comet spend it on position, Wave, Chase and Stutter on the pulse. All
+five are full-width or narrow-traveling, never both, which is why one
+number could carry them.
+
+**What it cost.** Five CCs where there was one, and 116–119 were the last
+four free numbers in the map — so the pulse amount sits alone at 99. Any
+further growth here needs the regroup that `shared/aurora_protocol.h`
+§ CC 115 already waits for.
+
+**Not built: a modulator aimed at the fan.** "The bars drift apart, come
+back into alignment, drift the other way" needs the rate amount swinging
+through zero, which a bipolar push would do and which would not drift,
+because the offsets integrate back to nothing once a cycle. It is a sixth
+pulse destination and three more CCs, and there are none.
+
 ### The fork this answered
 
 **Look 5 is the fork, and it is the open question.** A drop is born
@@ -860,47 +954,28 @@ nearly free and the question shrinks to what 4 and 5 need.
 
 ## Open
 
-1. **Fan is a linear staircase, and the roster's Rain is a chevron.** Its
-   per-strip offsets are 20, 28, 34, 28, 20 — symmetric, peaking on the
-   center strip. The generator computes `fan × strip_index / 5`, which is
-   purely linear and can only make a diagonal.
+1. **The fan is built and unseen.** § "The fan is a wave" answers the
+   staircase, the random arrangement and the rate offset together, and
+   renders all of it in `tools/preview.js` and the firmware. Nine looks
+   are dialed in the bench page's *Fan looks* row and none has been on the
+   wall. Until they have, four things are guesses:
 
-   The likely answer, worked out 2026-09-18 but not built: generalize to
-   `amount × f(strip − center)` and make the **center** a parameter that
-   may range beyond the five strips. A center at strip 2 gives the
-   chevron; a center outside the span leaves you on one side of it only,
-   which is a diagonal. So center alone interpolates between the two, and
-   inverted chevrons come free. Two parameters cover the whole family.
-
-   **A third shape is wanted: random.** Asked for on the wall 2026-09-21
-   as "the strobing should not be on all strips at the same time, it
-   should feel random". Fan is what decides per-strip timing, and a
-   staircase can only ever be orderly. A per-strip offset drawn from the
-   hash instead would cover it, which makes this one parameter with three
-   settings rather than a separate control.
-
-   **The same per-strip shape wants a second destination: rate.** Fan
-   offsets *when* a strip runs — the same journey started at different
-   times, locked together for ever. Offsetting *how fast* instead lets the
-   strips drift apart and keep drifting, which is a family fan cannot
-   reach at any setting. At a ratio of −1 on the odd strips it reproduces
-   alternate exactly, so today's look survives as an endpoint and
-   everything between that and "all five together" is new — the midpoint
-   being the odd strips standing still while the even ones run. It is
-   nearly free once fan takes a shape and a center, because it is the same
-   function aimed at a different number, which is the argument for doing
-   the two in one go rather than one of them now.
-
-   What it costs is that a patch stops looking like one thing. Strips at
-   different rates never come back into step, so the wall is whatever the
-   drift has accumulated since you arrived, and the same patch reached
-   twice does not look the same. That is not automatically an objection —
-   the color layer's wander puts its two rates at the golden ratio to buy
-   exactly this, and it was judged the best thing the field it replaced
-   could do. So it is settle-by-looking. A per-patch **drift reset** — on
-   entering the patch, and optionally again every N beats — would hand
-   that choice to the patch, and is the first thing to try if the wall
-   says "no longer a pattern" rather than "alive".
+   - **Whether the chevron gets Rain back.** `docs/visual-design.md`
+     records Rain and Comet arriving at the same look because a linear
+     fan can only make a diagonal. Phase at a quarter turn is the fix and
+     it has not been judged.
+   - **Whether drifting apart reads as alive or as broken.** Strips at
+     different rates never come back into step, so the wall is whatever
+     has accumulated since you arrived and the same patch reached twice
+     does not look the same. The color layer's wander buys exactly this
+     deliberately, with its two rates at the golden ratio, so it is not
+     automatically a fault. A per-patch **drift reset**, on entering the
+     patch and optionally every N beats, is the first thing to try if the
+     wall says "no longer a pattern".
+   - **Whether the random draw wants a seed.** It is fixed, so a patch
+     always comes back to the same unpatterned arrangement.
+   - **Whether the top of the frequency fader is usable.** Phase does
+     nothing there and goes quiet a quarter turn either side.
 2. **Is a strip a loop or a line?** Answered for bounce, still open for
    wrap. Under bounce a shape turns where its own edge meets its cell's
    boundary, so nothing crosses a boundary at all and a strip is a line —

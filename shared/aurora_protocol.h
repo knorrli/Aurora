@@ -329,8 +329,17 @@ enum AuroraCC : uint8_t {
                                  // only
     CC_GEN_SPEED           = 74, // [patch] bipolar: 64 is still, either side
                                  // travels
-    CC_GEN_FAN             = 75, // [patch] how far the five strips run out of
-                                 // step
+    // 75, 99 and 119 are the fan's three amounts, and 116-118 shape the wave
+    // they share. One wave runs across the five strips; each amount decides
+    // how far it pushes one quantity, so a wall of staggered bars can strobe
+    // in unison. A single offset reaching everything cyclic could not.
+    //
+    // Bipolar, and 100 % spreads the five strips over exactly one cell. Both
+    // ends of the range are the same wall with the wave turned over, and at
+    // the very top the two outer strips come back into step with each other,
+    // for the same reason CC 115's two ends are one place.
+    CC_GEN_FAN             = 75, // [patch] how far apart the five strips
+                                 // stand in their cells
     // Superseded by the scatter at 81–89 and kept only while the firmware
     // still renders it. See the note there.
     CC_GEN_JITTER          = 76, // [patch] randomness in position and
@@ -427,7 +436,17 @@ enum AuroraCC : uint8_t {
     CC_LIT_WHITE           = 97, // [patch] 0 = none, up = white at the core
     CC_LIT_DARK            = 98, // [patch] bipolar: 64 = none, down takes the
                                  // core toward dark and up toward full
-    // 99 reserved (color)
+    // Bipolar. The one amount that does nothing to where a shape stands: it
+    // offsets where each strip sits in the swell, which is what turns a
+    // strobe into a chase across the wall. The washes take the unfanned
+    // phase whatever it says — a PAR is one position with no strip to be
+    // offset from.
+    //
+    // It sits here, away from the rest of the fan, because 116-119 were the
+    // last four free numbers and the family needs five. The regroup CC 115
+    // waits for is where it should join them.
+    CC_GEN_FAN_PULSE       = 99, // [patch] how far the five strips run out of
+                                 // step in the swell
 
     // 100–114 — where else the pulse reaches. One oscillator, one rate: a
     // destination sets how far it is pushed and what wave pushes it, never
@@ -490,7 +509,41 @@ enum AuroraCC : uint8_t {
     CC_GEN_POSITION        = 115, // [patch] where a still pattern stands in
                                   // its cell
 
-    // 116–119 reserved
+    // 116-119 — the fan's wave, shared by all three amounts at 75, 99 and
+    // 119. Frequency and phase are one LFO running across the strips instead
+    // of through time; randomize crossfades the five toward a fixed draw.
+    //
+    // Frequency stops at half a cycle per strip because five strips cannot
+    // sample anything faster: there every strip sits opposite its neighbors,
+    // which is alternate. Two things to know at that end of the fader — the
+    // phase only scales how deep the alternation is rather than moving it,
+    // and at a quarter and three quarters of a turn it reads zero on every
+    // strip and the fan goes quiet.
+    // Stepped to eighths of a turn across the wall, seventeen positions, and
+    // the phase runs on 128ths of a turn rather than 127ths. Both because the
+    // two together have to read *exactly* zero on a strip: a strip the wave
+    // reads near zero at is not still, it crawls, and half a pixel a beat
+    // crosses the strip in a minute. Still has to mean still here for the
+    // same reason it does on CC 74, and an eighth of a turn is not a number
+    // 127 steps can land on. A whole turn is the same wall as none, which is
+    // what makes 128 the right divisor for the phase.
+    CC_GEN_FAN_FREQ        = 116, // [patch] 0 = all five alike, up to two
+                                  // turns across the wall
+    CC_GEN_FAN_PHASE       = 117, // [patch] where the wave sits on the
+                                  // strips: a staircase through a chevron
+    CC_GEN_FAN_RANDOM      = 118, // [patch] 0 = the wave, 127 = a fixed draw
+                                  // per strip
+    // Bipolar, and an absolute speed added to CC 74's, not a proportion of
+    // it. So Speed is what the strip the wave reads zero at travels at, and
+    // this is how far the others differ from it — which is what puts a still
+    // strip in the middle of a moving wall, or at its ends.
+    //
+    // On the same squared curve as CC 74, so that mirroring one about its
+    // center against the other cancels exactly. Standing the wave's *peak*
+    // still needs that cancellation, and two controls on different curves can
+    // only ever nearly cancel — which leaves a crawl rather than a standstill.
+    CC_GEN_FAN_RATE        = 119, // [patch] how far apart the five strips'
+                                  // speeds stand
 };
 
 // ---------------------------------------------------------------------------

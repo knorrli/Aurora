@@ -378,6 +378,11 @@
             <p class="note">Each one sets the shape lane and the pulse and leaves the color lane alone, so either can be laid over whatever the other is already doing. Guesses at where a look sits, not finished settings.</p>
           </div>
           <div>
+            <h3>Fan</h3>
+            <div class="chips" id="fanStarts"></div>
+            <p class="note">The looks the fan was rebuilt for, shape lane and pulse like the ones beside them. Comets and Shooting stars want a color: Comet tail for the first, saturation at zero for the second. Shooting stars is an approximation — five speeds and no pattern, but a shooting star is born, crosses once and dies, and a shape absent between crossings is not something the fan can withhold.</p>
+          </div>
+          <div>
             <h3>Color</h3>
             <div class="chips" id="colorStarts"></div>
             <p class="note">Each one sets the color lane only. Head and tail and Comet tail need a shape with gaps to show anything.</p>
@@ -441,6 +446,7 @@
           </div>
           <div class="rowline">
             <button class="tiny" id="pvFlip">pixel 0 at bottom</button>
+            <button class="tiny" id="pvFan">fan wave</button>
             <label class="cc">order <input type="text" id="pvOrder"></label>
           </div>
           <p class="note">Ported from the firmware, not written afresh. The scatter is the exception: it is designed here first and has no firmware behind it yet.</p>

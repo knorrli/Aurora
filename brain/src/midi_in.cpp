@@ -65,6 +65,11 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_GEN_POSITION:    setGeneratorPosition(value); break;
         case CC_GEN_SPEED:       setGeneratorSpeed(value); break;
         case CC_GEN_FAN:         setGeneratorFan(value); break;
+        case CC_GEN_FAN_PULSE:   setGeneratorFanPulse(value); break;
+        case CC_GEN_FAN_RATE:    setGeneratorFanRate(value); break;
+        case CC_GEN_FAN_FREQ:    setGeneratorFanFreq(value); break;
+        case CC_GEN_FAN_PHASE:   setGeneratorFanPhase(value); break;
+        case CC_GEN_FAN_RANDOM:  setGeneratorFanRandom(value); break;
         case CC_GEN_JITTER:      setGeneratorJitter(value); break;
         case CC_GEN_PULSE_RATE:  setGeneratorPulseRate(value); break;
         case CC_GEN_ALTERNATE:   setGeneratorAlternate(value); break;

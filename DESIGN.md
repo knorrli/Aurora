@@ -414,11 +414,13 @@ not how bright it is.** A strip inside a narrow window leaning toward
 Glitch is partly glitchy; the strips outside it are untouched and at full
 brightness. Nothing dims.
 
-The same number is already needed elsewhere: `docs/generator.md`
-§ Open, "Fan is a linear staircase", wants fan generalized to
-`amount × f(strip − center)` with the center allowed outside the five
-strips, so that chevron and diagonal become one family. One parameter
-serves both.
+The same number is already built elsewhere: the fan runs a wave across
+the five strips with a phase and a frequency — `docs/generator.md`
+§ "The fan is a wave" — so chevron, diagonal and alternate are one family.
+A window with a center and a width is not the same function, but it is the
+same axis, and whether the pad should drive the fan's own phase rather
+than carry a second per-strip shape is worth asking before a second one
+is built.
 
 **Width lands on the 3-way rocker** — one strip, three strips, all five.
 With five strips there is no fourth useful setting. Width is also what
@@ -846,9 +848,11 @@ width 90. One frame's own travel is 0.03 px.
 within half its own width of a cell wall, because that is where it turns,
 so a shape standing there is put out onto the wall. The worst moves
 measured — 7.6, 2.8 and 16.1 px for those three widths — are half a core
-width in each case, which is the bound. And fan enters the two modes as an
-offset of different quantities, so only the unfanned strip can be solved
-for: at fan 90 the flip still averages 7.0 px across the five.
+width in each case, which is the bound. Fan used to add to the two modes as an offset of different quantities, so
+only the unfanned strip could be solved for and the flip averaged 7.0 px
+across the five at fan 90. Every strip carries its own travel phase now
+and is solved for separately, so a fanned wall keeps its stagger across
+the flip.
 
 **Alternate keeps its jump, deliberately.** The two things wanted of it
 cannot both be had. If turning it on leaves the odd strips where they
@@ -861,10 +865,19 @@ instant as one running it forwards, and reversing the odd strips where
 they stand would leave them sitting exactly on top of the even ones, with
 alternate visible on nothing but a tail.
 
-So it is not worth repairing, because it is not going to stay a switch. A
-per-strip **rate** offset in the fan family reaches alternate as one
-setting of a continuous control, and a continuous control has nothing to
-flip — see `docs/generator.md` § Open, item 1.
+So it is not worth repairing. The fan's rate amount now reaches
+alternating direction as one setting of a continuous control — frequency
+at the top of its range, where every strip sits opposite its neighbors —
+and a continuous control has nothing to flip. See `docs/generator.md`
+§ "The fan is a wave".
+
+**It does not replace the switch, though, and the two docs that said it
+would were both wrong.** A rate of the opposite sign matches alternate
+only while the shapes wrap. Under bounce the swing is symmetric inside its
+cell, so a strip running backwards stands in the same place at every
+instant as one running forwards, and reversing it is visible on nothing
+but a tail — the same fact two paragraphs above. The switch still does
+something bounce-only that the fader cannot.
 
 ## Open
 

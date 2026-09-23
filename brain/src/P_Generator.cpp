@@ -30,6 +30,33 @@
 #define GEN_MAX_COUNT 20
 #define GEN_MAX_SPEED_PIXELS_PER_BEAT 60.0f
 
+// The fan's wave runs across the strips, and five of them cannot sample
+// anything faster than half a cycle each: at that setting every strip lands
+// on the opposite point of the wave from its neighbors, which is alternate,
+// and above it the wave folds back onto slower ones. So the fader stops
+// there.
+//
+// Stepped to eighths of a turn across the wall, with the phase on 128ths of
+// one, because the two together have to be able to read *exactly* zero on a
+// strip. Read near zero and a strip is not still, it crawls: a wave of 0.04
+// against a rate amount of +-12 px/beat is half a pixel a beat, which is a
+// quarter of the strip in a minute and five strip-lengths in a song. Still
+// has to mean still here for the same reason it does on Speed, and 0.125
+// cycles a strip is not a number 127 steps can land on.
+//
+// The phase divides by 128 rather than 127 because a whole turn is the same
+// wall as none, so the fader covers the turn and stops short of repeating its
+// own start.
+#define GEN_FAN_FREQ_STEPS 16
+#define GEN_FAN_MAX_CYCLES_PER_STRIP 0.5f
+
+// Which salt the random fan draws its five offsets through. Of the 256, this
+// one puts the strips 0.094, 0.137, 0.200, 0.239 and 0.329 of a cycle apart
+// round the circle: none close enough to read as two strips in unison, and
+// no two gaps alike, which is what stops a random spread arriving as just
+// another pattern.
+#define GEN_FAN_HASH_SALT 118
+
 // Half the wheel each way, matching the placed field's reach. A pulse that
 // can only nudge the hue is not a destination anyone would spend a fader on.
 #define GEN_PULSE_MAX_HUE 128.0f
@@ -61,7 +88,12 @@ static float genEdge = 0.15f;
 static float genTail = 0.0f;
 static float genPositionCells = 0.0f;
 static float genSpeedPixels = 0.0f;
-static float genFan = 0.0f;
+static float genFanPosition = 0.0f;
+static float genFanPulse = 0.0f;
+static float genFanRate = 0.0f;
+static float genFanFreq = 0.125f;
+static float genFanPhase = 0.0f;
+static float genFanRandom = 0.0f;
 static float genJitter = 0.0f;
 static float genPulseBeats = 4.0f;
 static bool genAlternate = false;
@@ -88,7 +120,11 @@ static float trackedPhase(PhaseTracker &tracker, float beats, float rate) {
   return beats * rate + tracker.offset;
 }
 
-static PhaseTracker travelPhase = { 0.0f, 0.0f };
+// One per strip, because the fan's rate amount gives each its own speed.
+// Scaling a single shared phase five ways instead would jump every strip the
+// moment that amount moved, which is the teleport the tracker exists to
+// prevent.
+static PhaseTracker travelPhase[NUMBER_OF_STRIPS];
 static PhaseTracker pulsePhase = { 0.0f, 0.0f };
 
 // One oscillator with one rate, reaching several places at once. A
@@ -165,20 +201,17 @@ static float anchoredPulsePhase(float beats, float rate) {
 //
 // While travel is running the offset is where the pattern stands, so there is
 // nothing to settle and this leaves it alone.
-static float settledTravel(float beats, float rate) {
-  static float lastBeats = 0.0f;
-  const float elapsed = beats - lastBeats;
-  lastBeats = beats;
-
-  const float travel = trackedPhase(travelPhase, beats, rate);
+static float settledTravel(PhaseTracker &tracker, float beats, float elapsed,
+                           float rate) {
+  const float travel = trackedPhase(tracker, beats, rate);
   if (fabsf(rate) > 0.0001f || elapsed <= 0.0f) return travel;
 
-  const float drift = travelPhase.offset - roundf(travelPhase.offset);
+  const float drift = tracker.offset - roundf(tracker.offset);
   if (fabsf(drift) < 0.0001f) return travel;
 
   float pull = elapsed / GEN_POSITION_SETTLE_BEATS;
   if (pull > 1.0f) pull = 1.0f;
-  travelPhase.offset -= drift * pull;
+  tracker.offset -= drift * pull;
   return travel - drift * pull;
 }
 
@@ -194,19 +227,20 @@ static inline float triangleSwing(float phase) {
 // under bounce — and the tracker keeps the phase continuous rather than the
 // position, so flipping the switch teleported the shape.
 //
-// Two things it cannot preserve. Fan enters the two modes as an offset of
-// different quantities, so only the unfanned strip is solved for and the
-// other four still move with fan up. And bounce cannot put a core within
-// half its own width of a cell wall, because that is where it turns — a
-// shape standing there snaps out to the wall, by at most half its width.
-static void reanchorTravel(float beats, bool bouncing, float coreCells,
+// One thing it cannot preserve: bounce cannot put a core within half its own
+// width of a cell wall, because that is where it turns — a shape standing
+// there snaps out to the wall, by at most half its width. Every strip is
+// solved for separately, so a fanned wall keeps its stagger across the flip
+// rather than only the strip the wave reads zero at.
+static void reanchorTravel(PhaseTracker &tracker, float beats, bool bouncing,
+                           float speedPixels, float coreCells,
                            float halfCore, float swingSpan, float direction,
                            float cellLength, float positionCells) {
   float rate;
   float wanted;
   if (bouncing) {
     rate = (swingSpan > 0.0001f)
-        ? fabsf(genSpeedPixels) / (2.0f * swingSpan * cellLength) : 0.0f;
+        ? fabsf(speedPixels) / (2.0f * swingSpan * cellLength) : 0.0f;
     float swing = (swingSpan > 0.0001f) ? (coreCells - halfCore) / swingSpan : 0.0f;
     if (swing < 0.0f) swing = 0.0f;
     else if (swing > 1.0f) swing = 1.0f;
@@ -215,11 +249,11 @@ static void reanchorTravel(float beats, bool bouncing, float coreCells,
     // carries on and turns at the end it was heading for.
     wanted = (direction >= 0.0f) ? (swing * 0.5f) : (1.0f - swing * 0.5f);
   } else {
-    rate = genSpeedPixels / cellLength;
+    rate = speedPixels / cellLength;
     wanted = coreCells - 0.5f - positionCells;
   }
-  travelPhase.rate = rate;
-  travelPhase.offset = wanted - beats * rate;
+  tracker.rate = rate;
+  tracker.offset = wanted - beats * rate;
 }
 
 // Skew slides the peak through the cycle, so one side of the swell collapses
@@ -293,6 +327,28 @@ static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
   h *= 0x5bd1e995u;
   h ^= h >> 15;
   return (uint8_t)h;
+}
+
+// The fan's wave, running across the strips rather than through time. A
+// triangle rather than a sine because it is what stands five strips at evenly
+// spaced offsets; a sine bunches the middle three and a staircase stops
+// looking straight.
+//
+// At the top of the frequency range neighbors sit half a cycle apart, so the
+// wave reads the same two points whatever the phase — moving phase there only
+// scales how deep the alternation is rather than moving it, and at a quarter
+// and three quarters of a turn it reads zero on every strip and the fan goes
+// quiet.
+//
+// Randomize crossfades each strip toward a fixed draw. It is the one
+// arrangement no frequency reaches: every setting of a wave is orderly, and
+// what the wall asked for was comets that do not look placed.
+static float fanWave(uint8_t stripIndex) {
+  const float u = fract(genFanPhase + genFanFreq * (float)stripIndex);
+  const float ordered = (u < 0.5f) ? (4.0f * u - 1.0f) : (3.0f - 4.0f * u);
+  if (genFanRandom < 0.0001f) return ordered;
+  const float drawn = (float)hash8(stripIndex, 0, GEN_FAN_HASH_SALT) / 255.0f * 2.0f - 1.0f;
+  return ordered + (drawn - ordered) * genFanRandom;
 }
 
 // ---------------------------------------------------------------------------
@@ -599,40 +655,25 @@ void Generator(CHSV color) {
   // right — a shape filling its cell has nowhere to go.
   const float halfCore = genWidth * 0.5f;
   const float swingSpan = 1.0f - genWidth;
-  const bool bouncing = genBounce && fabsf(genSpeedPixels) > 0.0001f;
 
-  const float direction = (genSpeedPixels >= 0.0f) ? 1.0f : -1.0f;
+  // Speed is what the strip the wave reads zero at travels at, and the fan's
+  // rate amount is measured from there. So a wall can be turning with Speed
+  // at a standstill, and bounce has to ask the five rather than the one dial.
+  float stripSpeeds[NUMBER_OF_STRIPS];
+  bool anyMoving = false;
+  for (uint8_t i = 0; i < NUMBER_OF_STRIPS; i++) {
+    const float px = genSpeedPixels + genFanRate * fanWave(i);
+    stripSpeeds[i] = (fabsf(px) < GEN_STILL_PIXELS_PER_BEAT) ? 0.0f : px;
+    if (stripSpeeds[i] != 0.0f) anyMoving = true;
+  }
+  const bool bouncing = genBounce && anyMoving;
 
-  // A switch belongs to the patch, so the one moment it moves is an arrival
-  // the performer caused and is watching — see DESIGN.md § "Switches belong
-  // to the patch". That is the moment a jump would be most visible, so the
-  // phase is solved for rather than carried across.
   static bool lastBouncing = false;
-  static float lastCoreCells = 0.5f;
-  if (bouncing != lastBouncing) {
-    reanchorTravel(beats, bouncing, lastCoreCells, halfCore, swingSpan,
-                   direction, cellLength, genPositionCells);
-    lastBouncing = bouncing;
-  }
+  static float lastCoreCells[NUMBER_OF_STRIPS] = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
 
-  float travelCycles = 0.0f;
-  float centerCells = 0.5f;
-  if (bouncing) {
-    const float rate = (swingSpan > 0.0001f)
-        ? fabsf(genSpeedPixels) / (2.0f * swingSpan * cellLength)
-        : 0.0f;
-    travelCycles = trackedPhase(travelPhase, beats, rate);
-  } else {
-    // Half a cell puts a still shape in the middle of its cell rather than
-    // straddling the boundary — which at count 1 is the strip's two ends.
-    // Position slides it from there.
-    centerCells = 0.5f + genPositionCells
-        + settledTravel(beats, genSpeedPixels / cellLength);
-  }
-
-  lastCoreCells = bouncing
-      ? (halfCore + triangleSwing(fract(travelCycles)) * swingSpan)
-      : fract(centerCells);
+  static float lastTravelBeats = 0.0f;
+  const float travelElapsed = beats - lastTravelBeats;
+  lastTravelBeats = beats;
 
   const float pulse = anchoredPulsePhase(beats, 1.0f / genPulseBeats);
 
@@ -648,15 +689,47 @@ void Generator(CHSV color) {
   const float placedDrift = trackedPhase(placed.phase, beats, placed.cellsPerBeat);
 
   for (uint8_t stripIndex = 0; stripIndex < NUMBER_OF_STRIPS; stripIndex++) {
-    const float stripPhase = genFan * ((float)stripIndex / (float)NUMBER_OF_STRIPS);
+    const float wave = fanWave(stripIndex);
+    const float stripOffset = genFanPosition * wave;
 
     const bool mirrored = genAlternate && (stripIndex & 1);
 
-    // Fan is where a strip stands in the cycle, so every destination that
-    // lands on a strip inherits it and the three of them stay in step with
-    // each other. The washes take the unfanned phase: a PAR is one position
-    // with no strip to be offset from.
-    const float stripPulse = pulse + stripPhase;
+    // One wave, three amounts, so where a strip stands, how fast it runs and
+    // where it is in the swell are dialed apart — a wall of staggered bars
+    // can strobe in unison, which one shared offset could never do. The
+    // washes take the unfanned phase whatever these say: a PAR is one
+    // position with no strip to be offset from.
+    const float stripPulse = pulse + genFanPulse * wave;
+
+    // A switch belongs to the patch, so the one moment it moves is an arrival
+    // the performer caused and is watching — see DESIGN.md § "Switches belong
+    // to the patch". That is the moment a jump would be most visible, so the
+    // phase is solved for rather than carried across.
+    const float stripSpeed = stripSpeeds[stripIndex];
+    const float direction = (stripSpeed >= 0.0f) ? 1.0f : -1.0f;
+    PhaseTracker &tracker = travelPhase[stripIndex];
+    if (bouncing != lastBouncing) {
+      reanchorTravel(tracker, beats, bouncing, stripSpeed,
+                     lastCoreCells[stripIndex], halfCore, swingSpan,
+                     direction, cellLength, genPositionCells);
+    }
+
+    float travelCycles = 0.0f;
+    float centerCells = 0.5f;
+    if (bouncing) {
+      const float rate = (swingSpan > 0.0001f)
+          ? fabsf(stripSpeed) / (2.0f * swingSpan * cellLength) : 0.0f;
+      travelCycles = trackedPhase(tracker, beats, rate);
+    } else {
+      // Half a cell puts a still shape in the middle of its cell rather than
+      // straddling the boundary — which at count 1 is the strip's two ends.
+      // Position slides it from there.
+      centerCells = 0.5f + genPositionCells
+          + settledTravel(tracker, beats, travelElapsed, stripSpeed / cellLength);
+    }
+    lastCoreCells[stripIndex] = bouncing
+        ? (halfCore + triangleSwing(fract(travelCycles)) * swingSpan)
+        : fract(centerCells);
 
     // Nothing sits above full light, so brightness is the one destination
     // with no sign: its amount is how far the trough digs below what the
@@ -686,16 +759,16 @@ void Generator(CHSV color) {
     // flipping the direction alone left the shape moving the same way and
     // showed up on nothing but the side a tail fell on.
     //
-    // Under bounce fan offsets where a strip stands in its own swing, so the
-    // five turn at different moments. It cannot offset the core's position
-    // instead: an image standing past the strip's end is clipped away by
-    // nearestOffset, so displacing it there shortens a strip rather than
-    // staggering it.
+    // Under bounce the position amount offsets where a strip stands in its
+    // own swing, so the five turn at different moments. It cannot offset the
+    // core's position instead: an image standing past the strip's end is
+    // clipped away by nearestOffset, so displacing it there shortens a strip
+    // rather than staggering it.
     float coreCenter;
     float stripDirection;
     float triangle = 0.0f;
     if (bouncing) {
-      triangle = fract(travelCycles + stripPhase);
+      triangle = fract(travelCycles + stripOffset);
       const bool rising = triangle < 0.5f;
       const float place = halfCore + triangleSwing(triangle) * swingSpan;
       coreCenter = mirrored ? (1.0f - place) : place;
@@ -703,7 +776,7 @@ void Generator(CHSV color) {
       if (mirrored) stripDirection = -stripDirection;
     } else {
       const float centerHere = mirrored ? (countCells - centerCells) : centerCells;
-      coreCenter = fract(centerHere + stripPhase);
+      coreCenter = fract(centerHere + stripOffset);
       stripDirection = mirrored ? -direction : direction;
     }
 
@@ -711,7 +784,7 @@ void Generator(CHSV color) {
     // pulse is darkest, so a flashing shape lands somewhere new each time
     // instead of being smeared where it stands. On a grid of its own it
     // could never coincide with a flash, which is all it used to do.
-    const uint8_t jitterBucket = (uint8_t)floorf(stripPulse);
+    const uint8_t jitterBucket = (uint8_t)((int32_t)floorf(stripPulse) & 0xFF);
 
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS_PER_STRIP; pixelIndex++) {
       float jitterOffset = 0.0f;
@@ -800,6 +873,7 @@ void Generator(CHSV color) {
           lit.nscale8_video((uint8_t)((float)tint.value * brightness));
     }
   }
+  lastBouncing = bouncing;
 
   // The washes are not this frame's pixels, so the push is handed over
   // rather than applied here: dmx_out::tick() runs after every preset and
@@ -813,7 +887,27 @@ void Generator(CHSV color) {
 void setGeneratorWidth(uint8_t value) { genWidth = ccUnit(value); }
 void setGeneratorEdge(uint8_t value) { genEdge = ccUnit(value); }
 void setGeneratorTail(uint8_t value) { genTail = ccUnit(value); }
-void setGeneratorFan(uint8_t value) { genFan = ccUnit(value); }
+// The three amounts share one wave. Position and pulse are offsets into a
+// cycle, so only the spread between strips is visible and a full amount
+// spreads the five over exactly one cell or one swell. Rate is an absolute
+// speed added to Speed's, so the strip the wave reads zero at travels at
+// exactly what Speed says and the others are measured from it.
+void setGeneratorFan(uint8_t value) { genFanPosition = ccBipolar(value) * 0.5f; }
+void setGeneratorFanPulse(uint8_t value) { genFanPulse = ccBipolar(value) * 0.5f; }
+// The same squared curve Speed runs on, so that mirroring one fader about its
+// center against the other cancels *exactly*: a still strip at the wave's peak
+// needs Speed to be the fan's opposite, and two controls on different curves
+// can only ever nearly cancel.
+void setGeneratorFanRate(uint8_t value) {
+  const float x = ((float)value - 64.0f) / 63.0f;
+  genFanRate = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
+}
+void setGeneratorFanFreq(uint8_t value) {
+  const long step = lroundf((float)value * GEN_FAN_FREQ_STEPS / 127.0f);
+  genFanFreq = (float)step * (GEN_FAN_MAX_CYCLES_PER_STRIP / GEN_FAN_FREQ_STEPS);
+}
+void setGeneratorFanPhase(uint8_t value) { genFanPhase = (float)value / 128.0f; }
+void setGeneratorFanRandom(uint8_t value) { genFanRandom = ccUnit(value); }
 void setGeneratorJitter(uint8_t value) { genJitter = ccUnit(value); }
 
 void setGeneratorCount(uint8_t value) { genCount = ccCount(value); }

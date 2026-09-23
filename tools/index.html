@@ -192,6 +192,11 @@
         </div>
       </div>
       <div class="group">
+        <h3>Fan</h3>
+        <div id="shapeFan"></div>
+        <div class="note">One wave running across the five strips, and three amounts aiming it at three places. Frequency at zero leaves all five alike; wound to the top every strip sits opposite its neighbors, which is alternate — and there the phase only scales how deep that is, and goes quiet a quarter turn either side of it. Speed is what the strip the wave reads zero at travels at; <em>Rate</em> is how far the others differ from it, so a still strip can sit in the middle of a moving wall or at its ends.</div>
+      </div>
+      <div class="group">
         <h3>Unplaced</h3>
         <div id="shapeOpen"></div>
         <div class="note">Re-rolls once per swell, at the darkest point of the cycle — so with a deep square pulse the shape lands somewhere new on every flash rather than being smeared where it stands. Still has no settled home: reach for it to lift a chorus and it is Travel, reach for it to change how a section feels and it belongs on the character surface. Being clocked by the pulse is an argument for filing it under Pulse; that is not the same question. Settle by looking.</div>
@@ -299,6 +304,9 @@
     <h2>Known looks</h2>
     <div class="chips" id="anchors"></div>
     <div class="note">Starting points, not finished settings — guesses at where each pattern sits. Dial them in, then save.</div>
+    <h2 style="margin-top:14px">Fan looks</h2>
+    <div class="chips" id="fanLooks"></div>
+    <div class="note">The looks the fan was rebuilt for, each one shape and pulse only. <em>Comets</em> and <em>Shooting stars</em> want a color beside them: the <em>Comet tail</em> look for the first, and saturation at zero for the second. <em>Shooting stars</em> is an approximation — five speeds and no pattern, but a shooting star is born, crosses once and dies, and a shape that is absent between crossings is not something the fan can withhold.</div>
   </div>
 
   <div class="panel">
@@ -333,7 +341,8 @@
 <script>
 const CC = {
   width: 70, count: 71, edge: 72, tail: 73, position: 115, speed: 74,
-  fan: 75, jitter: 76, pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
+  fan: 75, fanPulse: 99, fanRate: 119, fanFreq: 116, fanPhase: 117, fanRandom: 118,
+  jitter: 76, pulseDepth: 77, pulseRate: 78, pulseSkew: 79, pulseShape: 80,
   alternate: 45, bounce: 46,
 
   // Where else the pulse reaches — the 100–114 block in
@@ -434,7 +443,15 @@ const DERIVED = {
                    : (bip(v) * 50).toFixed(0) + '% of a cell off center',
   speed:      v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
                      return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
-  fan:        v => (v / 127 * 100).toFixed(0) + '% apart',
+  fan:        v => fanAmount(v, 'of a cell apart'),
+  fanPulse:   v => fanAmount(v, 'of a swell apart'),
+  fanRate:    v => { const x = (v - 64) / 63; const r = x * x * 60;
+                     return r < 0.05 ? 'every strip at Speed'
+                          : '±' + r.toFixed(1) + ' px/beat either side of Speed'; },
+  fanFreq:    v => fanTurns(v),
+  fanPhase:   v => (v / 128 * 100).toFixed(0) + '% of a turn',
+  fanRandom:  v => v === 0 ? 'the wave' : v > 125 ? 'a fixed draw per strip'
+                   : (v / 127 * 100).toFixed(0) + '% scrambled',
   jitter:     v => (v / 127 * 100).toFixed(0) + '%',
   pulseDepth: v => v === 0 ? 'not reached' : (v / 127 * 100).toFixed(0) + '% down at the trough',
   pulseRate:  v => PULSE_PERIOD_NAMES[PULSE_PERIODS.indexOf(AuroraPreview.pulsePeriod(v))],
@@ -512,7 +529,14 @@ const GROUPS = {
   shapeTravel: [
     ['position',   'Position',    'where a still pattern stands in its cell; center is the middle'],
     ['speed',      'Speed',       'center is still; either side travels'],
-    ['fan',        'Fan',         'how far the five strips run out of step'],
+  ],
+  shapeFan: [
+    ['fanFreq',    'Frequency',   'all five alike → every strip opposite its neighbors'],
+    ['fanPhase',   'Phase',       'where the wave sits on the strips: a staircase through a chevron'],
+    ['fanRandom',  'Randomize',   'the wave → a fixed draw per strip'],
+    ['fan',        'Position',    'how far apart the five strips stand in their cells'],
+    ['fanRate',    'Rate',        'how far apart their speeds stand, either side of Speed'],
+    ['fanPulse',   'Pulse',       'how far apart they stand in the swell'],
   ],
   pulseSource: [
     ['pulseRate',  'Rate',        'how often the swell lands. Stepped, so it can sit on the bar'],
@@ -560,20 +584,60 @@ for (const dest of PULSE_DESTS) {
   ];
 }
 
+// Stepped, so that a strip the wave reads zero at is exactly still rather
+// than crawling. Eighths of a turn across the wall, 17 positions.
+function fanTurns(v) {
+  const eighths = Math.round(v * 16 / 127);
+  if (eighths === 0) return 'all five alike';
+  if (eighths === 16) return 'every strip opposite its neighbors';
+  const turns = (eighths / 8).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  return turns + (turns === '1' ? ' turn' : ' turns') + ' across the wall';
+}
+
+// Both ends of a fan amount are the same wall with the wave turned over, so
+// the readout says how far apart the strips stand and not which way.
+function fanAmount(v, unit) {
+  const r = Math.abs(bip(v));
+  return r < 0.01 ? 'every strip together' : (r * 100).toFixed(0) + '% ' + unit;
+}
+
 const ANCHORS = {
-  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:90,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:0,   jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseSkew:64, pulseShape:127 },
-  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:100, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:127, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:28 },
-  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:127, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Starfield:  { width:4,   count:119, edge:60, tail:0,  speed:64, fan:0,   jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:0,   jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
-  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:60,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
-  Glitch:     { width:6,   count:122, edge:0,  tail:0,  speed:64, fan:0,   jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:100, jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:64,  jitter:0,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseSkew:64, pulseShape:127 },
+  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,  jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:104, jitter:0,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:114, jitter:0,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:28 },
+  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:114, jitter:0,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Starfield:  { width:4,   count:119, edge:60, tail:0,  speed:64, fan:64,  jitter:80,  pulseDepth:50,  pulseRate:20,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
+  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,  jitter:0,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:88, jitter:0,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Glitch:     { width:6,   count:122, edge:0,  tail:0,  speed:64, fan:64,  jitter:127, pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
+};
+
+// The looks the fan rework was built against, dialed rather than argued. The
+// first is the patch that could not be built before: the five strips standing
+// apart while the swell lands on all of them together, which one offset
+// reaching everything cyclic made impossible.
+//
+// Count 68 is five bars to a strip. Rate 96 is ±30 px/beat at the ends of the
+// wave, so Speed at 20 — about -29 px/beat — is what stands the outer strips
+// still in "Hypno together" while the center runs.
+const FAN_LOOKS = {
+  'Bars, unison strobe': { width:40, count:68, edge:0, tail:0, speed:64, fan:100,
+                           pulseDepth:127, pulseRate:100, pulseShape:0, pulseSkew:64 },
+  'Diagonal bars':  { width:25, count:0, edge:10, tail:0, speed:64, fan:114, fanPhase:0 },
+  'Chevron \u2227':     { width:25, count:0, edge:10, tail:0, speed:64, fan:114, fanPhase:32 },
+  'Chevron \u2228':     { width:25, count:0, edge:10, tail:0, speed:64, fan:14,  fanPhase:32 },
+  'Comets':         { width:12, count:0, edge:8, tail:99, speed:48, fan:127, fanRandom:127 },
+  'Shooting stars': { width:10, count:0, edge:0, tail:90, speed:40, fanRate:105, fanRandom:127 },
+  'Hypno outer':    { width:40, count:68, edge:0, tail:0, speed:64, fanRate:108, fanPhase:0 },
+  'Hypno together': { width:40, count:68, edge:0, tail:0, speed:20, fanRate:108, fanPhase:32 },
+  'Hypno center':   { width:40, count:68, edge:0, tail:0, speed:64, fanRate:108, fanPhase:32 },
+  'Alternate by rate': { width:40, count:68, edge:0, tail:0, speed:64, fanRate:108,
+                         fanFreq:127, fanPhase:64 },
 };
 
 // Shape anchors set the shape and the pulse, and color looks set the color
@@ -613,7 +677,8 @@ for (const name of Object.keys(COLOR_LOOKS)) {
 // The shape branch flattened: one shape filling the cell, still, not
 // traveling. What is left on the wall is the color layer alone.
 const SHAPE_OFF = {
-  width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, fan: 0, jitter: 0,
+  width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64, jitter: 0,
+  fan: 64, fanPulse: 64, fanRate: 64, fanFreq: 32, fanPhase: 0, fanRandom: 0,
   alternate: OFF, bounce: OFF,
 };
 
@@ -638,8 +703,18 @@ const PULSE_OFF = {
 // whatever was up before.
 // Position comes centered for the same reason: a look should not inherit
 // where the last pattern happened to stop.
+// The fan's wave comes with each anchor for the same reason the pulse does:
+// a look that fans nothing should not inherit a chevron from whatever was up
+// before it.
+const FAN_OFF = { fan: 64, fanPulse: 64, fanRate: 64, fanFreq: 32, fanPhase: 0, fanRandom: 0 };
+
+for (const name of Object.keys(FAN_LOOKS)) {
+  FAN_LOOKS[name] = { ...PULSE_OFF, ...FAN_OFF, position: 64, jitter: 0,
+                      alternate: OFF, bounce: OFF, ...FAN_LOOKS[name] };
+}
+
 for (const name of Object.keys(ANCHORS)) {
-  ANCHORS[name] = { ...PULSE_OFF, position: 64, ...ANCHORS[name] };
+  ANCHORS[name] = { ...PULSE_OFF, ...FAN_OFF, position: 64, ...ANCHORS[name] };
 }
 
 
@@ -1265,12 +1340,14 @@ for (const branch of Object.keys(BYPASS)) {
     .addEventListener('click', () => setBypass(branch, !stashed[branch]));
 }
 
-const anchorHost = document.getElementById('anchors');
-for (const [name, patch] of Object.entries(ANCHORS)) {
-  const b = document.createElement('button');
-  b.textContent = name;
-  b.addEventListener('click', () => applyPatch(patch));
-  anchorHost.appendChild(b);
+for (const [hostId, table] of [['anchors', ANCHORS], ['fanLooks', FAN_LOOKS]]) {
+  const host = document.getElementById(hostId);
+  for (const [name, patch] of Object.entries(table)) {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.addEventListener('click', () => applyPatch(patch));
+    host.appendChild(b);
+  }
 }
 
 renderPatches();
