@@ -733,16 +733,21 @@ it becomes a build item.
       the header still uses and the controller still sends. Three
       `[ambient]` numbers are reserved for them in `docs/cc-regroup.md`.
 
-- [ ] **Settle the four things the control inventory could not.**
-      `docs/controls.md` is now the record of every switch, button, fader
-      and axis on the box, walked by hand and cross-checked against
-      `images/top.jpeg` and `images/front.jpeg`. Four things a photo
-      cannot answer: whether the phone's **two unassigned keys** get a job,
-      since the keypad has twelve and only ten are spoken for; where the
-      **fifth readable switch** goes, since seven toggles sit on the panel
-      and the pin map has four inputs; whether the **ten pixels at the pad**
-      are fitted or planned; and whether the audio-in **TRIG** item is an
-      illuminated button or a bare LED.
+- [ ] **Decide where the peak-follower switch goes.** `docs/controls.md`
+      is the record of every control on the box. The one thing it leaves
+      open is that v1 read five switches on four pins, with A7 carrying
+      fader-alt and preset-alt at once, and the rebuild drops the
+      secondary board that the peak-follower switch reported to. Either it
+      lands on the controller Teensy or it stays purely in-circuit and
+      needs no pin. The rest of that shortfall disappears with the second
+      board.
+
+- [ ] **Meter the phone's cradle button.** `readKeypad()` mutes the wall on
+      `0b00111111`, a code on the five keypad lines, and the cradle is the
+      only other momentary on the phone body — so it is probably read
+      there and costs no pin. That last step is inference; confirm it with
+      a meter before the Teensy reader is written. See
+      `docs/controls.md`.
 
 - [ ] **The foot pedal and the keypad's hold have no message.** Four
       momentary switches on the pedal are events, so they want notes; 62-69

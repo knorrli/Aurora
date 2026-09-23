@@ -18,7 +18,7 @@ Layout is top-left to right, then the rows below — the way a hand finds them.
 |---|---|---|
 | Jack socket | audio in | Feeds a standalone peak-follower circuit, which feeds the secondary tempo Arduino. That board decided tempo source and division and sent a gate at the resulting frequency to the main Arduino. |
 | 2-way toggle | peak-follower on/off | Off makes the peak-follower hold LOW to the tempo board. |
-| Pushbutton with LED — **TRIG** | gate indicator and manual trigger | LED shows the audio-in gate; the button fires it by hand. |
+| Pushbutton with integrated LED — **TRIG** | gate indicator and manual trigger | The LED shows the audio-in gate. Pressing the button issues a TRIG ON by hand. |
 | Potentiometer, likely 10 k linear | gate threshold | Sets the level the peak-follower fires at. |
 
 ### 12-step rotary
@@ -43,7 +43,7 @@ firmware and never will be.**
 |---|---|---|
 | Left indicator pixel | single NeoPixel, left of the phone | Showed the color set by the faders. Blinks an RGB sequence at power-on to say the controller is ready. |
 | Phone cradle button | momentary, under where the earpiece hangs | Every strip black, instantly. A performance control, rarely used. |
-| Phone keypad | 12 keys | 1–9 chose the hard-coded presets; 0 was "off", every strip black. |
+| Phone keypad | **10 keys** | 1–9 chose the hard-coded presets; 0 was "off", every strip black. |
 | Right indicator pixel | single NeoPixel, right of the phone | Showed the color on the strips the touchpad was modifying. Same ready-blink. |
 
 ---
@@ -69,39 +69,44 @@ firmware and never will be.**
 |---|---|---|
 | Four rockers | one below-left of the touchpad, three above it; a mix of 2- and 3-way | Hold last touchpad position · touchpad alternative mode · touchpad affects all strips / selected+mirror / selected+mirror with the underlying pattern blanked · preset alt mode, which switched to a variation of the hard-coded preset. **Which switch is which is not recorded.** |
 | Touchpad | 4-wire resistive, in the cream panel | Modified the running preset. X usually chose a strip; Y shifted hue, or faded to white above center and to black below. |
-| Ten pixels | 5 columns × 2 rows, at the pad | See the discrepancies below — not visible in either photo. |
+| Ten pixels | 5 columns × 2 rows, evenly spread under the pad | Fitted, behind a black diffuser, and off in both photos — which is why the panel looks bare. |
 
 ---
 
-## What the photos do not confirm
+## The keypad has ten buttons, not twelve
 
-Recorded as open rather than silently resolved.
+Worth stating because the count is easy to get wrong twice. The two positions
+where a phone carries `*` and `#` are **fixed black inlays with nothing behind
+them** — no switch, no wire.
 
-1. **The keypad has twelve keys, and only ten have a job.** Both photos show
-   a fourth row wider than "0" alone, and `docs/wiring.md` says the firmware
-   matched `PINB` against **a table of thirteen values** — twelve keys plus
-   no-press. Simon's walk accounts for 1–9 and 0. **Two keys exist and have
-   never been assigned anything**, which on a phone body would be the `*` and
-   `#` positions.
+`docs/wiring.md` says the v1 firmware matched `PINB` against "a table of
+thirteen values", which invites the inference that there are twelve keys plus
+no-press. There are not. Reading `readKeypad()` at `aurora-nano-final`,
+`brain/src/IR_Preset.cpp:162`, the thirteen are:
 
-2. **There are seven toggles on the box and the pin map reads four.** Counted
-   from the photos: peak-follower on/off, ON/OFF, the fader-mode rocker, and
-   four at the touchpad. Two of those are not the main Arduino's to read —
-   ON/OFF is hardwired and the peak-follower switch feeds the tempo board — so
-   **five want reading against four pins** (D4, D5, A6, A7). A7 is described
-   in `docs/wiring.md` as "formerly fader-alt + preset-alt", which is two jobs
-   on one input, and is probably where the shortfall was absorbed.
+- **Eleven case labels for ten keys.** Key 1 answers to two codes,
+  `0b00100001` and `0b00110111`; every other key has one.
+- **`0b00111101`, which returns the previous preset** — the resting state, so
+  that reading the pad while nothing is held changes nothing.
+- **`0b00111111`, which sets `muted`**, and `muted` is what
+  `Aurora.ino:98` gates the whole render on. That is the blackout, and the
+  only momentary on the phone body besides the keys is the cradle button — so
+  **the cradle button is almost certainly read on these same five lines**,
+  costing no pin of its own. Meter it before relying on it; everything else
+  in this section is read off the code, and that one sentence is inference.
 
-3. **The ten pixels at the pad are not visible in either photo.** Both
-   indicator pixels are, clearly, either side of the phone. `DESIGN.md` § Open
-   lists "the two indicator pixels, the ten pixels under the pad" among things
-   still to be decided, so they are most likely planned for the Teensy rebuild
-   rather than fitted today.
+## Seven toggles, four inputs — and it may not matter
 
-4. **The audio-in TRIG item may be an indicator only.** In the photos it is a
-   small amber dot, noticeably smaller than the tap tempo button below the
-   phone, which has an obvious bezel and cap. Whether it is an illuminated
-   pushbutton or a bare LED needs a hand on it.
+Counted from the photos: peak-follower on/off, ON/OFF, the fader-mode rocker,
+and four at the touchpad. Two are not the main board's to read — ON/OFF is
+hardwired to the 9 V, and the peak-follower switch feeds the tempo board — so
+five wanted reading against four pins, D4, D5, A6 and A7. `docs/wiring.md`
+calls A7 "formerly fader-alt + preset-alt", two jobs on one input, which is
+where the shortfall was absorbed.
+
+**That is a v1 count and the rebuild changes it.** With no secondary board,
+the peak-follower switch either lands on the controller Teensy or stays purely
+in-circuit and needs no pin at all. Its own discussion, not this file's.
 
 ---
 
