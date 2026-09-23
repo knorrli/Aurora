@@ -380,10 +380,12 @@ or a character change. *The test:* with music, notice which one you reach
 for it to do. If it raises a chorus it is motion and it is a fader. If it
 changes the feel of one, it belongs on the pad.
 
-The question survives 2026-09-22's rework of what jitter should be —
-`docs/generator.md` § "What jitter is for" — but what it is asked about
-changes. A texture source has an amount per destination rather than one
-knob, so the question becomes which of those amounts a route reaches.
+The question survives the rework of what jitter should be, and what it is
+asked about changes with it. The scatter — `docs/generator.md` § "The
+scatter", settled and rendered 2026-09-23 — has an amount per destination
+rather than one knob, so the question becomes which of those amounts a route
+reaches. Its Rate and Stagger are motion by any reading; its Brightness amount
+is extent as easily as motion; and aimed at hue it is neither.
 
 ### Which strips — a window, not a selection
 
@@ -901,7 +903,9 @@ flip — see `docs/generator.md` § Open, item 1.
   cannot close before it does. If mirror is permanently on, the pressure
   disappears. PAR match against contrast was considered for it and
   rejected, above.
-- **Where jitter belongs**, above. Settle by looking.
+- **Where the scatter belongs**, above. Settle by looking, and it is now
+  several questions rather than one, because a source with six controls and
+  three amounts can be reached by more than one route at once.
 - **Everything else on the box.** The tempo button, the mic trigger, the
   two indicator pixels, the ten pixels under the pad. The 12-position
   rotary stays the tempo control; whether tempo division deserves a

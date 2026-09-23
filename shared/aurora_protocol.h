@@ -120,7 +120,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     60 –  69 : washes / DMX fixtures
 //     70 –  79 : generator shape parameters
 //           80 : generator pulse shape
-//     81 –  89 : RESERVED for band / song-specific automation
+//     81 –  89 : the scatter — a texture source and its three amounts
 //     90 –  99 : color, second half (twenty controls will not fit in ten)
 //    100 – 114 : the pulse's destinations, three apiece
 //           115 : where a still pattern stands — a shape control that did
@@ -331,6 +331,8 @@ enum AuroraCC : uint8_t {
                                  // travels
     CC_GEN_FAN             = 75, // [patch] how far the five strips run out of
                                  // step
+    // Superseded by the scatter at 81–89 and kept only while the firmware
+    // still renders it. See the note there.
     CC_GEN_JITTER          = 76, // [patch] randomness in position and
                                  // brightness
     // The pulse is one oscillator with one rate, and 77/79/80 are its
@@ -346,7 +348,53 @@ enum AuroraCC : uint8_t {
     CC_GEN_PULSE_SHAPE     = 80, // [patch] 0 = hard on/off square, 127 =
                                  // smooth sine
 
-    // 81–89 reserved (band / song-specific automation)
+    // 81–89 — the scatter.
+    //
+    // The third modulation source, and the first one with a position: the
+    // pulse is a value over time with nowhere on the wall, the wander is
+    // smooth over both, and this one is random over both. A grid of cells
+    // along a strip, each with its own clock, each lighting a spot that
+    // appears, holds, fades, and may slide across its own cell as it does.
+    // Stateless — a cell's clock comes out of a hash, so there is no
+    // particle list to keep.
+    //
+    // It is what CC_GEN_JITTER should have been. Jitter deforms the shape
+    // branch from inside its own sampling and is therefore not a value that
+    // can be aimed anywhere, which is why it can only ever take light away
+    // and why its grain is always one pixel wide. See docs/generator.md
+    // § "What jitter is for". CC 76 stays where it is until the firmware
+    // renders this block; the two are not meant to coexist for long.
+    //
+    // All [patch]. The three amounts are bipolar with 64 as no push, and the
+    // sign picks which limit the push runs toward, exactly as the pulse's do
+    // at 100–114 — so a spot inside an already-full shape has nowhere to go
+    // and is covered by it with no occlusion rule anywhere.
+    CC_SCATTER_RATE        = 81, // [patch] how often a cell relights
+    CC_SCATTER_COUNT       = 82, // [patch] cells along a strip, 1–20; the
+                                 // same unit as CC_GEN_COUNT
+    // The spot's core on both axes at once: how much of its cell it covers,
+    // and how much of its cycle it is lit. One quantity rather than a size
+    // and a duration, which is what keeps this block to nine slots.
+    CC_SCATTER_WIDTH       = 83, // [patch]
+    CC_SCATTER_EDGE        = 84, // [patch] hard through to a fade, in space
+                                 // and in time alike
+    // 0 puts every cell on one clock, so the whole wall flashes as one; full
+    // scatters their phases and rates and they stop blinking together.
+    // Moving it re-keys every cell, so everything in flight jumps — the
+    // price of holding no state, and confined to this one control.
+    CC_SCATTER_STAGGER     = 85, // [patch]
+    CC_SCATTER_DRIFT       = 86, // [patch] bipolar: how far, and which way, a
+                                 // spot slides across its own cell over its
+                                 // life. A displacement, not a rate, which is
+                                 // why it is not named Speed
+    CC_SCATTER_LIGHT       = 87, // [patch] amount toward full light / toward
+                                 // dark. It pushes what the shape branch
+                                 // left, so it needs a gap to light and
+                                 // light to darken
+    CC_SCATTER_HUE         = 88, // [patch] amount, bipolar, up to half the
+                                 // wheel each way
+    CC_SCATTER_WHITE       = 89, // [patch] amount toward white / toward a
+                                 // pure hue
 
     // 90–99 — color, second half. Twenty controls will not fit in ten slots,
     // so color stays in two blocks; what makes this a half rather than an
@@ -764,6 +812,6 @@ static const uint16_t AURORA_PATCH_LEN =
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 9
+#define AURORA_PROTOCOL_VERSION_MINOR 10
 
 #endif // AURORA_PROTOCOL_H

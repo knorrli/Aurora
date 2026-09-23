@@ -62,6 +62,12 @@
   const WANDER_MAX_CYCLES_PER_BEAT = 0.5;
   const PLACED_MAX_CELLS_PER_BEAT = 1;
 
+  // The scatter's fastest clock. Four relights a beat is a sixteenth note,
+  // which is where a flicker stops reading as separate events at stage
+  // distance.
+  const SCATTER_MAX_CYCLES_PER_BEAT = 4;
+  const SCATTER_MAX_HUE = 128;
+
   // One switch per CC — see shared/aurora_protocol.h. Off below 64, on from
   // 64 up; the ruler is banded into thirds.
   const isOn = v => v >= 64;
@@ -154,6 +160,9 @@
     };
   }
 
+  const or0 = v => (v === undefined ? 0 : v);
+  const orMid = v => (v === undefined ? 64 : v);
+
   function readParams(s) {
     return {
       width: ccUnit(s.width),
@@ -202,6 +211,20 @@
       wanderDark: ccBipolar(s.wanderDark),
       wanderRate: ccUnit(s.wanderRate) ** 2 * WANDER_MAX_CYCLES_PER_BEAT,
       wanderScale: ccUnit(s.wanderScale),
+
+      // Defaulted rather than read straight, because a caller that predates
+      // the scatter sends none of these: undefined through ccBipolar is NaN,
+      // and one NaN reaching the color sum turns every hue on the wall into
+      // nothing at all.
+      scatterRate: ccUnit(or0(s.scatterRate)) ** 2 * SCATTER_MAX_CYCLES_PER_BEAT,
+      scatterCount: ccCount(or0(s.scatterCount)),
+      scatterWidth: ccUnit(orMid(s.scatterWidth)),
+      scatterEdge: ccUnit(orMid(s.scatterEdge)),
+      scatterStagger: ccUnit(or0(s.scatterStagger)),
+      scatterDrift: ccBipolar(orMid(s.scatterDrift)),
+      scatterLightReach: ccBipolar(orMid(s.scatterLight)),
+      scatterHueReach: ccBipolar(orMid(s.scatterHue)) * SCATTER_MAX_HUE,
+      scatterWhiteReach: ccBipolar(orMid(s.scatterWhite)),
 
 
       baseHue: ccMap(s.hue, 250),
@@ -334,10 +357,25 @@
   let startedAt = 0;
   function restart() { startedAt = global.performance.now(); }
 
-  const travelPhase = makeTracker();
-  const pulsePhase = makeTracker();
-  const wanderPhase = makeTracker();
-  const placedPhase = makeTracker();
+  // Everything that has to remember where it was between frames, in one
+  // bundle. It is a bundle rather than five module-level variables because a
+  // page showing more than one wall renders several different states inside a
+  // single frame, and a tracker shared between them would be advanced at one
+  // wall's rate and read at another's — which reads as the main picture
+  // stuttering whenever a second one is on screen.
+  function makeMotion() {
+    return {
+      travelPhase: makeTracker(),
+      pulsePhase: makeTracker(),
+      wanderPhase: makeTracker(),
+      placedPhase: makeTracker(),
+      scatterPhase: makeTracker(),
+      lastBouncing: false,
+      lastCoreCells: 0.5,
+    };
+  }
+
+  let M = makeMotion();
 
   // The offset that stops a rate change teleporting is also what leaves the
   // cycle's zero wherever the rate was last touched — never a bar line, so a
@@ -353,17 +391,17 @@
 
     // The transport restarted, and beat zero is a bar line by definition.
     if (elapsed < 0) {
-      pulsePhase.offset = 0.5;
-      pulsePhase.rate = rate;
+      M.pulsePhase.offset = 0.5;
+      M.pulsePhase.rate = rate;
       return beats * rate + 0.5;
     }
 
-    const phase = trackedPhase(pulsePhase, beats, rate);
-    const drift = pulsePhase.offset - (Math.round(pulsePhase.offset - 0.5) + 0.5);
+    const phase = trackedPhase(M.pulsePhase, beats, rate);
+    const drift = M.pulsePhase.offset - (Math.round(M.pulsePhase.offset - 0.5) + 0.5);
     if (Math.abs(drift) < 0.0001) return phase;
 
     const pull = Math.min(1, elapsed * rate / GEN_PULSE_ANCHOR_CYCLES);
-    pulsePhase.offset -= drift * pull;
+    M.pulsePhase.offset -= drift * pull;
     return phase - drift * pull;
   }
 
@@ -379,14 +417,14 @@
     const elapsed = beats - lastTravelBeats;
     lastTravelBeats = beats;
 
-    const travel = trackedPhase(travelPhase, beats, rate);
+    const travel = trackedPhase(M.travelPhase, beats, rate);
     if (Math.abs(rate) > 0.0001 || elapsed <= 0) return travel;
 
-    const drift = travelPhase.offset - Math.round(travelPhase.offset);
+    const drift = M.travelPhase.offset - Math.round(M.travelPhase.offset);
     if (Math.abs(drift) < 0.0001) return travel;
 
     const pull = Math.min(1, elapsed / GEN_POSITION_SETTLE_BEATS);
-    travelPhase.offset -= drift * pull;
+    M.travelPhase.offset -= drift * pull;
     return travel - drift * pull;
   }
 
@@ -405,8 +443,6 @@
   // other four still move with fan up. And bounce cannot put a core within
   // half its own width of a cell wall, because that is where it turns — a
   // shape standing there snaps out to the wall, by at most half its width.
-  let lastBouncing = false;
-  let lastCoreCells = 0.5;
   function reanchorTravel(beats, bouncing, p, coreCells, halfCore, swingSpan,
                           direction, cellLength) {
     let rate, wanted;
@@ -423,8 +459,8 @@
       rate = p.speedPixels / cellLength;
       wanted = coreCells - 0.5 - p.positionCells;
     }
-    travelPhase.rate = rate;
-    travelPhase.offset = wanted - beats * rate;
+    M.travelPhase.rate = rate;
+    M.travelPhase.offset = wanted - beats * rate;
   }
 
   // Skew slides the peak through the cycle, so one side of the swell
@@ -535,6 +571,40 @@
     return shapeAt(offset, p.placedWidth, p.placedEdge, 0);
   }
 
+  // The third source, and the first with a position. The pulse is a value
+  // over time with nowhere on the wall; the wander is smooth over both. This
+  // one is random over both — a grid of cells, each with its own clock, each
+  // lighting a spot that appears, holds, fades, and may slide across its own
+  // cell while it does.
+  //
+  // Stateless: a cell's clock is its hash, so there is no particle list and
+  // nothing to advance. Width is the spot's core on both axes at once — how
+  // much of its cell it covers, and how much of its cycle it is lit — and
+  // Edge softens both the same way, which is what keeps this to one word per
+  // idea rather than two.
+  //
+  // Moving Stagger re-keys every cell, so everything in flight jumps. That is
+  // the price of having no state and it is confined to that one control: Rate
+  // runs through the phase tracker like every other rate here.
+  function scatterAt(p, stripIndex, alongPixels, t) {
+    const cellF = (alongPixels / PIXELS) * p.scatterCount;
+    const cell = Math.floor(cellF);
+    const u = cellF - cell;
+
+    const rateSpread = hash8(stripIndex, cell, 17) / 255 - 0.5;
+    const phaseOffset = hash8(stripIndex, cell, 43) / 255;
+    const age = fract(t * (1 + p.scatterStagger * rateSpread)
+                      + p.scatterStagger * phaseOffset);
+
+    // Centered on the middle of the cycle, so a cell runs dark, lights, holds
+    // and fades rather than being cut off at the wrap.
+    const alive = coreAt(age - 0.5, p.scatterWidth, p.scatterEdge);
+    if (alive <= 0.0001) return 0;
+
+    const center = 0.5 + p.scatterDrift * (age - 0.5);
+    return alive * coreAt(u - center, p.scatterWidth, p.scatterEdge);
+  }
+
   // Pushes arrive summed and normalized. Darkening rides a geometric taper
   // because it is a ratio of light and the eye reads it as one; mapped
   // linearly, nearly the whole travel was imperceptible and everything worth
@@ -558,13 +628,16 @@
   // `pulseHue` arrives already summed rather than as a fourth source: the
   // pulse pushes the layer's output, one push after the three have added,
   // which leaves the color layer's own design alone.
-  function colorAt(p, base, stripIndex, pixelIndex, placed, profile, wanderT, pulseHue) {
+  function colorAt(p, base, stripIndex, pixelIndex, placed, profile, wanderT, pulseHue,
+                   scatter) {
     const along01 = PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
 
     const wander = wanderAt(p, along01, stripIndex, wanderT);
 
-    const hue = placed * p.placedHue + wander * p.wanderHue + profile * p.litHueReach + pulseHue;
-    const white = placed * p.placedWhite + wander * p.wanderWhite + profile * p.litWhiteReach;
+    const hue = placed * p.placedHue + wander * p.wanderHue + profile * p.litHueReach
+              + scatter * p.scatterHueReach + pulseHue;
+    const white = placed * p.placedWhite + wander * p.wanderWhite + profile * p.litWhiteReach
+              + scatter * p.scatterWhiteReach;
     const dark = placed * p.placedDark + wander * p.wanderDark + profile * p.litDarkReach;
 
     return applyPushes(base, hue, white, dark);
@@ -574,7 +647,17 @@
 
   const wall = new Uint8Array(STRIPS * PIXELS * 3);
 
-  function render(s, beats) {
+  function render(s, beats, motion) {
+    const previous = M;
+    if (motion) M = motion;
+    try {
+      return renderInto(s, beats);
+    } finally {
+      M = previous;
+    }
+  }
+
+  function renderInto(s, beats) {
     const p = readParams(s);
     wall.fill(0);
 
@@ -599,10 +682,10 @@
     // the performer caused and is watching — see DESIGN.md § "Switches belong
     // to the patch". That is the moment a jump would be most visible, so the
     // phase is solved for rather than carried across.
-    if (bouncing !== lastBouncing) {
-      reanchorTravel(beats, bouncing, p, lastCoreCells, halfCore, swingSpan,
+    if (bouncing !== M.lastBouncing) {
+      reanchorTravel(beats, bouncing, p, M.lastCoreCells, halfCore, swingSpan,
                      direction, cellLength);
-      lastBouncing = bouncing;
+      M.lastBouncing = bouncing;
     }
 
     let travelCycles = 0;
@@ -611,13 +694,13 @@
       const rate = swingSpan > 0.0001
         ? Math.abs(p.speedPixels) / (2 * swingSpan * cellLength)
         : 0;
-      travelCycles = trackedPhase(travelPhase, beats, rate);
+      travelCycles = trackedPhase(M.travelPhase, beats, rate);
     } else {
       centerCells = 0.5 + p.positionCells
           + settledTravel(beats, p.speedPixels / cellLength);
     }
 
-    lastCoreCells = bouncing
+    M.lastCoreCells = bouncing
       ? halfCore + triangleSwing(fract(travelCycles)) * swingSpan
       : fract(centerCells);
 
@@ -630,6 +713,9 @@
     p.wanderActive = Math.abs(p.wanderHue) > 0.5
       || Math.abs(p.wanderWhite) > 0.001
       || Math.abs(p.wanderDark) > 0.001;
+    p.scatterActive = Math.abs(p.scatterLightReach) > 0.001
+      || Math.abs(p.scatterHueReach) > 0.5
+      || Math.abs(p.scatterWhiteReach) > 0.001;
 
     // The two sides of a shape are not the same length — a tail reaches far
     // further than an edge fade — so they are normalized separately. Halfway
@@ -638,8 +724,9 @@
     // Both color rates go through the tracker for the same reason travel and
     // the pulse do: beats only grows, so a small change of rate multiplied by
     // a large beat count is a large jump.
-    const wanderT = trackedPhase(wanderPhase, beats, p.wanderRate);
-    const placedDrift = trackedPhase(placedPhase, beats, p.placedSpeed);
+    const wanderT = trackedPhase(M.wanderPhase, beats, p.wanderRate);
+    const placedDrift = trackedPhase(M.placedPhase, beats, p.placedSpeed);
+    const scatterT = trackedPhase(M.scatterPhase, beats, p.scatterRate);
 
     for (let stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
       const stripPhase = p.fan * (stripIndex / STRIPS);
@@ -711,6 +798,7 @@
         // the averaged profile already.
         let accumulated = 0;
         let placedAccumulated = 0;
+        let scatterAccumulated = 0;
         for (let sampleIndex = 0; sampleIndex < SUBSAMPLES; sampleIndex++) {
           const acrossPixel = (sampleIndex + 0.5) / SUBSAMPLES - 0.5;
           const posCells = (pixelIndex + 0.5 + acrossPixel) / cellLength + jitterOffset;
@@ -748,14 +836,34 @@
                               Math.max(0, Math.min(1, shapeU)));
             placedAccumulated += placedAt(p, u, placedDrift);
           }
+
+          // Read at the same four samples the shape and the placed field are,
+          // and for the same reason: at twenty cells a cell is 2.2 pixels, and
+          // a spot that size aliases into a flicker if it is read once.
+          if (p.scatterActive) {
+            scatterAccumulated +=
+              scatterAt(p, stripIndex, pixelIndex + 0.5 + acrossPixel, scatterT);
+          }
         }
 
         const profile = accumulated / SUBSAMPLES;
-        const brightness = profile * jitterLevel * swell;
+        const scatter = scatterAccumulated / SUBSAMPLES;
+
+        // The push runs from what the shape branch left toward one of the two
+        // limits, which is what makes a spot invisible inside a fully lit
+        // shape and visible in the gap beside it — no occlusion rule
+        // anywhere. It therefore has to be applied before an unlit pixel is
+        // culled, or the one place a spot has the furthest to travel is the
+        // one place it could never appear.
+        let brightness = profile * jitterLevel * swell;
+        if (p.scatterActive) {
+          brightness = pushToward(brightness, scatter * p.scatterLightReach, 0, 1);
+        }
         if (brightness <= 0.002) continue;
 
         const tint = colorAt(p, base, stripIndex, pixelIndex,
-                              placedAccumulated / SUBSAMPLES, profile, wanderT, pulseHue);
+                              placedAccumulated / SUBSAMPLES, profile, wanderT, pulseHue,
+                              scatter);
 
         const rgb = hsv2rgb(tint.h & 255, clamp8(tint.s), 255);
         const level = clamp8(tint.v * brightness);
@@ -821,7 +929,12 @@
   const WALL_TOP = 12;
   const WALL_H = H - PAR_BAND - WALL_TOP - 12;
 
-  function draw(ctx, glow, order, flipped, par) {
+  // The room's proportions are fixed and the picture scales inside them, so
+  // a small copy of the wall beside a large one is the same wall.
+  function draw(ctx, glow, order, flipped, par, W = 300, H = 480) {
+    const PAR_BAND = H * 0.2;
+    const WALL_TOP = H * 0.025;
+    const WALL_H = H - PAR_BAND - WALL_TOP - H * 0.025;
     const gctx = glow.getContext('2d');
     gctx.clearRect(0, 0, W, H);
 
@@ -978,5 +1091,8 @@
     global.requestAnimationFrame(frame);
   }
 
-  global.AuroraPreview = { start, restart, render, renderStripOrder, parColor, wall, pulseWave, pulsePeriod };
+  global.AuroraPreview = {
+    start, restart, render, renderStripOrder, parColor, wall, pulseWave, pulsePeriod,
+    draw, hsv2rgb, makeMotion, STRIPS, PIXELS, WALL_STRIP_ORDER,
+  };
 })(window);

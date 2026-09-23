@@ -758,6 +758,64 @@ bar covers the spots with no occlusion rule anywhere. An untested look
 falling out of a rule already in force is the argument that the framing
 is right.
 
+### The scatter — named and rendered 2026-09-23
+
+Settled, and built in `tools/preview.js` rather than in the firmware. The name
+is the third one in the family rather than a description of one of its looks:
+the pulse is regular in time and has no place on the wall, the wander is smooth
+over both, **the scatter is random over both**. "Sparkle" was the other
+candidate and was dropped for naming the cheerful end of a range whose other
+end is a thunderstorm and rain running down a strip.
+
+Nine CCs at 81–89 in `shared/aurora_protocol.h`: Rate, Count, Width, Edge,
+Stagger and Drift shape the source, and three amounts aim it at the strips'
+brightness, at hue and at whiteness. It is nine rather than the eight to ten the
+fork below priced because of one move.
+
+**Width is the spot's core on both axes at once** — how much of its cell it
+covers, and how much of its cycle it is lit — and **Edge softens both the same
+way**. A separate size and duration were two controls saying one thing, and
+folding them is what kept the block to a single range of nine. It also makes
+"more of it", which is the whole of the difference between looks 1 and 4, one
+control rather than two.
+
+**Stagger is the fork's two cheap moves as one control.** At zero every cell
+shares a clock and the wall flashes as one; wound up, their phases and rates
+both spread out of the hash and they stop blinking together. So one fader runs
+from Blitzgewitter in sync through to a scattered twinkle, and the plain grid
+could do neither end.
+
+**Drift is bipolar and is a displacement, not a rate** — how far, and which way,
+a spot slides across its own cell over its life. That is why it is not called
+Speed, which everywhere else in the rig is pixels per beat. At count 1 the cell
+is the whole strip and a spot appears, holds, slides and fades, which is look 5
+without a particle list.
+
+What the preview confirms, measured rather than argued:
+
+| Look | Reached |
+|----|----|
+| 1 · spots on a mostly black wall | yes, with the shape lane leaving gaps for the push to fill |
+| 2 · spots inside a bar, departing in color | yes, the same source aimed at hue or whiteness |
+| 3 · spots outside the bar, covered as it passes | free — a push toward full has nowhere to go inside a full shape, and no occlusion rule was written |
+| 4 · Blitzgewitter | yes, Stagger at zero with a hard edge |
+| 5 · raindrops | yes, Drift at count 1 |
+
+**It pushes what the shape lane left**, so it needs a gap to light and light to
+darken. That is the same trap the white and dark controls already set for a
+performer who keeps the V fader at the top, and it is what makes look 3 free.
+
+Two things it does not do. It does not reach the PARs: a PAR is one position and
+the scatter's value is per cell, so sampling it there is the same unbuilt work
+as sampling the color layer there. And moving Stagger re-keys every cell, so
+everything in flight jumps — the price of holding no state, confined to one
+control.
+
+**Jitter at CC 76 stays until the firmware renders this.** The two are not meant
+to coexist for long.
+
+### The fork this answered
+
 **Look 5 is the fork, and it is the open question.** A drop is born
 somewhere and then travels. Everything else here is computed fresh each
 frame from a phase and a hash, and a spot keyed to a cell cannot leave
@@ -851,11 +909,11 @@ nearly free and the question shrinks to what 4 and 5 need.
    reappears at the other. Whether that wants clipping, a boundary fade —
    which costs the ends of every pattern that ought to reach them — or
    nothing at all is a judgment for the wall.
-3. **Jitter is the wrong mechanism, not the wrong scale.** What it should
-   be instead is § "What jitter is for" above, along with the five looks
-   it was measured against and the one fork left open. Deferred
-   2026-09-22 until the placed-field approximation recorded there has
-   been dialed on the wall.
+3. **Jitter is the wrong mechanism, not the wrong scale.** Answered
+   2026-09-23 by § "The scatter", which names it, settles its controls and
+   renders it in `tools/preview.js`. All five looks come out of the preview,
+   including the two the plain grid could not reach. **The firmware does not
+   have it**, and until it does, CC 76 is still what the wall renders.
 
    The two wall findings that started it stand, both 2026-09-21. Solid
    blocks, whole and full on, appearing in random places were asked for,
