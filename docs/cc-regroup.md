@@ -58,11 +58,30 @@ Aurora.
 | **7, 11** | Volume and expression. A DAW track writes these without being asked. |
 | **10** | Pan. **A live collision — CC 10 is `CC_TEMPO_DIVISION` today.** |
 
-Two lower risks, accepted rather than dodged, because dodging them fragments
-the blocks for little gain: **64** (sustain) and **96–101** (NRPN/RPN select)
-both sit inside blocks below. They only fire if a keyboard or an
-NRPN-speaking device is routed onto Aurora's channel. Say so if you would
-rather spend the fragmentation.
+**64** (damper pedal) and **96–101** (data increment and decrement, NRPN
+LSB/MSB, RPN LSB/MSB) are defined too, and are left inside blocks rather than
+dodged. The reason is that dodging them treats a symptom.
+
+CC 100 and 101 are the sharper of the two, because of the **RPN null**: after
+any RPN operation — setting a keyboard's pitch bend range, which DAWs and
+keyboards do on patch load — the convention is to send `CC 101 = 127,
+CC 100 = 127` to close the RPN so later data entry lands nowhere. Two CCs
+slammed to full. Aurora holds the pulse's width amount and its wave on 100
+and 101 today, so that sequence would push the width to full and the wave to
+a sine.
+
+**But the real fault is that the brain listens to every channel.** The
+convention at the top of `shared/aurora_protocol.h` already says all Aurora
+traffic is on `AURORA_MIDI_CHANNEL`, "so a shared cable / merger can carry
+other devices' traffic without confusion", and both senders honour it. Both
+*receivers* take the channel byte and drop it — `(void)channel` in
+`brain/src/midi_in.cpp` and again in `controller/src/midi_io.cpp`, whose own
+comment calls it "permissive for now". So a pitch bend setup on any channel
+in the rig reaches Aurora. See TODO.md § Known defects.
+
+With the receivers filtered, only what a DAW writes on *Aurora's own* track
+can collide, which is the short list above — and those cost nothing to dodge,
+so the layout dodges them anyway.
 
 That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
@@ -188,12 +207,15 @@ more expensive.
 
 ---
 
+## Settled since drafting
+
+- **The scatter keeps nine spare and the destinations four.** Revisit it when
+  the scatter's lifetime fork is actually built, not before.
+- **64 and 96–101 stay inside their blocks.** Filtering the receive channel
+  is the fix; fragmenting the map is not.
+- **The fourth rocker gets its slot now**, before its job is decided. The
+  controller block has eleven spare for exactly this reason.
+
 ## To mark up
 
-- **Where the spare goes.** The scatter gets nine and the pulse destinations
-  four. That backs the one costed plan in the rig over a matrix that has not
-  asked for anything beyond the fan's rate amount. If you expect the
-  modulation side to grow first, the two should trade.
-- **Whether to spend fragmentation dodging 64 and 96–101.**
-- **Whether the fourth rocker gets a slot before its job is decided.**
 - **Whether 8 and 9 stay empty** or join the transport block.

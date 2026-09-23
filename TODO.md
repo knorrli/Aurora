@@ -707,6 +707,27 @@ it becomes a build item.
       white is made from the fader's own brightness now. The 30 % white
       share can be tuned, and has not been. See `docs/bench-facts.md`.
 
+- [ ] **Both receivers ignore the MIDI channel.** The convention at the top
+      of `shared/aurora_protocol.h` says all Aurora traffic is on
+      `AURORA_MIDI_CHANNEL`, "so a shared cable / merger can carry other
+      devices' traffic without confusion", and both senders honour it.
+      Neither receiver does: `brain/src/midi_in.cpp` and
+      `controller/src/midi_io.cpp` both take the channel byte and drop it
+      with `(void)channel`, the latter commenting that it is permissive
+      "for now". So every CC, Program Change and Note On in the rig reaches
+      Aurora, on all sixteen channels.
+
+      The sharpest case is the **RPN null** — `CC 101 = 127, CC 100 = 127`,
+      which a keyboard or DAW sends after setting a pitch bend range. Aurora
+      holds the pulse's width amount and wave there, so that sequence pushes
+      the width to full and the wave to a sine, from traffic aimed at
+      another instrument. Pan on CC 10 reaching the tempo division is the
+      same class.
+
+      Two lines to fix, one per receiver, and the constant already exists.
+      It is also what makes a second channel available as 128 more numbers
+      when the CC map runs out — see `docs/cc-regroup.md`.
+
 ## Housekeeping
 
 - [ ] **Regroup the CC table.** The blocks were laid out before most of
