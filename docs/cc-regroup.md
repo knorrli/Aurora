@@ -1,6 +1,7 @@
-# The CC regroup — a proposal
+# The CC map, regrouped
 
-**Nothing here has been applied.** This is a layout to mark up. Drafted
+**Nothing here has been applied.** This is the map to build from; every
+number is assigned and nothing is left "reserved for" something. Drafted
 2026-09-23, after the fan took the last numbers at the end of the map and
 showed that the map is not short of numbers but short of room in the right
 places.
@@ -114,101 +115,169 @@ the next time a lane wants three numbers.
 
 ---
 
-## The proposed layout
+## The map, in blocks
 
-| Range | Slots | Category | Used | Spare |
+| Range | Slots | Category | Assigned | Spare |
 |---|---|---|---|---|
 | 2–9 | 7 | Transport / meta | 1 | 6 |
-| 12–31 | 20 | The controller — what each control stands at | 11–14 | 6–9 |
+| 12–31 | 20 | The controller | 14 | 6 |
 | 33–37 | 5 | Washes / DMX | 3 | 2 |
 | 38–59 | 22 | Color | 20 | 2 |
 | 60–82 | 23 | Generator — shape, fan, pulse source | 18 | 5 |
 | 83–100 | 18 | Scatter / texture | 9 | 9 |
 | 101–119 | 19 | Where the pulse reaches — three apiece | 15 | 4 |
 
-114 numbers — every usable one — with 77 spoken for. Only 0, 1, 7, 10, 11 and
-32 are left out, and each for a stated reason above.
+0, 1, 7, 10, 11 and 32 are skipped, each for a reason above. Everything else
+between 2 and 119 is in a block.
+
+## The map
+
+Every number, assigned. 80 spoken for, 34 spare, and nothing on the box
+or in the patch without a home.
 
 ### 2–9 · Transport / meta
 
-Tempo division, moved off CC 10 and away from pan. Six spare, and nothing
-named for them — kept anyway, deliberately. CC 7 is the hole in the middle.
+| CC | | | Was | |
+|---|---|---|---|---|
+| **2** | `TEMPO_DIVISION` | [patch] | 10 | note value one tempo pulse stands for |
+
+Spare: 3, 4, 5, 6, 8, 9.
 
 ### 12–31 · The controller
 
-Every control on the controller, reported as the value it stands at. The
-patch decides what a value means; nothing here names a target.
+| CC | | | Was | |
+|---|---|---|---|---|
+| **12** | `FADER_COLOR` | [ambient] | new | fader 1 position — the Color route |
+| **13** | `FADER_EXTENT` | [ambient] | new | fader 2 position — the Extent route |
+| **14** | `FADER_MOTION` | [ambient] | new | fader 3 position — the Motion route |
+| **15** | `PAD_X` | [gesture] | new | touchpad X, a position that persists |
+| **16** | `PAD_Y` | [gesture] | new | touchpad Y, a position that persists |
+| **17** | `PAD_PRESSURE` | [gesture] | new | touchpad pressure, 0-127 |
+| **18** | `PAD_ENGAGE` | [gesture] | new | is the pad's effect live; separate from a finger being down |
+| **19** | `ROCKER_PAD_A` | [ambient] | new | rocker below-left of the pad |
+| **20** | `ROCKER_PAD_B` | [ambient] | new | rocker above the pad, left |
+| **21** | `ROCKER_PAD_C` | [ambient] | new | rocker above the pad, center |
+| **22** | `ROCKER_PAD_D` | [ambient] | new | rocker above the pad, right |
+| **23** | `ROCKER_FADERS` | [ambient] | new | rocker below the fader panel |
+| **24** | `AUDIO_FOLLOWER` | [ambient] | new | peak-follower on/off, if it lands on the Teensy |
+| **25** | `AUDIO_THRESHOLD` | [ambient] | new | audio-in gate threshold, if it lands on the Teensy |
 
-Counted from `docs/controls.md`, which is the confirmed inventory — walked by
-hand and checked against the photos. Eleven controls today, fourteen if the
-audio section moves onto the Teensy when the secondary board goes:
-
-| What | How many | Today |
-|---|---|---|
-| The three faders — Color, Extent, Motion | 3 | **no CC exists** |
-| Touchpad X, Y, pressure | 3 | CC 30–32 |
-| Touchpad engage | 1 | CC 33, and CC 43 for hold |
-| The four rockers at the touchpad | 4 | CC 41, 42, 44 and CC 40's bits |
-| The fader-mode rocker | 1 | shared A7 with preset-alt in v1 |
-| *Maybe:* peak-follower on/off, and the audio threshold pot | 0–2 | in-circuit today, undecided |
-
-**Nothing on the box is short of a home.** Twenty slots against fourteen at
-the outside. What is not here goes elsewhere by shape rather than for want of
-room: the keypad and the cradle are Program Changes and share five lines, the
-tap tempo button and the mic trigger are notes, the foot pedal wants notes,
-the rotary's value is the tempo division at 2–9, and ON/OFF is hardwired to
-the 9 V and read by nothing.
-
-**The three faders are the gap, and it is not a small one.** `DESIGN.md`
-§ "The three faders are three routes to 'more'" makes each fader a per-patch
-morph route, and the patch format carries their far ends as the Color, Extent
-and Motion sets. The brain holds the patches and therefore does the morphing,
-so it needs to know where each fader stands — and nothing carries that. CC
-20–22 are not it: they are `[patch]` base hue, saturation and value, saved and
-recalled and slid by a morph. The header still calls them "H fader / S fader /
-V fader", which is the v1 meaning, and the controller still sends the faders
-straight to them. Three `[ambient]` numbers are wanted here.
-
-**The 12-position rotary is not in this block** — it is the tempo switch, and
-its value is the tempo division at 2–9. It has never been in the *pin* map,
-which is a `docs/wiring.md` problem, not a CC one.
-
-**Two more controls have no message at all, both outside the CC map.** The
-foot pedal's four momentary switches are events rather than positions, so they
-belong in the note map, where 62–69 and 74–79 are reserved and empty. And the
-keypad's **hold and release** carry "a morph you stretch by holding", but a
-Program Change has no release and no note carries one. Room exists for both;
-neither is assigned. See TODO.md.
+Spare: 26, 27, 28, 29, 30, 31.
 
 ### 33–37 · Washes / DMX
 
-Level, hue offset, saturation. Two spare. The old 60–69 reservation was seven
-spare for three controls, which is more than the PARs have ever wanted.
+| CC | | | Was | |
+|---|---|---|---|---|
+| **33** | `WASH_LEVEL` | [patch] | 60 | wash master |
+| **34** | `WASH_HUE_OFFSET` | [patch] | 61 | rotates the washes off the strips' hue |
+| **35** | `WASH_SATURATION` | [patch] | 62 | scales the washes down from the strips' saturation |
+
+Spare: 36, 37.
 
 ### 38–59 · Color
 
-The one category that was split across the map — 20–29 and 90–99 — because it
-did not fit either. Twenty controls in one block: the three faders, the placed
-field with its two switches, the wander, the lit reach.
+| CC | | | Was | |
+|---|---|---|---|---|
+| **38** | `HUE` | [patch] | 20 | hue center |
+| **39** | `SATURATION` | [patch] | 21 | saturation |
+| **40** | `VALUE` | [patch] | 22 | brightness |
+| **41** | `COLOR_REGION` | [switch] | 47 | one gradient across the ruler / regions |
+| **42** | `COLOR_RULER` | [switch] | 48 | across the strips / along a strip / within a shape |
+| **43** | `PLACED_HUE` | [patch] | 24 | how far one end of the ruler departs |
+| **44** | `PLACED_WHITE` | [patch] | 25 | toward white, or toward a pure hue |
+| **45** | `PLACED_DARK` | [patch] | 26 | toward dark, or toward full |
+| **46** | `PLACED_COUNT` | [patch] | 27 | regions along the ruler |
+| **47** | `PLACED_WIDTH` | [patch] | 28 | region width |
+| **48** | `PLACED_EDGE` | [patch] | 29 | region softness |
+| **49** | `PLACED_SPEED` | [patch] | 90 | bipolar; the field drifting along its ruler |
+| **50** | `WANDER_HUE` | [patch] | 91 | bipolar; how far the hue wanders |
+| **51** | `WANDER_WHITE` | [patch] | 92 | bipolar |
+| **52** | `WANDER_DARK` | [patch] | 93 | bipolar |
+| **53** | `WANDER_RATE` | [patch] | 94 | 0 = frozen |
+| **54** | `WANDER_SCALE` | [patch] | 95 | the whole wall as one, through to fine grain |
+| **55** | `LIT_HUE` | [patch] | 96 | bipolar; hue at the core of a shape |
+| **56** | `LIT_WHITE` | [patch] | 97 | white at the core |
+| **57** | `LIT_DARK` | [patch] | 98 | bipolar; the core toward dark or toward full |
+
+Spare: 58, 59.
 
 ### 60–82 · Generator — shape, fan, pulse source
 
-Shape and its two switches, the fan's six, the pulse's own four. **The fan is
-whole again**: its pulse amount comes home from CC 99, which is the debt this
-regroup was called for. Jitter does not reappear.
+| CC | | | Was | |
+|---|---|---|---|---|
+| **60** | `GEN_ALTERNATE` | [switch] | 45 | odd strips run the journey backwards |
+| **61** | `GEN_BOUNCE` | [switch] | 46 | turn at the cell's edge instead of wrapping |
+| **62** | `GEN_WIDTH` | [patch] | 70 | the solid core, as a proportion of one cell |
+| **63** | `GEN_COUNT` | [patch] | 71 | shapes along the strip, 1-20 |
+| **64** | `GEN_EDGE` | [patch] | 72 | glow into the gap, both sides |
+| **65** | `GEN_TAIL` | [patch] | 73 | trail behind, into the gap |
+| **66** | `GEN_POSITION` | [patch] | 115 | bipolar; where a still pattern stands in its cell |
+| **67** | `GEN_SPEED` | [patch] | 74 | bipolar; center is still |
+| **68** | `GEN_FAN_FREQ` | [patch] | 116 | stepped; 0 to two turns across the wall |
+| **69** | `GEN_FAN_PHASE` | [patch] | 117 | where the wave sits on the strips |
+| **70** | `GEN_FAN_RANDOM` | [patch] | 118 | the wave, through to a fixed draw per strip |
+| **71** | `GEN_FAN` | [patch] | 75 | bipolar; how far apart the strips stand in their cells |
+| **72** | `GEN_FAN_RATE` | [patch] | 119 | bipolar; how far apart their speeds stand |
+| **73** | `GEN_FAN_PULSE` | [patch] | 99 | bipolar; how far apart they stand in the swell |
+| **74** | `GEN_PULSE_DEPTH` | [patch] | 77 | how far the trough digs below full light |
+| **75** | `GEN_PULSE_RATE` | [patch] | 78 | stepped; beats per swell |
+| **76** | `GEN_PULSE_SKEW` | [patch] | 79 | bipolar; slides the peak through the cycle |
+| **77** | `GEN_PULSE_SHAPE` | [patch] | 80 | square through to sine |
+
+Spare: 78, 79, 80, 81, 82.
 
 ### 83–100 · Scatter / texture
 
-Nine as built, nine spare — the largest growth allowance in the map, and the
-only one backed by a costed plan rather than a guess. The scatter is settled
-and rendered in `tools/preview.js`; the firmware does not have it yet, which
-is the reason jitter is still alive and holding a number in the block above.
+| CC | | | Was | |
+|---|---|---|---|---|
+| **83** | `SCATTER_RATE` | [patch] | 81 | how often a cell relights |
+| **84** | `SCATTER_COUNT` | [patch] | 82 | cells along a strip, 1-20 |
+| **85** | `SCATTER_WIDTH` | [patch] | 83 | the spot's core, in space and in time at once |
+| **86** | `SCATTER_EDGE` | [patch] | 84 | hard through to a fade, both axes |
+| **87** | `SCATTER_STAGGER` | [patch] | 85 | one clock for every cell, through to spread |
+| **88** | `SCATTER_DRIFT` | [patch] | 86 | bipolar; how far a spot slides across its cell |
+| **89** | `SCATTER_LIGHT` | [patch] | 87 | bipolar; amount toward full light or toward dark |
+| **90** | `SCATTER_HUE` | [patch] | 88 | bipolar; amount, up to half the wheel |
+| **91** | `SCATTER_WHITE` | [patch] | 89 | bipolar; toward white or toward a pure hue |
 
-### 101–119 · Where the pulse reaches
+Spare: 92, 93, 94, 95, 96, 97, 98, 99, 100.
 
-Three apiece — amount, shape, skew — so the block reads as a table. Five
-destinations today and room for exactly one more, which is the one the fan's
-rate amount has been waiting on. A seventh needs the ceiling decision.
+### 101–119 · Where the pulse reaches — three apiece
+
+| CC | | | Was | |
+|---|---|---|---|---|
+| **101** | `PULSE_WIDTH` | [patch] | 100 | amount |
+| **102** | `PULSE_WIDTH_SHAPE` | [patch] | 101 | wave |
+| **103** | `PULSE_WIDTH_SKEW` | [patch] | 102 | skew |
+| **104** | `PULSE_HUE` | [patch] | 103 | amount |
+| **105** | `PULSE_HUE_SHAPE` | [patch] | 104 | wave |
+| **106** | `PULSE_HUE_SKEW` | [patch] | 105 | skew |
+| **107** | `PULSE_PAR_LEVEL` | [patch] | 106 | amount |
+| **108** | `PULSE_PAR_LEVEL_SHAPE` | [patch] | 107 | wave |
+| **109** | `PULSE_PAR_LEVEL_SKEW` | [patch] | 108 | skew |
+| **110** | `PULSE_PAR_HUE` | [patch] | 109 | amount |
+| **111** | `PULSE_PAR_HUE_SHAPE` | [patch] | 110 | wave |
+| **112** | `PULSE_PAR_HUE_SKEW` | [patch] | 111 | skew |
+| **113** | `PULSE_PAR_SAT` | [patch] | 112 | amount |
+| **114** | `PULSE_PAR_SAT_SHAPE` | [patch] | 113 | wave |
+| **115** | `PULSE_PAR_SAT_SKEW` | [patch] | 114 | skew |
+
+Spare: 116, 117, 118, 119.
+
+## What is not a CC, and why
+
+- **Patch selection and the blackout** — Program Change. The keypad and the
+  phone's cradle share five lines and the cradle's code is the blackout.
+- **Tap tempo, the mic trigger, the TRIG button, the foot pedal's four
+  switches** — notes. They are events, not positions. 62–69 and 74–79 are
+  reserved and empty in the note map; the pedal and TRIG are unassigned.
+- **The keypad's hold and release** — needs a note and has none. "A morph you
+  stretch by holding" requires the brain to know a key went down and came up,
+  and a Program Change cannot say it.
+- **ON/OFF** — hardwired to the 9 V, read by nothing, and never will be.
+- **The 12-position rotary** — its value *is* the tempo division at CC 2.
+- **The indicator pixels and the ten under the pad** — outputs, recomputed on
+  the controller.
 
 ---
 
@@ -233,7 +302,7 @@ more expensive.
 
 ---
 
-## Settled since drafting
+## Settled while drafting
 
 - **The scatter keeps nine spare and the destinations four.** Revisit it when
   the scatter's lifetime fork is actually built, not before.
@@ -244,8 +313,8 @@ more expensive.
 
 ## To mark up
 
-Nothing. CC 8 and 9 joined the transport block, so the map has no stray
-holes left. The layout is ready to apply.
+Nothing. Every control on the box and every parameter in a patch has a
+number. The map is ready to build from.
 
 **None of it is final.** The model will move again — the scatter has an
 unbuilt fork, the touchpad has no job yet, and the fan has been rebuilt once

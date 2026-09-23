@@ -471,9 +471,15 @@ it becomes a build item.
       three numbers in the pulse's own range, which is full at 100-114.
       See the regroup below.
 
-- [ ] **Regroup the CC map, and put the fan's pulse amount back with the
-      rest of the fan.** A layout is drafted and unapplied in
-      `docs/cc-regroup.md`, with what it needs marked up at the end. The
+- [ ] **Apply the regrouped CC map.** `docs/cc-regroup.md` assigns every
+      number and nothing in it is open. What is left is mechanical: the
+      header, the two literal CC maps in `tools/patch.js` and
+      `tools/index.html`, and a format version plus an old-to-new remap on
+      the editor's stored library, which is the only thing that breaks.
+      Both firmwares follow by symbol. It also adds six CCs that never
+      existed — the three fader routes, and the fader-mode rocker — and
+      renames CC 30-33 and 41-44 to report what a control stands at rather
+      than what v1 meant by it. The
       map is not out of numbers — 34 below 120 have
       no assignment. What it is out of is *room in the right categories*,
       which is what the rule at the top of `shared/aurora_protocol.h`
