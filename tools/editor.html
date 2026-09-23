@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora Patch Editor</title>
+<style>
+  :root {
+    --bg: #14151a; --panel: #1c1e26; --sunk: #101118; --line: #2c2f3a; --rail: #3a3e4d;
+    --text: #e6e7ec; --dim: #8b8fa3; --faint: #5f6475;
+    --accent: #d98c3f; --ok: #4a9e6a; --bad: #cf5c5c;
+    --shape: #d98c3f; --color: #6fa8dc; --pulse: #cf7d93; --scatter: #7bc4a4;
+    --out: #8f7fd4;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  h1 { font-size: 13px; margin: 0; letter-spacing: .16em; text-transform: uppercase; color: var(--text); }
+  h2 {
+    font-size: 11px; margin: 0 0 9px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--dim);
+  }
+  h3 {
+    font-size: 11px; margin: 0 0 8px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--dim); border-bottom: 1px solid var(--line); padding-bottom: 5px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  h4 {
+    font-size: 10px; margin: 0 0 7px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--faint);
+  }
+  p { margin: 0; }
+  .note { color: var(--dim); font-size: 11.5px; line-height: 1.5; margin-top: 9px; }
+  .cc { color: var(--faint); font-size: 10.5px; letter-spacing: .04em; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--accent); }
+
+  button, select, input[type=text], input[type=number] {
+    background: #262933; color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 4px 9px; font: inherit;
+  }
+  button { cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .35; cursor: default; }
+  button.on { border-color: var(--accent); color: var(--accent); background: #2f2921; }
+  .tiny { padding: 2px 7px; font-size: 10.5px; letter-spacing: .06em; }
+
+  /* ---- frame --------------------------------------------------------- */
+
+  .top {
+    position: sticky; top: 0; z-index: 30; display: flex; gap: 14px; align-items: center;
+    flex-wrap: wrap; padding: 10px 16px; background: #171921;
+    border-bottom: 1px solid var(--line);
+  }
+  .top .spacer { flex: 1; }
+  .top .group { display: flex; gap: 7px; align-items: center; }
+  .top .group + .group { border-left: 1px solid var(--line); padding-left: 14px; }
+
+  .shell {
+    display: grid; grid-template-columns: 268px minmax(0, 1fr) 348px;
+    gap: 16px; padding: 16px; align-items: start;
+  }
+  @media (max-width: 1500px) {
+    .shell { grid-template-columns: 250px minmax(0, 1fr); }
+    .dock { grid-column: 1 / -1; order: -1; }
+    .dock .wall-main { max-width: 320px; }
+  }
+  @media (max-width: 1000px) { .shell { grid-template-columns: 1fr; } }
+
+  .rail, .dock { position: sticky; top: 61px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 13px; }
+  .panel + .panel { margin-top: 14px; }
+  .work > * + * { margin-top: 16px; }
+
+  /* ---- library rail --------------------------------------------------- */
+
+  .patchlist { max-height: 34vh; overflow-y: auto; margin: 0 -4px; }
+  .patchlist .item {
+    display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left;
+    background: none; border: 1px solid transparent; border-radius: 4px;
+    padding: 4px 7px; color: var(--text);
+  }
+  .patchlist .item:hover { background: #22252f; color: var(--text); border-color: transparent; }
+  .patchlist .item.on { background: #2b2f3c; border-color: var(--rail); }
+  .patchlist .item .pc { color: var(--faint); font-size: 10.5px; min-width: 22px; }
+  .patchlist .item .keys { margin-left: auto; color: var(--accent); font-size: 10.5px; }
+
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .keypad .key {
+    background: var(--sunk); border: 1px solid var(--line); border-radius: 4px;
+    padding: 5px 6px; min-height: 46px; display: flex; flex-direction: column; gap: 2px;
+    cursor: pointer; text-align: left; color: var(--text);
+  }
+  .keypad .key:hover { border-color: var(--accent); }
+  .keypad .key .n { color: var(--accent); font-size: 10.5px; }
+  .keypad .key .who {
+    font-size: 10.5px; color: var(--dim); overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .keypad .zero { grid-column: 1 / -1; opacity: .55; cursor: default; }
+  .keypad .zero:hover { border-color: var(--line); }
+
+  .stack { display: flex; flex-direction: column; gap: 7px; }
+  .rowline { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+
+  #log {
+    margin-top: 10px; padding: 8px 9px; background: var(--sunk);
+    border: 1px solid var(--line); border-radius: 5px; height: 132px; overflow-y: auto;
+    white-space: pre-wrap; font-size: 10.5px; line-height: 1.6; color: var(--dim);
+  }
+
+  /* ---- patch head ----------------------------------------------------- */
+
+  .head { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field > span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+  .field input[type=text] { width: 190px; }
+  .head .patchwide {
+    margin-left: auto; color: var(--faint); font-size: 10.5px; text-align: right; max-width: 210px;
+  }
+
+  /* ---- set tabs and audition ------------------------------------------ */
+
+  .sets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sets .tab {
+    display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
+    padding: 6px 12px; min-width: 104px;
+  }
+  .sets .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
+  .sets .tab.on .badge { color: var(--accent); }
+
+  .audition { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .audition .scrub { flex: 1; min-width: 220px; display: flex; gap: 9px; align-items: center; }
+  .audition .scrub input[type=range] { flex: 1; }
+  .audition .end { font-size: 10.5px; color: var(--dim); letter-spacing: .06em; white-space: nowrap; }
+  .audition .readout { min-width: 58px; text-align: right; color: var(--accent); }
+
+  /* ---- lanes and groups ------------------------------------------------ */
+
+  .lane { border-left: 3px solid var(--line); border-radius: 6px; }
+  .lane[data-lane=shape] { border-left-color: var(--shape); }
+  .lane[data-lane=color] { border-left-color: var(--color); }
+  .lane-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }
+  .lane-name { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+  .lane[data-lane=shape] .lane-name { color: var(--shape); }
+  .lane[data-lane=color] .lane-name { color: var(--color); }
+  .lane-does { color: var(--dim); font-size: 11.5px; }
+
+  .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px 22px; }
+
+  /* ---- a control row ---------------------------------------------------- */
+
+  .row {
+    display: grid; grid-template-columns: 116px minmax(90px, 1fr) 96px;
+    gap: 8px; align-items: center; padding: 1px 0 1px 7px;
+    border-left: 2px solid transparent; margin-left: -9px;
+  }
+  .row + .row { margin-top: 3px; }
+  .row > label { line-height: 1.25; cursor: pointer; }
+  .row > label b { font-weight: normal; }
+  .row > label .cc { display: block; }
+  .row.changed { border-left-color: var(--accent); }
+  .row.inert { opacity: .38; }
+  .row .reached { color: var(--pulse); font-size: 10px; display: block; }
+
+  .track { position: relative; display: flex; align-items: center; height: 20px; }
+  .track input[type=range] { width: 100%; margin: 0; }
+  .track .ghost {
+    position: absolute; top: 2px; bottom: 2px; width: 2px; background: var(--dim);
+    opacity: .75; pointer-events: none; display: none; border-radius: 1px;
+  }
+  .row.changed .track .ghost { display: block; }
+
+  .row > output { text-align: right; line-height: 1.25; }
+  .row > output .cc { display: block; }
+
+  .picks { display: flex; gap: 5px; flex-wrap: wrap; }
+  .picks button { padding: 3px 8px; font-size: 11px; }
+  .swrow { display: grid; grid-template-columns: 116px 1fr; gap: 8px; align-items: center; padding-left: 7px; }
+  .swrow + .swrow, .row + .swrow, .swrow + .row { margin-top: 6px; }
+  .swrow.locked .picks button { opacity: .5; cursor: default; }
+  .swrow.locked .picks button:hover { border-color: var(--line); color: var(--text); }
+  .swrow.locked .picks button.on { border-color: var(--rail); color: var(--dim); background: #22252f; }
+  .swrow .from { font-size: 10px; color: var(--faint); }
+
+  /* ---- modulators ------------------------------------------------------- */
+
+  .mods { display: flex; flex-direction: column; gap: 14px; }
+  .mod { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 13px; border-left: 3px solid var(--rail); }
+  .mod[data-tone=pulse] { border-left-color: var(--pulse); }
+  .mod[data-tone=scatter] { border-left-color: var(--scatter); }
+  .mod[data-tone=color] { border-left-color: var(--color); }
+  .mod-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 11px; }
+  .mod-name { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  .mod[data-tone=pulse] .mod-name { color: var(--pulse); }
+  .mod[data-tone=scatter] .mod-name { color: var(--scatter); }
+  .mod[data-tone=color] .mod-name { color: var(--color); }
+  .mod-when { color: var(--dim); font-size: 11.5px; }
+  .mod-head .tiny { margin-left: auto; }
+  .unbuilt {
+    display: inline-block; padding: 1px 7px; border: 1px dashed var(--accent);
+    border-radius: 3px; color: var(--accent); font-size: 10px; letter-spacing: .06em;
+  }
+  .mod-body { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: 14px 22px; }
+  @media (max-width: 860px) { .mod-body { grid-template-columns: 1fr; } }
+
+  .dests { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; }
+  .dest { background: var(--sunk); border: 1px solid var(--line); border-radius: 5px; padding: 10px; }
+  .dest.idle { opacity: .5; }
+  .dest-head { display: flex; flex-direction: column; margin-bottom: 7px; }
+  .dest-name { color: var(--text); }
+  .dest-where { color: var(--faint); font-size: 10.5px; }
+  .destwave { width: 100%; height: 46px; display: block; margin-top: 8px; }
+
+  /* ---- the matrix -------------------------------------------------------- */
+
+  table.matrix { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  table.matrix th, table.matrix td {
+    padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.matrix thead th { color: var(--faint); font-weight: normal; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+  table.matrix tbody th { color: var(--dim); font-weight: normal; }
+  table.matrix td { color: var(--faint); }
+  table.matrix td.live { color: var(--text); cursor: pointer; }
+  table.matrix td.live:hover { color: var(--accent); }
+  table.matrix tr.quiet th, table.matrix tr.quiet td { opacity: .45; }
+
+  @keyframes flash { from { background: #3a3323; } to { background: transparent; } }
+  .row.flash { animation: flash 1.1s ease-out; }
+
+  /* ---- outputs ----------------------------------------------------------- */
+
+  .outs { border-left: 3px solid var(--out); }
+  .outgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 22px; }
+  .feeds { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { padding: 3px 9px; font-size: 11px; }
+  .startgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px 22px; }
+  details.starts summary, details.slots summary { cursor: pointer; color: var(--dim); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  details.starts[open] summary, details.slots[open] summary { margin-bottom: 10px; }
+
+  /* ---- preview dock ------------------------------------------------------ */
+
+  .dock canvas { width: 100%; border-radius: 4px; display: block; background: #0a0b0e; }
+  .showing { text-align: center; color: var(--accent); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .compare[hidden] { display: none; }
+  .compare figure { margin: 0; }
+  .compare figcaption { color: var(--faint); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; text-align: center; }
+  .dock .rowline { margin-top: 9px; }
+  .dock input[type=text] { width: 84px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Aurora &mdash; patch editor</h1>
+  <div class="group">
+    <select id="port"><option>no MIDI</option></select>
+    <span id="midiState" class="bad">not connected</span>
+  </div>
+  <div class="group">
+    <button id="clockToggle">clock</button>
+    <input type="number" id="bpm" value="120" min="40" max="220" step="1" style="width:66px">
+    <span class="cc">BPM</span>
+  </div>
+  <div class="group">
+    <button id="sendPatch" title="Send this patch's pattern and every parameter it holds">send to the wall</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="group">
+    <button id="rigBlackout" class="tiny" title="Program Change 0. Sends past the patch and leaves it alone.">blackout</button>
+    <button id="rigOrder" class="tiny" title="Program Change 11. A rigging aid: each strip one flat color in data-chain order.">strip order</button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <aside class="rail">
+    <section class="panel">
+      <h2>Library</h2>
+      <div class="patchlist" id="patchList"></div>
+      <div class="rowline" style="margin-top:10px">
+        <button class="tiny" id="patchNew">new</button>
+        <button class="tiny" id="patchDup">duplicate</button>
+        <button class="tiny" id="patchUp">&uarr;</button>
+        <button class="tiny" id="patchDown">&darr;</button>
+        <button class="tiny" id="patchDel">delete</button>
+      </div>
+      <p class="note" id="libCount"></p>
+    </section>
+
+    <section class="panel">
+      <h2>The keypad</h2>
+      <div class="keypad" id="keypad"></div>
+      <p class="note">Nine keys, nine patches. Key 0 is an override rather than a patch &mdash; it names no look, holds no parameters and takes no slot, so there is nothing here to assign it.</p>
+    </section>
+
+    <section class="panel">
+      <h2>The brain</h2>
+      <div class="stack">
+        <div class="rowline">
+          <button class="tiny" id="brainAsk">ask</button>
+          <button class="tiny" id="brainPush">push the library</button>
+        </div>
+        <div class="rowline">
+          <button class="tiny" id="brainPull">pull it back</button>
+          <button class="tiny" id="fileSave">save a file</button>
+          <button class="tiny" id="fileLoad">load a file</button>
+          <input type="file" id="filePick" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <div id="log"></div>
+    </section>
+  </aside>
+
+  <main class="work">
+
+    <section class="panel head">
+      <label class="field"><span>Name</span><input type="text" id="pName" maxlength="16"></label>
+      <label class="field"><span>Pattern</span><select id="pPattern"></select></label>
+      <label class="field"><span>Palette</span><select id="pPalette"></select></label>
+      <label class="field"><span>Journey ramp</span><select id="pRampJourney"></select></label>
+      <label class="field"><span>Accent ramp</span><select id="pRampAccent"></select></label>
+      <p class="patchwide">Everything on this row belongs to the patch as a whole, not to one parameter set.</p>
+    </section>
+
+    <nav class="sets" id="setTabs"></nav>
+
+    <section class="panel audition" id="auditionBar"></section>
+
+    <section class="panel">
+      <details class="starts">
+        <summary>Starting points</summary>
+        <div class="startgrid">
+          <div>
+            <h3>Shape</h3>
+            <div class="chips" id="shapeStarts"></div>
+            <p class="note">Each one sets the shape lane and the pulse and leaves the color lane alone, so either can be laid over whatever the other is already doing. Guesses at where a look sits, not finished settings.</p>
+          </div>
+          <div>
+            <h3>Color</h3>
+            <div class="chips" id="colorStarts"></div>
+            <p class="note">Each one sets the color lane only. Head and tail and Comet tail need a shape with gaps to show anything.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel lane" data-lane="shape" id="laneShape"></section>
+    <section class="panel lane" data-lane="color" id="laneColor"></section>
+
+    <div class="mods" id="mods"></div>
+
+    <section class="panel">
+      <h2>What reaches what</h2>
+      <table class="matrix" id="matrix"></table>
+      <p class="note">The amounts live at the source, which is the one arrangement that works when most destinations are not controls &mdash; how lit a pixel is, what color it is. What that costs is the view from the target&rsquo;s end, and this is it. Click a number to go to the control that sets it.</p>
+    </section>
+
+    <section class="panel outs">
+      <h2>Outputs</h2>
+      <div class="outgrid">
+        <div>
+          <h3>5 strips</h3>
+          <p class="feeds">fed by <b>shape</b> &times; <b>color</b> &mdash; 45 pixels each</p>
+          <p class="note">The only output that can render the shape lane at all, and the only one with a length for a ruler to measure. Everything above reaches these, so they have no controls of their own.</p>
+        </div>
+        <div>
+          <h3>4 PARs</h3>
+          <p class="feeds">fed by <b>color</b> + the <b>pulse</b> &mdash; one pixel each</p>
+          <div id="parControls"></div>
+          <p class="note" id="parNote"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <details class="slots">
+        <summary>Timing and per-pattern slots</summary>
+        <div class="groups">
+          <div><h3>Timing</h3><div id="timingGroup"></div><p class="note" id="timingNote"></p></div>
+          <div><h3>Per-pattern slots</h3><div id="slotGroup"></div><p class="note" id="slotNote"></p></div>
+        </div>
+      </details>
+    </section>
+
+  </main>
+
+  <aside class="dock">
+    <section class="panel">
+      <h2>The wall</h2>
+      <canvas id="wallMain" class="wall-main"></canvas>
+      <p class="showing" id="wallShowing"></p>
+      <div class="compare" id="compare" hidden>
+        <figure><canvas id="wallBase"></canvas><figcaption>base</figcaption></figure>
+        <figure><canvas id="wallFar"></canvas><figcaption id="farCaption">far end</figcaption></figure>
+      </div>
+      <div class="rowline">
+        <button class="tiny" id="pvFlip">pixel 0 at bottom</button>
+        <label class="cc">order <input type="text" id="pvOrder"></label>
+      </div>
+      <p class="note">Ported from the firmware, not written afresh. The scatter is the exception: it is designed here first and has no firmware behind it yet.</p>
+    </section>
+  </aside>
+
+</div>
+
+<script src="preview.js"></script>
+<script src="patch.js"></script>
+<script src="library.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

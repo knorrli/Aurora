@@ -343,8 +343,15 @@ it becomes a build item.
       shapes, not colors" uses the word for what is now a patch or a shape,
       and that section needs rewriting before anything here is built.
 
-- [ ] **Editor layout.** `tools/index.html` grew the preview and the color
-      controls without a regroup, and it is cramped. Two boxes earn no
+- [x] **Editor layout.** Answered 2026-09-23 by `tools/editor.html`, which is
+      carrier, modulators and outputs rather than three branches — see
+      `docs/editor.md`. The two boxes that earned no space are gone, and the
+      join that said "the two multiply" went with them: it was not true of the
+      pulse and is not true of the scatter, and what replaced it is a
+      destination table that says where every source actually lands.
+
+      What was asked, against the old page: `tools/index.html` grew the preview
+      and the color controls without a regroup, and it is cramped. Two boxes earn no
       space: the one holding only the "send 120 BPM clock" button, never
       used, and "Strips", which is empty. The question is what the
       groupings should be, not where today's boxes go.
@@ -354,8 +361,23 @@ it becomes a build item.
       pushes on. Whether the join beneath still reads — it says "the two
       multiply", which is true of shape and color and says nothing about
       the third box now above it — is part of this question.
-- [ ] **The color panel does not say what its switches govern, and four
-      controls are dead in the default state.** Gradient / region and the
+- [x] **The color panel does not say what its switches govern, and four
+      controls are dead in the default state.** Answered 2026-09-23, and the
+      first half turned out to be grouping alone: in `tools/editor.html` the
+      placed field is a modulator card and its primitive, ruler and four shape
+      controls are inside it with nothing else, so there is no longer anything
+      for them to look as though they govern. No control moved and none was
+      added.
+
+      The second half was **ruled without the performer**, which is the half to
+      reopen if it is wrong: the four dim under a gradient and say why. Giving
+      Edge a meaning there — bending the ramp from straight to eased — is a
+      firmware change and stays available. The subsection names went with the
+      regroup, and the ruler buttons keep the strips' words rather than the
+      wall's, because "within a shape" is not a direction and the swap would
+      have stopped the three being one vocabulary.
+
+      What was found, and still stands as the reason:  Gradient / region and the
       three rulers drive the placed field and nothing else —
       `placedIsRegion` and `placedRuler` are read nowhere outside that
       path in `brain/src/P_Generator.cpp` — but they sit above three
@@ -445,6 +467,24 @@ it becomes a build item.
       more than raising it: below that size the core hands over each
       message whole in one callback and nothing is reassembled.
 
+- [ ] **Render the scatter in the firmware.** Settled and named 2026-09-23 —
+      `docs/generator.md` § "The scatter" — with nine CCs at 81–89 and a
+      working implementation in `tools/preview.js` that all five of the looks
+      it was measured against come out of. `brain/src/P_Generator.cpp` has none
+      of it, so the editor's card is marked as having no firmware behind it and
+      CC 76 jitter is still what the wall renders. The port is the preview's
+      `scatterAt`, the three reaches in `colorAt`, and the one `pushToward` on
+      brightness that has to happen before an unlit pixel is culled.
+
+- [ ] **Use the new editor at the bench, and delete the old one.**
+      `tools/editor.html` was built in one night, runs clean in a browser and
+      has **never driven the rig**. `tools/index.html` is kept until it has.
+      Three things to watch for first: whether pushing a library actually lands
+      (the SysEx path has never run against hardware either), whether driving
+      72 CCs from a morph at frame rate is too much traffic over USB, and
+      whether the carrier/modulator split reads as well with the wall in front
+      of you as it does on screen.
+
 - [ ] **Teach the brain to recall a patch.** Storage and the wire exist and
       nothing puts a patch on the wall — the only reader of the library is
       the export path. A patch arriving has to write the [patch] and [switch] CCs
@@ -453,7 +493,26 @@ it becomes a build item.
       same time — the controller still sends `PC = key number` in
       `scan_numpad()`, which only works while key N means preset N.
 
-- [ ] **The editor has no patch in the DESIGN sense.** `tools/index.html`
+- [x] **The editor has no patch in the DESIGN sense.** Answered 2026-09-23 by
+      a new editor rather than a rework: `tools/editor.html` with
+      `tools/patch.js`, `tools/library.js` and `tools/editor.js`. It builds a
+      whole patch — name, pattern, palette, both ramp times, the base and four
+      far ends — pushes a library over SysEx, pulls one back, and reads and
+      writes the JSON file. **Never run against hardware.** The model and the
+      rulings made without the performer are `docs/editor.md`.
+
+      Both gaps the reading found are closed. The CC map is 72 now, not 52:
+      `CC_TEMPO_DIVISION` and the per-pattern slots at 50–59 are controls, and
+      the scatter added nine. And the unowned bytes of a 128-byte set are
+      written zero, because arriving at a patch writes the tagged CCs through
+      the brain's own handlers and a byte no handler claims is never read.
+
+      In the editor a far end is the base plus what it overrides, not a second
+      copy of all 72 — see `docs/editor.md` § "A far end is an override".
+      `materialize()` is where five whole sets appear for the wire.
+
+      What the old page said, kept because `tools/index.html` is still here:
+      `tools/index.html`
       saves a flat map of cooked parameter names to `localStorage`: one
       parameter set, no fader far ends, no accent target, no ramp times,
       and the pattern is not in it. Until that is reworked, nothing can
@@ -466,7 +525,17 @@ it becomes a build item.
       control owns the remaining bytes of a 128-byte set, so what goes in
       them has to be ruled before a patch can be built.
 
-- [ ] **Take the preset buttons out of the editor's MIDI surface.**
+- [x] **Take the preset buttons out of the editor's MIDI surface.** Done
+      2026-09-23, and the two things reserved for the performer were ruled
+      rather than asked, both cheap to reverse. Strip order and blackout became
+      bench tools in the top bar that send a Program Change straight past the
+      patch and say so. And what tells the brain to run the generator is the
+      patch's own pattern byte: the editor sends `PC = pattern` when it puts a
+      patch on the wall, which is the same message the old page hard-coded to
+      10, sourced from the patch instead of from the page.
+
+      What the old page said:
+      **Take the preset buttons out of the editor's MIDI surface.**
       Program Change means patch now, so "generator (PC 10)", "Plasma
       (PC 3)", "blackout (PC 0)" and "strip order (PC 11)" in
       `tools/index.html` send patch selects. The anchor chips stay — they
@@ -493,7 +562,15 @@ it becomes a build item.
       been driven records 0 rather than what is lit. Compiling a default
       set into the firmware is what closes that.
 
-- [ ] **The editor must preview an accent with the switches held back.**
+- [x] **The editor must preview an accent with the switches held back.** Done
+      2026-09-23. The accent tab carries an **as heard from** picker naming any
+      patch in the library, and the switches render from that patch for the
+      whole audition. A and B come from two named sets of one patch rather than
+      from "capture whatever is on screen", and within a patch a far end has no
+      switches of its own to take.
+
+      What the old page said:
+      **The editor must preview an accent with the switches held back.**
       Falls out of switches landing on release, 2026-09-22: in
       performance an accent plays with the *source* patch's switches,
       not the destination's, so an accent dialed in `tools/index.html`
@@ -569,6 +646,7 @@ it becomes a build item.
 | Look up a pin or a circuit | `docs/wiring.md` |
 | Look up a CC / PC / note number | `shared/aurora_protocol.h` |
 | Work on how it is played | `DESIGN.md` |
+| Build or dial a patch | `tools/editor.html`, and `docs/editor.md` for why it is shaped that way |
 
 ## Key commands
 
