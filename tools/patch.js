@@ -166,7 +166,6 @@
     value: v => ofByte(real('value', v)),
 
     genPulseRate: v => PERIOD_NAMES[real('genPulseRate', v)],
-    routeDestination: v => v === 0 ? 'not aimed' : (A.NAME_BY_CC[v] || 'CC ' + v),
     routeAmount: v => Math.abs(bip(v)) < 0.01 ? 'nothing'
                     : signedReach(bip(v), 'toward the top', 'toward the bottom'),
     routeRatio: v => '\u00d7' + A.routeRatio(v) + ' the clock',
@@ -232,7 +231,7 @@
                        : ofByte(real('washSaturation', v)) + ' of theirs',
   };
 
-  // Every route reads its four the same way.
+  // Every route reads its fields the same way.
   for (let r = 0; r < A.ROUTES; r++) {
     for (const field of ROUTE_FIELDS) {
       DERIVED[routeName(r, field)] =
@@ -386,7 +385,6 @@
 
   for (const route of ROUTES) {
     define([
-      C(route.destination, 'Pushes', 'which control this route reaches'),
       C(route.amount, 'Amount', 'how far, as a share of the distance left'),
       C(route.ratio, 'Ratio', 'whole multiples of the clock'),
       C(route.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
@@ -409,8 +407,7 @@
       source: define([
         C('genPulseRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
       ]),
-      routes: ROUTES,
-      note: 'One clock, and eight routes off it. A route says which control it reaches, how far, at what whole multiple of the clock, and what wave does the pushing. It cannot reach a rate: every rate feeds a running total, so a push on one would move the wall permanently instead of returning it. Two routes on one control add, and the sum stops at the limit.',
+      note: 'One clock, and eight routes off it. A route lives on the control it moves: the ~ beside a control opens its routes, and says how far, at what whole multiple of this clock, and with what wave. A rate has no ~: every rate feeds a running total, so a push on one would move the wall permanently instead of returning it. Two routes on one control add, and the sum stops at the limit.',
     },
     {
       key: 'scatter', name: 'The scatter', tone: 'scatter',

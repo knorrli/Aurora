@@ -168,9 +168,17 @@
     slider.addEventListener('pointerdown', snap);
     slider.addEventListener('input', () => setValue(name, +slider.value));
 
-    root.append(label, track, out);
+    const routes = routable(name) ? el('button', 'routesbtn', '~') : null;
+    if (routes) {
+      routes.title = 'routes on this control';
+      routes.addEventListener('click', () => toggleRoutePanel(name));
+    }
+
+    root.append(label, track, out, routes || el('span'));
     host.appendChild(root);
-    rows[name] = { root, slider, ghost, out, reached, label, def, kind: 'fader' };
+    rows[name] = {
+      root, slider, ghost, out, reached, label, def, routes, points: pointsFor(name), kind: 'fader',
+    };
   }
 
   function pickRow(host, name) {
@@ -257,7 +265,7 @@
         r.out.innerHTML = `<b>${value}</b><span class="cc">${derived}</span>`;
         const overridden = farEnd && name in moved;
         r.root.classList.toggle('changed', overridden);
-        if (overridden) r.ghost.style.left = `calc(${base[name] / 127 * 100}% - 1px)`;
+        if (overridden) r.ghost.style.left = `calc(${along(r.slider, base[name])} - 1px)`;
         r.label.title = farEnd
           ? (overridden
               ? `${r.def.hint}\nThe patch says ${base[name]}. Click to follow it again.`
@@ -284,7 +292,7 @@
 
     paintTabs();
     paintMatrix(live);
-    paintPulseWaves(live);
+    paintRoutePanel(live);
     paintHead();
     paintCompare();
   }
@@ -342,8 +350,6 @@
     }
   }
 
-  const destCards = {};
-
   function buildModulators() {
     const host = $('mods');
     host.innerHTML = '';
@@ -357,7 +363,6 @@
       const reset = el('button', 'tiny', 'reset');
       reset.addEventListener('click', () => resetNames([
         ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
-        ...(mod.routes || []).flatMap(r => [r.destination, r.amount, r.ratio, r.wave]),
       ]));
       head.appendChild(reset);
       card.appendChild(head);
@@ -383,28 +388,6 @@
         body.style.gridTemplateColumns = '1fr';
       }
       card.appendChild(body);
-
-      if (mod.routes) {
-        const destBox = el('div');
-        destBox.appendChild(el('h4', null, 'Routes'));
-        const grid = el('div', 'dests');
-        for (const route of mod.routes) {
-          const cell = el('div', 'dest');
-          const dh = el('div', 'dest-head');
-          dh.append(el('span', 'dest-name', route.name),
-                    el('span', 'dest-where', 'wherever it is aimed'));
-          cell.appendChild(dh);
-          const body2 = el('div');
-          buildRows(body2, [route.destination, route.amount, route.ratio, route.wave]);
-          cell.appendChild(body2);
-          const canvas = el('canvas', 'destwave');
-          cell.appendChild(canvas);
-          grid.appendChild(cell);
-          destCards[route.key] = { cell, canvas, dest: route };
-        }
-        destBox.appendChild(grid);
-        card.appendChild(destBox);
-      }
 
       if (mod.unbuilt) card.appendChild(el('p', 'note warn', mod.unbuilt));
       card.appendChild(el('p', 'note', mod.note));
@@ -544,12 +527,133 @@
     ctx.stroke();
   }
 
-  function paintPulseWaves(live) {
-    for (const key of Object.keys(destCards)) {
-      const { cell, canvas, dest } = destCards[key];
-      cell.classList.toggle('idle', isNeutral(dest.amount, live[dest.amount]));
-      drawWave(canvas, dest, live);
+  // ---- routes, opened from the control they move --------------------------
+  //
+  // One panel for the whole page, moved under whichever control it was opened
+  // from, so the row and its band stay in view while a route is dialed. It
+  // floats over the rows below rather than pushing them down.
+
+  const routable = name => (window.AuroraCC.TAGS[name] || []).includes('patch')
+    && !V.routeRefused(P.CC[name]);
+
+  // Half of the way to the limit, so the band shows the moment a route exists:
+  // one added at nothing looks like one that did not take.
+  const NEW_ROUTE_AMOUNT = 96;
+
+  const routePanel = { root: null, blocks: [], add: null, free: null, note: null, target: null };
+
+  function buildRoutePanel() {
+    const root = el('div', 'routepanel');
+    root.hidden = true;
+    for (const route of P.ROUTES) {
+      const block = el('div', 'routeblock');
+      const head = el('div', 'dest-head');
+      const remove = el('button', 'tiny', '\u00d7');
+      remove.title = 'free this route';
+      remove.addEventListener('click', () => { snap(); resetNames(routeFields(route)); });
+      head.append(el('span', 'dest-name', route.name), remove);
+      const body = el('div');
+      buildRows(body, [route.amount, route.ratio, route.wave]);
+      const canvas = el('canvas', 'destwave');
+      block.append(head, body, canvas);
+      root.appendChild(block);
+      routePanel.blocks.push({ route, block, canvas, remove });
     }
+    const foot = el('div', 'routefoot');
+    const add = el('button', 'tiny', '+ add a route');
+    add.addEventListener('click', () => { snap(); addRoute(); });
+    const free = el('span', 'cc');
+    const note = el('p', 'note');
+    foot.append(add, free);
+    root.append(foot, note);
+    document.body.appendChild(root);
+    Object.assign(routePanel, { root, add, free, note });
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRoutePanel(); });
+    document.addEventListener('pointerdown', e => {
+      if (routePanel.target && !root.contains(e.target) && !e.target.closest('.routesbtn')) {
+        closeRoutePanel();
+      }
+    });
+    window.addEventListener('resize', placeRoutePanel);
+  }
+
+  const routeFields = route => [route.destination, route.amount, route.ratio, route.wave];
+
+  // A control with no route yet is opened to add one, so opening it adds it.
+  function toggleRoutePanel(name) {
+    if (routePanel.target === name) { closeRoutePanel(); return; }
+    routePanel.target = name;
+    const base = L.namedFromSet(baseSet());
+    if (!isFarEnd() && !P.ROUTES.some(route => base[route.destination] === P.CC[name])) {
+      snap();
+      addRoute();
+    }
+    paint();
+  }
+
+  function closeRoutePanel() {
+    routePanel.target = null;
+    paint();
+  }
+
+  // A destination has no middle, so like every switch it belongs to the patch:
+  // routes are added and freed on the base, and a far end only overrides how
+  // far and how fast.
+  function addRoute() {
+    const base = L.namedFromSet(baseSet());
+    const free = P.ROUTES.find(route => !base[route.destination]);
+    if (!free) return;
+    applyNamed({
+      [free.destination]: P.CC[routePanel.target],
+      [free.amount]: NEW_ROUTE_AMOUNT,
+      [free.ratio]: P.NEUTRAL[free.ratio],
+      [free.wave]: P.NEUTRAL[free.wave],
+    });
+  }
+
+  function paintRoutePanel(live) {
+    const target = routePanel.target;
+    for (const r of Object.values(rows)) {
+      if (!r.routes) continue;
+      const aimed = P.ROUTES.filter(route => live[route.destination] === P.CC[r.def.name]).length;
+      r.routes.classList.toggle('aimed', aimed > 0);
+      r.routes.classList.toggle('open', r.def.name === target);
+      r.routes.textContent = aimed > 1 ? '~' + aimed : '~';
+    }
+    routePanel.root.hidden = !target;
+    if (!target) return;
+
+    const farEnd = isFarEnd();
+    let free = 0;
+    for (const { route, block, canvas, remove } of routePanel.blocks) {
+      if (!live[route.destination]) free++;
+      block.hidden = live[route.destination] !== P.CC[target];
+      remove.disabled = farEnd;
+      if (!block.hidden) drawWave(canvas, route, live);
+    }
+    routePanel.add.disabled = farEnd || free === 0;
+    routePanel.free.textContent = `${free} of ${P.ROUTES.length} free`;
+    routePanel.note.textContent = farEnd
+      ? 'Routes are added and freed on the base. Here you can override how far and how fast.'
+      : '';
+    routePanel.note.hidden = !farEnd;
+    placeRoutePanel();
+  }
+
+  // Under the row, or above it where the window has no room below.
+  function placeRoutePanel() {
+    const target = routePanel.target;
+    if (!target) return;
+    const row = rows[target].root.getBoundingClientRect();
+    const panel = routePanel.root;
+    panel.style.width = `${Math.max(380, row.width)}px`;
+    const height = panel.offsetHeight;
+    const below = row.bottom + 4;
+    const top = below + height > window.innerHeight && row.top - 4 - height > 0
+      ? row.top - 4 - height : below;
+    panel.style.left = `${row.left + window.scrollX}px`;
+    panel.style.top = `${top + window.scrollY}px`;
   }
 
   // ---- set tabs ----------------------------------------------------------
@@ -1153,8 +1257,55 @@
     return `calc(${HANDLE_RADIUS}px + ${(v - min) / (max - min)} * (100% - ${2 * HANDLE_RADIUS}px))`;
   }
 
+  // A value at either end reaches the end of the track, past where the
+  // handle's center stops, or a band to the limit looks as if it falls short.
+  function reaching(input, v) {
+    if (v <= (input.min === '' ? 0 : +input.min)) return '0%';
+    if (v >= (input.max === '' ? 100 : +input.max)) return '100%';
+    return along(input, v);
+  }
+
   const stops = (...pairs) => 'linear-gradient(90deg, '
     + pairs.map(([color, from, to]) => `${color} ${from}, ${color} ${to}`).join(', ') + ')';
+
+  function pointLayer(at) {
+    const off = px => `calc(${at} + ${px}px)`;
+    return stops(['transparent', '0%', off(-1)], ['var(--bg)', off(-1), off(1)],
+                 ['transparent', off(1), '100%']);
+  }
+
+  // A stepped control's notches sit in the middle of each step's run of
+  // bytes, the safest place to land it. The two end steps are the track's ends.
+  function stepPoints(valueOf) {
+    const points = [];
+    let start = 0;
+    for (let v = 1; v <= 128; v++) {
+      if (v < 128 && valueOf(v) === valueOf(start)) continue;
+      if (start > 0 && v < 128) points.push(Math.round((start + v - 1) / 2));
+      start = v;
+    }
+    return points;
+  }
+
+  // The values worth a notch in the track: the center of a control that
+  // departs both ways from it, read off the renderer as the byte where its
+  // value changes sign; the named shapes on a route's wave; and the steps of
+  // a stepped control.
+  function pointsFor(name) {
+    const A = window.AuroraCC;
+    const route = P.ROUTES.find(r => [r.amount, r.ratio, r.wave].includes(name));
+    if (route) {
+      if (name === route.wave) return [A.GEN_WAVE_SWELL, A.GEN_WAVE_SAW_DOWN, A.GEN_WAVE_SQUARE];
+      if (name === route.ratio) return stepPoints(A.routeRatio);
+      return [64];
+    }
+    if (name === 'genPulseRate' || name === 'genFanFreq') {
+      return stepPoints(v => V.convert(P.CC[name], v));
+    }
+    const cc = P.CC[name];
+    if (cc === undefined || !(A.TAGS[name] || []).includes('patch')) return [];
+    return V.convert(cc, 56) < 0 && V.convert(cc, 64) === 0 && V.convert(cc, 72) > 0 ? [64] : [];
+  }
 
   function markLayer(at) {
     const off = px => `calc(${at} + ${px}px)`;
@@ -1175,17 +1326,18 @@
     return { spans, marks: V.stripValues(cc) };
   }
 
-  function paintTrack(input, swing) {
+  function paintTrack(input, swing, points) {
     const layers = [];
+    if (swing) for (const v of swing.marks) layers.push(markLayer(along(input, v)));
+    for (const v of points) layers.push(pointLayer(along(input, v)));
     if (swing) {
-      for (const v of swing.marks) layers.push(markLayer(along(input, v)));
       for (const [low, high] of swing.spans) {
-        layers.push(stops(['transparent', '0%', along(input, low)],
-                          ['var(--pulse)', along(input, low), along(input, high)],
-                          ['transparent', along(input, high), '100%']));
+        const from = reaching(input, low), to = reaching(input, high);
+        layers.push(stops(['transparent', '0%', from], ['var(--pulse)', from, to],
+                          ['transparent', to, '100%']));
       }
     }
-    const at = along(input, +input.value);
+    const at = reaching(input, +input.value);
     layers.push(stops(['var(--fill)', '0%', at], ['var(--rest)', at, '100%']));
     const track = layers.join(', ');
     if (input.dataset.track !== track) {
@@ -1198,8 +1350,8 @@
   // has any to show.
   function paintTracks(rendered) {
     for (const input of document.querySelectorAll('input[type=range]')) {
-      const name = input.closest('.row')?.dataset.name;
-      paintTrack(input, rendered && name && rows[name] ? swingOf(name) : null);
+      const r = rows[input.closest('.row')?.dataset.name];
+      paintTrack(input, rendered && r ? swingOf(r.def.name) : null, r ? r.points : []);
     }
   }
 
@@ -1281,6 +1433,7 @@
   V.ready.then(() => {
     buildLanes();
     buildModulators();
+    buildRoutePanel();
     buildStarts();
     buildOutputs();
     buildMatrix();

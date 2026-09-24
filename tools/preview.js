@@ -73,6 +73,7 @@
 
       // Both read the last render, so call them before the next one.
       stripValues: cc => Array.from({ length: STRIPS }, (_, i) => m._aurora_strip_value(cc, i)),
+      routeRefused: cc => !!m._aurora_route_refused(cc),
       routeReach(cc) {
         const at = m._aurora_route_reach(cc);
         return at ? [m.HEAPF32[at >> 2], m.HEAPF32[(at >> 2) + 1]] : null;

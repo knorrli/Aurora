@@ -68,6 +68,8 @@ EMSCRIPTEN_KEEPALIVE int aurora_strip_value(int cc, int strip) {
   return render::routed(controls, &pushes, (uint8_t)cc);
 }
 
+EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }
+
 // The band a control's routes can push it across, or null if none reach it.
 EMSCRIPTEN_KEEPALIVE float *aurora_route_reach(int cc) {
   int16_t low, high;

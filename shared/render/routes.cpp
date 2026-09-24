@@ -62,6 +62,8 @@ static bool refused(uint8_t cc) {
   }
 }
 
+bool routeRefused(uint8_t cc) { return cc == 0 || refused(cc); }
+
 // 0 and 127 are the same place, so there is no limit to travel toward.
 static bool circular(uint8_t cc) {
   switch (cc) {
@@ -108,7 +110,7 @@ void gatherRoutes(const uint8_t *dialed, float plainPhase, float stripPhase,
   for (uint8_t r = 0; r < AURORA_ROUTES; r++) {
     const uint8_t dest = dialed[aurora_route_cc(r, ROUTE_DESTINATION)];
     // CC 0 is never assigned, so it is free to mean "not aimed anywhere".
-    if (dest == 0 || refused(dest)) continue;
+    if (routeRefused(dest)) continue;
 
     const float amount = bipolar(dialed[aurora_route_cc(r, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
@@ -153,7 +155,7 @@ uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
 // up is every raising route at its peak at once, and the same going down.
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) {
   low = high = dialed[cc];
-  if (cc == 0 || refused(cc)) return false;
+  if (routeRefused(cc)) return false;
 
   float up = 0.0f;
   float down = 0.0f;

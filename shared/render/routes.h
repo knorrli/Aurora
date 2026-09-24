@@ -21,6 +21,10 @@ void gatherRoutes(const uint8_t *dialed, float plainPhase, float stripPhase,
 // The dialed byte with the pushes applied; null pushes is the dialed byte.
 uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
 
+// A rate would drift rather than return under a push, and tempo division is
+// an index; CC 0 means a route aimed nowhere.
+bool routeRefused(uint8_t cc);
+
 // The furthest below and above its dialed value the routes aimed at a control
 // can take it, unwrapped for a circular one. False if no route reaches it.
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high);

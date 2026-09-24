@@ -461,25 +461,13 @@ it becomes a build item.
       `docs/generator.md` § "Travel easing is a curve, not a modulation
       route", and it is a build item above. What has never been discussed
       is whether a band backdrop asks for a thrown-ball traversal.
-- [ ] **Gate length on the pulse, as the far end of Shape.** A short stab
-      rather than an even square. Wanted from both sides independently, so
-      the want is real. Not a control of its own: fold it into the bottom
-      of the Shape fader, so the one axis runs stab -> square -> swell ->
-      sine. That is what makes it work — a gate only has a length where the
-      wave is square, and putting it anywhere else on the fader would mean
-      shifting the threshold at the sine end, which flat-bottoms the swell
-      and stops it reaching full. Costs: the sine half loses a quarter of
-      the fader, so the midpoint drifts from 93 back to about 102, and
-      Strobe, Stutter and Glitch all move off 0.
-      **Bounded by the frame rate, not by taste.** At 7-8 ms per frame
-      (`docs/bench-facts.md`) and the fastest rate of 0.25 beats, a 6 %
-      stab at 120 BPM is 8 ms, which is one frame — below that it lands
-      between frames and flickers instead of shortening. A gate measured
-      in percent of the cycle is therefore reliable at slow rates and not
-      at fast ones; a floor derived from frame time would fix that.
-      Build it only if a shorter stab is still wanted after playing with
-      the linear taper, since the dead bottom of the fader that made this
-      attractive is largely what the taper reclaimed.
+- [x] **Gate length on the pulse.** Built 2026-09-24 as the top of a
+      route's wave byte rather than the bottom of a Shape fader: past the
+      square at 96 the flash shortens to a stab at 127, down to
+      `GEN_PULSE_MIN_WIDTH`, about one frame at 120 BPM and the fastest
+      rate. What was not built is a floor taken from the frame time, so the
+      shortest stab is a fixed share of the cycle and still lands between
+      frames at fast rates. See `docs/modulation.md` § "The waves".
 
 - [x] **Fan's full shape, and a rate offset beside it.** Done 2026-09-23,
       the two together as one wave with three amounts. The claim that a
@@ -488,14 +476,15 @@ it becomes a build item.
       every instant — so the switch survives. `DESIGN.md` § "Alternate
       keeps its jump" said it would not; that is corrected there.
 
-- [ ] **A modulator aimed at the fan's rate amount.** "The bars drift
-      apart, come back into alignment, drift the other way" needs that
-      amount swinging through zero, which is a sixth pulse destination.
-      The objection that rates are not destinations does not bind here —
-      a bipolar push integrates back to nothing once a cycle, so the
-      strips realign rather than drifting permanently. What blocks it is
-      three numbers in the pulse's own range, which is full at 100-114.
-      See the regroup below.
+- [ ] **The bars drifting apart and back together has no way in.** "Drift
+      apart, come back into alignment, drift the other way" needs the fan's
+      rate amount swinging through zero. The case for it was that a bipolar
+      push integrates back to nothing once a cycle. Routes since settled
+      against it twice: every rate is refused as a destination, and the wave
+      rests at zero and peaks at one, so it is never bipolar and never
+      integrates back. Either the look goes, or it needs its own mechanism —
+      a wave that swings both ways, admitted only for this destination. See
+      `docs/modulation.md` § "Which destinations a route may aim at".
 
 - [x] **Apply the regrouped CC map.** Done 2026-09-23, and
       `docs/cc-regroup.md` is the map. Every number assigned, every
@@ -580,6 +569,21 @@ it becomes a build item.
       agree everywhere but one, a sample sitting 1.2e-15 inside the core
       boundary at full width, where a float rounds onto the other side of the
       comparison. The wall has texture again.
+
+- [ ] **The editor's modulation, next.** Built 2026-09-24: a route lives on
+      the control it moves — a **~** on the row opens its routes in a panel
+      under it, the slider carries the band the routes reach and one mark per
+      strip, and every track notches its center, the wave's named shapes and
+      the steps of a stepped control. See `docs/editor.md` § "A route shows
+      on the control it moves". What is left:
+
+      - **Say the range in the control's own units** beside the fader, "8 →
+        14 px/beat", from `render::convert` the way the labels already are.
+      - **Decide what the older views are still for.** The "← route 1 +73%"
+        note under a label and the destination table both describe from the
+        target's end what the band now shows on it.
+      - **Another visual pass** on the panel, its width above all, deferred
+        until it has been used for a while.
 
 - [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
       browser and has **never driven the rig**. The old page went anyway, since

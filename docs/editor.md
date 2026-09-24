@@ -156,6 +156,15 @@ picture it will rarely show. Pick the patch it will actually follow.
 
 ## A route shows on the control it moves
 
+Every control a route may reach has a **~** at the end of its row, and it opens
+that control's routes in one panel floating under the row, so the row stays in
+view while a route is dialed and the page below does not move. One panel is
+open at a time. It lists the routes aimed here with their amount, clock
+multiple and wave, adds one from the eight shared slots, and frees one. A
+destination has no middle, so like every switch it belongs to the patch:
+routes are added and freed on the base, and a far end overrides only how far
+and how fast. The rates have no **~**, since the renderer refuses them.
+
 A slider a route is aimed at carries a band from the dialed value to the
 furthest the routes can push it, and five marks, one per strip, where each
 strip has it this frame. The marks move together unless the fan spreads the
@@ -163,6 +172,12 @@ strips' clocks, and then they move the way the strips do. Both are read off
 the renderer, not worked out in the page. They are painted into the slider's
 own track so the handle stays on top: the handle is the value that is saved,
 and nothing modulation does may cover it.
+
+The same tracks carry notches: the center of every control that departs both
+ways from 64, found by asking the renderer where its value changes sign; the
+swell, snap and hard half-bar on a route's wave; and the steps of the clock's
+rate, the fan's frequency and a route's ratio, each in the middle of its run
+of bytes.
 
 ## Rulings made without the performer
 
