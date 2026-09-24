@@ -271,7 +271,6 @@
   const LANES = [
     {
       key: 'shape', name: 'Shape',
-      does: 'decides whether a pixel is lit, and how much',
       groups: [
         {
           key: 'form', title: 'Form',
@@ -294,7 +293,6 @@
             C('genBounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
               { kind: 'two', options: [[OFF, 'wrap'], [ON, 'genBounce']] }),
           ]),
-          note: 'Bring Speed to a stop and the pattern walks home to Position over a beat or two, so a patch saved comes back to the same place. Under bounce the swing is anchored to the cell and Position does nothing.',
         },
         {
           key: 'genFan', title: 'Fan',
@@ -306,13 +304,11 @@
             C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
             C('genFanPulse', 'Pulse', 'how far apart they stand in the swell'),
           ]),
-          note: 'One wave running across the five strips, and three amounts aiming it at three places \u2014 so a wall of staggered bars can strobe in unison. Frequency at the top puts every strip opposite its neighbors, which is alternate; there the phase only scales how deep that is, and a quarter turn either side of it the fan goes quiet. Speed is what the strip the wave reads zero at travels at, and Rate is how far the others differ from it.',
         },
       ],
     },
     {
       key: 'color', name: 'Color',
-      does: 'decides what color a lit pixel is',
       groups: [
         {
           key: 'base', title: 'The three faders',
@@ -321,7 +317,6 @@
             C('saturation', 'Saturation', 'full is a pure hue, zero is white'),
             C('value', 'Brightness', 'the ceiling everything below scales against'),
           ]),
-          note: 'A color is hue, whiteness and darkness, and every source below is a push on those three measured from here. With every amount at neutral the wall is exactly this color.',
         },
       ],
     },
@@ -365,15 +360,12 @@
   const MODULATORS = [
     {
       key: 'pulse', name: 'The clock', tone: 'pulse',
-      when: 'regular in time, and nowhere on the wall',
       source: define([
         C('genPulseRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
       ]),
-      note: 'One clock, and eight routes off it. A route lives on the control it moves: the ~ beside a control opens its routes, and says how far, at what whole multiple of this clock, and with what wave. A rate has no ~: every rate feeds a running total, so a push on one would move the wall permanently instead of returning it. Two routes on one control add, and the sum stops at the limit.',
     },
     {
       key: 'scatter', name: 'The scatter', tone: 'scatter',
-      when: 'random in space and in time',
       source: define([
         C('scatterRate', 'Rate', 'how often a cell relights'),
         C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
@@ -387,11 +379,9 @@
         C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
         C('scatterWhite', 'To white', 'plus is toward white, minus toward a pure hue'),
       ]),
-      note: 'A grid of cells along each strip, each with its own clock, each lighting a spot that appears, holds, fades, and may slide across its cell as it does. It pushes what the shape lane left, so it needs a gap to light and light to darken \u2014 which is also why a spot inside an already-full shape is invisible and the shape covers it with no occlusion rule anywhere. Moving Stagger re-keys every cell, so everything in flight jumps. It replaces jitter, which no longer has a control anywhere.',
     },
     {
       key: 'placed', name: 'The placed field', tone: 'color',
-      when: 'aimed in space, still or drifting',
       switches: define([
         C('colorRegion', 'Primitive', 'one ramp across the ruler, or a bump sitting on it',
           { kind: 'two', options: [[GRADIENT, 'gradient'], [REGION, 'region']] }),
@@ -411,11 +401,9 @@
         C('placedWhite', 'To white', 'how far one end departs; plus is toward white, minus toward a pure hue'),
         C('placedDark', 'Dark', 'how far one end departs; minus is toward dark, plus toward full light'),
       ]),
-      note: 'The only source you aim. A gradient runs one way across its ruler with the base color at the center, so an amount is how far one end departs and the two ends land twice that apart. A region is a bump: base, departure, back to base. These two switches and the four controls beside them shape this source and reach nothing else.',
     },
     {
       key: 'wander', name: 'The wander', tone: 'color',
-      when: 'smooth in space and in time, and never the same twice',
       source: define([
         C('wanderRate', 'Rate', 'frozen, through a slow ocean swell, to a nervous flicker'),
         C('wanderScale', 'Density', 'the whole wall moving as one, down to individual pixels'),
@@ -425,18 +413,15 @@
         C('wanderWhite', 'To white', 'how far whiteness wanders'),
         C('wanderDark', 'Dark', 'how far darkness wanders'),
       ]),
-      note: 'Two terms whose rates sit at the golden ratio, so they can never come back into step and the wall never repeats. That is built in rather than dialed \u2014 setting how far apart two speeds sit is operating the mechanism rather than the look. There is nothing to aim it at; that is what the placed field is for.',
     },
     {
       key: 'lit', name: 'The light level', tone: 'color',
-      when: 'read off what the shape lane left',
       source: [],
       amounts: define([
         C('litHue', 'Hue', 'how far the brightest part rotates off the base hue'),
         C('litWhite', 'To white', 'how pale the brightest part goes'),
         C('litDark', 'Dark', 'how the brightest part sits against the base for brightness; minus is toward dark, plus toward full light'),
       ]),
-      note: 'The one source with no controls of its own: its value is how lit the shape lane left a pixel, so a comet\u2019s tail cools instead of only dimming. It is also the only source that reaches the pulse and the scatter, since neither of those has a position for a ruler to measure. It reads the shape\u2019s own profile and never the color lane\u2019s output \u2014 feed that back and pulling the wall down for a quiet verse would slide its hue.',
     },
   ];
 
@@ -446,7 +431,6 @@
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
       C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
     ]),
-    note: 'A PAR is one position with no length, so the shape lane cannot reach it: count, width, edge, tail, speed and fan all describe places along a strip. What a patch holds for them is a relationship to the strips rather than a second look. A route can reach these three, and all four PARs take the clock\u2019s unfanned reading.',
   };
 
   const TIMING = {
@@ -454,7 +438,6 @@
       C('tempoDivision', 'Tempo division', 'what one tempo pulse stands for. Every rate below scales with it',
         { kind: 'pick', options: DIVISIONS }),
     ]),
-    note: 'Part of every parameter set, so a far end may sit at another division and a morph will step through the ones between. A half-time look is a real musical idea and a song that wants one wants it for every patch in that song.',
   };
 
 ;

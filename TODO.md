@@ -579,8 +579,31 @@ it becomes a build item.
 
       - **Say the range in the control's own units** beside the fader, "8 →
         14 px/beat", from `render::convert` the way the labels already are.
+        Deferred 2026-09-24 until the band alone is found wanting while
+        dialing a route: little patch design has been done yet, and the
+        readout numbers are not being looked at.
       - **Another visual pass** on the panel, its width above all, deferred
         until it has been used for a while.
+
+- [ ] **Bypass a route without freeing it.** Raised 2026-09-24. Today the
+      only way to hear a patch without a route is to free the slot, which
+      loses its destination, amount, clock multiple and wave.
+
+- [x] **Cut the page's prose down to what earns it.** Raised and done
+      2026-09-24. Every note on the page went, bar one line on the surfaces
+      panel saying the brain does not combine faders yet. Two rules moved
+      into hover text where they bite: why a far end cannot add a route, and
+      why an accent is heard from another patch. Descriptions come back one
+      at a time, when something is found missing.
+
+- [ ] **Edit a draft, save it explicitly.** Raised 2026-09-24. Every change
+      writes straight into the patch and the library saves itself, so there
+      is no way back from an experiment. Instead: the first change opens a
+      draft, which is either discarded or saved into a chosen Program Change
+      slot. No undo history. This reverses `docs/editor.md` § "The library
+      saves itself": what that section protects against, losing an evening to
+      a closed tab, still has to hold, so the draft itself has to survive a
+      reload.
 
 - [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
       browser and has **never driven the rig**. The old page went anyway, since

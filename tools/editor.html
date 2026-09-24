@@ -117,9 +117,6 @@
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field > span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
   .field input[type=text] { width: 190px; }
-  .head .patchwide {
-    margin-left: auto; color: var(--faint); font-size: 10.5px; text-align: right; max-width: 210px;
-  }
 
   /* ---- set tabs and audition ------------------------------------------ */
 
@@ -140,7 +137,6 @@
   }
   .audition .readout { min-width: 58px; text-align: right; color: var(--accent); }
   .audition .field { flex-direction: row; align-items: center; gap: 7px; }
-  .audition > .note { flex-basis: 100%; margin-top: 0; }
   .audition .slotmove { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
 
   #surfaceBar[hidden] { display: none; }
@@ -157,7 +153,6 @@
   .lane-name { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
   .lane[data-lane=shape] .lane-name { color: var(--shape); }
   .lane[data-lane=color] .lane-name { color: var(--color); }
-  .lane-does { color: var(--dim); font-size: 11.5px; }
 
   .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px 22px; }
 
@@ -236,12 +231,7 @@
   .mod[data-tone=pulse] .mod-name { color: var(--pulse); }
   .mod[data-tone=scatter] .mod-name { color: var(--scatter); }
   .mod[data-tone=color] .mod-name { color: var(--color); }
-  .mod-when { color: var(--dim); font-size: 11.5px; }
   .mod-head .tiny { margin-left: auto; }
-  .unbuilt {
-    display: inline-block; padding: 1px 7px; border: 1px dashed var(--accent);
-    border-radius: 3px; color: var(--accent); font-size: 10px; letter-spacing: .06em;
-  }
   .mod-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
 
   .routepanel {
@@ -253,13 +243,11 @@
   .dest-name { color: var(--pulse); }
   .destwave { width: 100%; height: 46px; display: block; margin-top: 8px; }
   .routefoot { display: flex; justify-content: space-between; align-items: center; }
-  .routepanel .note { margin: 8px 0 0; }
 
   /* ---- outputs ----------------------------------------------------------- */
 
   .outs { border-left: 3px solid var(--out); }
   .outgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px 22px; }
-  .feeds { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
 
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .chips button { padding: 3px 9px; font-size: 11px; }
@@ -340,7 +328,6 @@
     <section class="panel">
       <h2>The keypad</h2>
       <div class="keypad" id="keypad"></div>
-      <p class="note">Nine keys, nine patches. Key 0 is an override rather than a patch &mdash; it names no look, holds no parameters and takes no slot, so there is nothing here to assign it.</p>
     </section>
 
     <section class="panel">
@@ -357,7 +344,6 @@
           <input type="file" id="filePick" accept=".json,application/json" hidden>
         </div>
       </div>
-      <p class="note">The library saves itself in this browser as you work &mdash; there is no save button for it. <b>save a file</b> is the copy that survives the browser, and <b>push the library</b> is the copy the brain holds.</p>
       <div id="log"></div>
     </section>
   </aside>
@@ -370,7 +356,6 @@
       <label class="field"><span>Palette</span><select id="pPalette"></select></label>
       <label class="field"><span>Journey ramp</span><select id="pRampJourney"></select></label>
       <label class="field"><span>Accent ramp</span><select id="pRampAccent"></select></label>
-      <p class="patchwide">Everything on this row belongs to the patch as a whole, not to one parameter set.</p>
     </section>
 
     <nav class="sets" id="setTabs"></nav>
@@ -385,17 +370,14 @@
           <div>
             <h3>Shape</h3>
             <div class="chips" id="shapeStarts"></div>
-            <p class="note">Each one sets the shape lane and the pulse and leaves the color lane alone, so either can be laid over whatever the other is already doing. Guesses at where a look sits, not finished settings.</p>
           </div>
           <div>
             <h3>Fan</h3>
             <div class="chips" id="fanStarts"></div>
-            <p class="note">The looks the fan was rebuilt for, shape lane and pulse like the ones beside them. Comets and Shooting stars want a color: Comet tail for the first, saturation at zero for the second. Shooting stars is an approximation — five speeds and no pattern, but a shooting star is born, crosses once and dies, and a shape absent between crossings is not something the fan can withhold.</p>
           </div>
           <div>
             <h3>Color</h3>
             <div class="chips" id="colorStarts"></div>
-            <p class="note">Each one sets the color lane only. Head and tail and Comet tail need a shape with gaps to show anything.</p>
           </div>
         </div>
       </details>
@@ -411,14 +393,10 @@
       <div class="outgrid">
         <div>
           <h3>5 strips</h3>
-          <p class="feeds">fed by <b>shape</b> &times; <b>color</b> &mdash; 45 pixels each</p>
-          <p class="note">The only output that can render the shape lane at all, and the only one with a length for a ruler to measure. Everything above reaches these, so they have no controls of their own.</p>
         </div>
         <div>
           <h3>4 PARs</h3>
-          <p class="feeds">fed by <b>color</b> + the <b>pulse</b> &mdash; one pixel each</p>
           <div id="parControls"></div>
-          <p class="note" id="parNote"></p>
         </div>
       </div>
     </section>
@@ -427,7 +405,7 @@
       <details class="slots">
         <summary>Timing</summary>
         <div class="groups">
-          <div><h3>Timing</h3><div id="timingGroup"></div><p class="note" id="timingNote"></p></div>
+          <div><h3>Timing</h3><div id="timingGroup"></div></div>
         </div>
       </details>
     </section>
@@ -452,8 +430,6 @@
             <button class="tiny" id="pvFan">fan wave</button>
             <label class="cc">order <input type="text" id="pvOrder"></label>
           </div>
-          <p class="note">Drawn by the brain&rsquo;s own renderer, compiled for the browser, so what lights here is what the strips are sent.</p>
-          <p class="note">The two small walls are drawn at the big one&rsquo;s instant, so the three line up and a difference you can see is a real one. What that gives up: a far end differing only in a rate looks the same in a still. Run the audition to see that.</p>
         </div>
       </div>
     </section>

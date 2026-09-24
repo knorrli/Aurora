@@ -310,7 +310,7 @@
       const host = $(lane.key === 'shape' ? 'laneShape' : 'laneColor');
       host.innerHTML = '';
       const head = el('div', 'lane-head');
-      head.append(el('span', 'lane-name', lane.name), el('span', 'lane-does', lane.does));
+      head.append(el('span', 'lane-name', lane.name));
       host.appendChild(head);
 
       const groups = el('div', 'groups');
@@ -327,7 +327,6 @@
         buildRows(body, g.controls || []);
         if (g.switches) buildRows(body, g.switches);
         box.appendChild(body);
-        if (g.note) box.appendChild(el('p', 'note', g.note));
         groups.appendChild(box);
       }
       host.appendChild(groups);
@@ -342,8 +341,7 @@
       card.dataset.tone = mod.tone;
 
       const head = el('div', 'mod-head');
-      head.append(el('span', 'mod-name', mod.name), el('span', 'mod-when', mod.when));
-      if (mod.unbuilt) head.appendChild(el('span', 'unbuilt', 'no firmware yet'));
+      head.append(el('span', 'mod-name', mod.name));
       const reset = el('button', 'tiny', 'reset');
       reset.addEventListener('click', () => resetNames([
         ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
@@ -353,28 +351,22 @@
 
       const body = el('div', 'mod-body');
 
-      const sourceBox = el('div');
-      sourceBox.appendChild(el('h4', null, 'Source'));
-      if (mod.switches) buildRows(sourceBox, mod.switches);
-      if (mod.source && mod.source.length) buildRows(sourceBox, mod.source);
-      if (!mod.switches && (!mod.source || !mod.source.length)) {
-        sourceBox.appendChild(el('p', 'note',
-          'Nothing to set. Its value is what the shape lane left, so the shape lane is its control.'));
+      const sources = [...(mod.switches || []), ...(mod.source || [])];
+      if (sources.length) {
+        const sourceBox = el('div');
+        sourceBox.appendChild(el('h4', null, 'Source'));
+        buildRows(sourceBox, sources);
+        body.appendChild(sourceBox);
       }
-      body.appendChild(sourceBox);
 
       if (mod.amounts) {
         const amountBox = el('div');
         amountBox.appendChild(el('h4', null, 'Amounts'));
         buildRows(amountBox, mod.amounts);
         body.appendChild(amountBox);
-      } else {
-        body.style.gridTemplateColumns = '1fr';
       }
+      if (body.children.length < 2) body.style.gridTemplateColumns = '1fr';
       card.appendChild(body);
-
-      if (mod.unbuilt) card.appendChild(el('p', 'note warn', mod.unbuilt));
-      card.appendChild(el('p', 'note', mod.note));
       host.appendChild(card);
     }
   }
@@ -401,11 +393,9 @@
     const host = $('parControls');
     host.innerHTML = '';
     buildRows(host, P.PARS.controls);
-    $('parNote').textContent = P.PARS.note;
 
     $('timingGroup').innerHTML = '';
     buildRows($('timingGroup'), P.TIMING.controls);
-    $('timingNote').textContent = P.TIMING.note;
   }
 
   // ---- a route's push, drawn ---------------------------------------------
@@ -462,7 +452,7 @@
   // one added at nothing looks like one that did not take.
   const NEW_ROUTE_AMOUNT = 96;
 
-  const routePanel = { root: null, blocks: [], add: null, free: null, note: null, target: null };
+  const routePanel = { root: null, blocks: [], add: null, free: null, target: null };
 
   function buildRoutePanel() {
     const root = el('div', 'routepanel');
@@ -485,11 +475,10 @@
     const add = el('button', 'tiny', '+ add a route');
     add.addEventListener('click', () => { snap(); addRoute(); });
     const free = el('span', 'cc');
-    const note = el('p', 'note');
     foot.append(add, free);
-    root.append(foot, note);
+    root.append(foot);
     document.body.appendChild(root);
-    Object.assign(routePanel, { root, add, free, note });
+    Object.assign(routePanel, { root, add, free });
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRoutePanel(); });
     document.addEventListener('pointerdown', e => {
@@ -556,10 +545,9 @@
     }
     routePanel.add.disabled = farEnd || free === 0;
     routePanel.free.textContent = `${free} of ${P.ROUTES.length} free`;
-    routePanel.note.textContent = farEnd
+    routePanel.add.title = farEnd
       ? 'Routes are added and freed on the base. Here you can override how far and how fast.'
       : '';
-    routePanel.note.hidden = !farEnd;
     placeRoutePanel();
   }
 
@@ -750,7 +738,7 @@
       rows2.appendChild(row);
     }
     host.appendChild(rows2);
-    host.appendChild(el('p', 'note', 'Each surface contributes its position times the distance from the patch to its own far end, and the departures add. One alone is exactly what its own tab shows. Two that move different controls do not interact at all, which is the usual case; where two move the same control they pull against each other, and the sum is what you get. Touch any control and they all drop, because dialing happens at the patch. \u26a0 The brain does not do this yet \u2014 this is the editor proposing the rule.'));
+    host.appendChild(el('p', 'note', '\u26a0 The brain does not combine the faders yet \u2014 this is the editor\u2019s guess.'));
   }
 
   function buildAudition() {
@@ -805,6 +793,7 @@
       if (setIndex === P.SET_ACCENT) {
         const wrap = el('label', 'field');
         wrap.appendChild(el('span', null, 'as heard from'));
+        wrap.title = 'An accent plays with the switches of the patch you came from, because the destination\u2019s land on the release and not on arrival. Dial it against the patch it will actually follow.';
         const pick = el('select');
         lib.patches.forEach((p, i) => {
           const o = el('option', null, `${i} \u00b7 ${p.name}`);
@@ -822,12 +811,6 @@
 
       host.appendChild(slotMoves());
 
-      host.appendChild(el('p', 'note', P.SET_BLURB[setIndex]
-        + '. Hold the scrubber to watch the trip; let go and you are editing the far end again. Only the overrides move between surfaces \u2014 the base is the patch and stays where it is.'));
-
-      if (setIndex === P.SET_ACCENT) {
-        host.appendChild(el('p', 'note', 'An accent plays with the switches of the patch you came from, because the destination\u2019s land on the release and not on arrival. Dial it against the patch it will actually follow.'));
-      }
     } else {
       const wrap = el('label', 'field');
       wrap.appendChild(el('span', null, 'journey to'));
@@ -846,7 +829,6 @@
       });
       wrap.appendChild(pick);
       host.appendChild(wrap);
-      host.appendChild(el('p', 'note', 'A patch change, so the switches stay at this patch\u2019s the whole way and land only when the key is let go. Which patch precedes which is compositional: the reveal fires only where the two differ in a switch at all.'));
     }
   }
 
@@ -950,7 +932,7 @@
       host.appendChild(b);
     });
     $('libCount').textContent =
-      `${lib.patches.length} of ${P.PATCH_MAX}. The index is the Program Change that names it.`;
+      `${lib.patches.length} / ${P.PATCH_MAX}`;
     paintKeypad();
   }
 
