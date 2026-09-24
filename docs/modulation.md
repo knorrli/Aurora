@@ -64,7 +64,9 @@ to a stab, with the named shapes on exactly reachable values. See "The
 waves" below.
 
 **A push is a fraction of the distance to a limit**, everywhere except
-controls that wrap, which take a rotation instead. See "How a push lands".
+controls that wrap, which take a rotation instead. Two routes aimed at one
+destination add their pushes and move it once, capped at the limit. See
+"How a push lands".
 
 **Eight routes, four bytes each** — destination, amount, ratio, wave. That
 is 32 of the 51 CCs the retirement leaves free, so a source byte per route
@@ -269,6 +271,33 @@ repeats once per cell), and the fan's phase (CC 69, which runs on 128ths
 of a full turn). Tagging them is the same pass that answers which
 destinations are refused.
 
+**Two routes on one destination add up.** The pushes are summed and the
+control moves once, rather than each route moving it in turn. Moving in
+turn compounds — a control at 100 pushed half up and then half down lands
+at 57, where summing leaves it at 100 — and the result then depends on
+which slot each route sits in, which is nothing anyone chose musically.
+
+Not an average, either. Averaging would mean a second quiet route
+*weakens* the first, so layering a subtle stab over a big swell would
+flatten the swell instead of adding to it, and an unused zero-amount slot
+would drag the rest down with it.
+
+**An amount is what a route contributes at the top of its wave**, not at
+every moment — a route's push right now is `amount × wave`. So +50% and
++25% aimed at one control make +75% only where both waves peak together.
+The corollary is a useful check on the model: two routes carrying the same
+wave at the same ratio are redundant, because one route at the combined
+amount does exactly the same thing. Two routes buy something only when the
+waves or the ratios differ, which is the slow swell against the fast stab
+that one shared rate made impossible.
+
+**The sum is capped at the whole distance**, so +80% and +50% together
+arrive exactly at the limit rather than sailing past it. Nothing reaches
+this today, because each destination has exactly one send carrying one
+amount — which is why the two implementations already disagree about it.
+`brain/src/dmx_out.cpp:46` caps the amount; `brain/src/P_Generator.cpp:297`
+and its mirror in `tools/preview.js` do not. Routes make it reachable.
+
 **Brightness stops being the odd one out.** It multiplies today
 (`P_Generator.cpp:808`), and it is the only destination that rests at the
 wave's high point while the rest rest at its low point. Under one rule it
@@ -366,21 +395,18 @@ a route five and drop the ceiling to ten.
 
 ## Still open
 
-1. **Two routes on one destination** — sum the pushes and apply once, or
-   apply in turn. The color layer already sums; nothing else has had to
-   answer it.
-2. **Fanned clock or plain clock, per route.** Today the strips read
+1. **Fanned clock or plain clock, per route.** Today the strips read
    `pulse + fanPulse × wave` and the washes read the plain phase, because a
    PAR is one position with no strip to be offset from. That distinction is
    implicit in where each destination is read in the frame. Once a route
    can point anywhere it has to be stated, or it gets decided by accident
    by whoever writes the loop.
-3. **Which destinations are refused**, and whether the quantized ones —
+2. **Which destinations are refused**, and whether the quantized ones —
    the fan's frequency in eighths, count as geometric whole numbers, the
    3-way ruler — are refused or allowed with the stepping treated as an
    effect. The same pass tags which controls are circular, and settles the
    rotation span each one takes.
-4. **Morphing between patches whose routes are aimed differently.** A
+3. **Morphing between patches whose routes are aimed differently.** A
    destination is a switch, and switches land on arrival or on release at
    the end of a journey — so travelling from a patch where route 3 pushes
    width to one where route 3 pushes hue, the *amount* interpolates the
@@ -389,9 +415,11 @@ a route five and drop the ceiling to ten.
    Soldered amounts cannot do this, because their destinations never
    disagree. Two ways out, both cheap: order routes canonically by
    destination so slot N means the same thing in every patch, or have the
-   editor align slots when it builds a library. This is the one place the
+   editor align slots when it builds a library. Summing is what makes the
+   first one safe — reordering slots cannot change a look once the pushes
+   add. This is the one place the
    matrix is genuinely weaker than what it replaces.
-5. **Sequencing** — whether the pulse's eighteen retire in the same change
+4. **Sequencing** — whether the pulse's eighteen retire in the same change
    that brings routes, or after.
 
 ## Resuming this
@@ -404,19 +432,20 @@ block in `shared/aurora_protocol.h`; then the pulse machinery in
 `tools/preview.js`; then `docs/editor.md` for the panel model the new
 one has to fit into.
 
-**Answer the remaining five questions before building anything.** The wave
+**Answer the remaining four questions before building anything.** The wave
 is settled and fixes a route at four bytes, which settled the count at
 eight and took the pressure off the fifteen soldered amounts. How a push
-lands is settled too. What is left is mostly per-control work: which
-destinations are refused, which wrap, and what happens when two routes
-land on one.
+lands is settled too, including what two routes on one destination do.
+What is left is mostly per-control work: which destinations are refused,
+which wrap, and which clock each route reads.
 
 **Then build in this order.** The editor comes last on purpose — its shape
 depends on what a route turns out to be.
 
 1. The destination table in the firmware: every modulatable parameter
    becomes a base plus a modulation sum, with a declared application rule
-   and unit, while the existing six destinations stay hardwired. Nothing
+   and unit and the sum capped at the whole distance, while the existing
+   six destinations stay hardwired. Nothing
    should change on the wall.
 2. The same in `tools/preview.js`, cross-checked function by function.
 3. The wave, both sides: the one-byte sweep in "The waves" above.
