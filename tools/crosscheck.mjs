@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CPP_SOURCES = ['brain/src/P_Generator.cpp', 'brain/src/routes.cpp',
                      'brain/src/Aurora.h', 'shared/aurora_protocol.h'];
-const JS_SOURCE = 'tools/preview.js';
+const JS_SOURCES = ['tools/preview.js', 'tools/cc.js'];
 
 // Loose, deliberately. The firmware computes in 32-bit floats and the preview
 // in 64-bit doubles, so the two track each other to about a part in ten
@@ -192,6 +192,16 @@ const CHECKS = [
   for (int v = 0; v < 128; v++) EMIT(aurora_pulse_period((uint8_t)v));`,
     jsDriver: `
   for (let v = 0; v < 128; v++) emit(pulsePeriod(v));`,
+  },
+  {
+    name: 'routeRatio',
+    cpp: ['AURORA_ROUTE_MAX_RATIO', 'aurora_route_ratio'],
+    js: ['ROUTE_MAX_RATIO', 'routeRatio'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT((float)aurora_route_ratio((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(routeRatio(v));`,
   },
   {
     name: 'ccUnit',
@@ -493,7 +503,7 @@ function main() {
   }
 
   const cppSources = CPP_SOURCES.map(p => [p, readFileSync(join(ROOT, p), 'utf8')]);
-  const jsSource = readFileSync(join(ROOT, JS_SOURCE), 'utf8');
+  const jsSource = JS_SOURCES.map(f => readFileSync(join(ROOT, f), 'utf8')).join('\n');
   const workDir = mkdtempSync(join(tmpdir(), 'aurora-crosscheck-'));
 
   let failed = 0;

@@ -90,6 +90,7 @@ static bool plainClock(uint8_t cc) {
     case CC_WASH_HUE_OFFSET:
     case CC_WASH_SATURATION:
     case CC_GEN_COUNT:
+    case CC_GEN_FAN:
     case CC_GEN_FAN_FREQ:
     case CC_GEN_FAN_PHASE:
     case CC_GEN_FAN_RANDOM:

@@ -67,9 +67,6 @@
   // flickers instead of shortening. See docs/bench-facts.md § "Frame timing".
   const GEN_PULSE_MIN_WIDTH = 0.06;
 
-  // Half the wheel each way, matching the placed field's reach.
-  const GEN_PULSE_MAX_HUE = 128;
-
   // How long the pulse takes to walk back onto the musical grid after its
   // rate has been moved, in its own cycles.
   const GEN_PULSE_ANCHOR_CYCLES = 2;
@@ -190,13 +187,6 @@
   const ccMap = (v, hi) => Math.floor(v * hi / 127);
   const ccCount = v => Math.min(GEN_MAX_COUNT, Math.max(1, Math.round(Math.pow(GEN_MAX_COUNT, v / 127))));
 
-  function send(amount, wave, unipolar) {
-    return {
-      amount: unipolar ? ccUnit(amount) : ccBipolar(amount),
-      wave: orElse(wave, GEN_WAVE_SWELL),
-    };
-  }
-
   const fanFrequency = v =>
     Math.round(v * GEN_FAN_FREQ_STEPS / 127)
       * (GEN_FAN_MAX_CYCLES_PER_STRIP / GEN_FAN_FREQ_STEPS);
@@ -210,91 +200,131 @@
   // phase of zero, which starts them at its bottom. That is the staircase.
   const GEN_FAN_FREQ_DEFAULT = 32;
 
-  function readParams(s) {
+  const A = global.AuroraCC;
+  const CC = A.CC;
+
+  // Mirrors brain/src/routes.cpp. A rate feeds a running total, so a push on
+  // one accumulates and the wall drifts instead of returning.
+  const ROUTE_REFUSED = new Set([CC.tempoDivision, CC.placedSpeed, CC.wanderRate,
+    CC.genSpeed, CC.genFanRate, CC.genPulseRate, CC.scatterRate]);
+  // 0 and 127 are the same place, so there is no limit to travel toward.
+  const ROUTE_CIRCULAR = new Set([CC.hue, CC.washHueOffset, CC.genPosition,
+    CC.genFanPhase]);
+  // The fan's own amounts spread the five strips, and count sets the cell
+  // geometry the strip loop is built on, so both are read before that loop
+  // opens. The washes have no strip to be offset from.
+  const ROUTE_PLAIN = new Set([CC.washLevel, CC.washHueOffset, CC.washSaturation,
+    CC.genCount, CC.genFan, CC.genFanPulse, CC.genFanFreq, CC.genFanPhase,
+    CC.genFanRandom]);
+
+  const routeByte = (s, r, field) => {
+    const v = s['route' + r + field];
+    return v === undefined ? (field === 'Amount' ? 64 : 0) : v;
+  };
+
+  function gatherRoutes(s, plainPhase, stripPhase) {
+    const push = {};
+    for (let r = 0; r < A.ROUTES; r++) {
+      const dest = routeByte(s, r, 'Destination');
+      if (dest === 0 || ROUTE_REFUSED.has(dest)) continue;
+      const amount = ccBipolar(routeByte(s, r, 'Amount'));
+      if (Math.abs(amount) < 0.001) continue;
+      const ratio = A.routeRatio(routeByte(s, r, 'Ratio'));
+      const wave = s['route' + r + 'Wave'];
+      const phase = ROUTE_PLAIN.has(dest) ? plainPhase : stripPhase;
+      push[dest] = (push[dest] || 0) + amount * pulseWave(phase * ratio, wave === undefined ? GEN_WAVE_SWELL : wave);
+    }
+    return push;
+  }
+
+  function routed(s, push, name, fallback) {
+    let base = s[name];
+    if (base === undefined) base = fallback;
+    const cc = CC[name];
+    let amount = (push && cc !== undefined && push[cc]) || 0;
+    if (base === undefined || Math.abs(amount) < 0.001) return base;
+
+    amount = Math.max(-1, Math.min(1, amount));
+    if (ROUTE_CIRCULAR.has(cc)) {
+      return ((Math.round(base + amount * 64) % 128) + 128) % 128;
+    }
+    const limit = amount >= 0 ? 127 : 0;
+    return Math.max(0, Math.min(127, Math.round(base + Math.abs(amount) * (limit - base))));
+  }
+
+  function readParams(s, push) {
+    const R = (name, fallback) => routed(s, push, name, fallback);
     return {
-      width: ccUnit(s.genWidth),
-      count: ccCount(s.genCount),
-      edge: ccUnit(s.genEdge),
-      tail: ccUnit(s.genTail),
-      positionCells: ccBipolar(s.genPosition) * 0.5,
-      speedPixels: stillBelowThreshold(ccSquared(s.genSpeed, GEN_MAX_SPEED_PIXELS_PER_BEAT)),
+      width: ccUnit(R('genWidth')),
+      count: ccCount(R('genCount')),
+      edge: ccUnit(R('genEdge')),
+      tail: ccUnit(R('genTail')),
+      positionCells: ccBipolar(R('genPosition')) * 0.5,
+      speedPixels: stillBelowThreshold(ccSquared(R('genSpeed'), GEN_MAX_SPEED_PIXELS_PER_BEAT)),
       // One wave across the five strips, with three amounts aiming it at three
       // places. Position and pulse are offsets into a cycle, so only the
       // spread between strips is visible and 100 % spreads them over exactly
       // one cell or one swell. Rate is an absolute speed added to Speed's, so
       // the strip the wave reads zero at travels at exactly what Speed says
       // and the others are measured from it.
-      fanFreq: fanFrequency(orElse(s.genFanFreq, GEN_FAN_FREQ_DEFAULT)),
-      fanPhase: or0(s.genFanPhase) / 128,
-      fanRandom: ccUnit(or0(s.genFanRandom)),
-      fanPosition: ccBipolar(s.genFan) * 0.5,
+      fanFreq: fanFrequency(R('genFanFreq', GEN_FAN_FREQ_DEFAULT)),
+      fanPhase: R('genFanPhase', 0) / 128,
+      fanRandom: ccUnit(R('genFanRandom', 0)),
+      fanPosition: ccBipolar(R('genFan')) * 0.5,
       // The same squared curve Speed runs on, so that mirroring one fader
       // about its center against the other cancels *exactly*: a still strip
       // at the wave's peak needs Speed to be the fan's opposite, and two
       // controls on different curves can only ever nearly cancel.
-      fanRate: ccSquared(orMid(s.genFanRate), GEN_MAX_SPEED_PIXELS_PER_BEAT),
-      fanPulse: ccBipolar(orMid(s.genFanPulse)) * 0.5,
-      pulseBeats: pulsePeriod(s.genPulseRate),
+      fanRate: ccSquared(R('genFanRate', 64), GEN_MAX_SPEED_PIXELS_PER_BEAT),
+      fanPulse: ccBipolar(R('genFanPulse', 64)) * 0.5,
+      pulseBeats: pulsePeriod(R('genPulseRate')),
 
-      // One oscillator with one rate reaching six places, each with its own
-      // amount and its own wave — which is what lets the washes breathe
-      // while the strips strobe. Brightness is the only unipolar amount:
-      // nothing sits above full light, so its only direction is down.
-      sends: {
-        light:    send(s.pulseDepth, s.pulseWave, true),
-        width:    send(s.pulseWidth, s.pulseWidthWave),
-        hue:      send(s.pulseHue, s.pulseHueWave),
-        parLevel: send(s.pulseParLevel, s.pulseParLevelWave),
-        parHue:   send(s.pulseParHue, s.pulseParHueWave),
-        parSat:   send(s.pulseParSat, s.pulseParSatWave),
-      },
-
-      alternate: isOn(s.genAlternate),
-      bounce: isOn(s.genBounce),
+      alternate: isOn(R('genAlternate')),
+      bounce: isOn(R('genBounce')),
 
 
-      litWhiteReach: ccUnit(s.litWhite),
-      litHueReach: ccBipolar(s.litHue) * LIT_MAX_HUE,
-      litDarkReach: ccBipolar(s.litDark),
+      litWhiteReach: ccUnit(R('litWhite')),
+      litHueReach: ccBipolar(R('litHue')) * LIT_MAX_HUE,
+      litDarkReach: ccBipolar(R('litDark')),
 
-      placedKind: isOn(s.colorRegion) ? KIND_REGION : KIND_GRADIENT,
-      placedRuler: Math.min(RULER_SHAPE, band3(s.colorRuler)),
-      placedHue: ccBipolar(s.placedHue) * PLACED_MAX_HUE,
-      placedWhite: ccBipolar(s.placedWhite),
-      placedDark: ccBipolar(s.placedDark),
-      placedCount: ccCount(s.placedCount),
-      placedWidth: ccUnit(s.placedWidth),
-      placedEdge: ccUnit(s.placedEdge),
-      placedSpeed: ccSquared(s.placedSpeed, PLACED_MAX_CELLS_PER_BEAT),
+      placedKind: isOn(R('colorRegion')) ? KIND_REGION : KIND_GRADIENT,
+      placedRuler: Math.min(RULER_SHAPE, band3(R('colorRuler'))),
+      placedHue: ccBipolar(R('placedHue')) * PLACED_MAX_HUE,
+      placedWhite: ccBipolar(R('placedWhite')),
+      placedDark: ccBipolar(R('placedDark')),
+      placedCount: ccCount(R('placedCount')),
+      placedWidth: ccUnit(R('placedWidth')),
+      placedEdge: ccUnit(R('placedEdge')),
+      placedSpeed: ccSquared(R('placedSpeed'), PLACED_MAX_CELLS_PER_BEAT),
 
-      wanderHue: ccBipolar(s.wanderHue) * WANDER_MAX_HUE,
-      wanderWhite: ccBipolar(s.wanderWhite),
-      wanderDark: ccBipolar(s.wanderDark),
-      wanderRate: ccUnit(s.wanderRate) ** 2 * WANDER_MAX_CYCLES_PER_BEAT,
-      wanderScale: ccUnit(s.wanderScale),
+      wanderHue: ccBipolar(R('wanderHue')) * WANDER_MAX_HUE,
+      wanderWhite: ccBipolar(R('wanderWhite')),
+      wanderDark: ccBipolar(R('wanderDark')),
+      wanderRate: ccUnit(R('wanderRate')) ** 2 * WANDER_MAX_CYCLES_PER_BEAT,
+      wanderScale: ccUnit(R('wanderScale')),
 
       // Defaulted rather than read straight, because a caller that predates
       // the scatter sends none of these: undefined through ccBipolar is NaN,
       // and one NaN reaching the color sum turns every hue on the wall into
       // nothing at all.
-      scatterRate: ccUnit(or0(s.scatterRate)) ** 2 * SCATTER_MAX_CYCLES_PER_BEAT,
-      scatterCount: ccCount(or0(s.scatterCount)),
-      scatterWidth: ccUnit(orMid(s.scatterWidth)),
-      scatterEdge: ccUnit(orMid(s.scatterEdge)),
-      scatterStagger: ccUnit(or0(s.scatterStagger)),
-      scatterDrift: ccBipolar(orMid(s.scatterDrift)),
-      scatterLightReach: ccBipolar(orMid(s.scatterLight)),
-      scatterHueReach: ccBipolar(orMid(s.scatterHue)) * SCATTER_MAX_HUE,
-      scatterWhiteReach: ccBipolar(orMid(s.scatterWhite)),
+      scatterRate: ccUnit(R('scatterRate', 0)) ** 2 * SCATTER_MAX_CYCLES_PER_BEAT,
+      scatterCount: ccCount(R('scatterCount', 0)),
+      scatterWidth: ccUnit(R('scatterWidth', 64)),
+      scatterEdge: ccUnit(R('scatterEdge', 64)),
+      scatterStagger: ccUnit(R('scatterStagger', 0)),
+      scatterDrift: ccBipolar(R('scatterDrift', 64)),
+      scatterLightReach: ccBipolar(R('scatterLight', 64)),
+      scatterHueReach: ccBipolar(R('scatterHue', 64)) * SCATTER_MAX_HUE,
+      scatterWhiteReach: ccBipolar(R('scatterWhite', 64)),
 
 
-      baseHue: ccMap(s.hue, 250),
-      baseSat: ccMap(s.saturation, 255),
-      baseVal: ccMap(s.value, 255),
+      baseHue: ccMap(R('hue'), 250),
+      baseSat: ccMap(R('saturation'), 255),
+      baseVal: ccMap(R('value'), 255),
 
-      washLevel: ccMap(s.washLevel, 255),
-      washHueOffset: ccMap(s.washHueOffset, 255),
-      washSaturation: ccMap(s.washSaturation, 255),
+      washLevel: ccMap(R('washLevel'), 255),
+      washHueOffset: ccMap(R('washHueOffset'), 255),
+      washSaturation: ccMap(R('washSaturation'), 255),
     };
   }
 
@@ -602,13 +632,6 @@
     return 0;
   }
 
-  // How hard a destination is being pushed right now: signed, and zero at the
-  // bottom of the swell so the dialed value is what the wall rests at.
-  function pulsePush(send, phase) {
-    if (Math.abs(send.amount) < 0.001) return 0;
-    return send.amount * pulseWave(phase, send.wave);
-  }
-
   // A push is a fraction of the way from the dialed value to one of its two
   // limits, and its sign picks which. Nothing can clip, and a control already
   // at a limit has nowhere to go that way — which is why brightness is the
@@ -740,17 +763,14 @@
     return { h: (base.h + Math.trunc(hue)) & 255, s: saturation, v: value };
   }
 
-  // `pulseHue` arrives already summed rather than as a fourth source: the
-  // pulse pushes the layer's output, one push after the three have added,
-  // which leaves the color layer's own design alone.
-  function colorAt(p, base, stripIndex, pixelIndex, placed, profile, wanderT, pulseHue,
+  function colorAt(p, base, stripIndex, pixelIndex, placed, profile, wanderT,
                    scatter) {
     const along01 = PIXELS > 1 ? pixelIndex / (PIXELS - 1) : 0.5;
 
     const wander = wanderAt(p, along01, stripIndex, wanderT);
 
     const hue = placed * p.placedHue + wander * p.wanderHue + profile * p.litHueReach
-              + scatter * p.scatterHueReach + pulseHue;
+              + scatter * p.scatterHueReach;
     const white = placed * p.placedWhite + wander * p.wanderWhite + profile * p.litWhiteReach
               + scatter * p.scatterWhiteReach;
     const dark = placed * p.placedDark + wander * p.wanderDark + profile * p.litDarkReach;
@@ -773,10 +793,13 @@
   }
 
   function renderInto(s, beats) {
-    const p = readParams(s);
+    // Read twice: once with no pushes, which is what the clock's own rate
+    // needs since a rate is a destination routes refuse, then again on the
+    // plain reading of the clock for everything the strip loop is built on.
+    const p = readParams(s, null);
     wall.fill(0);
 
-    const base = { h: p.baseHue, s: p.baseSat, v: p.baseVal };
+
     const cellLength = PIXELS / p.count;
     const countCells = p.count;
 
@@ -804,6 +827,13 @@
     M.lastTravelBeats = beats;
 
     const pulse = anchoredPulsePhase(beats, 1 / p.pulseBeats);
+
+    // The washes read the dialed base colour, not the pushed one: a push
+    // reaches one fixture family, and CC 38-40 are the strips'. Their own
+    // three do take their routes, which the plain pass below applies.
+    const parBase = { h: p.baseHue, s: p.baseSat, v: p.baseVal };
+    Object.assign(p, readParams(s, gatherRoutes(s, pulse, pulse)));
+    p.parBase = parBase;
     p.pulse = pulse;
 
     p.placedActive = Math.abs(p.placedHue) > 0.5
@@ -840,6 +870,11 @@
       // position with no strip to be offset from.
       const stripPulse = pulse + p.fanPulse * wave;
 
+      // Now this strip's own reading, so a push rolls across the wall instead
+      // of landing on all five at once.
+      Object.assign(p, readParams(s, gatherRoutes(s, pulse, stripPulse)));
+      const base = { h: p.baseHue, s: p.baseSat, v: p.baseVal };
+
       // A switch belongs to the patch, so the one moment it moves is an
       // arrival the performer caused and is watching — see DESIGN.md
       // § "Switches belong to the patch". That is the moment a jump would be
@@ -870,14 +905,12 @@
       // Nothing sits above full light, so brightness is the one destination
       // with no sign: its amount is how far the trough digs below what the
       // shape branch already lit.
-      const swell = 1 - p.sends.light.amount
-        * (1 - pulseWave(stripPulse, p.sends.light.wave));
+
 
       // A shape is anchored by its center, so growing it is a breath outward
       // rather than a wipe in from one end — which is what put this
       // destination out of reach the first time it was tried.
-      const width = pushToward(p.width, pulsePush(p.sends.width, stripPulse), 0, 1);
-      const pulseHue = pulsePush(p.sends.hue, stripPulse) * GEN_PULSE_MAX_HUE;
+      const width = p.width;
 
       // The two sides of a shape are not the same length — a tail reaches far
       // further than an edge fade — so they are normalized separately.
@@ -973,14 +1006,14 @@
         // anywhere. It therefore has to be applied before an unlit pixel is
         // culled, or the one place a spot has the furthest to travel is the
         // one place it could never appear.
-        let brightness = profile * swell;
+        let brightness = profile;
         if (p.scatterActive) {
           brightness = pushToward(brightness, scatter * p.scatterLightReach, 0, 1);
         }
         if (brightness <= 0.002) continue;
 
         const tint = colorAt(p, base, stripIndex, pixelIndex,
-                              placedAccumulated / SUBSAMPLES, profile, wanderT, pulseHue,
+                              placedAccumulated / SUBSAMPLES, profile, wanderT,
                               scatter);
 
         const rgb = hsv2rgb(tint.h & 255, clamp8(tint.s), 255);
@@ -1025,17 +1058,11 @@
   // is absent otherwise, which is the same thing the firmware does by
   // clearing the push it was handed every frame.
   function parColor(p) {
-    const phase = p.pulse;
-    const push = key => (phase === undefined ? 0 : pulsePush(p.sends[key], phase));
-
-    const master = pushToward(p.washLevel, push('parLevel'), 0, 255);
-    const level = scale8(p.baseVal, clamp8(master));
-    const hue = (p.baseHue + p.washHueOffset
-                 + Math.trunc(push('parHue') * GEN_PULSE_MAX_HUE)) & 255;
-    // A scale down from the strips' saturation rather than a setting of its
-    // own, and it is where the pulse's push measures from.
-    const saturation = clamp8(
-      pushToward(scale8(p.baseSat, p.washSaturation), push('parSat'), 0, 255));
+    const b = p.parBase || { h: p.baseHue, s: p.baseSat, v: p.baseVal };
+    const level = scale8(b.v, clamp8(p.washLevel));
+    const hue = (b.h + p.washHueOffset) & 255;
+    // A scale down from the strips' saturation rather than a setting of its own.
+    const saturation = clamp8(scale8(b.s, p.washSaturation));
 
     const rgb = hsv2rgb(hue, saturation, 255);
     return [scale8v(rgb[0], level), scale8v(rgb[1], level), scale8v(rgb[2], level)];

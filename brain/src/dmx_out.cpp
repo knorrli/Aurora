@@ -1,7 +1,7 @@
 #include "dmx_out.h"
 
 #include "Aurora.h"
-#include "destinations.h"
+#include "routes.h"
 #include <TeensyDMX.h>
 
 namespace teensydmx = ::qindesign::teensydmx;
@@ -53,11 +53,13 @@ void begin() {
 }
 
 void tick() {
-    const uint8_t washLevel = map(destinations::value(CC_WASH_LEVEL), 0, 127, 0, 255);
+    // The washes' own three take their routes; presetColor below does not,
+    // because a push reaches one fixture family and CC 38-40 are the strips'.
+    const uint8_t washLevel = map(routes::value(CC_WASH_LEVEL), 0, 127, 0, 255);
     const uint8_t washHueOffset =
-        map(destinations::value(CC_WASH_HUE_OFFSET), 0, 127, 0, 255);
+        map(routes::value(CC_WASH_HUE_OFFSET), 0, 127, 0, 255);
     const uint8_t washSaturation =
-        map(destinations::value(CC_WASH_SATURATION), 0, 127, 0, 255);
+        map(routes::value(CC_WASH_SATURATION), 0, 127, 0, 255);
 
     // Color is converted at full value and brightness is carried by the
     // fixture's own dimmer, so the emitters stay near full scale where
