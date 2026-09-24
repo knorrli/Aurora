@@ -187,6 +187,13 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // ---------------------------------------------------------------------------
 
 enum AuroraCC : uint8_t {
+    // Two tags beyond [patch] and [switch] say what a modulation route may do
+    // with a control. [rate] feeds a running total, so a route aimed at one
+    // would move the wall permanently instead of returning it — routes refuse
+    // them. [circular] has no top or bottom, hue being the plain case, so a
+    // push is a rotation rather than a fraction of the distance to a limit.
+    // See docs/modulation.md.
+
     // Excluded, never to be assigned: 0, 1, 7, 10, 11, 32, 120–127. Not for
     // being named in the MIDI spec — CC 64, 74, 91 and 38 are named there
     // and are in use below — but because something else on the chain sends
@@ -275,8 +282,9 @@ enum AuroraCC : uint8_t {
                                  // overrides it and darkens them: numpad 0 is
                                  // an emergency stop, and one key has to kill
                                  // the rig on its own.
-    CC_WASH_HUE_OFFSET     = 34, // [patch] rotates the washes off the strips'
-                                 // hue, so they can sit complementary or
+    CC_WASH_HUE_OFFSET     = 34, // [patch][circular] rotates the washes off
+                                 // the strips' hue, so they can sit
+                                 // complementary or
                                  // merely adjacent instead of matching. 0
                                  // matches; 64 of 127 is the opposite side of
                                  // the wheel.
@@ -295,7 +303,7 @@ enum AuroraCC : uint8_t {
     // and the lit reach are all departures measured from these three, and the
     // pushes add — so with every one of them centered the wall is exactly the
     // color here.
-    CC_HUE                 = 38, // [patch] hue center
+    CC_HUE                 = 38, // [patch][circular] hue center
     CC_SATURATION          = 39, // [patch]
     CC_VALUE               = 40, // [patch] brightness
 
@@ -322,13 +330,13 @@ enum AuroraCC : uint8_t {
     CC_PLACED_COUNT        = 46, // [patch] regions along the ruler, 1–20
     CC_PLACED_WIDTH        = 47, // [patch]
     CC_PLACED_EDGE         = 48, // [patch] hard through to a fade
-    CC_PLACED_SPEED        = 49, // [patch] bipolar: the field drifting along
-                                 // its own ruler
+    CC_PLACED_SPEED        = 49, // [patch][rate] bipolar: the field drifting
+                                 // along its own ruler
     CC_WANDER_HUE          = 50, // [patch] bipolar: how far the hue wanders
     CC_WANDER_WHITE        = 51, // [patch] bipolar
     CC_WANDER_DARK         = 52, // [patch] bipolar
-    CC_WANDER_RATE         = 53, // [patch] 0 = frozen, up to two beats per
-                                 // cycle
+    CC_WANDER_RATE         = 53, // [patch][rate] 0 = frozen, up to two beats
+                                 // per cycle
     CC_WANDER_SCALE        = 54, // [patch] 0 = the whole wall moving as one,
                                  // up to a fine grain
     // Anchored at the dim end: the faders are what a fade runs out to, and
@@ -358,10 +366,10 @@ enum AuroraCC : uint8_t {
     // same place on the wall, so interpolating from one toward the other
     // slides the shape the long way across the cell rather than across the
     // seam.
-    CC_GEN_POSITION        = 66, // [patch] where a still pattern stands in
-                                 // its cell
-    CC_GEN_SPEED           = 67, // [patch] bipolar: 64 is still, either side
-                                 // travels
+    CC_GEN_POSITION        = 66, // [patch][circular] where a still pattern
+                                 // stands in its cell
+    CC_GEN_SPEED           = 67, // [patch][rate] bipolar: 64 is still, either
+                                 // side travels
 
     // 68–73 — the fan, whole and in one place. One wave runs across the five
     // strips; each amount decides how far it pushes one quantity, so a wall
@@ -380,8 +388,8 @@ enum AuroraCC : uint8_t {
     // it every strip reads zero and the fan goes quiet.
     CC_GEN_FAN_FREQ        = 68, // [patch] 0 = all five alike, up to two
                                  // turns across the wall
-    CC_GEN_FAN_PHASE       = 69, // [patch] where the wave sits on the strips:
-                                 // a staircase through a chevron
+    CC_GEN_FAN_PHASE       = 69, // [patch][circular] where the wave sits on
+                                 // the strips: a staircase through a chevron
     CC_GEN_FAN_RANDOM      = 70, // [patch] 0 = the wave, 127 = a fixed draw
                                  // per strip
     // The three amounts. Bipolar, and 100 % spreads the five strips over
@@ -392,8 +400,8 @@ enum AuroraCC : uint8_t {
     // still while the rest run.
     CC_GEN_FAN             = 71, // [patch] how far apart the five strips
                                  // stand in their cells
-    CC_GEN_FAN_RATE        = 72, // [patch] how far apart their speeds stand,
-                                 // either side of Speed
+    CC_GEN_FAN_RATE        = 72, // [patch][rate] how far apart their speeds
+                                 // stand, either side of Speed
     CC_GEN_FAN_PULSE       = 73, // [patch] how far apart they stand in the
                                  // swell. The washes take the unfanned phase
                                  // whatever this says: a PAR is one position
@@ -408,7 +416,7 @@ enum AuroraCC : uint8_t {
     // design around them surviving. CC 75 stays: it becomes the one clock.
     CC_GEN_PULSE_DEPTH     = 74, // [patch] how far the trough digs below full
                                  // light
-    CC_GEN_PULSE_RATE      = 75, // [patch] beats per swell; stepped, see
+    CC_GEN_PULSE_RATE      = 75, // [patch][rate] beats per swell; stepped, see
                                  // AURORA_PULSE_PERIODS
     CC_GEN_PULSE_SKEW      = 76, // [patch] bipolar: 64 is an even rise and
                                  // fall, either side slides the peak toward
@@ -422,7 +430,7 @@ enum AuroraCC : uint8_t {
     // regular in time and has no place on the wall, the wander is smooth over
     // both, the scatter is random over both. Six controls shape it and three
     // amounts aim it. See docs/generator.md § "The scatter".
-    CC_SCATTER_RATE        = 83, // [patch] how often a cell relights
+    CC_SCATTER_RATE        = 83, // [patch][rate] how often a cell relights
     CC_SCATTER_COUNT       = 84, // [patch] cells along a strip, 1–20; the
                                  // scatter's own grid, not the shape's
     // Width is the spot's core on both axes at once — how much of its cell it

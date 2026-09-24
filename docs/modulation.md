@@ -69,6 +69,10 @@ destination add their pushes and move it once, capped at the limit. A push
 reaches one fixture family: the strips' three colour controls are CC 38–40
 and the PARs' are CC 33–35. See "How a push lands".
 
+**Which destinations a route may aim at is marked on the enum** — `[rate]`
+is refused, `[circular]` takes a rotation, everything else takes the
+ordinary push. See "Which destinations a route may aim at".
+
 **Which clock a route reads is decided by its destination**, not by the
 route — a destination on a strip reads that strip's fanned reading, a
 global one reads the plain clock. See "Which clock a route reads".
@@ -430,17 +434,63 @@ say is "the wander pushes width here". Whether alignment reads as the
 editor helping or as the editor moving things behind their back is a
 question for the editor work, which the build order already puts last.
 
-## Rates as destinations
+## Which destinations a route may aim at
 
-Every rate feeds a running total through a `PhaseTracker`, so a push on a
-rate integrates and the wall drifts permanently instead of returning. The
-argument that a bipolar push averages to zero over a cycle holds **only
-while skew is centered** — skew slides the peak, which makes the average
-non-zero, which makes a modulated rate drift for ever.
+Forty-three controls carry `[patch]` once the pulse's block retires, and
+they divide four ways. The marks live on the enum in
+`shared/aurora_protocol.h` beside the numbers they describe, not in a
+table here, so the two cannot drift apart.
 
-So a route aimed at a rate is a different mechanism from one aimed at a
-level, and rates are off-limits as destinations until that is designed
-rather than assumed.
+**Refused: the five rates**, tagged `[rate]`. CC 49 the placed field's
+speed, 53 the wander's rate, 67 the pattern's speed, 72 the fan's rate
+spread, 83 the scatter's rate. Each feeds a `trackedPhase`, so a push
+accumulates and the wall drifts instead of returning.
+
+It is the wave that settles this, not skew. The wave rests at zero and
+peaks at one, so it is one-signed and its integral over a cycle is never
+zero at any setting. Returning would need equal area either side of zero,
+and this wave cannot make it. Drift is correctable in principle —
+`reanchorTravel` and `anchoredPulsePhase` both walk a phase back onto the
+grid — but a correction running continuously against a modulated rate is a
+servo, not a modulation.
+
+**The known exception, left out deliberately.** CC 53 has no grid to fall
+off: the wander is two sine terms at the golden ratio, built never to come
+back into step, so drift there is invisible. It stays refused for v1
+because it is the least interesting of the five to modulate, and admitting
+it later is one row.
+
+**And easing is not this.** Slow at the ends and fast through the middle
+looks like a route on speed and is not one — the travel period is not a
+number anyone dials, so any rate set against it slides. Settled in
+`docs/generator.md` § "Travel easing is a curve, not a modulation route",
+and a build item in `TODO.md`.
+
+**Refused: CC 2.** Tempo division is an index into six note values, not a
+level, so there is no halfway to travel through.
+
+**Circular**, tagged `[circular]`: CC 34 the wash hue offset, 38 hue, 66
+the pattern's standing position, 69 the fan's phase. Each wraps, so a push
+is a rotation. The hue *amounts* — 43, 50, 55, 90 — are not circular:
+they are bipolar reaches whose two ends are opposite extremes.
+
+**Stepped, and allowed**: CC 46 and 84 the region and cell counts, 63 the
+shape count, 68 the fan's frequency in eighths. A modulated count steps on
+the beat, which is a look worth having, and refusing them would buy a
+special case and nothing else. Whether a count change reads as a pulse or
+as the pattern jumping is a wall question, not one to settle here.
+
+**Everything else takes the ordinary push**: 33, 35, 39, 40, 43, 44, 45,
+47, 48, 50, 51, 52, 54, 55, 56, 57, 62, 64, 65, 70, 71, 73, 85, 86, 87,
+88, 89, 90, 91. CC 88 belongs here despite its name — the scatter's drift
+is a position offset taken from a cell's age (`P_Generator.cpp:670`), not
+an integrated speed.
+
+**Four of those read the plain clock** although they live on a strip: 68,
+69, 70 and 73. They shape the fan, and the fan is what shifts each strip's
+reading of the clock, so a route aimed at one while reading the fanned
+clock would need its own phase in order to compute what sets its own
+phase. You cannot sample the fan to modulate the fan.
 
 ## The waves
 
@@ -519,12 +569,7 @@ a route five and drop the ceiling to ten.
 
 ## Still open
 
-1. **Which destinations are refused**, and whether the quantized ones —
-   the fan's frequency in eighths, count as geometric whole numbers, the
-   3-way ruler — are refused or allowed with the stepping treated as an
-   effect. The same pass tags which controls are circular, and settles the
-   rotation span each one takes.
-2. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
+1. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
    computes one colour and one level and writes the same eight bytes to
    all four addresses; the only per-fixture data is calibration trim. So
    the PARs cannot strobe one after the other, and no route design changes
@@ -545,14 +590,15 @@ block in `shared/aurora_protocol.h`; then the pulse machinery in
 `tools/preview.js`; then `docs/editor.md` for the panel model the new
 one has to fit into.
 
-**Answer the first question before building anything** — the second is
+**Nothing here blocks building any more.** The one item left open is
 output-layer work that routes neither need nor fix. The wave
 is settled and fixes a route at four bytes, which settled the count at
 eight and took the pressure off the fifteen soldered amounts. How a push
 lands is settled too, including what two routes on one destination do and
-which clock each one reads. What morphing does to a route is settled too, and so is the order the
-change lands in. All that is left is per-control work: which destinations
-are refused, and which of them wrap.
+which clock each one reads. What morphing does to a route is settled too, the order the change lands
+in, and which destinations a route may aim at. The rotation span a
+circular destination takes is the one detail still to pick, and it is a
+number to try on the wall rather than a question to argue.
 
 **Then build in this order.** The editor comes last on purpose — its shape
 depends on what a route turns out to be.
