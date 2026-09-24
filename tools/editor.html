@@ -174,7 +174,6 @@
   .row > label .cc { display: block; }
   .row.changed { border-left-color: var(--accent); }
   .row.inert { opacity: .38; }
-  .row .reached { color: var(--pulse); font-size: 10px; display: block; }
 
   .track { position: relative; display: flex; align-items: center; height: 20px; }
   .track input[type=range] { width: 100%; margin: 0; }
@@ -206,8 +205,12 @@
   .routesbtn.aimed { color: var(--pulse); border-color: var(--pulse); }
   .routesbtn.open { color: var(--bg); background: var(--pulse); border-color: var(--pulse); }
 
+  .row > output, .audition .readout, .showing { font-variant-numeric: tabular-nums; }
   .row > output { text-align: right; line-height: 1.25; }
   .row > output .cc { display: block; }
+  .row > output { display: grid; }
+  .row > output > .now, .row > output > .room { grid-area: 1 / 1; }
+  .row > output > .room { visibility: hidden; }
 
   .picks { display: flex; gap: 5px; flex-wrap: wrap; }
   .picks button { padding: 3px 8px; font-size: 11px; }
@@ -251,24 +254,6 @@
   .destwave { width: 100%; height: 46px; display: block; margin-top: 8px; }
   .routefoot { display: flex; justify-content: space-between; align-items: center; }
   .routepanel .note { margin: 8px 0 0; }
-
-  /* ---- the matrix -------------------------------------------------------- */
-
-  .matrixwrap { overflow-x: auto; }
-  table.matrix { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-  table.matrix th, table.matrix td {
-    padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line);
-    white-space: nowrap;
-  }
-  table.matrix thead th { color: var(--faint); font-weight: normal; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-  table.matrix tbody th { color: var(--dim); font-weight: normal; }
-  table.matrix td { color: var(--faint); }
-  table.matrix td.live { color: var(--text); cursor: pointer; }
-  table.matrix td.live:hover { color: var(--accent); }
-  table.matrix tr.quiet th, table.matrix tr.quiet td { opacity: .45; }
-
-  @keyframes flash { from { background: #3a3323; } to { background: transparent; } }
-  .row.flash { animation: flash 1.1s ease-out; }
 
   /* ---- outputs ----------------------------------------------------------- */
 
@@ -420,12 +405,6 @@
     <section class="panel lane" data-lane="color" id="laneColor"></section>
 
     <div class="mods" id="mods"></div>
-
-    <section class="panel">
-      <h2>What reaches what</h2>
-      <div class="matrixwrap"><table class="matrix" id="matrix"></table></div>
-      <p class="note">The amounts live at the source, which is the one arrangement that works when most destinations are not controls &mdash; how lit a pixel is, what color it is. What that costs is the view from the target&rsquo;s end, and this is it. Click a number to go to the control that sets it.</p>
-    </section>
 
     <section class="panel outs">
       <h2>Outputs</h2>

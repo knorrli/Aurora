@@ -43,17 +43,11 @@ amounts on the right — whatever each one reaches:
 **The outputs** are the five strips and the four PARs, and the PARs are the only
 one with controls of its own because they are a relationship to the strips.
 
-Two things fall out of drawing it this way, and both were open questions before.
-
-The placed field's primitive and ruler stop looking like they govern the whole
+Drawing it this way also settled an open question. The placed field's
+primitive and ruler stop looking like they govern the whole
 color lane, because they are inside its card and nothing else is. That was
 `TODO.md` § "The color panel does not say what its switches govern", and the
 grouping was the whole of it — no control moved, and none was added.
-
-And the amounts being at the source stops costing the view from the target's
-end, because the page carries that view separately: **What reaches what** is the
-same matrix with destinations down the side and sources across the top, showing
-only what is actually pushing. Click a number and it goes to the control.
 
 ## A far end is an override, not a copy
 
@@ -217,6 +211,13 @@ a DAW's automation lane does not, and the page says so when you do it.
 the rig has no texture a patch can ask for. That is deliberate — jitter cannot
 be aimed anywhere and its grain can only ever be one pixel wide, so keeping a
 control for it would mean building patches around something already replaced.
+
+**The view from the target's end is gone**, as of 2026-09-24: a note under
+each routable label naming what pushed it, and a table, "What reaches what",
+of every modulator against brightness, hue, whiteness and darkness. The band
+and the lit **~** carry the routes, and the table was never looked at. If
+"what is making the wall whiter" turns out to need an answer the cards do not
+give, the table is in the history and comes back.
 
 ## Not built
 

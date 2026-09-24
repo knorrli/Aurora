@@ -89,38 +89,21 @@
   const pct = v => (v / 127 * 100).toFixed(0) + '%';
   const percent = r => (r * 100).toFixed(0) + '%';
   const ofByte = r => percent(r / 255);
-  const signedReach = (r, up, down) =>
-    Math.abs(r) < 0.01 ? 'not reached' : percent(Math.abs(r)) + ' ' + (r > 0 ? up : down);
-  const lightLeft = r => (100 * V().lightLeft(r)).toFixed(1) + '%';
+  const sign = r => (r < 0 ? '−' : '+');
+  const signed = r => sign(r) + percent(Math.abs(r));
+  const signedInt = r => sign(r) + Math.abs(r);
+  const beatsPer = rate => (Math.abs(rate) < 0.004 ? '∞' : (1 / Math.abs(rate)).toFixed(1));
 
   function fanTurns(v) {
-    const perStrip = real('genFanFreq', v);
-    if (perStrip === 0) return 'all five alike';
-    // Half a cycle a strip stands every strip opposite its neighbors.
-    if (perStrip === 0.5) return 'every strip opposite its neighbors';
-    const turns = (perStrip * (V().STRIPS - 1)).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
-    return turns + (turns === '1' ? ' turn' : ' turns') + ' across the wall';
+    const turns = real('genFanFreq', v) * (V().STRIPS - 1);
+    return turns.toFixed(2) + ' turns across the wall';
   }
 
   // Both ends of a fan amount are the same wall with the wave turned over,
   // so these say how far apart the strips stand and not which way.
-  const fanAmount = (name, what) => v => {
-    const r = Math.abs(real(name, v)) * 2;
-    return r < 0.01 ? 'every strip together' : percent(r) + ' ' + what;
-  };
-  const hueReach = (name, zero, suffix) => v => {
-    const r = Math.round(real(name, v));
-    return r === 0 ? zero : (r > 0 ? '+' : '') + r + suffix;
-  };
-  const darkReach = (name, zero, core) => v => {
-    const r = real(name, v);
-    if (Math.abs(r) < 0.01) return zero;
-    return r < 0 ? core + 'down to ' + lightLeft(r) : core + percent(r) + ' toward full';
-  };
-  const swing = name => v => {
-    const r = Math.abs(real(name, v));
-    return r < 0.01 ? 'off' : '\u00b1' + percent(r);
-  };
+  const fanAmount = (name, what) => v => percent(Math.abs(real(name, v)) * 2) + ' ' + what;
+  const hueReach = (name, suffix) => v => signedInt(Math.round(real(name, v))) + suffix;
+  const swing = name => v => '±' + percent(Math.abs(real(name, v)));
 
   const PULSE_PERIODS = A.PULSE_PERIODS;
   const PERIOD_NAMES = {
@@ -139,6 +122,8 @@
     [3, 'eighth'], [4, 'eighth triplet'], [5, 'sixteenth'],
   ];
 
+  // One pattern per control, with only the number moving: a readout that
+  // changes shape as the fader moves reflows the rows below it.
   const DERIVED = {
     tempoDivision: v => (DIVISIONS.find(d => d[0] === v) || [0, 'quarter'])[1],
 
@@ -146,89 +131,66 @@
     genEdge: v => percent(real('genEdge', v)) + ' into the gap',
     genTail: v => percent(real('genTail', v)) + ' of the gap',
     genCount: v => real('genCount', v) + ' shapes',
-    genPosition: v => { const cells = real('genPosition', v);
-                        return Math.abs(cells) < 0.01 ? 'center of the cell'
-                             : percent(cells) + ' of a cell off center'; },
+    genPosition: v => signed(real('genPosition', v)) + ' of a cell off center',
     genSpeed: v => { const s = real('genSpeed', v);
-                     return s === 0 ? 'still' : s.toFixed(1) + ' px/beat'; },
+                     return sign(s) + Math.abs(s).toFixed(1) + ' px/beat'; },
     genFan: fanAmount('genFan', 'of a cell apart'),
     genFanPulse: fanAmount('genFanPulse', 'of a swell apart'),
-    genFanRate: v => { const r = Math.abs(real('genFanRate', v));
-                       return r < 0.05 ? 'every strip at Speed'
-                            : '\u00b1' + r.toFixed(1) + ' px/beat either side of Speed'; },
+    genFanRate: v => '±' + Math.abs(real('genFanRate', v)).toFixed(1)
+                     + ' px/beat either side of Speed',
     genFanFreq: fanTurns,
     genFanPhase: v => percent(real('genFanPhase', v)) + ' of a turn',
-    genFanRandom: v => v === 0 ? 'the wave' : v > 125 ? 'a fixed draw per strip'
-                    : percent(real('genFanRandom', v)) + ' scrambled',
+    genFanRandom: v => percent(real('genFanRandom', v)) + ' scrambled',
 
     hue: v => real('hue', v) + '/255',
     saturation: v => ofByte(real('saturation', v)),
     value: v => ofByte(real('value', v)),
 
-    genPulseRate: v => PERIOD_NAMES[real('genPulseRate', v)],
-    routeAmount: v => Math.abs(bip(v)) < 0.01 ? 'nothing'
-                    : signedReach(bip(v), 'toward the top', 'toward the bottom'),
-    routeRatio: v => '\u00d7' + A.routeRatio(v) + ' the clock',
-    // One axis from a build to a stab, with the named shapes on values a
-    // fader lands on exactly. See docs/modulation.md § "The fork, settled".
-    routeWave: v => v === 0 ? 'builds, drops on the bar'
-                  : v === 32 ? 'swell'
-                  : v === 64 ? 'snaps, decays across the bar'
-                  : v === 96 ? 'hard half-bar'
-                  : v === 127 ? 'stab'
-                  : v < 32 ? 'builds, ' + pct(v * 4) + ' decay'
+    genPulseRate: v => PERIOD_NAMES[real('genPulseRate', v)].split(' · ')[0],
+    routeAmount: v => signed(bip(v)),
+    routeRatio: v => '×' + A.routeRatio(v) + ' the clock',
+    // One axis from a build to a stab; the named shapes are notched on the
+    // track. See docs/modulation.md § "The fork, settled".
+    routeWave: v => v < 32 ? 'builds, ' + pct(v * 4) + ' decay'
                   : v < 64 ? 'swell, ' + pct((v - 32) * 4) + ' toward a snap'
                   : v < 96 ? 'snaps, ' + pct((v - 64) * 4) + ' toward square'
                   : 'hard, ' + pct((v - 96) * 4) + ' shorter',
 
-    scatterRate: v => { const r = real('scatterRate', v);
-                        return r < 0.01 ? 'frozen'
-                             : r >= 1 ? r.toFixed(1) + ' a beat'
-                             : 'every ' + (1 / r).toFixed(1) + ' beats'; },
+    scatterRate: v => 'every ' + beatsPer(real('scatterRate', v)) + ' beats',
     scatterCount: v => { const n = real('scatterCount', v);
                          return n + ' cells · ' + (V().PIXELS / n).toFixed(1) + ' px each'; },
     scatterWidth: v => percent(real('scatterWidth', v)) + ' of its cell and its cycle',
-    scatterEdge: v => v < 6 ? 'hard' : percent(real('scatterEdge', v)) + ' soft',
-    scatterStagger: v => v === 0 ? 'every cell on one clock'
-                       : percent(real('scatterStagger', v)) + ' apart',
-    scatterDrift: v => { const r = real('scatterDrift', v);
-                         return Math.abs(r) < 0.01 ? 'stands still'
-                              : percent(Math.abs(r)) + ' of its cell, '
-                                + (r > 0 ? 'up the strip' : 'down the strip'); },
-    scatterLight: v => signedReach(real('scatterLight', v), 'toward full', 'toward dark'),
-    scatterHue: hueReach('scatterHue', 'not reached', ' of 255 at the peak'),
-    scatterWhite: v => signedReach(real('scatterWhite', v), 'toward white', 'toward a pure hue'),
+    scatterEdge: v => percent(real('scatterEdge', v)) + ' soft',
+    scatterStagger: v => percent(real('scatterStagger', v)) + ' apart',
+    scatterDrift: v => signed(real('scatterDrift', v)) + ' of its cell',
+    scatterLight: v => signed(real('scatterLight', v)),
+    scatterHue: hueReach('scatterHue', ' of 255 at the peak'),
+    scatterWhite: v => signed(real('scatterWhite', v)),
 
-    placedHue: hueReach('placedHue', 'flat', ' of 255 at one end'),
-    placedWhite: v => signedReach(real('placedWhite', v), 'to white', 'to pure'),
-    placedDark: darkReach('placedDark', 'flat', ''),
+    placedHue: hueReach('placedHue', ' of 255 at one end'),
+    placedWhite: v => signed(real('placedWhite', v)),
+    placedDark: v => signed(real('placedDark', v)),
     placedCount: v => real('placedCount', v) + ' regions',
     placedWidth: v => percent(real('placedWidth', v)) + ' of a cell',
-    placedEdge: v => v < 6 ? 'hard' : percent(real('placedEdge', v)) + ' soft',
+    placedEdge: v => percent(real('placedEdge', v)) + ' soft',
     placedSpeed: v => { const r = real('placedSpeed', v);
-                        return Math.abs(r) < 0.002 ? 'still'
-                             : (1 / Math.abs(r)).toFixed(1) + ' beats per cell'
-                               + (r < 0 ? ' back' : ''); },
+                        return sign(r) + beatsPer(r) + ' beats per cell'; },
 
-    wanderHue: v => { const r = Math.round(real('wanderHue', v));
-                      return r === 0 ? 'off' : '\u00b1' + Math.abs(r) + ' of 255'; },
+    wanderHue: v => '±' + Math.abs(Math.round(real('wanderHue', v))) + ' of 255',
     wanderWhite: swing('wanderWhite'),
     wanderDark: swing('wanderDark'),
     wanderRate: v => { const r = real('wanderRate', v);
-                       return r < 0.004 ? 'frozen' : (1 / r).toFixed(0) + ' beats per cycle'; },
+                       return (r < 0.004 ? '∞' : (1 / r).toFixed(0)) + ' beats per cycle'; },
     wanderScale: v => { const c = real('wanderScale', v);
-                        return c < 0.35 ? 'the whole wall as one'
-                             : (V().PIXELS / c).toFixed(0) + ' px across'; },
+                        return (c <= 0 ? '∞' : (V().PIXELS / c).toFixed(0)) + ' px across'; },
 
-    litHue: hueReach('litHue', 'off', ' at the core'),
-    litWhite: v => v === 0 ? 'off' : percent(real('litWhite', v)) + ' white at the core',
-    litDark: darkReach('litDark', 'off', 'core '),
+    litHue: hueReach('litHue', ' at the core'),
+    litWhite: v => percent(real('litWhite', v)) + ' white at the core',
+    litDark: v => signed(real('litDark', v)) + ' at the core',
 
     washLevel: v => ofByte(real('washLevel', v)),
-    washHueOffset: v => v === 0 ? 'matches the strips'
-                      : '+' + real('washHueOffset', v) + ' of 255',
-    washSaturation: v => v === 127 ? 'matches the strips' : v === 0 ? 'white'
-                       : ofByte(real('washSaturation', v)) + ' of theirs',
+    washHueOffset: v => '+' + real('washHueOffset', v) + ' of 255',
+    washSaturation: v => ofByte(real('washSaturation', v)) + ' of theirs',
   };
 
   // Every route reads its fields the same way.
@@ -385,7 +347,7 @@
 
   for (const route of ROUTES) {
     define([
-      C(route.amount, 'Amount', 'how far, as a share of the distance left'),
+      C(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom'),
       C(route.ratio, 'Ratio', 'whole multiples of the clock'),
       C(route.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
     ]);
@@ -418,12 +380,12 @@
         C('scatterWidth', 'Width', 'the spot\u2019s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
         C('scatterEdge', 'Edge', 'hard through to a fade \u2014 in space and in time alike'),
         C('scatterStagger', 'Stagger', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
-        C('scatterDrift', 'Drift', 'how far, and which way, a spot slides across its own cell over its life'),
+        C('scatterDrift', 'Drift', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),
       ]),
       amounts: define([
-        C('scatterLight', 'Brightness', 'toward full light, or toward dark'),
+        C('scatterLight', 'Brightness', 'plus is toward full light, minus toward dark'),
         C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
-        C('scatterWhite', 'To white', 'toward white, or toward a pure hue'),
+        C('scatterWhite', 'To white', 'plus is toward white, minus toward a pure hue'),
       ]),
       note: 'A grid of cells along each strip, each with its own clock, each lighting a spot that appears, holds, fades, and may slide across its cell as it does. It pushes what the shape lane left, so it needs a gap to light and light to darken \u2014 which is also why a spot inside an already-full shape is invisible and the shape covers it with no occlusion rule anywhere. Moving Stagger re-keys every cell, so everything in flight jumps. It replaces jitter, which no longer has a control anywhere.',
     },
@@ -442,12 +404,12 @@
         C('placedCount', 'Count', 'how many regions along the ruler', gradientInert),
         C('placedWidth', 'Width', 'a region\u2019s solid core, as a proportion of one cell', gradientInert),
         C('placedEdge', 'Edge', 'hard-edged cell through to a smooth fade', gradientInert),
-        C('placedSpeed', 'Speed', 'center is still; either side drifts the regions along the ruler', gradientInert),
+        C('placedSpeed', 'Speed', 'center is still; plus drifts the regions along the ruler, minus back', gradientInert),
       ]),
       amounts: define([
         C('placedHue', 'Hue', 'how far one end of the ruler departs from the base hue'),
-        C('placedWhite', 'To white', 'which end departs toward white, and how far'),
-        C('placedDark', 'Dark', 'which end departs toward dark, and how far'),
+        C('placedWhite', 'To white', 'how far one end departs; plus is toward white, minus toward a pure hue'),
+        C('placedDark', 'Dark', 'how far one end departs; minus is toward dark, plus toward full light'),
       ]),
       note: 'The only source you aim. A gradient runs one way across its ruler with the base color at the center, so an amount is how far one end departs and the two ends land twice that apart. A region is a bump: base, departure, back to base. These two switches and the four controls beside them shape this source and reach nothing else.',
     },
@@ -472,52 +434,11 @@
       amounts: define([
         C('litHue', 'Hue', 'how far the brightest part rotates off the base hue'),
         C('litWhite', 'To white', 'how pale the brightest part goes'),
-        C('litDark', 'Dark', 'how the brightest part sits against the base for brightness'),
+        C('litDark', 'Dark', 'how the brightest part sits against the base for brightness; minus is toward dark, plus toward full light'),
       ]),
       note: 'The one source with no controls of its own: its value is how lit the shape lane left a pixel, so a comet\u2019s tail cools instead of only dimming. It is also the only source that reaches the pulse and the scatter, since neither of those has a position for a ruler to measure. It reads the shape\u2019s own profile and never the color lane\u2019s output \u2014 feed that back and pulling the wall down for a quiet verse would slide its hue.',
     },
   ];
-
-  // ---- reading the matrix the other way ----------------------------------
-
-  // The soldered amounts are fixed, so they are a table. What a route reaches
-  // is whatever it happens to be aimed at, so it is a lookup — routesAimedAt
-  // below. A destination carries `cc` when it is a control a route can name.
-  const DESTINATIONS = [
-    { key: 'light', name: 'the strips\u2019 brightness', lane: 'shape',
-      cc: CC.value, from: { scatter: 'scatterLight' } },
-    { key: 'genWidth', name: 'the shape\u2019s width', lane: 'shape',
-      cc: CC.genWidth, from: {} },
-    { key: 'hue', name: 'hue', lane: 'color',
-      cc: CC.hue,
-      from: { scatter: 'scatterHue', placed: 'placedHue',
-              wander: 'wanderHue', lit: 'litHue' } },
-    { key: 'white', name: 'whiteness', lane: 'color',
-      from: { scatter: 'scatterWhite', placed: 'placedWhite',
-              wander: 'wanderWhite', lit: 'litWhite' } },
-    { key: 'dark', name: 'darkness', lane: 'color',
-      from: { placed: 'placedDark', wander: 'wanderDark', lit: 'litDark' } },
-    { key: 'parLevel', name: 'the PARs\u2019 level', lane: 'out',
-      cc: CC.washLevel, from: {} },
-    { key: 'parHue', name: 'the PARs\u2019 hue', lane: 'out',
-      cc: CC.washHueOffset, from: {} },
-    { key: 'parSat', name: 'the PARs\u2019 saturation', lane: 'out',
-      cc: CC.washSaturation, from: {} },
-  ];
-
-  // Which routes are aimed at a control, for the mark beside its slider.
-  function routesAimedAt(state, cc) {
-    const aimed = [];
-    if (cc === undefined) return aimed;
-    for (let r = 0; r < A.ROUTES; r++) {
-      if (state[routeName(r, 'destination')] !== cc) continue;
-      const amount = state[routeName(r, 'amount')];
-      if (amount === undefined || Math.abs(bip(amount)) < 0.01) continue;
-      aimed.push({ route: r, amount, ratio: state[routeName(r, 'ratio')],
-                   wave: state[routeName(r, 'wave')] });
-    }
-    return aimed;
-  }
 
   const PARS = {
     controls: define([
@@ -629,7 +550,7 @@
     OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
     unit, bip, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
-    LANES, MODULATORS, ROUTES, DESTINATIONS, routesAimedAt, PARS, TIMING,
+    LANES, MODULATORS, ROUTES, PARS, TIMING,
     ANCHORS, FAN_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

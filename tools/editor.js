@@ -37,7 +37,7 @@
   let patchIndex = 0;
   let setIndex = P.SET_BASE;
 
-  const audition = { pos: 1, raf: null, seconds: 2, loop: false, from: null, to: null };
+  const audition = { pos: 1, held: false, raf: null, seconds: 2, loop: false, from: null, to: null };
   // Where the three faders and a held key are standing, on the Base tab.
   const surfaces = { 1: 0, 2: 0, 3: 0, 4: 0 };
   const surfacesUp = () => Object.values(surfaces).some(v => v > 0);
@@ -77,11 +77,15 @@
     return baseSet();
   }
 
+  // On the base the scrubber rests at 1 meaning the patch itself, so the far
+  // end of a journey is only shown while the scrubber is held there.
+  const journeying = () => audition.pos < 1 || audition.held;
+
   function liveNamed() {
     const p = patch();
     if (!isFarEnd()) {
       const dest = audition.to != null ? lib.patches[audition.to] : null;
-      if (dest && audition.pos < 1) {
+      if (dest && journeying()) {
         return L.blend(p.base, dest.base, audition.pos, p.base);
       }
       if (surfacesUp()) return L.mix(p, Object.entries(surfaces).map(([k, v]) => [+k, v]), p.base);
@@ -155,8 +159,6 @@
 
     const label = el('label', null, `<b>${def.label}</b><span class="cc">CC ${P.CC[name]}</span>`);
     label.addEventListener('click', () => { snap(); resetNames([name]); });
-    const reached = el('span', 'reached');
-    label.appendChild(reached);
 
     const track = el('div', 'track');
     const slider = el('input');
@@ -177,7 +179,7 @@
     root.append(label, track, out, routes || el('span'));
     host.appendChild(root);
     rows[name] = {
-      root, slider, ghost, out, reached, label, def, routes, points: pointsFor(name), kind: 'fader',
+      root, slider, ghost, out, label, def, routes, points: pointsFor(name), kind: 'fader',
     };
   }
 
@@ -219,34 +221,22 @@
 
   // ---- painting ----------------------------------------------------------
 
-  const isNeutral = (name, v) => v === P.NEUTRAL[name];
+  const readoutHtml = (value, text) => `<b>${value}</b><span class="cc">${text}</span>`;
 
-  // The escape from putting the amounts at the source: a marker beside the
-  // target saying which sources reach it and how hard.
-  // destination key -> the control whose row carries the mark
-  const REACHED_CONTROL = Object.fromEntries(
-    P.DESTINATIONS.filter(d => d.cc !== undefined)
-      .map(d => [d.key, window.AuroraCC.NAME_BY_CC[d.cc]]));
-
-  // Brightness and Lit White rest at the bottom of their travel rather than
-  // in the middle, so there is no sign to read off them.
-  const amountFraction = (name, v) => (P.NEUTRAL[name] === 0 ? P.unit(v) : P.bip(v));
-
-  function reachText(destKey, live) {
-    const dest = P.DESTINATIONS.find(d => d.key === destKey);
-    if (!dest) return '';
-    const parts = [];
-    for (const [source, amount] of Object.entries(dest.from)) {
-      const v = live[amount];
-      if (isNeutral(amount, v)) continue;
-      const r = amountFraction(amount, v);
-      parts.push(`${source} ${r >= 0 ? '+' : '−'}${Math.round(Math.abs(r) * 100)}%`);
+  // The readout sits over an invisible copy of its longest text, so the row
+  // is as tall as it will ever need and dragging never reflows the page.
+  function writeReadout(r, value) {
+    const derived = P.DERIVED[r.def.name];
+    if (!r.now) {
+      let longest = '';
+      for (let v = 0; v < 128 && derived; v++) {
+        const text = derived(v);
+        if (text.length > longest.length) longest = text;
+      }
+      r.out.innerHTML = `<span class="now"></span><span class="room" aria-hidden="true">${readoutHtml(127, longest)}</span>`;
+      r.now = r.out.firstChild;
     }
-    for (const a of P.routesAimedAt(live, dest.cc)) {
-      const r = P.bip(a.amount);
-      parts.push(`route ${a.route + 1} ${r >= 0 ? '+' : '−'}${Math.round(Math.abs(r) * 100)}%`);
-    }
-    return parts.length ? '← ' + parts.join(' · ') : '';
+    r.now.innerHTML = readoutHtml(value, derived ? derived(value) : '');
   }
 
   function paint() {
@@ -261,8 +251,7 @@
 
       if (r.kind === 'fader') {
         if (+r.slider.value !== value) r.slider.value = value;
-        const derived = P.DERIVED[name] ? P.DERIVED[name](value) : '';
-        r.out.innerHTML = `<b>${value}</b><span class="cc">${derived}</span>`;
+        writeReadout(r, value);
         const overridden = farEnd && name in moved;
         r.root.classList.toggle('changed', overridden);
         if (overridden) r.ghost.style.left = `calc(${along(r.slider, base[name])} - 1px)`;
@@ -285,13 +274,7 @@
       }
     }
 
-    for (const [destKey, target] of Object.entries(REACHED_CONTROL)) {
-      const r = rows[target];
-      if (r && r.reached) r.reached.textContent = reachText(destKey, live);
-    }
-
     paintTabs();
-    paintMatrix(live);
     paintRoutePanel(live);
     paintHead();
     paintCompare();
@@ -306,14 +289,15 @@
   function paintShowing() {
     const label = $('wallShowing');
     if (!label) return;
-    if (audition.pos < 1) {
-      label.textContent = Math.round(audition.pos * 100) + '% of the way';
-    } else if (!isFarEnd() && surfacesUp()) {
+    const journey = !isFarEnd() && audition.to != null && journeying();
+    if (isFarEnd()) {
+      label.textContent = `${P.SET_NAMES[setIndex]} ${Math.round(audition.pos * 100)}%`;
+    } else if (journey) {
+      label.textContent = `"${lib.patches[audition.to].name}" ${Math.round(audition.pos * 100)}%`;
+    } else if (surfacesUp()) {
       label.textContent = Object.entries(surfaces)
         .filter(([, v]) => v > 0)
         .map(([k, v]) => `${P.SET_NAMES[k]} ${Math.round(v * 100)}%`).join(' + ');
-    } else if (isFarEnd()) {
-      label.textContent = P.SET_NAMES[setIndex] + ' \u2014 the far end';
     } else {
       label.textContent = 'the patch';
     }
@@ -422,68 +406,6 @@
     $('timingGroup').innerHTML = '';
     buildRows($('timingGroup'), P.TIMING.controls);
     $('timingNote').textContent = P.TIMING.note;
-  }
-
-  // ---- the matrix, read from the target's end ----------------------------
-
-  const matrixCells = {};
-  const SOURCE_KEYS = P.MODULATORS.map(m => m.key);
-
-  function buildMatrix() {
-    const table = $('matrix');
-    table.innerHTML = '';
-    const head = el('thead');
-    const hr = el('tr');
-    hr.appendChild(el('th', null, ''));
-    for (const m of P.MODULATORS) hr.appendChild(el('th', null, m.name.replace(/^The /, '')));
-    head.appendChild(hr);
-    table.appendChild(head);
-
-    const body = el('tbody');
-    for (const dest of P.DESTINATIONS) {
-      const tr = el('tr');
-      tr.appendChild(el('th', null, dest.name));
-      for (const key of SOURCE_KEYS) {
-        const td = el('td', null, '·');
-        const amount = dest.from[key];
-        if (amount) {
-          td.addEventListener('click', () => {
-            if (!rows[amount]) return;
-            rows[amount].root.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            rows[amount].root.classList.remove('flash');
-            void rows[amount].root.offsetWidth;
-            rows[amount].root.classList.add('flash');
-          });
-        }
-        tr.appendChild(td);
-        matrixCells[dest.key + '/' + key] = { td, amount };
-      }
-      body.appendChild(tr);
-      matrixCells[dest.key + '/row'] = tr;
-    }
-    table.appendChild(body);
-  }
-
-  function paintMatrix(live) {
-    for (const dest of P.DESTINATIONS) {
-      let any = false;
-      for (const key of SOURCE_KEYS) {
-        const cell = matrixCells[dest.key + '/' + key];
-        if (!cell) continue;
-        if (!cell.amount) { cell.td.textContent = ''; continue; }
-        const v = live[cell.amount];
-        if (isNeutral(cell.amount, v)) {
-          cell.td.textContent = '·';
-          cell.td.classList.remove('live');
-        } else {
-          cell.td.textContent = P.DERIVED[cell.amount]
-            ? P.DERIVED[cell.amount](v) : String(v);
-          cell.td.classList.add('live');
-          any = true;
-        }
-      }
-      matrixCells[dest.key + '/row'].classList.toggle('quiet', !any);
-    }
   }
 
   // ---- a route's push, drawn ---------------------------------------------
@@ -691,6 +613,7 @@
     setIndex = i;
     stopRun();
     audition.pos = 1;
+    audition.held = false;
     if (audition.from === null) audition.from = patchIndex;
     buildAudition();
     buildSurfaces();
@@ -715,6 +638,7 @@
     if (audition.pos >= 1 && !surfacesUp()) return;
     stopRun();
     audition.pos = 1;
+    audition.held = false;
     const s = $('auditionScrub');
     if (s) s.value = 1000;
     clearSurfaces();
@@ -746,7 +670,8 @@
   }
 
   function springBack() {
-    if (audition.pos >= 1) return;
+    audition.held = false;
+    if (audition.pos >= 1) { paint(); return; }
     stopRun();
     animate(audition.pos, 1, 180, paint);
   }
@@ -771,14 +696,12 @@
       if (r.kind !== 'fader') continue;
       const value = live[name];
       if (+r.slider.value !== value) r.slider.value = value;
-      const derived = P.DERIVED[name] ? P.DERIVED[name](value) : '';
-      r.out.innerHTML = `<b>${value}</b><span class="cc">${derived}</span>`;
+      writeReadout(r, value);
     }
     paintShowing();
     const readout = $('auditionReadout');
     if (readout) {
-      readout.textContent = audition.pos <= 0 ? 'base'
-        : audition.pos >= 1 ? 'far end' : Math.round(audition.pos * 100) + '%';
+      readout.textContent = Math.round(audition.pos * 100) + '%';
     }
     sendLive();
   }
@@ -840,7 +763,12 @@
     range.type = 'range'; range.min = 0; range.max = 1000; range.step = 1;
     range.id = 'auditionScrub';
     range.value = Math.round(audition.pos * 1000);
-    range.addEventListener('input', () => { stopRun(); audition.pos = +range.value / 1000; paintLive(); });
+    range.addEventListener('input', () => {
+      stopRun();
+      audition.held = true;
+      audition.pos = +range.value / 1000;
+      paintLive();
+    });
     range.addEventListener('change', springBack);
     range.addEventListener('pointerup', springBack);
     scrub.appendChild(range);
@@ -867,7 +795,7 @@
 
     const readout = el('output', 'readout');
     readout.id = 'auditionReadout';
-    readout.textContent = 'far end';
+    readout.textContent = Math.round(audition.pos * 100) + '%';
     host.appendChild(readout);
 
     if (isFarEnd()) {
@@ -1052,6 +980,7 @@
     patchIndex = i;
     stopRun();
     audition.pos = 1;
+    audition.held = false;
     audition.from = i;
     audition.to = null;
     buildAudition();
@@ -1436,7 +1365,6 @@
     buildRoutePanel();
     buildStarts();
     buildOutputs();
-    buildMatrix();
     buildTabs();
     buildHead();
     wireBrain();

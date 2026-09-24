@@ -68,7 +68,6 @@
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
       pulseWave: (phase, wave) => m._aurora_pulse_wave(phase, wave),
       convert: (cc, value) => m._aurora_convert(cc, value),
-      lightLeft: dark => m._aurora_light_left(dark),
       pulsePeriodBeats: value => m._aurora_pulse_period_beats(value),
 
       // Both read the last render, so call them before the next one.

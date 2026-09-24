@@ -579,9 +579,6 @@ it becomes a build item.
 
       - **Say the range in the control's own units** beside the fader, "8 →
         14 px/beat", from `render::convert` the way the labels already are.
-      - **Decide what the older views are still for.** The "← route 1 +73%"
-        note under a label and the destination table both describe from the
-        target's end what the band now shows on it.
       - **Another visual pass** on the panel, its width above all, deferred
         until it has been used for a while.
 
