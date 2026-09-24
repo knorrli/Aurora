@@ -157,7 +157,9 @@ open at a time. It lists the routes aimed here with their amount, clock
 multiple and wave, adds one from the eight shared slots, and frees one. A
 destination has no middle, so like every switch it belongs to the patch:
 routes are added and freed on the base, and a far end overrides only how far
-and how fast. The rates have no **~**, since the renderer refuses them.
+and how fast. **bypass** silences a route while you listen and is
+never saved: the wall and the brain are sent a free slot, and the patch keeps
+the route. Choosing another patch clears it. The rates have no **~**, since the renderer refuses them.
 
 A slider a route is aimed at carries a band from the dialed value to the
 furthest the routes can push it, and five marks, one per strip, where each

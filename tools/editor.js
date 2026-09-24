@@ -135,7 +135,7 @@
   // ---- midi out ----------------------------------------------------------
 
   function sendLive(force) {
-    const live = liveNamed();
+    const live = sounding(liveNamed());
     for (const name of P.NAMES) {
       const cc = P.CC[name], v = live[name];
       if (!force && lastSent[cc] === v) continue;
@@ -454,6 +454,16 @@
 
   const routePanel = { root: null, blocks: [], add: null, free: null, target: null };
 
+  // Bypass is for listening at the desk and is never saved: a bypassed route
+  // reaches the wall and the brain as a free slot, and the patch keeps it.
+  const bypassed = new Set();
+  function sounding(named) {
+    if (!bypassed.size) return named;
+    const out = { ...named };
+    for (const route of bypassed) out[route.destination] = 0;
+    return out;
+  }
+
   function buildRoutePanel() {
     const root = el('div', 'routepanel');
     root.hidden = true;
@@ -462,14 +472,27 @@
       const head = el('div', 'dest-head');
       const remove = el('button', 'tiny', '\u00d7');
       remove.title = 'free this route';
-      remove.addEventListener('click', () => { snap(); resetNames(routeFields(route)); });
-      head.append(el('span', 'dest-name', route.name), remove);
+      remove.addEventListener('click', () => {
+        snap();
+        bypassed.delete(route);
+        resetNames(routeFields(route));
+      });
+      const bypass = el('button', 'tiny', 'bypass');
+      bypass.title = 'silence this route while you listen; not saved';
+      bypass.addEventListener('click', () => {
+        if (!bypassed.delete(route)) bypassed.add(route);
+        paint();
+        sendLive();
+      });
+      const buttons = el('span', 'dest-buttons');
+      buttons.append(bypass, remove);
+      head.append(el('span', 'dest-name', route.name), buttons);
       const body = el('div');
       buildRows(body, [route.amount, route.ratio, route.wave]);
       const canvas = el('canvas', 'destwave');
       block.append(head, body, canvas);
       root.appendChild(block);
-      routePanel.blocks.push({ route, block, canvas, remove });
+      routePanel.blocks.push({ route, block, canvas, remove, bypass });
     }
     const foot = el('div', 'routefoot');
     const add = el('button', 'tiny', '+ add a route');
@@ -537,9 +560,11 @@
 
     const farEnd = isFarEnd();
     let free = 0;
-    for (const { route, block, canvas, remove } of routePanel.blocks) {
+    for (const { route, block, canvas, remove, bypass } of routePanel.blocks) {
       if (!live[route.destination]) free++;
       block.hidden = live[route.destination] !== P.CC[target];
+      block.classList.toggle('bypassed', bypassed.has(route));
+      bypass.classList.toggle('on', bypassed.has(route));
       remove.disabled = farEnd;
       if (!block.hidden) drawWave(canvas, route, live);
     }
@@ -960,6 +985,7 @@
 
   function selectPatch(i) {
     patchIndex = i;
+    bypassed.clear();
     stopRun();
     audition.pos = 1;
     audition.held = false;
@@ -1271,7 +1297,7 @@
   function drawOne(wall, named, beats, pattern) {
     const frame = pattern === 11 ? V.renderStripOrder()
       : pattern === 0 ? V.blank()
-      : V.render(L.setFromNamed(named), beats, wall.motion);
+      : V.render(L.setFromNamed(sounding(named)), beats, wall.motion);
     V.draw(wall.ctx, wall.glow, frame, order(), flipped, wall.w, wall.h,
            showFan && wall === walls.main);
   }

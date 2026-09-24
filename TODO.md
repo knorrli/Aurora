@@ -585,9 +585,11 @@ it becomes a build item.
       - **Another visual pass** on the panel, its width above all, deferred
         until it has been used for a while.
 
-- [ ] **Bypass a route without freeing it.** Raised 2026-09-24. Today the
-      only way to hear a patch without a route is to free the slot, which
-      loses its destination, amount, clock multiple and wave.
+- [x] **Bypass a route without freeing it.** Raised and done 2026-09-24,
+      in the editor only: see `docs/editor.md` § "A route shows on the
+      control it moves". A bypass stored in the patch would need the brain to
+      know about it, and a stored bypassed route is barely different from a
+      free slot.
 
 - [x] **Cut the page's prose down to what earns it.** Raised and done
       2026-09-24. Every note on the page went, bar one line on the surfaces
