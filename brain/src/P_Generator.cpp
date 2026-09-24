@@ -1,4 +1,5 @@
 #include "Aurora.h"
+#include "destinations.h"
 #include "dmx_out.h"
 #include "tempo.h"
 
@@ -97,6 +98,7 @@ static float genFanRandom = 0.0f;
 static float genPulseBeats = 4.0f;
 static bool genAlternate = false;
 static bool genBounce = false;
+
 
 static inline float fract(float x) { return x - floorf(x); }
 static float shapeAt(float offset, float width, float edge, float tail);
@@ -709,7 +711,126 @@ static bool nearestOffset(float posCells, float coreCenter, float stripDirection
   return lit;
 }
 
+// Bipolar around 64, squared so the slow end — where every pattern in the
+// roster actually lives — gets most of the travel.
+//
+// One step either side of center is a crawl of a pixel a minute, which is not
+// a speed anyone dials: it is a pattern that will not sit where Position puts
+// it, since the settle runs only at a standstill. Snapping it to nothing
+// costs the two steps that already read as still and makes still mean still.
+static float speedPixelsFrom(uint8_t value) {
+  const float x = ((float)value - 64.0f) / 63.0f;
+  const float pixels = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
+  return (fabsf(pixels) < GEN_STILL_PIXELS_PER_BEAT) ? 0.0f : pixels;
+}
+
+// The same squared curve Speed runs on, so that mirroring one fader about its
+// center against the other cancels *exactly*: a still strip at the wave's peak
+// needs Speed to be the fan's opposite, and two controls on different curves
+// can only ever nearly cancel.
+static float fanRateFrom(uint8_t value) {
+  const float x = ((float)value - 64.0f) / 63.0f;
+  return (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
+}
+
+static float fanFreqFrom(uint8_t value) {
+  const long step = lroundf((float)value * GEN_FAN_FREQ_STEPS / 127.0f);
+  return (float)step * (GEN_FAN_MAX_CYCLES_PER_STRIP / GEN_FAN_FREQ_STEPS);
+}
+
+// Read once at the top of a frame rather than when each CC arrives, because a
+// route's push lands on the byte and the conversion has to see the pushed
+// value. Nothing pushes yet, so every value here is what the old setters
+// stored.
+//
+// The three fan amounts share one wave. Position and pulse are offsets into a
+// cycle, so only the spread between strips is visible and a full amount
+// spreads the five over exactly one cell or one swell. Rate is an absolute
+// speed added to Speed's, so the strip the wave reads zero at travels at
+// exactly what Speed says and the others are measured from it.
+//
+// Position covers half a cell each way, which is every place a shape can
+// stand, because the pattern repeats once per cell. The pulse rate is stepped
+// rather than continuous: its phase is anchored to the musical grid, and a
+// period the bar cannot hold a whole number of walks through the bar for ever.
+// Bipolar and squared like the shape branch's travel, for the same reason:
+// the slow end is where a color that reads as depth rather than as an effect
+// actually lives.
+static float placedCellsPerBeatFrom(uint8_t value) {
+  const float x = ((float)value - 64.0f) / 63.0f;
+  return (x < 0.0f ? -1.0f : 1.0f) * x * x * PLACED_MAX_CELLS_PER_BEAT;
+}
+
+// Squared like the two travel speeds, for the same reason: the slow end is
+// where a color reading as depth rather than as an effect lives. Unipolar
+// unlike them, because the wander is symmetric interference with no anchor
+// and reversing it gives the same look — measured in docs/generator.md
+// § Open, item 11. Frozen therefore stays at the end of the throw, rather
+// than at a center this taper makes hard to tell from a crawl.
+static float wanderCyclesFrom(uint8_t value) {
+  const float x = ccUnit(value);
+  return x * x * WANDER_MAX_CYCLES_PER_BEAT;
+}
+
+// Squared like every other rate here, and for the same reason: a texture that
+// reads as the wall breathing rather than as an effect lives at the slow end,
+// and spread evenly that end is a few steps of the fader.
+static float scatterRateFrom(uint8_t value) {
+  const float x = ccUnit(value);
+  return x * x * SCATTER_MAX_CYCLES_PER_BEAT;
+}
+
+static void readDialedControls() {
+  genWidth = ccUnit(destinations::value(CC_GEN_WIDTH));
+  genEdge = ccUnit(destinations::value(CC_GEN_EDGE));
+  genTail = ccUnit(destinations::value(CC_GEN_TAIL));
+  genCount = ccCount(destinations::value(CC_GEN_COUNT));
+  genPositionCells = ccBipolar(destinations::value(CC_GEN_POSITION)) * 0.5f;
+  genSpeedPixels = speedPixelsFrom(destinations::value(CC_GEN_SPEED));
+  genFanPosition = ccBipolar(destinations::value(CC_GEN_FAN)) * 0.5f;
+  genFanPulse = ccBipolar(destinations::value(CC_GEN_FAN_PULSE)) * 0.5f;
+  genFanRate = fanRateFrom(destinations::value(CC_GEN_FAN_RATE));
+  genFanFreq = fanFreqFrom(destinations::value(CC_GEN_FAN_FREQ));
+  genFanPhase = (float)destinations::value(CC_GEN_FAN_PHASE) / 128.0f;
+  genFanRandom = ccUnit(destinations::value(CC_GEN_FAN_RANDOM));
+  genPulseBeats = aurora_pulse_period(destinations::value(CC_GEN_PULSE_RATE));
+
+  placed.hueReach = ccBipolar(destinations::value(CC_PLACED_HUE)) * PLACED_MAX_HUE;
+  placed.whiteReach = ccBipolar(destinations::value(CC_PLACED_WHITE));
+  placed.darkReach = ccBipolar(destinations::value(CC_PLACED_DARK));
+  placed.width = ccUnit(destinations::value(CC_PLACED_WIDTH));
+  placed.edge = ccUnit(destinations::value(CC_PLACED_EDGE));
+  placed.count = ccCount(destinations::value(CC_PLACED_COUNT));
+  placed.cellsPerBeat = placedCellsPerBeatFrom(destinations::value(CC_PLACED_SPEED));
+
+  wanderHueReach = ccBipolar(destinations::value(CC_WANDER_HUE)) * WANDER_MAX_HUE;
+  wanderWhiteReach = ccBipolar(destinations::value(CC_WANDER_WHITE));
+  wanderDarkReach = ccBipolar(destinations::value(CC_WANDER_DARK));
+  wanderCycles = wanderCyclesFrom(destinations::value(CC_WANDER_RATE));
+  wanderScale = ccUnit(destinations::value(CC_WANDER_SCALE));
+
+  litHueReach = ccBipolar(destinations::value(CC_LIT_HUE)) * LIT_MAX_HUE;
+  litWhiteReach = ccUnit(destinations::value(CC_LIT_WHITE));
+  litDarkReach = ccBipolar(destinations::value(CC_LIT_DARK));
+
+  // The scatter's grid is its own, not the shape branch's, so a fine texture
+  // can lie over one wide bar. Drift is a displacement rather than a rate —
+  // how far, and which way, a spot slides across its own cell over its life,
+  // which is why it is not called speed like everything else here.
+  scatterRate = scatterRateFrom(destinations::value(CC_SCATTER_RATE));
+  scatterCount = ccCount(destinations::value(CC_SCATTER_COUNT));
+  scatterWidth = ccUnit(destinations::value(CC_SCATTER_WIDTH));
+  scatterEdge = ccUnit(destinations::value(CC_SCATTER_EDGE));
+  scatterStagger = ccUnit(destinations::value(CC_SCATTER_STAGGER));
+  scatterDrift = ccBipolar(destinations::value(CC_SCATTER_DRIFT));
+  scatterLightReach = ccBipolar(destinations::value(CC_SCATTER_LIGHT));
+  scatterHueReach = ccBipolar(destinations::value(CC_SCATTER_HUE)) * SCATTER_MAX_HUE;
+  scatterWhiteReach = ccBipolar(destinations::value(CC_SCATTER_WHITE));
+}
+
 void Generator(CHSV color) {
+  readDialedControls();
+
   const float beats = tempo::beats();
   const float cellLength = (float)PIXELS_PER_STRIP / (float)genCount;
   const float countCells = (float)genCount;
@@ -961,58 +1082,19 @@ void Generator(CHSV color) {
                         pulsePush(PULSE_TO_PAR_SAT, pulse));
 }
 
-void setGeneratorWidth(uint8_t value) { genWidth = ccUnit(value); }
-void setGeneratorEdge(uint8_t value) { genEdge = ccUnit(value); }
-void setGeneratorTail(uint8_t value) { genTail = ccUnit(value); }
-// The three amounts share one wave. Position and pulse are offsets into a
-// cycle, so only the spread between strips is visible and a full amount
-// spreads the five over exactly one cell or one swell. Rate is an absolute
-// speed added to Speed's, so the strip the wave reads zero at travels at
-// exactly what Speed says and the others are measured from it.
-void setGeneratorFan(uint8_t value) { genFanPosition = ccBipolar(value) * 0.5f; }
-void setGeneratorFanPulse(uint8_t value) { genFanPulse = ccBipolar(value) * 0.5f; }
-// The same squared curve Speed runs on, so that mirroring one fader about its
-// center against the other cancels *exactly*: a still strip at the wave's peak
-// needs Speed to be the fan's opposite, and two controls on different curves
-// can only ever nearly cancel.
-void setGeneratorFanRate(uint8_t value) {
-  const float x = ((float)value - 64.0f) / 63.0f;
-  genFanRate = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
-}
-void setGeneratorFanFreq(uint8_t value) {
-  const long step = lroundf((float)value * GEN_FAN_FREQ_STEPS / 127.0f);
-  genFanFreq = (float)step * (GEN_FAN_MAX_CYCLES_PER_STRIP / GEN_FAN_FREQ_STEPS);
-}
-void setGeneratorFanPhase(uint8_t value) { genFanPhase = (float)value / 128.0f; }
-void setGeneratorFanRandom(uint8_t value) { genFanRandom = ccUnit(value); }
-
-void setGeneratorCount(uint8_t value) { genCount = ccCount(value); }
-
-// Half a cell each way covers every place a shape can stand, because the
-// pattern repeats once per cell: a full cell of offset lands back where it
-// started. Only read while the pattern is still — a traveling one is already
-// everywhere in its cell.
-void setGeneratorPosition(uint8_t value) { genPositionCells = ccBipolar(value) * 0.5f; }
-
-// Bipolar around 64, squared so the slow end — where every pattern in the
-// roster actually lives — gets most of the travel.
-//
-// One step either side of center is a crawl of a pixel a minute, which is not
-// a speed anyone dials: it is a pattern that will not sit where Position puts
-// it, since the settle runs only at a standstill. Snapping it to nothing
-// costs the two steps that already read as still and makes still mean still.
-void setGeneratorSpeed(uint8_t value) {
-  const float x = ((float)value - 64.0f) / 63.0f;
-  const float pixels = (x < 0.0f ? -1.0f : 1.0f) * x * x * GEN_MAX_SPEED_PIXELS_PER_BEAT;
-  genSpeedPixels = (fabsf(pixels) < GEN_STILL_PIXELS_PER_BEAT) ? 0.0f : pixels;
-}
-
-// Stepped, not continuous: the phase is anchored to the musical grid, and a
-// period the bar cannot hold a whole number of walks through the bar for ever
-// whatever the phase is anchored to. See AURORA_PULSE_PERIODS.
-void setGeneratorPulseRate(uint8_t value) {
-  genPulseBeats = aurora_pulse_period(value);
-}
+void setGeneratorWidth(uint8_t value)     { destinations::store(CC_GEN_WIDTH, value); }
+void setGeneratorEdge(uint8_t value)      { destinations::store(CC_GEN_EDGE, value); }
+void setGeneratorTail(uint8_t value)      { destinations::store(CC_GEN_TAIL, value); }
+void setGeneratorFan(uint8_t value)       { destinations::store(CC_GEN_FAN, value); }
+void setGeneratorFanPulse(uint8_t value)  { destinations::store(CC_GEN_FAN_PULSE, value); }
+void setGeneratorFanRate(uint8_t value)   { destinations::store(CC_GEN_FAN_RATE, value); }
+void setGeneratorFanFreq(uint8_t value)   { destinations::store(CC_GEN_FAN_FREQ, value); }
+void setGeneratorFanPhase(uint8_t value)  { destinations::store(CC_GEN_FAN_PHASE, value); }
+void setGeneratorFanRandom(uint8_t value) { destinations::store(CC_GEN_FAN_RANDOM, value); }
+void setGeneratorCount(uint8_t value)     { destinations::store(CC_GEN_COUNT, value); }
+void setGeneratorPosition(uint8_t value)  { destinations::store(CC_GEN_POSITION, value); }
+void setGeneratorSpeed(uint8_t value)     { destinations::store(CC_GEN_SPEED, value); }
+void setGeneratorPulseRate(uint8_t value) { destinations::store(CC_GEN_PULSE_RATE, value); }
 
 void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
 void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); }
@@ -1041,62 +1123,30 @@ void setColorRuler(uint8_t value) {
   placed.ruler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 }
 
-void setPlacedHue(uint8_t value)   { placed.hueReach = ccBipolar(value) * PLACED_MAX_HUE; }
-void setPlacedWhite(uint8_t value) { placed.whiteReach = ccBipolar(value); }
-void setPlacedDark(uint8_t value)  { placed.darkReach = ccBipolar(value); }
-void setPlacedWidth(uint8_t value) { placed.width = ccUnit(value); }
-void setPlacedEdge(uint8_t value)  { placed.edge = ccUnit(value); }
+void setPlacedHue(uint8_t value)      { destinations::store(CC_PLACED_HUE, value); }
+void setPlacedWhite(uint8_t value)    { destinations::store(CC_PLACED_WHITE, value); }
+void setPlacedDark(uint8_t value)     { destinations::store(CC_PLACED_DARK, value); }
+void setPlacedWidth(uint8_t value)    { destinations::store(CC_PLACED_WIDTH, value); }
+void setPlacedEdge(uint8_t value)     { destinations::store(CC_PLACED_EDGE, value); }
+void setPlacedCount(uint8_t value)    { destinations::store(CC_PLACED_COUNT, value); }
+void setPlacedSpeed(uint8_t value)    { destinations::store(CC_PLACED_SPEED, value); }
 
-void setPlacedCount(uint8_t value) { placed.count = ccCount(value); }
+void setWanderHue(uint8_t value)      { destinations::store(CC_WANDER_HUE, value); }
+void setWanderWhite(uint8_t value)    { destinations::store(CC_WANDER_WHITE, value); }
+void setWanderDark(uint8_t value)     { destinations::store(CC_WANDER_DARK, value); }
+void setWanderRate(uint8_t value)     { destinations::store(CC_WANDER_RATE, value); }
+void setWanderScale(uint8_t value)    { destinations::store(CC_WANDER_SCALE, value); }
 
-// Bipolar and squared like the shape branch's travel, for the same reason:
-// the slow end is where a color that reads as depth rather than as an effect
-// actually lives.
-void setPlacedSpeed(uint8_t value) {
-  const float x = ((float)value - 64.0f) / 63.0f;
-  placed.cellsPerBeat = (x < 0.0f ? -1.0f : 1.0f) * x * x * PLACED_MAX_CELLS_PER_BEAT;
-}
+void setLitHue(uint8_t value)         { destinations::store(CC_LIT_HUE, value); }
+void setLitWhite(uint8_t value)       { destinations::store(CC_LIT_WHITE, value); }
+void setLitDark(uint8_t value)        { destinations::store(CC_LIT_DARK, value); }
 
-void setWanderHue(uint8_t value)   { wanderHueReach = ccBipolar(value) * WANDER_MAX_HUE; }
-void setWanderWhite(uint8_t value) { wanderWhiteReach = ccBipolar(value); }
-void setWanderDark(uint8_t value)  { wanderDarkReach = ccBipolar(value); }
-// Squared like the two travel speeds, for the same reason: the slow end is
-// where a color reading as depth rather than as an effect lives. Unipolar
-// unlike them, because the wander is symmetric interference with no anchor
-// and reversing it gives the same look — measured in docs/generator.md
-// § Open, item 11. Frozen therefore stays at the end of the throw, rather
-// than at a center this taper makes hard to tell from a crawl.
-void setWanderRate(uint8_t value) {
-  const float x = ccUnit(value);
-  wanderCycles = x * x * WANDER_MAX_CYCLES_PER_BEAT;
-}
-void setWanderScale(uint8_t value) { wanderScale = ccUnit(value); }
-
-void setLitHue(uint8_t value)   { litHueReach = ccBipolar(value) * LIT_MAX_HUE; }
-void setLitWhite(uint8_t value) { litWhiteReach = ccUnit(value); }
-void setLitDark(uint8_t value)  { litDarkReach = ccBipolar(value); }
-
-// Squared like every other rate here, and for the same reason: a texture that
-// reads as the wall breathing rather than as an effect lives at the slow end,
-// and spread evenly that end is a few steps of the fader.
-void setScatterRate(uint8_t value) {
-  const float x = ccUnit(value);
-  scatterRate = x * x * SCATTER_MAX_CYCLES_PER_BEAT;
-}
-
-// The scatter's own grid, not the shape branch's, so a fine texture can lie
-// over one wide bar.
-void setScatterCount(uint8_t value) { scatterCount = ccCount(value); }
-
-void setScatterWidth(uint8_t value)   { scatterWidth = ccUnit(value); }
-void setScatterEdge(uint8_t value)    { scatterEdge = ccUnit(value); }
-void setScatterStagger(uint8_t value) { scatterStagger = ccUnit(value); }
-
-// A displacement rather than a rate — how far, and which way, a spot slides
-// across its own cell over its life. Which is why it is not called speed,
-// everywhere else here a number of pixels per beat.
-void setScatterDrift(uint8_t value) { scatterDrift = ccBipolar(value); }
-
-void setScatterLight(uint8_t value) { scatterLightReach = ccBipolar(value); }
-void setScatterHue(uint8_t value)   { scatterHueReach = ccBipolar(value) * SCATTER_MAX_HUE; }
-void setScatterWhite(uint8_t value) { scatterWhiteReach = ccBipolar(value); }
+void setScatterRate(uint8_t value)    { destinations::store(CC_SCATTER_RATE, value); }
+void setScatterCount(uint8_t value)   { destinations::store(CC_SCATTER_COUNT, value); }
+void setScatterWidth(uint8_t value)   { destinations::store(CC_SCATTER_WIDTH, value); }
+void setScatterEdge(uint8_t value)    { destinations::store(CC_SCATTER_EDGE, value); }
+void setScatterStagger(uint8_t value) { destinations::store(CC_SCATTER_STAGGER, value); }
+void setScatterDrift(uint8_t value)   { destinations::store(CC_SCATTER_DRIFT, value); }
+void setScatterLight(uint8_t value)   { destinations::store(CC_SCATTER_LIGHT, value); }
+void setScatterHue(uint8_t value)     { destinations::store(CC_SCATTER_HUE, value); }
+void setScatterWhite(uint8_t value)   { destinations::store(CC_SCATTER_WHITE, value); }
