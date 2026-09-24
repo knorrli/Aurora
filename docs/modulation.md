@@ -65,8 +65,13 @@ waves" below.
 
 **A push is a fraction of the distance to a limit**, everywhere except
 controls that wrap, which take a rotation instead. Two routes aimed at one
-destination add their pushes and move it once, capped at the limit. See
-"How a push lands".
+destination add their pushes and move it once, capped at the limit. A push
+reaches one fixture family: the strips' three colour controls are CC 38–40
+and the PARs' are CC 33–35. See "How a push lands".
+
+**Which clock a route reads is decided by its destination**, not by the
+route — a destination on a strip reads that strip's fanned reading, a
+global one reads the plain clock. See "Which clock a route reads".
 
 **Eight routes, four bytes each** — destination, amount, ratio, wave. That
 is 32 of the 51 CCs the retirement leaves free, so a source byte per route
@@ -298,6 +303,23 @@ amount — which is why the two implementations already disagree about it.
 `brain/src/dmx_out.cpp:46` caps the amount; `brain/src/P_Generator.cpp:297`
 and its mirror in `tools/preview.js` do not. Routes make it reachable.
 
+**A push lands on one fixture family.** CC 38, 39 and 40 are the strips'
+hue, saturation and brightness — the editor already draws the pulse as one
+of the sources pushing them — and a push on them does not reach the PARs.
+The PARs have their own three, CC 33, 34 and 35, expressed as a
+relationship to the strips' *dialed* colour: an offset is measured from
+where the fader sits, not from where the modulation has it at that
+instant.
+
+This is what happens today, but by accident rather than by decision —
+`brain/src/dmx_out.cpp:71` reads `presetColor` straight, while the strips
+get their pushes added in `colorAt`. It has to be written down, or someone
+building "a base plus a modulation sum" will quite reasonably make the
+PARs follow the modulated base, and then every hue swell drags them along.
+The consequence is that swinging the strips and the PARs together takes
+two routes, one on each side — affordable at eight, and probably what you
+want anyway, since the two rarely ask for the same depth.
+
 **Brightness stops being the odd one out.** It multiplies today
 (`P_Generator.cpp:808`), and it is the only destination that rests at the
 wave's high point while the rest rest at its low point. Under one rule it
@@ -305,6 +327,49 @@ rests at its dialed value like everything else, and a swell that pulls the
 wall down is a negative amount. Both behaviors are already in that file —
 the scatter pushes brightness the new way at `P_Generator.cpp:935` — so
 this picks the one used more.
+
+## Which clock a route reads
+
+One clock ticks for the whole rig, and anything that pulses reads it to
+know where it is in the cycle. It can be read two ways. **Plain**, where
+everything reads the same time and the wall flashes as one. **Fanned**,
+where each strip reads that same clock shifted a little, so the flash
+rolls across the wall instead of landing at once. `CC_GEN_FAN_PULSE` sets
+how far apart those five readings stand, and at its center they are
+identical — so this is one clock read two ways, not two clocks.
+
+**The route does not choose. Its destination does.** A destination that
+lives on a strip reads that strip's shifted reading; a global one reads
+the plain clock. This costs nothing, keeps a route at four bytes, and
+reproduces exactly what happens today, where the choice is made only by
+which line of the frame each send happens to sit on
+(`brain/src/P_Generator.cpp:773` for the strips, `:959` for the PARs).
+
+What the table records is not a fanned-or-plain flag but **where the
+destination sits**, because the same column answers the unbuilt question
+of where on the wall to sample the wander and the scatter when a route
+points one of them at a global control.
+
+The split is lopsided. Everything inside the strip loop at
+`brain/src/P_Generator.cpp:762` is on a strip, and that is most of the
+map:
+
+| | CCs |
+|----|----|
+| On a strip | the shape 62–67, the fan 68–73, the placed field 43–49, the wander 50–54, the light level 55–57, the scatter 83–91, the three faders 38–40 |
+| Global | the washes 33–35, tempo division 2 |
+
+Roughly 36 of the 43 sit on a strip. The PARs have three controls of their
+own.
+
+**What this cannot do.** All strip routes are fanned together or none are,
+because CC 73 is a single global amount — brightness rolling across the
+wall while width pulses in unison is out of reach. A per-route byte would
+buy it, eight CCs of the nineteen left over. Whether that stays cheap
+depends on a CC layout nobody has chosen: routes laid out as blocks of
+four consecutive numbers make raising the count free and a fifth byte
+expensive, and giving each parameter its own block of eight does the
+reverse. That belongs to the CC map step, not here.
 
 ## Rates as destinations
 
@@ -395,18 +460,12 @@ a route five and drop the ceiling to ten.
 
 ## Still open
 
-1. **Fanned clock or plain clock, per route.** Today the strips read
-   `pulse + fanPulse × wave` and the washes read the plain phase, because a
-   PAR is one position with no strip to be offset from. That distinction is
-   implicit in where each destination is read in the frame. Once a route
-   can point anywhere it has to be stated, or it gets decided by accident
-   by whoever writes the loop.
-2. **Which destinations are refused**, and whether the quantized ones —
+1. **Which destinations are refused**, and whether the quantized ones —
    the fan's frequency in eighths, count as geometric whole numbers, the
    3-way ruler — are refused or allowed with the stepping treated as an
    effect. The same pass tags which controls are circular, and settles the
    rotation span each one takes.
-3. **Morphing between patches whose routes are aimed differently.** A
+2. **Morphing between patches whose routes are aimed differently.** A
    destination is a switch, and switches land on arrival or on release at
    the end of a journey — so travelling from a patch where route 3 pushes
    width to one where route 3 pushes hue, the *amount* interpolates the
@@ -419,8 +478,18 @@ a route five and drop the ceiling to ten.
    first one safe — reordering slots cannot change a look once the pushes
    add. This is the one place the
    matrix is genuinely weaker than what it replaces.
-4. **Sequencing** — whether the pulse's eighteen retire in the same change
+3. **Sequencing** — whether the pulse's eighteen retire in the same change
    that brings routes, or after.
+4. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
+   computes one colour and one level and writes the same eight bytes to
+   all four addresses; the only per-fixture data is calibration trim. So
+   the PARs cannot strobe one after the other, and no route design changes
+   that — each would need a position the way a strip has one. Two pieces
+   are missing: the per-fixture computation, and any record of which PAR
+   stands leftmost, since `docs/wiring.md` settles the strips' order from
+   PC 11 painting each one flat, while the fixture table is only addresses
+   1, 9, 17 and 25 in chain order. Output-layer work that routes neither
+   need nor fix, recorded here because a wanted look ran into it.
 
 ## Resuming this
 
@@ -432,12 +501,14 @@ block in `shared/aurora_protocol.h`; then the pulse machinery in
 `tools/preview.js`; then `docs/editor.md` for the panel model the new
 one has to fit into.
 
-**Answer the remaining four questions before building anything.** The wave
+**Answer the first three of the remaining questions before building
+anything** — the fourth is output-layer work that routes neither need nor
+fix. The wave
 is settled and fixes a route at four bytes, which settled the count at
 eight and took the pressure off the fifteen soldered amounts. How a push
-lands is settled too, including what two routes on one destination do.
-What is left is mostly per-control work: which destinations are refused,
-which wrap, and which clock each route reads.
+lands is settled too, including what two routes on one destination do and
+which clock each one reads. What is left is mostly per-control work:
+which destinations are refused, and which of them wrap.
 
 **Then build in this order.** The editor comes last on purpose — its shape
 depends on what a route turns out to be.
