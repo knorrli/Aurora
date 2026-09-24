@@ -83,9 +83,6 @@ extern void ShowStripOrder();
 
 // --- INPUT Color
 extern void setCurrentColor();
-extern void setHueFromCC(uint8_t value);
-extern void setSaturationFromCC(uint8_t value);
-extern void setValueFromCC(uint8_t value);
 
 // --- RENDER Preset
 extern void renderPreset(uint8_t preset);
@@ -129,19 +126,6 @@ extern void resetChaos();
 extern void Glitch(CHSV color);
 // The parametric generator — shape comes from CC 70–80, 100–114 and 115, not from here
 extern void Generator(CHSV color);
-extern void setGeneratorWidth(uint8_t value);
-extern void setGeneratorCount(uint8_t value);
-extern void setGeneratorEdge(uint8_t value);
-extern void setGeneratorTail(uint8_t value);
-extern void setGeneratorPosition(uint8_t value);
-extern void setGeneratorSpeed(uint8_t value);
-extern void setGeneratorFan(uint8_t value);
-extern void setGeneratorFanPulse(uint8_t value);
-extern void setGeneratorFanRate(uint8_t value);
-extern void setGeneratorFanFreq(uint8_t value);
-extern void setGeneratorFanPhase(uint8_t value);
-extern void setGeneratorFanRandom(uint8_t value);
-extern void setGeneratorPulseRate(uint8_t value);
 extern void setGeneratorAlternate(uint8_t value);
 extern void setGeneratorBounce(uint8_t value);
 // The pulse's destinations — CC 77/79/80 for the strips' brightness and
@@ -156,30 +140,6 @@ extern void setPulseSkew(uint8_t target, uint8_t value);
 // the faders say. See P_Generator.cpp § "The color layer".
 extern void setColorRegion(uint8_t value);
 extern void setColorRuler(uint8_t value);
-extern void setPlacedHue(uint8_t value);
-extern void setPlacedWhite(uint8_t value);
-extern void setPlacedDark(uint8_t value);
-extern void setPlacedCount(uint8_t value);
-extern void setPlacedWidth(uint8_t value);
-extern void setPlacedEdge(uint8_t value);
-extern void setPlacedSpeed(uint8_t value);
-extern void setWanderHue(uint8_t value);
-extern void setWanderWhite(uint8_t value);
-extern void setWanderDark(uint8_t value);
-extern void setWanderRate(uint8_t value);
-extern void setWanderScale(uint8_t value);
-extern void setLitHue(uint8_t value);
-extern void setLitWhite(uint8_t value);
-extern void setLitDark(uint8_t value);
-extern void setScatterRate(uint8_t value);
-extern void setScatterCount(uint8_t value);
-extern void setScatterWidth(uint8_t value);
-extern void setScatterEdge(uint8_t value);
-extern void setScatterStagger(uint8_t value);
-extern void setScatterDrift(uint8_t value);
-extern void setScatterLight(uint8_t value);
-extern void setScatterHue(uint8_t value);
-extern void setScatterWhite(uint8_t value);
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

@@ -1,5 +1,7 @@
 #include "Aurora.h"
 
+#include "destinations.h"
+
 #define MOD_SLOW_FACTOR 2
 #define MIN_COLOR_MOD_INTERVAL 1
 #define MAX_COLOR_MOD_INTERVAL 50
@@ -12,27 +14,16 @@
 #define MIN_VALUE 0
 #define MAX_VALUE 255
 
-static uint8_t hue = MIN_HUE;
-static uint8_t saturation = MAX_SATURATION;
-static uint8_t value = MAX_VALUE;
-
 static int8_t altColorModFactor = 0;
 static int8_t altColorModDirection = UP;
 static unsigned long color_mod_counter = 0;
 
-void setHueFromCC(uint8_t ccValue) {
-  hue = map(ccValue, 0, 127, MIN_HUE, MAX_HUE);
-}
-
-void setSaturationFromCC(uint8_t ccValue) {
-  saturation = map(ccValue, 0, 127, MIN_SATURATION, MAX_SATURATION);
-}
-
-void setValueFromCC(uint8_t ccValue) {
-  value = map(ccValue, 0, 127, MIN_VALUE, MAX_VALUE);
-}
-
 void setCurrentColor() {
+  const uint8_t hue = map(destinations::value(CC_HUE), 0, 127, MIN_HUE, MAX_HUE);
+  const uint8_t saturation =
+      map(destinations::value(CC_SATURATION), 0, 127, MIN_SATURATION, MAX_SATURATION);
+  const uint8_t value = map(destinations::value(CC_VALUE), 0, 127, MIN_VALUE, MAX_VALUE);
+
   if (faderAltModeEnabled) {
     color_mod_counter += 1;
     uint8_t currentModInterval = constrain(map(saturation, MIN_SATURATION, MAX_SATURATION, MIN_COLOR_MOD_INTERVAL, MAX_COLOR_MOD_INTERVAL), MIN_COLOR_MOD_INTERVAL, MAX_COLOR_MOD_INTERVAL);

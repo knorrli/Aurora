@@ -19,18 +19,6 @@ namespace dmx_out {
 void begin();
 void tick();
 
-// Wash master, 0–255. Independent of the strips, but not of PRESET_OFF,
-// which darkens everything. See CC_WASH_LEVEL in shared/aurora_protocol.h.
-void setLevel(uint8_t level);
-
-// Rotates the washes off the strips' hue; 0 matches them. See
-// CC_WASH_HUE_OFFSET in shared/aurora_protocol.h.
-void setHueOffset(uint8_t offset);
-
-// Scales the washes down from the strips' saturation, 0-255; 255 matches
-// them and 0 is white. See CC_WASH_SATURATION in shared/aurora_protocol.h.
-void setSaturation(uint8_t saturation);
-
 // What the generator's pulse is doing to the washes this frame. `level` and
 // `saturation` are signed fractions of the way from the dialed value to one
 // of its limits, the sign picking which; `hueOffset` is a plain rotation in

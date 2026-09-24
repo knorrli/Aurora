@@ -18,6 +18,10 @@ struct Dial {
 };
 
 static const Dial BOOT[] = {
+  { CC_WASH_LEVEL,      127 },
+  { CC_WASH_SATURATION, 127 },
+  { CC_SATURATION,      127 },
+  { CC_VALUE,           127 },
   { CC_GEN_WIDTH,        38 },
   { CC_GEN_EDGE,         19 },
   { CC_GEN_POSITION,     64 },
@@ -58,5 +62,7 @@ void store(uint8_t cc, uint8_t value) {
 uint8_t value(uint8_t cc) {
   return (cc < AURORA_PATCH_CC_COUNT) ? dialed[cc] : 0;
 }
+
+const uint8_t *all() { return dialed; }
 
 }  // namespace destinations

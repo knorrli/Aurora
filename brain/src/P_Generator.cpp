@@ -99,7 +99,6 @@ static float genPulseBeats = 4.0f;
 static bool genAlternate = false;
 static bool genBounce = false;
 
-
 static inline float fract(float x) { return x - floorf(x); }
 static float shapeAt(float offset, float width, float edge, float tail);
 
@@ -1082,23 +1081,8 @@ void Generator(CHSV color) {
                         pulsePush(PULSE_TO_PAR_SAT, pulse));
 }
 
-void setGeneratorWidth(uint8_t value)     { destinations::store(CC_GEN_WIDTH, value); }
-void setGeneratorEdge(uint8_t value)      { destinations::store(CC_GEN_EDGE, value); }
-void setGeneratorTail(uint8_t value)      { destinations::store(CC_GEN_TAIL, value); }
-void setGeneratorFan(uint8_t value)       { destinations::store(CC_GEN_FAN, value); }
-void setGeneratorFanPulse(uint8_t value)  { destinations::store(CC_GEN_FAN_PULSE, value); }
-void setGeneratorFanRate(uint8_t value)   { destinations::store(CC_GEN_FAN_RATE, value); }
-void setGeneratorFanFreq(uint8_t value)   { destinations::store(CC_GEN_FAN_FREQ, value); }
-void setGeneratorFanPhase(uint8_t value)  { destinations::store(CC_GEN_FAN_PHASE, value); }
-void setGeneratorFanRandom(uint8_t value) { destinations::store(CC_GEN_FAN_RANDOM, value); }
-void setGeneratorCount(uint8_t value)     { destinations::store(CC_GEN_COUNT, value); }
-void setGeneratorPosition(uint8_t value)  { destinations::store(CC_GEN_POSITION, value); }
-void setGeneratorSpeed(uint8_t value)     { destinations::store(CC_GEN_SPEED, value); }
-void setGeneratorPulseRate(uint8_t value) { destinations::store(CC_GEN_PULSE_RATE, value); }
-
 void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
 void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); }
-
 
 // Brightness has no room above full, so its amount is unipolar and its only
 // direction is down. Every other destination has two sides and the sign of
@@ -1123,30 +1107,3 @@ void setColorRuler(uint8_t value) {
   placed.ruler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 }
 
-void setPlacedHue(uint8_t value)      { destinations::store(CC_PLACED_HUE, value); }
-void setPlacedWhite(uint8_t value)    { destinations::store(CC_PLACED_WHITE, value); }
-void setPlacedDark(uint8_t value)     { destinations::store(CC_PLACED_DARK, value); }
-void setPlacedWidth(uint8_t value)    { destinations::store(CC_PLACED_WIDTH, value); }
-void setPlacedEdge(uint8_t value)     { destinations::store(CC_PLACED_EDGE, value); }
-void setPlacedCount(uint8_t value)    { destinations::store(CC_PLACED_COUNT, value); }
-void setPlacedSpeed(uint8_t value)    { destinations::store(CC_PLACED_SPEED, value); }
-
-void setWanderHue(uint8_t value)      { destinations::store(CC_WANDER_HUE, value); }
-void setWanderWhite(uint8_t value)    { destinations::store(CC_WANDER_WHITE, value); }
-void setWanderDark(uint8_t value)     { destinations::store(CC_WANDER_DARK, value); }
-void setWanderRate(uint8_t value)     { destinations::store(CC_WANDER_RATE, value); }
-void setWanderScale(uint8_t value)    { destinations::store(CC_WANDER_SCALE, value); }
-
-void setLitHue(uint8_t value)         { destinations::store(CC_LIT_HUE, value); }
-void setLitWhite(uint8_t value)       { destinations::store(CC_LIT_WHITE, value); }
-void setLitDark(uint8_t value)        { destinations::store(CC_LIT_DARK, value); }
-
-void setScatterRate(uint8_t value)    { destinations::store(CC_SCATTER_RATE, value); }
-void setScatterCount(uint8_t value)   { destinations::store(CC_SCATTER_COUNT, value); }
-void setScatterWidth(uint8_t value)   { destinations::store(CC_SCATTER_WIDTH, value); }
-void setScatterEdge(uint8_t value)    { destinations::store(CC_SCATTER_EDGE, value); }
-void setScatterStagger(uint8_t value) { destinations::store(CC_SCATTER_STAGGER, value); }
-void setScatterDrift(uint8_t value)   { destinations::store(CC_SCATTER_DRIFT, value); }
-void setScatterLight(uint8_t value)   { destinations::store(CC_SCATTER_LIGHT, value); }
-void setScatterHue(uint8_t value)     { destinations::store(CC_SCATTER_HUE, value); }
-void setScatterWhite(uint8_t value)   { destinations::store(CC_SCATTER_WHITE, value); }

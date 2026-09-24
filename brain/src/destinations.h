@@ -24,4 +24,14 @@ void store(uint8_t cc, uint8_t value);
 // Nothing pushes yet; routes arrive with the CC map.
 uint8_t value(uint8_t cc);
 
+// Every byte, indexed by CC number — what a patch is, see DESIGN.md
+// § "Patch storage". This is the only place the brain knows what a control
+// was set to, because a renderer converts on the way out and the conversion
+// cannot be inverted: a count is round(20^(value/127)).
+//
+// A control nobody has sent reads its boot value rather than 0, so a snapshot
+// taken before the brain has been driven records what is lit rather than a
+// wall of zeroes.
+const uint8_t *all();
+
 }  // namespace destinations

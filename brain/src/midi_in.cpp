@@ -1,6 +1,6 @@
 #include "midi_in.h"
 
-#include "dmx_out.h"
+#include "destinations.h"
 #include "patch_sync.h"
 
 #include "Aurora.h"
@@ -14,77 +14,28 @@ static void handleProgramChange(uint8_t channel, uint8_t program) {
     resetPreset(selectedPreset);
 }
 
-static uint8_t ccByte[128];
-
 static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value) {
     (void)channel;
-    if (control < 128) ccByte[control] = value;
+
+    // Every control lands in the same store, whether or not anything reads it
+    // yet. A renderer converts it when it draws, because a modulation route
+    // pushes the byte and the conversion has to see the pushed value.
+    destinations::store(control, value);
+
+    // What is left below is the controls that do more than be stored: the
+    // transport, the switches, which have no middle for a push to land in,
+    // and the pulse's sends, which are on their way out with the route block.
     switch (control) {
         case CC_TEMPO_DIVISION:
             tempo::setDivision(value);
             break;
-        case CC_HUE:
-            setHueFromCC(value);
-            break;
-        case CC_SATURATION:
-            setSaturationFromCC(value);
-            break;
-        case CC_VALUE:
-            setValueFromCC(value);
-            break;
-        case CC_WASH_LEVEL:
-            dmx_out::setLevel(map(value, 0, 127, 0, 255));
-            break;
-        case CC_WASH_HUE_OFFSET:
-            dmx_out::setHueOffset(map(value, 0, 127, 0, 255));
-            break;
-        case CC_WASH_SATURATION:
-            dmx_out::setSaturation(map(value, 0, 127, 0, 255));
-            break;
-        case CC_COLOR_REGION:   setColorRegion(value); break;
-        case CC_COLOR_RULER:    setColorRuler(value); break;
-        case CC_PLACED_HUE:      setPlacedHue(value); break;
-        case CC_PLACED_WHITE:    setPlacedWhite(value); break;
-        case CC_PLACED_DARK:     setPlacedDark(value); break;
-        case CC_PLACED_COUNT:    setPlacedCount(value); break;
-        case CC_PLACED_WIDTH:    setPlacedWidth(value); break;
-        case CC_PLACED_EDGE:     setPlacedEdge(value); break;
-        case CC_PLACED_SPEED:    setPlacedSpeed(value); break;
-        case CC_WANDER_HUE:      setWanderHue(value); break;
-        case CC_WANDER_WHITE:    setWanderWhite(value); break;
-        case CC_WANDER_DARK:     setWanderDark(value); break;
-        case CC_WANDER_RATE:     setWanderRate(value); break;
-        case CC_WANDER_SCALE:    setWanderScale(value); break;
-        case CC_LIT_HUE:         setLitHue(value); break;
-        case CC_LIT_WHITE:       setLitWhite(value); break;
-        case CC_LIT_DARK:        setLitDark(value); break;
-        case CC_SCATTER_RATE:    setScatterRate(value); break;
-        case CC_SCATTER_COUNT:   setScatterCount(value); break;
-        case CC_SCATTER_WIDTH:   setScatterWidth(value); break;
-        case CC_SCATTER_EDGE:    setScatterEdge(value); break;
-        case CC_SCATTER_STAGGER: setScatterStagger(value); break;
-        case CC_SCATTER_DRIFT:   setScatterDrift(value); break;
-        case CC_SCATTER_LIGHT:   setScatterLight(value); break;
-        case CC_SCATTER_HUE:     setScatterHue(value); break;
-        case CC_SCATTER_WHITE:   setScatterWhite(value); break;
-        case CC_GEN_WIDTH:       setGeneratorWidth(value); break;
-        case CC_GEN_COUNT:       setGeneratorCount(value); break;
-        case CC_GEN_EDGE:        setGeneratorEdge(value); break;
-        case CC_GEN_TAIL:        setGeneratorTail(value); break;
-        case CC_GEN_POSITION:    setGeneratorPosition(value); break;
-        case CC_GEN_SPEED:       setGeneratorSpeed(value); break;
-        case CC_GEN_FAN:         setGeneratorFan(value); break;
-        case CC_GEN_FAN_PULSE:   setGeneratorFanPulse(value); break;
-        case CC_GEN_FAN_RATE:    setGeneratorFanRate(value); break;
-        case CC_GEN_FAN_FREQ:    setGeneratorFanFreq(value); break;
-        case CC_GEN_FAN_PHASE:   setGeneratorFanPhase(value); break;
-        case CC_GEN_FAN_RANDOM:  setGeneratorFanRandom(value); break;
-        case CC_GEN_PULSE_RATE:  setGeneratorPulseRate(value); break;
-        case CC_GEN_ALTERNATE:   setGeneratorAlternate(value); break;
-        case CC_GEN_BOUNCE:      setGeneratorBounce(value); break;
+        case CC_COLOR_REGION:  setColorRegion(value); break;
+        case CC_COLOR_RULER:   setColorRuler(value); break;
+        case CC_GEN_ALTERNATE: setGeneratorAlternate(value); break;
+        case CC_GEN_BOUNCE:    setGeneratorBounce(value); break;
 
         // The pulse, destination by destination. The strips' brightness kept
-        // the three numbers it has always had; the rest are the 100–114
+        // the three numbers it has always had; the rest are the 101–115
         // block, three apiece in the order amount, shape, skew.
         case CC_GEN_PULSE_DEPTH: setPulseAmount(PULSE_TO_LIGHT, value); break;
         case CC_GEN_PULSE_SHAPE: setPulseShape(PULSE_TO_LIGHT, value); break;
@@ -135,7 +86,5 @@ void begin() {
 void tick() {
     while (usbMIDI.read()) { }
 }
-
-const uint8_t *ccBytes() { return ccByte; }
 
 } // namespace midi_in

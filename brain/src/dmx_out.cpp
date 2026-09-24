@@ -1,6 +1,7 @@
 #include "dmx_out.h"
 
 #include "Aurora.h"
+#include "destinations.h"
 #include <TeensyDMX.h>
 
 namespace teensydmx = ::qindesign::teensydmx;
@@ -31,10 +32,6 @@ static Fixture fixtures[] = {
 
 static uint8_t lastWritten[8] = { 0 };
 
-static uint8_t washLevel = 255;
-static uint8_t washHueOffset = 0;
-static uint8_t washSaturation = 255;
-
 static float pulseLevel = 0.0f;
 static float pulseHue = 0.0f;
 static float pulseSaturation = 0.0f;
@@ -56,6 +53,12 @@ void begin() {
 }
 
 void tick() {
+    const uint8_t washLevel = map(destinations::value(CC_WASH_LEVEL), 0, 127, 0, 255);
+    const uint8_t washHueOffset =
+        map(destinations::value(CC_WASH_HUE_OFFSET), 0, 127, 0, 255);
+    const uint8_t washSaturation =
+        map(destinations::value(CC_WASH_SATURATION), 0, 127, 0, 255);
+
     // Color is converted at full value and brightness is carried by the
     // fixture's own dimmer, so the emitters stay near full scale where
     // they have the most resolution. Scaling RGBW down instead — the only
@@ -122,18 +125,6 @@ void setPulsePush(float level, float hueOffset, float saturation) {
     pulseLevel = level;
     pulseHue = hueOffset;
     pulseSaturation = saturation;
-}
-
-void setLevel(uint8_t level) {
-    washLevel = level;
-}
-
-void setHueOffset(uint8_t offset) {
-    washHueOffset = offset;
-}
-
-void setSaturation(uint8_t saturation) {
-    washSaturation = saturation;
 }
 
 const uint8_t *lastValues() {
