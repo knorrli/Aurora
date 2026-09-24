@@ -10,9 +10,11 @@ browser and the preview is a real check, so what is verified is that the page
 builds a patch, blends it, and produces the right bytes — not that the brain
 likes them.
 
-It replaces `tools/index.html`, which is kept until this one has been used at
-the bench. The old page has no patch in the DESIGN sense: one flat parameter
-set in `localStorage`, no far ends, no accent, no library, no wire.
+It replaced `tools/index.html`, deleted 2026-09-24. That page had no patch in
+the DESIGN sense — one flat parameter set in `localStorage`, no far ends, no
+accent, no library, no wire — and it carried its own copy of the CC map, the
+control descriptions and the look presets, so every protocol change had to be
+made twice by hand.
 
 ## The shape: carrier, modulators, outputs
 

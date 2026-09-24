@@ -41,10 +41,9 @@ Everything lives on **`main`**. The last v1 commit is tagged
   so a patch saved still comes back to the same place instead of standing
   wherever the last traveling one ran out. See `docs/generator.md` § "A
   still pattern stands where it is told".
-- **The bench panel** — `tools/index.html`, drawn as the signal flow,
-  with patch save/recall, the morph control and a row of color looks. The
-  pulse is a third branch on it, since it reaches both the others and the
-  washes.
+- **The bench panel** — `tools/editor.html`, drawn as the signal flow, with
+  the patch library, the morph control and a row of color looks. The routes
+  are a third branch on it, since they reach both the others and the washes.
 - **The wall on screen** — `tools/preview.js`, five strips and four PARs
   rendered from a port of the firmware, so a look can be dialed with
   nothing plugged in. The color layer was designed here before it was
@@ -578,12 +577,13 @@ it becomes a build item.
       boundary at full width, where a float rounds onto the other side of the
       comparison. The wall has texture again.
 
-- [ ] **Use the new editor at the bench, and delete the old one.**
-      `tools/editor.html` was built in one night, runs clean in a browser and
-      has **never driven the rig**. `tools/index.html` is kept until it has.
-      Three things to watch for first: whether pushing a library actually lands
-      (the SysEx path has never run against hardware either), whether driving
-      72 CCs from a morph at frame rate is too much traffic over USB, and
+- [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
+      browser and has **never driven the rig**. The old page went anyway, since
+      keeping it meant maintaining a second copy of the CC map through the
+      route work and there is no assembled rig to test either against. Three
+      things to watch for when there is: whether pushing a library actually
+      lands (the SysEx path has never run against hardware either), whether
+      driving a morph's CCs at frame rate is too much traffic over USB, and
       whether the carrier/modulator split reads as well with the wall in front
       of you as it does on screen.
 
@@ -613,8 +613,8 @@ it becomes a build item.
       copy of all 72 — see `docs/editor.md` § "A far end is an override".
       `materialize()` is where five whole sets appear for the wire.
 
-      What the old page said, kept because `tools/index.html` is still here:
-      `tools/index.html`
+      What the old page did, for the record:
+      It
       saves a flat map of cooked parameter names to `localStorage`: one
       parameter set, no fader far ends, no accent target, no ramp times,
       and the pattern is not in it. Until that is reworked, nothing can

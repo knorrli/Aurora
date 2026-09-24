@@ -1,8 +1,8 @@
 # The CC map, regrouped
 
 **Applied 2026-09-23.** This is the map as it now stands in
-`shared/aurora_protocol.h`; both firmwares, `tools/patch.js` and
-`tools/index.html` agree with it, checked number by number. Drafted
+`shared/aurora_protocol.h`, which the browser side now reads through
+`tools/cc.js` rather than keeping its own copy. Drafted
 2026-09-23, after the fan took the last numbers at the end of the map and
 showed that the map is not short of numbers but short of room in the right
 places.

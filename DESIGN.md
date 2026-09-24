@@ -437,10 +437,10 @@ simply always on, in which case it costs nothing.
 lays on top of what the patch is already doing, or the affected strips
 take it alone, has no middle state — so it costs a switch, not an axis.
 
-**All of this is testable before anything is wired.** The brain renders
-and `tools/index.html` already drives it over USB MIDI, so an XY pad in
-the page, a width selector, a mirror toggle and a destination picker are
-a real test on the real wall. Three things the model above is guessing
+**All of this is testable before anything is wired.** The brain renders and
+`tools/editor.html` drives it over USB MIDI, so an XY pad in the page, a width
+selector, a mirror toggle and a destination picker are a real test on the real
+wall. Three things the model above is guessing
 at would come back answered: whether arbitrary patch pairs morph through
 anything worth seeing, whether a continuous window reads as a sweep or
 as a smear, and whether a strip caught halfway between two patches looks

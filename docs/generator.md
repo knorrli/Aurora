@@ -1159,8 +1159,8 @@ nearly free and the question shrinks to what 4 and 5 need.
   Both sides ease their offset back onto the grid, and the panel's clock
   button sends a transport start and restarts the page's beat zero
   together, so the bar a swell lands on is the same bar in both.
-- `tools/index.html` — sliders over Web MIDI, patch save and recall, the
-  morph control, the roster as one-click starting points, and a row of
+- `tools/editor.html` — sliders over Web MIDI, the patch library over SysEx,
+  the morph control, the roster as one-click starting points, and a row of
   color looks that set the color layer only.
 
   **Serve it rather than opening the file.** `python3 -m http.server` from
