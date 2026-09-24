@@ -24,7 +24,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const CPP_SOURCES = ['brain/src/P_Generator.cpp', 'brain/src/Aurora.h'];
+const CPP_SOURCES = ['brain/src/P_Generator.cpp', 'brain/src/Aurora.h',
+                     'shared/aurora_protocol.h'];
 const JS_SOURCE = 'tools/preview.js';
 
 // Loose, deliberately. The firmware computes in 32-bit floats and the preview
@@ -178,6 +179,115 @@ function runJs(check, src) {
 const SETTINGS = 8;
 
 const CHECKS = [
+  // The conversions first: they turn the byte a fader sent into what every
+  // check below consumes, and since a control is stored as that byte and
+  // converted where it is drawn, a wrong curve here moves the whole wall.
+  // These sweep all 128 values, so they are exhaustive rather than sampled.
+  {
+    name: 'pulsePeriod',
+    cpp: ['AURORA_PULSE_PERIODS', 'AURORA_PULSE_PERIOD_COUNT', 'aurora_pulse_period'],
+    js: ['PULSE_PERIODS', 'pulsePeriod'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(aurora_pulse_period((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(pulsePeriod(v));`,
+  },
+  {
+    name: 'ccUnit',
+    cpp: ['ccUnit'],
+    js: ['ccUnit'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(ccUnit((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(ccUnit(v));`,
+  },
+  {
+    name: 'ccBipolar',
+    cpp: ['ccBipolar'],
+    js: ['ccBipolar'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(ccBipolar((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(ccBipolar(v));`,
+  },
+  {
+    name: 'ccCount',
+    cpp: ['GEN_MAX_COUNT', 'ccUnit', 'ccCount'],
+    js: ['GEN_MAX_COUNT', 'ccCount'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT((float)ccCount((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(ccCount(v));`,
+  },
+  {
+    name: 'speedPixels',
+    cpp: ['GEN_MAX_SPEED_PIXELS_PER_BEAT', 'GEN_STILL_PIXELS_PER_BEAT',
+          'speedPixelsFrom'],
+    js: ['GEN_MAX_SPEED_PIXELS_PER_BEAT', 'GEN_STILL_PIXELS_PER_BEAT',
+         'ccSquared', 'stillBelowThreshold'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(speedPixelsFrom((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++)
+    emit(stillBelowThreshold(ccSquared(v, GEN_MAX_SPEED_PIXELS_PER_BEAT)));`,
+  },
+  {
+    name: 'fanRate',
+    cpp: ['GEN_MAX_SPEED_PIXELS_PER_BEAT', 'fanRateFrom'],
+    js: ['GEN_MAX_SPEED_PIXELS_PER_BEAT', 'ccSquared'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(fanRateFrom((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(ccSquared(v, GEN_MAX_SPEED_PIXELS_PER_BEAT));`,
+  },
+  {
+    name: 'fanFreq',
+    cpp: ['GEN_FAN_FREQ_STEPS', 'GEN_FAN_MAX_CYCLES_PER_STRIP', 'fanFreqFrom'],
+    js: ['GEN_FAN_FREQ_STEPS', 'GEN_FAN_MAX_CYCLES_PER_STRIP', 'fanFrequency'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(fanFreqFrom((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(fanFrequency(v));`,
+  },
+  {
+    name: 'placedSpeed',
+    cpp: ['PLACED_MAX_CELLS_PER_BEAT', 'placedCellsPerBeatFrom'],
+    js: ['PLACED_MAX_CELLS_PER_BEAT', 'ccSquared'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(placedCellsPerBeatFrom((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++) emit(ccSquared(v, PLACED_MAX_CELLS_PER_BEAT));`,
+  },
+  {
+    name: 'wanderCycles',
+    cpp: ['WANDER_MAX_CYCLES_PER_BEAT', 'ccUnit', 'wanderCyclesFrom'],
+    js: ['WANDER_MAX_CYCLES_PER_BEAT', 'ccUnit'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(wanderCyclesFrom((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++)
+    emit(ccUnit(v) ** 2 * WANDER_MAX_CYCLES_PER_BEAT);`,
+  },
+  {
+    name: 'scatterRate',
+    cpp: ['SCATTER_MAX_CYCLES_PER_BEAT', 'ccUnit', 'scatterRateFrom'],
+    js: ['SCATTER_MAX_CYCLES_PER_BEAT', 'ccUnit'],
+    dims: [['value', 128]],
+    cppDriver: `
+  for (int v = 0; v < 128; v++) EMIT(scatterRateFrom((uint8_t)v));`,
+    jsDriver: `
+  for (let v = 0; v < 128; v++)
+    emit(ccUnit(v) ** 2 * SCATTER_MAX_CYCLES_PER_BEAT);`,
+  },
   {
     name: 'coreAt',
     cpp: ['coreAt'],
