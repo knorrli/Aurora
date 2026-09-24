@@ -270,6 +270,70 @@ question about whether a route wants its own phase offset.
    the fan's frequency in eighths, count as geometric whole numbers, the
    3-way ruler — are refused or allowed with the stepping treated as an
    effect.
-5. **The wave fork**, above.
-6. **Sequencing** — whether the pulse's eighteen retire in the same change
+5. **The wave fork**, above. It decides what a route costs and therefore
+   how many fit, so it is the one that unblocks the others.
+6. **Morphing between patches whose routes are aimed differently.** A
+   destination is a switch, and switches land on arrival or on release at
+   the end of a journey — so travelling from a patch where route 3 pushes
+   width to one where route 3 pushes hue, the *amount* interpolates the
+   whole way while the destination stays on width and snaps at the end.
+   Halfway across, width is being pushed by a number dialed for hue.
+   Soldered amounts cannot do this, because their destinations never
+   disagree. Two ways out, both cheap: order routes canonically by
+   destination so slot N means the same thing in every patch, or have the
+   editor align slots when it builds a library. This is the one place the
+   matrix is genuinely weaker than what it replaces.
+7. **Sequencing** — whether the pulse's eighteen retire in the same change
    that brings routes, or after.
+
+## Resuming this
+
+**Read in this order.** This file; then `docs/generator.md` §§ "Where the
+pulse reaches", "The fan is a wave" and "The scatter"; then the 101–119
+block in `shared/aurora_protocol.h`; then the pulse machinery in
+`brain/src/P_Generator.cpp` — `PulseSend`, `pulseWave`, `pulsePush`,
+`anchoredPulsePhase`, `pushToward` — and its mirror in
+`tools/preview.js`; then `docs/editor.md` for the panel model the new
+one has to fit into.
+
+**Answer the seven questions before building anything.** They are not
+independent: the wave decides what a route costs, which decides how many
+routes fit, which decides whether the fifteen soldered amounts are under
+any pressure at all.
+
+**Then build in this order.** The editor comes last on purpose — its shape
+depends on what a route turns out to be.
+
+1. The destination table in the firmware: every modulatable parameter
+   becomes a base plus a modulation sum, with a declared application rule
+   and unit, while the existing six destinations stay hardwired. Nothing
+   should change on the wall.
+2. The same in `tools/preview.js`, cross-checked function by function.
+3. The wave, both sides, whatever question 5 decided.
+4. The CC map: retire 101–115, add the route block, and check every
+   consumer number by number the way the regroup did.
+5. Routes replace the six hardwired sends, both sides.
+6. The editor: the control list in `tools/patch.js`, the per-slider panel,
+   the route marks, the route list, and `docs/editor.md`.
+7. Fold what is settled here into `docs/generator.md` and leave this file
+   as the record of why.
+
+**Check it with `node tools/crosscheck.mjs`.** It lifts a function and
+its dependencies out of both renderers, drives them over the same grid,
+and reports where they disagree — the discipline that keeps two
+implementations of the same maths identical. Add a check for every
+function this work touches; a check is a few lines of table. Sweep on
+binary-exact steps, halves and quarters rather than tenths, or the two
+sides are handed different inputs before the function is even called.
+
+Two things it cannot do yet, both worth building when they are needed
+rather than now:
+
+- **Compare a whole rendered frame** rather than one function. That is the
+  check that would prove a refactor changed nothing, and it is blocked on
+  the firmware's `Generator()` needing FastLED, `CHSV` and `tempo::beats()`
+  to run on a host.
+- **Compare against a stored baseline** instead of against the other
+  implementation, which is what step 1 above actually wants: proof that a
+  no-behavior-change refactor changed no behavior. A `--save` that writes
+  the outputs and a run that diffs against them.

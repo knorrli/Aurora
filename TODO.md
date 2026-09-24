@@ -56,6 +56,13 @@ Everything lives on **`main`**. The last v1 commit is tagged
   wall**. See `docs/generator.md` § "The scatter".
 - **A strip-order rigging aid** on PC 11 — each strip a flat color in
   data-chain order.
+- **The cross-check harness**, 2026-09-24. `node tools/crosscheck.mjs`
+  lifts a function and its dependencies out of `brain/src/P_Generator.cpp`
+  and out of `tools/preview.js`, drives both over the same grid and reports
+  where they disagree. Six checks seeded, and it was shown to catch a
+  deliberately broken edge fade in three of them at once. The two renderers
+  are the same maths written twice and nothing else was keeping them
+  honest.
 
 Measurements in `docs/bench-facts.md`.
 
