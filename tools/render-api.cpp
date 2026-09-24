@@ -47,4 +47,16 @@ EMSCRIPTEN_KEEPALIVE float aurora_pulse_wave(float phase, int wave) {
   return render::pulseWave(phase, (uint8_t)wave);
 }
 
+EMSCRIPTEN_KEEPALIVE float aurora_convert(int cc, int value) {
+  return render::convert((uint8_t)cc, (uint8_t)value);
+}
+
+EMSCRIPTEN_KEEPALIVE float aurora_light_left(float dark) { return render::lightLeft(dark); }
+
+// Ramp times are stepped through the same periods as the pulse, and are not a
+// CC, so they get the table's own lookup rather than convert().
+EMSCRIPTEN_KEEPALIVE float aurora_pulse_period_beats(int value) {
+  return aurora_pulse_period((uint8_t)value);
+}
+
 }  // extern "C"

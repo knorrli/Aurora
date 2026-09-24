@@ -76,45 +76,60 @@
 
   // ---- readouts ----------------------------------------------------------
   //
-  // Mirrors of the mappings in shared/render/generator.cpp, for labels only.
-  // If those change these lie until they are changed to match.
+  // The number in every label is the renderer's own, from convert() in
+  // shared/render/generator.cpp, so a label says what the wall is doing. What
+  // stays here is only the wording. Labels are drawn after tools/preview.js has
+  // its module, which is why they reach it at call time.
+
+  const V = () => global.AuroraPreview;
+  const real = (name, v) => V().convert(A.CC[name], v);
 
   const unit = v => v / 127;
   const bip = v => (v < 64 ? (v - 64) / 64 : (v - 64) / 63);
-  const ccCount = v => Math.min(20, Math.max(1, Math.round(Math.pow(20, v / 127))));
   const pct = v => (v / 127 * 100).toFixed(0) + '%';
-  const signedPct = (v, up, down) => {
-    const r = bip(v);
-    if (Math.abs(r) < 0.01) return 'not reached';
-    return (Math.abs(r) * 100).toFixed(0) + '% ' + (r > 0 ? up : down);
-  };
-  // Stepped, so that a strip the wave reads zero at is exactly still rather
-  // than crawling. Eighths of a turn across the wall, 17 positions.
+  const percent = r => (r * 100).toFixed(0) + '%';
+  const ofByte = r => percent(r / 255);
+  const signedReach = (r, up, down) =>
+    Math.abs(r) < 0.01 ? 'not reached' : percent(Math.abs(r)) + ' ' + (r > 0 ? up : down);
+  const lightLeft = r => (100 * V().lightLeft(r)).toFixed(1) + '%';
+
   function fanTurns(v) {
-    const eighths = Math.round(v * 16 / 127);
-    if (eighths === 0) return 'all five alike';
-    if (eighths === 16) return 'every strip opposite its neighbors';
-    const turns = (eighths / 8).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+    const perStrip = real('genFanFreq', v);
+    if (perStrip === 0) return 'all five alike';
+    // Half a cycle a strip stands every strip opposite its neighbors.
+    if (perStrip === 0.5) return 'every strip opposite its neighbors';
+    const turns = (perStrip * (V().STRIPS - 1)).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
     return turns + (turns === '1' ? ' turn' : ' turns') + ' across the wall';
   }
 
-  const fanAmount = (v, unit) => {
-    const r = Math.abs(bip(v));
-    return r < 0.01 ? 'every strip together' : (r * 100).toFixed(0) + '% ' + unit;
+  // Both ends of a fan amount are the same wall with the wave turned over,
+  // so these say how far apart the strips stand and not which way.
+  const fanAmount = (name, what) => v => {
+    const r = Math.abs(real(name, v)) * 2;
+    return r < 0.01 ? 'every strip together' : percent(r) + ' ' + what;
   };
-  const hueAmount = v => {
-    const r = Math.round(bip(v) * 128);
-    return r === 0 ? 'not reached' : (r > 0 ? '+' : '') + r + ' of 255 at the peak';
+  const hueReach = (name, zero, suffix) => v => {
+    const r = Math.round(real(name, v));
+    return r === 0 ? zero : (r > 0 ? '+' : '') + r + suffix;
+  };
+  const darkReach = (name, zero, core) => v => {
+    const r = real(name, v);
+    if (Math.abs(r) < 0.01) return zero;
+    return r < 0 ? core + 'down to ' + lightLeft(r) : core + percent(r) + ' toward full';
+  };
+  const swing = name => v => {
+    const r = Math.abs(real(name, v));
+    return r < 0.01 ? 'off' : '\u00b1' + percent(r);
   };
 
-  const PULSE_PERIODS = [16, 12, 8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25];
-  const PULSE_PERIOD_NAMES = [
-    '16 beats · four bars', '12 beats · three bars', '8 beats · two bars',
-    '6 beats', '4 beats · one bar', '3 beats', '2 beats · half a bar',
-    '1½ beats', '1 beat', '¾ beat', '½ beat', '⅜ beat', '¼ beat',
-  ];
-  const periodStep = v => Math.min(PULSE_PERIODS.length - 1,
-    Math.floor((v * (PULSE_PERIODS.length - 1) + 63) / 127));
+  const PULSE_PERIODS = A.PULSE_PERIODS;
+  const PERIOD_NAMES = {
+    16: '16 beats · four bars', 12: '12 beats · three bars', 8: '8 beats · two bars',
+    6: '6 beats', 4: '4 beats · one bar', 3: '3 beats', 2: '2 beats · half a bar',
+    1.5: '1½ beats', 1: '1 beat', 0.75: '¾ beat', 0.5: '½ beat', 0.375: '⅜ beat', 0.25: '¼ beat',
+  };
+  const PULSE_PERIOD_NAMES = PULSE_PERIODS.map(beats => PERIOD_NAMES[beats]);
+  const periodStep = v => PULSE_PERIODS.indexOf(V().pulsePeriodBeats(v));
   const periodByte = step => Math.round(step * 127 / (PULSE_PERIODS.length - 1));
 
   // AuroraTempoDivision. The value is the enum index, not a 0-127 scale, which
@@ -127,31 +142,33 @@
   const DERIVED = {
     tempoDivision: v => (DIVISIONS.find(d => d[0] === v) || [0, 'quarter'])[1],
 
-    genWidth: pct, genEdge: v => pct(v) + ' into the gap', genTail: v => pct(v) + ' of the gap',
-    genCount: v => ccCount(v) + ' shapes',
-    genPosition: v => Math.abs(bip(v)) < 0.02 ? 'center of the cell'
-                 : (bip(v) * 50).toFixed(0) + '% of a cell off center',
-    genSpeed: v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
-                  return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
-    // Both ends of a fan amount are the same wall with the wave turned over,
-    // so these say how far apart the strips stand and not which way.
-    genFan: v => fanAmount(v, 'of a cell apart'),
-    genFanPulse: v => fanAmount(v, 'of a swell apart'),
-    genFanRate: v => { const x = (v - 64) / 63; const r = x * x * 60;
-                    return r < 0.05 ? 'every strip at Speed'
-                         : '\u00b1' + r.toFixed(1) + ' px/beat either side of Speed'; },
-    genFanFreq: v => fanTurns(v),
-    genFanPhase: v => (v / 128 * 100).toFixed(0) + '% of a turn',
+    genWidth: v => percent(real('genWidth', v)),
+    genEdge: v => percent(real('genEdge', v)) + ' into the gap',
+    genTail: v => percent(real('genTail', v)) + ' of the gap',
+    genCount: v => real('genCount', v) + ' shapes',
+    genPosition: v => { const cells = real('genPosition', v);
+                        return Math.abs(cells) < 0.01 ? 'center of the cell'
+                             : percent(cells) + ' of a cell off center'; },
+    genSpeed: v => { const s = real('genSpeed', v);
+                     return s === 0 ? 'still' : s.toFixed(1) + ' px/beat'; },
+    genFan: fanAmount('genFan', 'of a cell apart'),
+    genFanPulse: fanAmount('genFanPulse', 'of a swell apart'),
+    genFanRate: v => { const r = Math.abs(real('genFanRate', v));
+                       return r < 0.05 ? 'every strip at Speed'
+                            : '\u00b1' + r.toFixed(1) + ' px/beat either side of Speed'; },
+    genFanFreq: fanTurns,
+    genFanPhase: v => percent(real('genFanPhase', v)) + ' of a turn',
     genFanRandom: v => v === 0 ? 'the wave' : v > 125 ? 'a fixed draw per strip'
-                    : pct(v) + ' scrambled',
+                    : percent(real('genFanRandom', v)) + ' scrambled',
 
-    hue: v => Math.round(v / 127 * 250) + '/255',
-    saturation: pct, value: pct,
+    hue: v => real('hue', v) + '/255',
+    saturation: v => ofByte(real('saturation', v)),
+    value: v => ofByte(real('value', v)),
 
-    genPulseRate: v => PULSE_PERIOD_NAMES[periodStep(v)],
+    genPulseRate: v => PERIOD_NAMES[real('genPulseRate', v)],
     routeDestination: v => v === 0 ? 'not aimed' : (A.NAME_BY_CC[v] || 'CC ' + v),
     routeAmount: v => Math.abs(bip(v)) < 0.01 ? 'nothing'
-                    : signedPct(v, 'toward the top', 'toward the bottom'),
+                    : signedReach(bip(v), 'toward the top', 'toward the bottom'),
     routeRatio: v => '\u00d7' + A.routeRatio(v) + ' the clock',
     // One axis from a build to a stab, with the named shapes on values a
     // fader lands on exactly. See docs/modulation.md § "The fork, settled".
@@ -165,65 +182,54 @@
                   : v < 96 ? 'snaps, ' + pct((v - 64) * 4) + ' toward square'
                   : 'hard, ' + pct((v - 96) * 4) + ' shorter',
 
-    // The rate is squared in the renderer, so a linear readout here would be
-    // wrong over most of the travel.
-    scatterRate: v => { const r = unit(v) ** 2 * 4;
+    scatterRate: v => { const r = real('scatterRate', v);
                         return r < 0.01 ? 'frozen'
                              : r >= 1 ? r.toFixed(1) + ' a beat'
                              : 'every ' + (1 / r).toFixed(1) + ' beats'; },
-    scatterCount: v => { const n = ccCount(v);
-                         return n + ' cells · ' + (45 / n).toFixed(1) + ' px each'; },
-    scatterWidth: v => pct(v) + ' of its cell and its cycle',
-    scatterEdge: v => v < 6 ? 'hard' : pct(v) + ' soft',
-    scatterStagger: v => v === 0 ? 'every cell on one clock' : pct(v) + ' apart',
-    scatterDrift: v => { const r = bip(v);
+    scatterCount: v => { const n = real('scatterCount', v);
+                         return n + ' cells · ' + (V().PIXELS / n).toFixed(1) + ' px each'; },
+    scatterWidth: v => percent(real('scatterWidth', v)) + ' of its cell and its cycle',
+    scatterEdge: v => v < 6 ? 'hard' : percent(real('scatterEdge', v)) + ' soft',
+    scatterStagger: v => v === 0 ? 'every cell on one clock'
+                       : percent(real('scatterStagger', v)) + ' apart',
+    scatterDrift: v => { const r = real('scatterDrift', v);
                          return Math.abs(r) < 0.01 ? 'stands still'
-                              : (Math.abs(r) * 100).toFixed(0) + '% of its cell, '
+                              : percent(Math.abs(r)) + ' of its cell, '
                                 + (r > 0 ? 'up the strip' : 'down the strip'); },
-    scatterLight: v => signedPct(v, 'toward full', 'toward dark'),
-    scatterHue: hueAmount,
-    scatterWhite: v => signedPct(v, 'toward white', 'toward a pure hue'),
+    scatterLight: v => signedReach(real('scatterLight', v), 'toward full', 'toward dark'),
+    scatterHue: hueReach('scatterHue', 'not reached', ' of 255 at the peak'),
+    scatterWhite: v => signedReach(real('scatterWhite', v), 'toward white', 'toward a pure hue'),
 
-    placedHue: v => { const r = Math.round(bip(v) * 128);
-                      return r === 0 ? 'flat' : (r > 0 ? '+' : '') + r + ' of 255 at one end'; },
-    placedWhite: v => signedPct(v, 'to white', 'to pure'),
-    placedDark: v => { const r = bip(v);
-                       if (Math.abs(r) < 0.01) return 'flat';
-                       return r < 0 ? 'down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
-                                    : (r * 100).toFixed(0) + '% toward full'; },
-    placedCount: v => ccCount(v) + ' regions',
-    placedWidth: v => pct(v) + ' of a cell',
-    placedEdge: v => v < 6 ? 'hard' : pct(v) + ' soft',
-    placedSpeed: v => { const x = (v - 64) / 63; const r = Math.sign(x) * x * x;
+    placedHue: hueReach('placedHue', 'flat', ' of 255 at one end'),
+    placedWhite: v => signedReach(real('placedWhite', v), 'to white', 'to pure'),
+    placedDark: darkReach('placedDark', 'flat', ''),
+    placedCount: v => real('placedCount', v) + ' regions',
+    placedWidth: v => percent(real('placedWidth', v)) + ' of a cell',
+    placedEdge: v => v < 6 ? 'hard' : percent(real('placedEdge', v)) + ' soft',
+    placedSpeed: v => { const r = real('placedSpeed', v);
                         return Math.abs(r) < 0.002 ? 'still'
                              : (1 / Math.abs(r)).toFixed(1) + ' beats per cell'
                                + (r < 0 ? ' back' : ''); },
 
-    wanderHue: v => { const r = Math.round(bip(v) * 128);
-                      return r === 0 ? 'off' : '±' + Math.abs(r) + ' of 255'; },
-    wanderWhite: v => Math.abs(bip(v)) < 0.01 ? 'off'
-                    : '±' + (Math.abs(bip(v)) * 100).toFixed(0) + '%',
-    wanderDark: v => Math.abs(bip(v)) < 0.01 ? 'off'
-                   : '±' + (Math.abs(bip(v)) * 100).toFixed(0) + '%',
-    // Squared in the renderer since 2026-09-23.
-    wanderRate: v => { const r = unit(v) ** 2 * 0.5;
+    wanderHue: v => { const r = Math.round(real('wanderHue', v));
+                      return r === 0 ? 'off' : '\u00b1' + Math.abs(r) + ' of 255'; },
+    wanderWhite: swing('wanderWhite'),
+    wanderDark: swing('wanderDark'),
+    wanderRate: v => { const r = real('wanderRate', v);
                        return r < 0.004 ? 'frozen' : (1 / r).toFixed(0) + ' beats per cycle'; },
-    wanderScale: v => { const c = 0.12 * Math.pow(180, unit(v));
+    wanderScale: v => { const c = real('wanderScale', v);
                         return c < 0.35 ? 'the whole wall as one'
-                             : (45 / c).toFixed(0) + ' px across'; },
+                             : (V().PIXELS / c).toFixed(0) + ' px across'; },
 
-    litHue: v => { const r = Math.round(bip(v) * 64);
-                   return r === 0 ? 'off' : (r > 0 ? '+' : '') + r + ' at the core'; },
-    litWhite: v => v === 0 ? 'off' : pct(v) + ' white at the core',
-    litDark: v => { const r = bip(v);
-                    if (Math.abs(r) < 0.01) return 'off';
-                    return r < 0 ? 'core down to ' + (100 * Math.pow(0.02, -r)).toFixed(1) + '%'
-                                 : 'core ' + (r * 100).toFixed(0) + '% toward full'; },
+    litHue: hueReach('litHue', 'off', ' at the core'),
+    litWhite: v => v === 0 ? 'off' : percent(real('litWhite', v)) + ' white at the core',
+    litDark: darkReach('litDark', 'off', 'core '),
 
-    washLevel: pct,
-    washHueOffset: v => v === 0 ? 'matches the strips' : '+' + Math.round(v / 127 * 255) + ' of 255',
+    washLevel: v => ofByte(real('washLevel', v)),
+    washHueOffset: v => v === 0 ? 'matches the strips'
+                      : '+' + real('washHueOffset', v) + ' of 255',
     washSaturation: v => v === 127 ? 'matches the strips' : v === 0 ? 'white'
-                       : pct(v) + ' of theirs',
+                       : ofByte(real('washSaturation', v)) + ' of theirs',
   };
 
   // Every route reads its four the same way.
@@ -624,7 +630,7 @@
     SET_BASE, SET_COLOR, SET_EXTENT, SET_MOTION, SET_ACCENT, SET_NAMES, SET_BLURB,
     CC, NAMES, SWITCHES, CONTINUOUS, CONTROLS, DERIVED, NEUTRAL, DEFAULT,
     OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
-    unit, bip, ccCount, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
+    unit, bip, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
     LANES, MODULATORS, ROUTES, DESTINATIONS, routesAimedAt, PARS, TIMING,
     ANCHORS, FAN_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,

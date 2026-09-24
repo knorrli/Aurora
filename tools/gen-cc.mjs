@@ -65,6 +65,8 @@ const waveSwell = num(/#define GEN_WAVE_SWELL\s+(\d+)/, 'GEN_WAVE_SWELL');
 const waveSawDown = num(/#define GEN_WAVE_SAW_DOWN\s+(\d+)/, 'GEN_WAVE_SAW_DOWN');
 const waveSquare = num(/#define GEN_WAVE_SQUARE\s+(\d+)/, 'GEN_WAVE_SQUARE');
 const minWidth = one(/#define GEN_PULSE_MIN_WIDTH\s+([0-9.]+)f/, 'GEN_PULSE_MIN_WIDTH');
+const pulsePeriods = one(/AURORA_PULSE_PERIODS\[\]\s*=\s*\{([^}]*)\}/s, 'AURORA_PULSE_PERIODS')
+  .split(',').map(s => s.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
 const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
 const width = Math.max(...pairs.map(([k]) => k.length));
@@ -99,6 +101,10 @@ ${body}
   const GEN_WAVE_SQUARE = ${waveSquare};
   const GEN_PULSE_MIN_WIDTH = ${minWidth};
 
+  // Longest first, in animation beats: the pulse's rate and both ramp times
+  // step through these.
+  const PULSE_PERIODS = [${pulsePeriods.join(', ')}];
+
   const TAGS = ${JSON.stringify(tags)};
   const tagged = tag => Object.keys(TAGS).filter(n => TAGS[tag ? n : n].includes(tag));
 
@@ -109,6 +115,7 @@ ${body}
     CC, TAGS, tagged, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
     routeCC, routeRatio,
     GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_PULSE_MIN_WIDTH,
+    PULSE_PERIODS,
   };
 })(typeof window === 'undefined' ? globalThis : window);
 `;

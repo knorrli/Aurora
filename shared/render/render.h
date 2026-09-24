@@ -71,6 +71,15 @@ struct Frame {
 
 void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &out);
 
+// A control's byte as the renderer uses it: pixels a beat, shapes, beats a
+// cycle, a signed reach. Every conversion the renderer makes goes through
+// here, which is what lets the editor label a fader in the renderer's own
+// units without a second copy of the curves.
+float convert(uint8_t cc, uint8_t value);
+
+// The fraction of its light a pixel keeps under a darkening push, 0 to -1.
+float lightLeft(float dark);
+
 // Each strip one flat color in data-chain order, for reading the rig's order
 // off the wall.
 void renderStripOrder(Rgb *pixels);

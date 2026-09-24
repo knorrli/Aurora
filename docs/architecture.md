@@ -283,7 +283,10 @@ writes `tools/render.js`, which is committed so the page still opens from a
 double-click. `tools/preview.js` only draws.
 
 FastLED's color conversion is ported into `shared/render/color8.h` rather
-than called, so the two sides cannot convert a hue differently. A second
+than called, so the two sides cannot convert a hue differently. The same
+goes for the editor's readouts: every conversion from a byte to the
+renderer's units is `render::convert`, the renderer reads through it, and
+the labels beside the faders format what it returns. A second
 JavaScript renderer, and the cross-check harness that kept it honest, were
 deleted when this landed.
 

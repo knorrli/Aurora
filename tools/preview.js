@@ -67,6 +67,9 @@
       makeMotion: () => m._aurora_motion_new(),
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
       pulseWave: (phase, wave) => m._aurora_pulse_wave(phase, wave),
+      convert: (cc, value) => m._aurora_convert(cc, value),
+      lightLeft: dark => m._aurora_light_left(dark),
+      pulsePeriodBeats: value => m._aurora_pulse_period_beats(value),
 
       render(bytes, beats, motion) {
         m.HEAPU8.set(bytes, controls);

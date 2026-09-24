@@ -158,7 +158,7 @@ struct Params {
   float wanderWhiteReach;
   float wanderDarkReach;
   float wanderCycles;
-  float wanderScale;
+  float wanderCyclesAlong;
 
   float litHueReach;
   float litWhiteReach;
@@ -416,7 +416,7 @@ static float wanderAt(const Params &p, uint8_t stripIndex, float along01, float 
   // § "A field built as along-plus-across".
   const float acrossFromCenter =
       ((float)stripIndex - (float)(STRIPS - 1) * 0.5f) / (float)(STRIPS - 1);
-  const float cyclesAlong = 0.12f * powf(180.0f, p.wanderScale);
+  const float cyclesAlong = p.wanderCyclesAlong;
   float cyclesAcross = cyclesAlong * 0.3f;
   if (cyclesAcross > 1.4f) cyclesAcross = 1.4f;
 
@@ -438,6 +438,8 @@ static float placedAt(const PlacedField &field, float u, float drift) {
   return shapeAt(fract(cell) - 0.5f, field.width, field.edge, 0.0f);
 }
 
+float lightLeft(float dark) { return powf(DARK_FLOOR, -dark); }
+
 // Pushes arrive summed and normalized. Darkening rides a geometric taper
 // because it is a ratio of light and the eye reads it as one; mapped linearly,
 // nearly the whole travel was imperceptible and everything worth having sat in
@@ -453,7 +455,7 @@ static Hsv applyPushes(Hsv base, float hue, float white, float dark) {
 
   float value;
   if (dark >= 0.0f) value = (float)base.v + dark * (255.0f - (float)base.v);
-  else value = (float)base.v * powf(DARK_FLOOR, -dark);
+  else value = (float)base.v * lightLeft(dark);
 
   return { (uint8_t)(base.h + (int16_t)hue), (uint8_t)saturation, (uint8_t)value };
 }
@@ -649,26 +651,85 @@ static inline float squaredUnit(uint8_t value, float max) {
   return x * x * max;
 }
 
-static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
-  auto at = [&](uint8_t cc) { return routed(dialed, pushes, cc); };
+float convert(uint8_t cc, uint8_t value) {
+  switch (cc) {
+    case CC_HUE:             return ccToByte(value, 250);
+    case CC_SATURATION:
+    case CC_VALUE:
+    case CC_WASH_LEVEL:
+    case CC_WASH_HUE_OFFSET:
+    case CC_WASH_SATURATION: return ccToByte(value, 255);
 
-  p.width = ccUnit(at(CC_GEN_WIDTH));
-  p.edge = ccUnit(at(CC_GEN_EDGE));
-  p.tail = ccUnit(at(CC_GEN_TAIL));
-  p.count = ccCount(at(CC_GEN_COUNT));
-  p.positionCells = ccBipolar(at(CC_GEN_POSITION)) * 0.5f;
-  p.speedPixels = stillBelowThreshold(squaredRate(at(CC_GEN_SPEED), GEN_MAX_SPEED_PIXELS_PER_BEAT));
-  p.fanPosition = ccBipolar(at(CC_GEN_FAN)) * 0.5f;
-  p.fanPulse = ccBipolar(at(CC_GEN_FAN_PULSE)) * 0.5f;
-  // The same squared curve Speed runs on, so that mirroring one fader about
-  // its center against the other cancels *exactly*: a still strip at the
-  // wave's peak needs Speed to be the fan's opposite, and two controls on
-  // different curves can only ever nearly cancel.
-  p.fanRate = squaredRate(at(CC_GEN_FAN_RATE), GEN_MAX_SPEED_PIXELS_PER_BEAT);
-  p.fanFreq = fanFreqFrom(at(CC_GEN_FAN_FREQ));
-  p.fanPhase = (float)at(CC_GEN_FAN_PHASE) / 128.0f;
-  p.fanRandom = ccUnit(at(CC_GEN_FAN_RANDOM));
-  p.pulseBeats = aurora_pulse_period(at(CC_GEN_PULSE_RATE));
+    case CC_GEN_COUNT:
+    case CC_PLACED_COUNT:
+    case CC_SCATTER_COUNT:   return ccCount(value);
+
+    case CC_GEN_POSITION:
+    case CC_GEN_FAN:
+    case CC_GEN_FAN_PULSE:   return ccBipolar(value) * 0.5f;
+    case CC_GEN_SPEED:
+      return stillBelowThreshold(squaredRate(value, GEN_MAX_SPEED_PIXELS_PER_BEAT));
+    // The same squared curve Speed runs on, so that mirroring one fader about
+    // its center against the other cancels *exactly*: a still strip at the
+    // wave's peak needs Speed to be the fan's opposite, and two controls on
+    // different curves can only ever nearly cancel.
+    case CC_GEN_FAN_RATE:    return squaredRate(value, GEN_MAX_SPEED_PIXELS_PER_BEAT);
+    case CC_GEN_FAN_FREQ:    return fanFreqFrom(value);
+    case CC_GEN_FAN_PHASE:   return (float)value / 128.0f;
+    case CC_GEN_PULSE_RATE:  return aurora_pulse_period(value);
+
+    case CC_PLACED_HUE:      return ccBipolar(value) * PLACED_MAX_HUE;
+    case CC_PLACED_SPEED:    return squaredRate(value, PLACED_MAX_CELLS_PER_BEAT);
+    case CC_WANDER_HUE:      return ccBipolar(value) * WANDER_MAX_HUE;
+    case CC_WANDER_RATE:     return squaredUnit(value, WANDER_MAX_CYCLES_PER_BEAT);
+    case CC_WANDER_SCALE:    return 0.12f * powf(180.0f, ccUnit(value));
+    case CC_LIT_HUE:         return ccBipolar(value) * LIT_MAX_HUE;
+    case CC_SCATTER_RATE:    return squaredUnit(value, SCATTER_MAX_CYCLES_PER_BEAT);
+    case CC_SCATTER_HUE:     return ccBipolar(value) * SCATTER_MAX_HUE;
+
+    case CC_PLACED_WHITE:
+    case CC_PLACED_DARK:
+    case CC_WANDER_WHITE:
+    case CC_WANDER_DARK:
+    case CC_LIT_DARK:
+    // Drift is a displacement rather than a rate — how far, and which way, a
+    // spot slides across its own cell over its life, which is why it is not
+    // called speed like everything else here.
+    case CC_SCATTER_DRIFT:
+    case CC_SCATTER_LIGHT:
+    case CC_SCATTER_WHITE:   return ccBipolar(value);
+
+    case CC_GEN_WIDTH:
+    case CC_GEN_EDGE:
+    case CC_GEN_TAIL:
+    case CC_GEN_FAN_RANDOM:
+    case CC_PLACED_WIDTH:
+    case CC_PLACED_EDGE:
+    case CC_LIT_WHITE:
+    case CC_SCATTER_WIDTH:
+    case CC_SCATTER_EDGE:
+    case CC_SCATTER_STAGGER: return ccUnit(value);
+
+    default:                 return (float)value;
+  }
+}
+
+static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
+  auto at = [&](uint8_t cc) { return convert(cc, routed(dialed, pushes, cc)); };
+
+  p.width = at(CC_GEN_WIDTH);
+  p.edge = at(CC_GEN_EDGE);
+  p.tail = at(CC_GEN_TAIL);
+  p.count = (uint8_t)at(CC_GEN_COUNT);
+  p.positionCells = at(CC_GEN_POSITION);
+  p.speedPixels = at(CC_GEN_SPEED);
+  p.fanPosition = at(CC_GEN_FAN);
+  p.fanPulse = at(CC_GEN_FAN_PULSE);
+  p.fanRate = at(CC_GEN_FAN_RATE);
+  p.fanFreq = at(CC_GEN_FAN_FREQ);
+  p.fanPhase = at(CC_GEN_FAN_PHASE);
+  p.fanRandom = at(CC_GEN_FAN_RANDOM);
+  p.pulseBeats = at(CC_GEN_PULSE_RATE);
 
   // A switch has no middle for a push to land in, so it is read as dialed.
   p.alternate = aurora_cc_is_on(dialed[CC_GEN_ALTERNATE]);
@@ -677,37 +738,35 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
   const uint8_t ruler = aurora_cc_band3(dialed[CC_COLOR_RULER]);
   p.placed.ruler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 
-  p.placed.hueReach = ccBipolar(at(CC_PLACED_HUE)) * PLACED_MAX_HUE;
-  p.placed.whiteReach = ccBipolar(at(CC_PLACED_WHITE));
-  p.placed.darkReach = ccBipolar(at(CC_PLACED_DARK));
-  p.placed.width = ccUnit(at(CC_PLACED_WIDTH));
-  p.placed.edge = ccUnit(at(CC_PLACED_EDGE));
-  p.placed.count = ccCount(at(CC_PLACED_COUNT));
-  p.placed.cellsPerBeat = squaredRate(at(CC_PLACED_SPEED), PLACED_MAX_CELLS_PER_BEAT);
+  p.placed.hueReach = at(CC_PLACED_HUE);
+  p.placed.whiteReach = at(CC_PLACED_WHITE);
+  p.placed.darkReach = at(CC_PLACED_DARK);
+  p.placed.width = at(CC_PLACED_WIDTH);
+  p.placed.edge = at(CC_PLACED_EDGE);
+  p.placed.count = (uint8_t)at(CC_PLACED_COUNT);
+  p.placed.cellsPerBeat = at(CC_PLACED_SPEED);
 
-  p.wanderHueReach = ccBipolar(at(CC_WANDER_HUE)) * WANDER_MAX_HUE;
-  p.wanderWhiteReach = ccBipolar(at(CC_WANDER_WHITE));
-  p.wanderDarkReach = ccBipolar(at(CC_WANDER_DARK));
-  p.wanderCycles = squaredUnit(at(CC_WANDER_RATE), WANDER_MAX_CYCLES_PER_BEAT);
-  p.wanderScale = ccUnit(at(CC_WANDER_SCALE));
+  p.wanderHueReach = at(CC_WANDER_HUE);
+  p.wanderWhiteReach = at(CC_WANDER_WHITE);
+  p.wanderDarkReach = at(CC_WANDER_DARK);
+  p.wanderCycles = at(CC_WANDER_RATE);
+  p.wanderCyclesAlong = at(CC_WANDER_SCALE);
 
-  p.litHueReach = ccBipolar(at(CC_LIT_HUE)) * LIT_MAX_HUE;
-  p.litWhiteReach = ccUnit(at(CC_LIT_WHITE));
-  p.litDarkReach = ccBipolar(at(CC_LIT_DARK));
+  p.litHueReach = at(CC_LIT_HUE);
+  p.litWhiteReach = at(CC_LIT_WHITE);
+  p.litDarkReach = at(CC_LIT_DARK);
 
   // The scatter's grid is its own, not the shape branch's, so a fine texture
-  // can lie over one wide bar. Drift is a displacement rather than a rate —
-  // how far, and which way, a spot slides across its own cell over its life,
-  // which is why it is not called speed like everything else here.
-  p.scatterRate = squaredUnit(at(CC_SCATTER_RATE), SCATTER_MAX_CYCLES_PER_BEAT);
-  p.scatterCount = ccCount(at(CC_SCATTER_COUNT));
-  p.scatterWidth = ccUnit(at(CC_SCATTER_WIDTH));
-  p.scatterEdge = ccUnit(at(CC_SCATTER_EDGE));
-  p.scatterStagger = ccUnit(at(CC_SCATTER_STAGGER));
-  p.scatterDrift = ccBipolar(at(CC_SCATTER_DRIFT));
-  p.scatterLightReach = ccBipolar(at(CC_SCATTER_LIGHT));
-  p.scatterHueReach = ccBipolar(at(CC_SCATTER_HUE)) * SCATTER_MAX_HUE;
-  p.scatterWhiteReach = ccBipolar(at(CC_SCATTER_WHITE));
+  // can lie over one wide bar.
+  p.scatterRate = at(CC_SCATTER_RATE);
+  p.scatterCount = (uint8_t)at(CC_SCATTER_COUNT);
+  p.scatterWidth = at(CC_SCATTER_WIDTH);
+  p.scatterEdge = at(CC_SCATTER_EDGE);
+  p.scatterStagger = at(CC_SCATTER_STAGGER);
+  p.scatterDrift = at(CC_SCATTER_DRIFT);
+  p.scatterLightReach = at(CC_SCATTER_LIGHT);
+  p.scatterHueReach = at(CC_SCATTER_HUE);
+  p.scatterWhiteReach = at(CC_SCATTER_WHITE);
 
   p.color = colorFrom(dialed, pushes);
 }
@@ -727,9 +786,8 @@ static void readFan(const Params &p, FanReading &fan) {
 }
 
 Hsv colorFrom(const uint8_t *dialed, const Pushes *pushes) {
-  return { ccToByte(routed(dialed, pushes, CC_HUE), 250),
-           ccToByte(routed(dialed, pushes, CC_SATURATION), 255),
-           ccToByte(routed(dialed, pushes, CC_VALUE), 255) };
+  auto at = [&](uint8_t cc) { return (uint8_t)convert(cc, routed(dialed, pushes, cc)); };
+  return { at(CC_HUE), at(CC_SATURATION), at(CC_VALUE) };
 }
 
 // The washes take the strips' dialed color and never its pushes: a push
@@ -738,12 +796,13 @@ Hsv colorFrom(const uint8_t *dialed, const Pushes *pushes) {
 // the fixture's own dimmer, so the emitters stay near full scale where they
 // have the most resolution.
 Wash washFrom(const uint8_t *dialed, const Pushes *pushes) {
+  auto at = [&](uint8_t cc) { return (uint8_t)convert(cc, routed(dialed, pushes, cc)); };
   const Hsv strips = colorFrom(dialed, nullptr);
-  const uint8_t level = ccToByte(routed(dialed, pushes, CC_WASH_LEVEL), 255);
-  const uint8_t hueOffset = ccToByte(routed(dialed, pushes, CC_WASH_HUE_OFFSET), 255);
+  const uint8_t level = at(CC_WASH_LEVEL);
+  const uint8_t hueOffset = at(CC_WASH_HUE_OFFSET);
   // A scale down from the strips' saturation rather than a setting: the
   // washes are a relationship to the strips.
-  const uint8_t saturation = ccToByte(routed(dialed, pushes, CC_WASH_SATURATION), 255);
+  const uint8_t saturation = at(CC_WASH_SATURATION);
 
   return { hsvRainbow((uint8_t)(strips.h + hueOffset), scale8(strips.s, saturation), 255),
            scale8(strips.v, level) };
