@@ -631,11 +631,15 @@ sides are handed different inputs before the function is even called.
 Two things it cannot do yet, both worth building when they are needed
 rather than now:
 
-- **Compare a whole rendered frame** rather than one function. That is the
-  check that would prove a refactor changed nothing, and it is blocked on
-  the firmware's `Generator()` needing FastLED, `CHSV` and `tempo::beats()`
-  to run on a host.
+- **Compare a whole rendered frame** rather than one function. This one
+  keeps its value whatever happens to the looks, because it catches the two
+  implementations disagreeing somewhere nobody thought to write a check —
+  which is the standing weakness of a per-function harness. Blocked on the
+  firmware's `Generator()` needing FastLED, `CHSV` and `tempo::beats()` to
+  run on a host, so it is real work rather than an afternoon.
 - **Compare against a stored baseline** instead of against the other
-  implementation, which is what step 1 above actually wants: proof that a
-  no-behavior-change refactor changed no behavior. A `--save` that writes
-  the outputs and a run that diffs against them.
+  implementation — proof that a refactor changed no behavior. Not wanted
+  here, and this is the correction: there is nothing to stay compatible
+  with. No patches exist and no look is being ported, so a baseline would
+  defend a wall nobody is keeping. Build it if a refactor ever has to
+  preserve a library; do not build it for step 1.
