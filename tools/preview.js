@@ -56,6 +56,17 @@
   // arriving as just another pattern.
   const GEN_FAN_HASH_SALT = 118;
 
+  // Where the named shapes sit on the wave byte. Whole numbers a fader lands
+  // on exactly, which is why 32 and 96 rather than thirds of the range.
+  const GEN_WAVE_SWELL = 32;
+  const GEN_WAVE_SAW_DOWN = 64;
+  const GEN_WAVE_SQUARE = 96;
+
+  // The shortest stab the rig can draw, as a fraction of a cycle: about one
+  // 7-8 ms frame at 120 bpm, and below it a stab lands between frames and
+  // flickers instead of shortening. See docs/bench-facts.md § "Frame timing".
+  const GEN_PULSE_MIN_WIDTH = 0.06;
+
   // Half the wheel each way, matching the placed field's reach.
   const GEN_PULSE_MAX_HUE = 128;
 
@@ -179,11 +190,10 @@
   const ccMap = (v, hi) => Math.floor(v * hi / 127);
   const ccCount = v => Math.min(GEN_MAX_COUNT, Math.max(1, Math.round(Math.pow(GEN_MAX_COUNT, v / 127))));
 
-  function send(amount, shape, skew, unipolar) {
+  function send(amount, wave, unipolar) {
     return {
       amount: unipolar ? ccUnit(amount) : ccBipolar(amount),
-      shape: ccUnit(shape),
-      skew: ccBipolar(skew),
+      wave: orElse(wave, GEN_WAVE_SWELL),
     };
   }
 
@@ -231,12 +241,12 @@
       // while the strips strobe. Brightness is the only unipolar amount:
       // nothing sits above full light, so its only direction is down.
       sends: {
-        light:    send(s.pulseDepth, s.pulseShape, s.pulseSkew, true),
-        width:    send(s.pulseWidth, s.pulseWidthShape, s.pulseWidthSkew),
-        hue:      send(s.pulseHue, s.pulseHueShape, s.pulseHueSkew),
-        parLevel: send(s.pulseParLevel, s.pulseParLevelShape, s.pulseParLevelSkew),
-        parHue:   send(s.pulseParHue, s.pulseParHueShape, s.pulseParHueSkew),
-        parSat:   send(s.pulseParSat, s.pulseParSatShape, s.pulseParSatSkew),
+        light:    send(s.pulseDepth, s.pulseWave, true),
+        width:    send(s.pulseWidth, s.pulseWidthWave),
+        hue:      send(s.pulseHue, s.pulseHueWave),
+        parLevel: send(s.pulseParLevel, s.pulseParLevelWave),
+        parHue:   send(s.pulseParHue, s.pulseParHueWave),
+        parSat:   send(s.pulseParSat, s.pulseParSatWave),
       },
 
       alternate: isOn(s.alternate),
@@ -451,21 +461,21 @@
   // deep slow swell peaks wherever it happens to. A whole cycle of offset is
   // invisible, so only the fraction has to go: easing it out over the next
   // couple of cycles walks the pulse back onto the grid without ever
-  // jumping. The peak sits at mid-cycle, so the offset that lands one on a
-  // bar line is a half-integer rather than a whole one.
+  // jumping. Every wave peaks at its cycle's zero, so the offset that lands
+  // one on a bar line is a whole number.
   function anchoredPulsePhase(beats, rate) {
     const elapsed = beats - M.lastPulseBeats;
     M.lastPulseBeats = beats;
 
     // The transport restarted, and beat zero is a bar line by definition.
     if (elapsed < 0) {
-      M.pulsePhase.offset = 0.5;
+      M.pulsePhase.offset = 0;
       M.pulsePhase.rate = rate;
-      return beats * rate + 0.5;
+      return beats * rate;
     }
 
     const phase = trackedPhase(M.pulsePhase, beats, rate);
-    const drift = M.pulsePhase.offset - (Math.round(M.pulsePhase.offset - 0.5) + 0.5);
+    const drift = M.pulsePhase.offset - Math.round(M.pulsePhase.offset);
     if (Math.abs(drift) < 0.0001) return phase;
 
     const pull = Math.min(1, elapsed * rate / GEN_PULSE_ANCHOR_CYCLES);
@@ -548,35 +558,55 @@
     tracker.offset = wanted - beats * rate;
   }
 
-  // Skew slides the peak through the cycle, so one side of the swell
-  // collapses into a snap and a ramp becomes reachable. It warps the phase
-  // rather than the output, which leaves the cycle's length untouched: moving
-  // skew changes the swell's shape without changing how often it lands.
-  //
-  // Bipolar, so center is an exactly even rise and fall. Anything near but not
-  // on 0.5 phase-shifts a square edge instead of leaving it alone, which reads
-  // as the strobe sitting late rather than as a control doing nothing.
-  function pulseWave(phase, shape, skew) {
-    const k = 0.5 + 0.48 * Math.min(1, Math.max(-1, skew));  // 0 and 1 divide by zero
-    const t = fract(phase);
-    const warped = t < k ? 0.5 * t / k : 0.5 + 0.5 * (t - k) / (1 - k);
-    const lfo = 0.5 - 0.5 * Math.cos(2 * Math.PI * warped);
+  // Zero at 0 and one at 1, easing at both ends.
+  const raisedCosine = x =>
+    0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, x)));
 
-    // Steepening the sine toward a square is what makes a strobe reachable;
-    // no amount of depth on a sine ever produces an on/off edge. The sweep is
-    // linear because the visible swelling tracks softness in proportion: spread
-    // geometrically over the same range, half the fader's visible travel falls
-    // in its top ten steps and everything below reads as one flat square.
-    const softness = 0.02 + 0.98 * shape;
-    const shaped = (lfo - 0.5) / softness + 0.5;
-    return shaped < 0 ? 0 : shaped > 1 ? 1 : shaped;
+  // One byte, one axis: the peak never leaves the bar line, and what moves is
+  // how the bar fills around it. Below the swell the attack shrinks as the
+  // decay grows; above it the attack is gone and the decay both shortens and
+  // flattens. Every named shape lands on a value a fader can reach — see
+  // GEN_WAVE_* and docs/modulation.md § "The fork, settled".
+  //
+  // Saw down has to come before square. The other order leaves a crossfade
+  // between two shapes that blends into neither; this way it is one decay
+  // getting shorter and harder, and every value between is a wave worth
+  // dialing.
+  function pulseWave(phase, wave) {
+    let attack, decay, hard;
+    if (wave <= GEN_WAVE_SAW_DOWN) {
+      decay = wave / GEN_WAVE_SAW_DOWN;
+      attack = 1 - decay;
+      hard = 0;
+    } else {
+      attack = 0;
+      const toSquare = (wave - GEN_WAVE_SAW_DOWN) / (GEN_WAVE_SQUARE - GEN_WAVE_SAW_DOWN);
+      hard = Math.min(1, toSquare);
+      decay = wave <= GEN_WAVE_SQUARE
+        ? 1 - 0.5 * toSquare
+        : 0.5 * Math.pow(GEN_PULSE_MIN_WIDTH / 0.5,
+                         (wave - GEN_WAVE_SQUARE) / (127 - GEN_WAVE_SQUARE));
+    }
+
+    const u = fract(phase);
+    if (decay > 0 && u <= decay) {
+      // Dividing by what is left of softness is what turns a decay into a
+      // cliff: at the hard end every point above the floor saturates, which
+      // is the flat top a square needs.
+      const soft = 1 - hard < 0.001 ? 0.001 : 1 - hard;
+      return Math.min(1, raisedCosine(1 - u / decay) / soft);
+    }
+    if (attack > 0 && u >= 1 - attack) {
+      return raisedCosine((u - (1 - attack)) / attack);
+    }
+    return 0;
   }
 
   // How hard a destination is being pushed right now: signed, and zero at the
   // bottom of the swell so the dialed value is what the wall rests at.
   function pulsePush(send, phase) {
     if (Math.abs(send.amount) < 0.001) return 0;
-    return send.amount * pulseWave(phase, send.shape, send.skew);
+    return send.amount * pulseWave(phase, send.wave);
   }
 
   // A push is a fraction of the way from the dialed value to one of its two
@@ -841,7 +871,7 @@
       // with no sign: its amount is how far the trough digs below what the
       // shape branch already lit.
       const swell = 1 - p.sends.light.amount
-        * (1 - pulseWave(stripPulse, p.sends.light.shape, p.sends.light.skew));
+        * (1 - pulseWave(stripPulse, p.sends.light.wave));
 
       // A shape is anchored by its center, so growing it is a breath outward
       // rather than a wipe in from one end — which is what put this

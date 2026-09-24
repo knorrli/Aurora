@@ -338,16 +338,17 @@
 const CC = {
   width: 62, count: 63, edge: 64, tail: 65, position: 66, speed: 67,
   fan: 71, fanPulse: 73, fanRate: 72, fanFreq: 68, fanPhase: 69, fanRandom: 70,
-  pulseDepth: 74, pulseRate: 75, pulseSkew: 76, pulseShape: 77,
+  pulseDepth: 74, pulseRate: 75, pulseWave: 77,
   alternate: 60, bounce: 61,
 
-  // Where else the pulse reaches — the 100–114 block in
-  // shared/aurora_protocol.h, three apiece in the order amount, shape, skew.
-  pulseWidth: 101, pulseWidthShape: 102, pulseWidthSkew: 103,
-  pulseHue: 104, pulseHueShape: 105, pulseHueSkew: 106,
-  pulseParLevel: 107, pulseParLevelShape: 108, pulseParLevelSkew: 109,
-  pulseParHue: 110, pulseParHueShape: 111, pulseParHueSkew: 112,
-  pulseParSat: 113, pulseParSatShape: 114, pulseParSatSkew: 115,
+  // Where else the pulse reaches — the 101–115 block in
+  // shared/aurora_protocol.h. An amount and a wave apiece; the third number
+  // in each triple was skew, and it left when a wave became one byte.
+  pulseWidth: 101, pulseWidthWave: 102,
+  pulseHue: 104, pulseHueWave: 105,
+  pulseParLevel: 107, pulseParLevelWave: 108,
+  pulseParHue: 110, pulseParHueWave: 111,
+  pulseParSat: 113, pulseParSatWave: 114,
 
   hue: 38, saturation: 39, value: 40,
   washLevel: 33, washHueOffset: 34, washSaturation: 35,
@@ -383,22 +384,22 @@ const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 // docs/generator.md § "Modulation".
 const PULSE_DESTS = [
   { key: 'light', name: 'Brightness', where: 'the strips’ own light',
-    amount: 'pulseDepth', shape: 'pulseShape', skew: 'pulseSkew',
+    amount: 'pulseDepth', wave: 'pulseWave',
     note: 'Nothing sits above full, so this is the one amount with no sign: it digs the trough below whatever the shape branch already lit.' },
   { key: 'width', name: 'Width', where: 'the shape’s solid core',
-    amount: 'pulseWidth', shape: 'pulseWidthShape', skew: 'pulseWidthSkew',
+    amount: 'pulseWidth', wave: 'pulseWidthWave',
     note: 'A shape is anchored by its center, so this breathes outward instead of wiping in from one end. Under bounce the turn stays where Width alone puts it, or the swell would be driving the travel rate.' },
   { key: 'hue', name: 'Hue', where: 'the strips, after the color layer',
-    amount: 'pulseHue', shape: 'pulseHueShape', skew: 'pulseHueSkew',
+    amount: 'pulseHue', wave: 'pulseHueWave',
     note: 'One push on what the placed field, the wander and the light level have already summed to — not a fourth source, so the color layer’s own design is untouched.' },
   { key: 'parLevel', name: 'PAR level', where: 'the four washes',
-    amount: 'pulseParLevel', shape: 'pulseParLevelShape', skew: 'pulseParLevelSkew',
+    amount: 'pulseParLevel', wave: 'pulseParLevelWave',
     note: 'The washes flashing against still strips is the look that justifies the whole matrix. Pull Level down first: a push toward full needs somewhere to go.' },
   { key: 'parHue', name: 'PAR hue', where: 'the four washes',
-    amount: 'pulseParHue', shape: 'pulseParHueShape', skew: 'pulseParHueSkew',
+    amount: 'pulseParHue', wave: 'pulseParHueWave',
     note: 'Rotates the washes off the strips on the swell and back between them. Half the wheel each way at the fader’s ends.' },
   { key: 'parSat', name: 'PAR saturation', where: 'the four washes',
-    amount: 'pulseParSat', shape: 'pulseParSatShape', skew: 'pulseParSatSkew',
+    amount: 'pulseParSat', wave: 'pulseParSatWave',
     note: 'Toward white is the flash between strip strobes that DESIGN.md records as asked for. It measures from the PARs’ own saturation, so pulling them pale leaves the flash less far to travel.' },
 ];
 
@@ -450,10 +451,11 @@ const DERIVED = {
                    : (v / 127 * 100).toFixed(0) + '% scrambled',
   pulseDepth: v => v === 0 ? 'not reached' : (v / 127 * 100).toFixed(0) + '% down at the trough',
   pulseRate:  v => PULSE_PERIOD_NAMES[PULSE_PERIODS.indexOf(AuroraPreview.pulsePeriod(v))],
-  pulseSkew:  v => { const k = 0.5 + 0.48 * bip(v);
-                     return Math.abs(bip(v)) < 0.03 ? 'even rise and fall'
-                          : (k * 100).toFixed(0) + '% of the cycle rising'; },
-  pulseShape: v => v < 20 ? 'square' : v > 110 ? 'sine' : (v / 127 * 100).toFixed(0) + '% soft',
+  pulseWave: v => v === 0 ? 'builds, drops on the bar'
+                : v === 32 ? 'swell'
+                : v === 64 ? 'snaps, decays across the bar'
+                : v === 96 ? 'hard half-bar'
+                : v === 127 ? 'stab' : 'between',
   hue:        v => Math.round(v / 127 * 250) + '/255',
   saturation: v => (v / 127 * 100).toFixed(0) + '%',
   value:      v => (v / 127 * 100).toFixed(0) + '%',
@@ -505,8 +507,7 @@ const DERIVED = {
 
 // Every destination's wave reads the same way as the pulse's own.
 for (const dest of PULSE_DESTS) {
-  DERIVED[dest.shape] = DERIVED.pulseShape;
-  DERIVED[dest.skew] = DERIVED.pulseSkew;
+  DERIVED[dest.wave] = DERIVED.pulseWave;
 }
 
 const GROUPS = {
@@ -571,8 +572,7 @@ const GROUPS = {
 for (const dest of PULSE_DESTS) {
   GROUPS['pulseDest_' + dest.key] = [
     [dest.amount, 'Amount', 'how far the pulse pushes ' + dest.where],
-    [dest.shape,  'Shape',  'hard on/off square → smooth sine'],
-    [dest.skew,   'Skew',   'even rise and fall → a ramp that snaps back'],
+    [dest.wave,   'Wave',   'a build → swell → snap → hard half-bar → stab'],
   ];
 }
 
@@ -594,17 +594,17 @@ function fanAmount(v, unit) {
 }
 
 const ANCHORS = {
-  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:100,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseSkew:64, pulseShape:127 },
-  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:104,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:114,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:28 },
-  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:114,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:127 },
-  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseSkew:64, pulseShape:0 },
-  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:88,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseSkew:64, pulseShape:0 },
+  Fill:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseWave:32 },
+  Sweep:      { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseWave:32 },
+  Rain:       { width:40,  count:0,   edge:18, tail:74, speed:80, fan:100,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:OFF, pulseWave:32 },
+  CrossSweep: { width:40,  count:0,   edge:18, tail:0,  speed:80, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:ON,  bounce:OFF, pulseWave:32 },
+  Bars:       { width:25,  count:0,   edge:15, tail:0,  speed:88, fan:64,   pulseDepth:0,   pulseRate:64,  alternate:OFF, bounce:ON,  pulseWave:32 },
+  Breathe:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseWave:32 },
+  Wave:       { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:104,   pulseDepth:100, pulseRate:30,  alternate:OFF, bounce:OFF, pulseWave:32 },
+  Chase:      { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:114,   pulseDepth:127, pulseRate:55,  alternate:OFF, bounce:OFF, pulseWave:88 },
+  Comet:      { width:30,  count:0,   edge:30, tail:99, speed:80, fan:114,   pulseDepth:0,   pulseRate:55,  alternate:OFF, bounce:OFF, pulseWave:32 },
+  Strobe:     { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64,   pulseDepth:127, pulseRate:100, alternate:OFF, bounce:OFF, pulseWave:96 },
+  Stutter:    { width:127, count:0,   edge:0,  tail:0,  speed:64, fan:64, fanPulse:88,   pulseDepth:127, pulseRate:100, alternate:ON,  bounce:OFF, pulseWave:96 },
 };
 
 // The looks the fan rework was built against, dialed rather than argued. The
@@ -617,7 +617,7 @@ const ANCHORS = {
 // still in "Hypno together" while the center runs.
 const FAN_LOOKS = {
   'Bars, unison strobe': { width:40, count:68, edge:0, tail:0, speed:64, fan:100,
-                           pulseDepth:127, pulseRate:100, pulseShape:0, pulseSkew:64 },
+                           pulseDepth:127, pulseRate:100, pulseWave:96 },
   'Diagonal bars':  { width:25, count:0, edge:10, tail:0, speed:64, fan:114, fanPhase:0 },
   'Chevron \u2227':     { width:25, count:0, edge:10, tail:0, speed:64, fan:114, fanPhase:32 },
   'Chevron \u2228':     { width:25, count:0, edge:10, tail:0, speed:64, fan:14,  fanPhase:32 },
@@ -678,12 +678,12 @@ const SHAPE_OFF = {
 // flattening it would be flattening something no amount can restore.
 const PULSE_OFF = {
   pulseRate: 64,
-  pulseDepth: 0, pulseShape: 127, pulseSkew: 64,
-  pulseWidth: 64, pulseWidthShape: 127, pulseWidthSkew: 64,
-  pulseHue: 64, pulseHueShape: 127, pulseHueSkew: 64,
-  pulseParLevel: 64, pulseParLevelShape: 127, pulseParLevelSkew: 64,
-  pulseParHue: 64, pulseParHueShape: 127, pulseParHueSkew: 64,
-  pulseParSat: 64, pulseParSatShape: 127, pulseParSatSkew: 64,
+  pulseDepth: 0, pulseWave: 32,
+  pulseWidth: 64, pulseWidthWave: 127,
+  pulseHue: 64, pulseHueWave: 127,
+  pulseParLevel: 64, pulseParLevelWave: 127,
+  pulseParHue: 64, pulseParHueWave: 127,
+  pulseParSat: 64, pulseParSatWave: 127,
 };
 
 // An anchor names a look, and a look with a swell in it is a look with a
@@ -1119,8 +1119,8 @@ async function initMidi() {
 }
 
 // Drawn with the renderer's own shaping function rather than a copy of it, so
-// the picture cannot drift from what the wall does. Two cycles, because the
-// snap at the end of a skewed cycle only reads as an edge where it repeats.
+// the picture cannot drift from what the wall does. Two cycles, because a
+// decay that fills the bar only reads as an edge where it repeats.
 //
 // Every card draws the same thing: how far this destination departs from the
 // value dialed for it, against a rail at no departure. Brightness is the one
@@ -1129,7 +1129,7 @@ async function initMidi() {
 const WAVE_CYCLES = 2;
 
 function departureAt(dest, phase) {
-  const wave = AuroraPreview.pulseWave(phase, state[dest.shape] / 127, bip(state[dest.skew]));
+  const wave = AuroraPreview.pulseWave(phase, state[dest.wave]);
   if (dest.key === 'light') return -(state.pulseDepth / 127) * (1 - wave);
   return bip(state[dest.amount]) * wave;
 }

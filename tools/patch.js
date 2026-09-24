@@ -52,12 +52,12 @@
     fan: 71, fanPulse: 73, fanRate: 72,
     fanFreq: 68, fanPhase: 69, fanRandom: 70,
 
-    pulseDepth: 74, pulseRate: 75, pulseSkew: 76, pulseShape: 77,
-    pulseWidth: 101, pulseWidthShape: 102, pulseWidthSkew: 103,
-    pulseHue: 104, pulseHueShape: 105, pulseHueSkew: 106,
-    pulseParLevel: 107, pulseParLevelShape: 108, pulseParLevelSkew: 109,
-    pulseParHue: 110, pulseParHueShape: 111, pulseParHueSkew: 112,
-    pulseParSat: 113, pulseParSatShape: 114, pulseParSatSkew: 115,
+    pulseDepth: 74, pulseRate: 75, pulseWave: 77,
+    pulseWidth: 101, pulseWidthWave: 102,
+    pulseHue: 104, pulseHueWave: 105,
+    pulseParLevel: 107, pulseParLevelWave: 108,
+    pulseParHue: 110, pulseParHueWave: 111,
+    pulseParSat: 113, pulseParSatWave: 114,
 
     scatterRate: 83, scatterCount: 84, scatterWidth: 85, scatterEdge: 86,
     scatterStagger: 87, scatterDrift: 88,
@@ -162,10 +162,17 @@
 
     pulseRate: v => PULSE_PERIOD_NAMES[periodStep(v)],
     pulseDepth: v => v === 0 ? 'not reached' : pct(v) + ' down at the trough',
-    pulseSkew: v => { const k = 0.5 + 0.48 * bip(v);
-                      return Math.abs(bip(v)) < 0.03 ? 'even rise and fall'
-                           : (k * 100).toFixed(0) + '% of the cycle rising'; },
-    pulseShape: v => v < 20 ? 'square' : v > 110 ? 'sine' : pct(v) + ' soft',
+    // One axis from a build to a stab, with the named shapes on values a
+    // fader lands on exactly. See docs/modulation.md § "The fork, settled".
+    pulseWave: v => v === 0 ? 'builds, drops on the bar'
+                  : v === 32 ? 'swell'
+                  : v === 64 ? 'snaps, decays across the bar'
+                  : v === 96 ? 'hard half-bar'
+                  : v === 127 ? 'stab'
+                  : v < 32 ? 'builds, ' + pct(v * 4) + ' decay'
+                  : v < 64 ? 'swell, ' + pct((v - 32) * 4) + ' toward a snap'
+                  : v < 96 ? 'snaps, ' + pct((v - 64) * 4) + ' toward square'
+                  : 'hard, ' + pct((v - 96) * 4) + ' shorter',
     pulseWidth: v => signedPct(v, 'toward full width', 'toward nothing'),
     pulseHue: hueAmount,
     pulseParLevel: v => signedPct(v, 'toward full', 'toward dark'),
@@ -233,10 +240,8 @@
                        : pct(v) + ' of theirs',
   };
 
-  for (const n of ['pulseWidthShape', 'pulseHueShape', 'pulseParLevelShape',
-                   'pulseParHueShape', 'pulseParSatShape']) DERIVED[n] = DERIVED.pulseShape;
-  for (const n of ['pulseWidthSkew', 'pulseHueSkew', 'pulseParLevelSkew',
-                   'pulseParHueSkew', 'pulseParSatSkew']) DERIVED[n] = DERIVED.pulseSkew;
+  for (const n of ['pulseWidthWave', 'pulseHueWave', 'pulseParLevelWave',
+                   'pulseParHueWave', 'pulseParSatWave']) DERIVED[n] = DERIVED.pulseWave;
 
   // ---- what a control is -------------------------------------------------
   //
@@ -263,12 +268,12 @@
 
     hue: 20, saturation: 100, value: 110,
 
-    pulseRate: 64, pulseDepth: 0, pulseShape: 127, pulseSkew: 64,
-    pulseWidth: 64, pulseWidthShape: 127, pulseWidthSkew: 64,
-    pulseHue: 64, pulseHueShape: 127, pulseHueSkew: 64,
-    pulseParLevel: 64, pulseParLevelShape: 127, pulseParLevelSkew: 64,
-    pulseParHue: 64, pulseParHueShape: 127, pulseParHueSkew: 64,
-    pulseParSat: 64, pulseParSatShape: 127, pulseParSatSkew: 64,
+    pulseRate: 64, pulseDepth: 0, pulseWave: 32,
+    pulseWidth: 64, pulseWidthWave: 32,
+    pulseHue: 64, pulseHueWave: 32,
+    pulseParLevel: 64, pulseParLevelWave: 32,
+    pulseParHue: 64, pulseParHueWave: 32,
+    pulseParSat: 64, pulseParSatWave: 32,
 
     scatterRate: 60, scatterCount: 80, scatterWidth: 34, scatterEdge: 40,
     scatterStagger: 110, scatterDrift: 64,
@@ -373,30 +378,29 @@
 
   const PULSE_DESTS = [
     { key: 'light', name: 'Brightness', where: 'the strips\u2019 own light',
-      amount: 'pulseDepth', shape: 'pulseShape', skew: 'pulseSkew',
+      amount: 'pulseDepth', wave: 'pulseWave',
       note: 'Nothing sits above full, so this is the one amount with no sign: it digs the trough below whatever the shape lane already lit.' },
     { key: 'width', name: 'Width', where: 'the shape\u2019s solid core',
-      amount: 'pulseWidth', shape: 'pulseWidthShape', skew: 'pulseWidthSkew',
+      amount: 'pulseWidth', wave: 'pulseWidthWave',
       note: 'A shape is anchored by its center, so this breathes outward instead of wiping in from one end.' },
     { key: 'hue', name: 'Hue', where: 'the strips, after the color lane',
-      amount: 'pulseHue', shape: 'pulseHueShape', skew: 'pulseHueSkew',
+      amount: 'pulseHue', wave: 'pulseHueWave',
       note: 'One push on what the other sources have already summed to \u2014 not a fourth source, so the color lane\u2019s own design is untouched.' },
     { key: 'parLevel', name: 'PAR level', where: 'the four washes',
-      amount: 'pulseParLevel', shape: 'pulseParLevelShape', skew: 'pulseParLevelSkew',
+      amount: 'pulseParLevel', wave: 'pulseParLevelWave',
       note: 'The washes flashing against still strips is the look that justifies the whole matrix. Pull Level down first: a push toward full needs somewhere to go.' },
     { key: 'parHue', name: 'PAR hue', where: 'the four washes',
-      amount: 'pulseParHue', shape: 'pulseParHueShape', skew: 'pulseParHueSkew',
+      amount: 'pulseParHue', wave: 'pulseParHueWave',
       note: 'Rotates the washes off the strips on the swell and back between them.' },
     { key: 'parSat', name: 'PAR saturation', where: 'the four washes',
-      amount: 'pulseParSat', shape: 'pulseParSatShape', skew: 'pulseParSatSkew',
+      amount: 'pulseParSat', wave: 'pulseParSatWave',
       note: 'Toward white is the flash between strip strobes. It measures from the PARs\u2019 own saturation, so pulling them pale leaves the flash less far to travel.' },
   ];
 
   for (const d of PULSE_DESTS) {
     define([
       C(d.amount, 'Amount', 'how far the pulse pushes ' + d.where),
-      C(d.shape, 'Shape', 'hard on/off square \u2192 smooth sine'),
-      C(d.skew, 'Skew', 'even rise and fall \u2192 a ramp that snaps back'),
+      C(d.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
     ]);
   }
 
@@ -543,17 +547,17 @@
   };
 
   const ANCHORS = {
-    Fill:       { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 0, pulseRate: 64, pulseShape: 127 },
-    Sweep:      { width: 40, count: 0, edge: 18, tail: 0, speed: 80, fan: 64, pulseDepth: 0, pulseRate: 64, pulseShape: 127 },
-    Rain:       { width: 40, count: 0, edge: 18, tail: 74, speed: 80, fan: 100, pulseDepth: 0, pulseRate: 64, pulseShape: 127 },
-    CrossSweep: { width: 40, count: 0, edge: 18, tail: 0, speed: 80, fan: 64, alternate: ON, pulseDepth: 0, pulseRate: 64, pulseShape: 127 },
-    Bars:       { width: 25, count: 0, edge: 15, tail: 0, speed: 88, fan: 64, bounce: ON, pulseDepth: 0, pulseRate: 64, pulseShape: 127 },
-    Breathe:    { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 100, pulseRate: 30, pulseShape: 127 },
-    Wave:       { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 104, pulseDepth: 100, pulseRate: 30, pulseShape: 127 },
-    Chase:      { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 114, pulseDepth: 127, pulseRate: 55, pulseShape: 28 },
-    Comet:      { width: 30, count: 0, edge: 30, tail: 99, speed: 80, fan: 114, pulseDepth: 0, pulseRate: 55, pulseShape: 127 },
-    Strobe:     { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 127, pulseRate: 100, pulseShape: 0 },
-    Stutter:    { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 88, alternate: ON, pulseDepth: 127, pulseRate: 100, pulseShape: 0 },
+    Fill:       { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
+    Sweep:      { width: 40, count: 0, edge: 18, tail: 0, speed: 80, fan: 64, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
+    Rain:       { width: 40, count: 0, edge: 18, tail: 74, speed: 80, fan: 100, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
+    CrossSweep: { width: 40, count: 0, edge: 18, tail: 0, speed: 80, fan: 64, alternate: ON, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
+    Bars:       { width: 25, count: 0, edge: 15, tail: 0, speed: 88, fan: 64, bounce: ON, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
+    Breathe:    { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 100, pulseRate: 30, pulseWave: 32 },
+    Wave:       { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 104, pulseDepth: 100, pulseRate: 30, pulseWave: 32 },
+    Chase:      { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 114, pulseDepth: 127, pulseRate: 55, pulseWave: 88 },
+    Comet:      { width: 30, count: 0, edge: 30, tail: 99, speed: 80, fan: 114, pulseDepth: 0, pulseRate: 55, pulseWave: 32 },
+    Strobe:     { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 127, pulseRate: 100, pulseWave: 96 },
+    Stutter:    { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 88, alternate: ON, pulseDepth: 127, pulseRate: 100, pulseWave: 96 },
   };
 
   // The looks the fan rework was built against. The first is the patch that
@@ -565,7 +569,7 @@
   // strips still in Hypno together while the center runs.
   const FAN_LOOKS = {
     'Bars, unison strobe': { width: 40, count: 68, edge: 0, tail: 0, speed: 64, fan: 100,
-                             pulseDepth: 127, pulseRate: 100, pulseShape: 0, pulseSkew: 64 },
+                             pulseDepth: 127, pulseRate: 100, pulseWave: 96 },
     'Diagonal bars':  { width: 25, count: 0, edge: 10, tail: 0, speed: 64, fan: 114, fanPhase: 0 },
     'Chevron \u2227':     { width: 25, count: 0, edge: 10, tail: 0, speed: 64, fan: 114, fanPhase: 32 },
     'Chevron \u2228':     { width: 25, count: 0, edge: 10, tail: 0, speed: 64, fan: 14, fanPhase: 32 },

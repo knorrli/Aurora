@@ -324,20 +324,22 @@ const CHECKS = [
           emit(shapeAt(o / 32 - 1, w / 8, e / 4, t / 4));`,
   },
   {
+    // Every wave byte against a phase grid of 256 — exhaustive in the byte,
+    // because a wrong landmark would show at one value and nowhere else.
     name: 'pulseWave',
-    cpp: ['fract', 'pulseWave'],
-    js: ['fract', 'pulseWave'],
-    dims: [['phase', 64], ['shape', 17], ['skew', 17]],
+    cpp: ['GEN_WAVE_SAW_DOWN', 'GEN_WAVE_SQUARE', 'GEN_PULSE_MIN_WIDTH',
+          'fract', 'raisedCosine', 'pulseWave'],
+    js: ['GEN_WAVE_SAW_DOWN', 'GEN_WAVE_SQUARE', 'GEN_PULSE_MIN_WIDTH',
+         'fract', 'raisedCosine', 'pulseWave'],
+    dims: [['wave', 128], ['phase', 256]],
     cppDriver: `
-  for (int p = 0; p < 64; p++)
-    for (int s = 0; s < 17; s++)
-      for (int k = 0; k < 17; k++)
-        EMIT(pulseWave((float)p / 64.0f, (float)s / 16.0f, (float)k / 8.0f - 1.0f));`,
+  for (int w = 0; w < 128; w++)
+    for (int p = 0; p < 256; p++)
+      EMIT(pulseWave((float)p / 256.0f, (uint8_t)w));`,
     jsDriver: `
-  for (let p = 0; p < 64; p++)
-    for (let s = 0; s < 17; s++)
-      for (let k = 0; k < 17; k++)
-        emit(pulseWave(p / 64, s / 16, k / 8 - 1));`,
+  for (let w = 0; w < 128; w++)
+    for (let p = 0; p < 256; p++)
+      emit(pulseWave(p / 256, w));`,
   },
   {
     name: 'fanWave',

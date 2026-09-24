@@ -72,6 +72,17 @@
 // second move of its own.
 #define GEN_POSITION_SETTLE_BEATS 2.0f
 
+// Where the named shapes sit on the wave byte. Whole numbers a fader lands on
+// exactly, which is why 32 and 96 rather than thirds of the range.
+#define GEN_WAVE_SWELL    32
+#define GEN_WAVE_SAW_DOWN 64
+#define GEN_WAVE_SQUARE   96
+
+// The shortest stab the rig can draw, as a fraction of a cycle: about one
+// 7–8 ms frame at 120 bpm, and below it a stab lands between frames and
+// flickers instead of shortening. See docs/bench-facts.md § "Frame timing".
+#define GEN_PULSE_MIN_WIDTH 0.06f
+
 // Below this a travel is a pixel a minute — slower than anything the roster
 // wants and slow enough to read as a standstill that quietly drifts.
 #define GEN_STILL_PIXELS_PER_BEAT 0.05f
@@ -138,25 +149,24 @@ static PhaseTracker pulsePhase = { 0.0f, 0.0f };
 // interpolates an amount and cannot snap a connection on.
 struct PulseSend {
   float amount;
-  float shape;
-  float skew;
+  uint8_t wave;
 };
 
-// Shape at 1 is a sine, which is the wave that does least on its way to
-// somewhere else; skew at 0 is an even rise and fall.
+// 32 is the symmetric swell, which is the wave that does least on its way to
+// somewhere else.
 static PulseSend pulseSends[PULSE_TARGET_COUNT] = {
-  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_LIGHT
-  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_WIDTH
-  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_HUE
-  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_PAR_LEVEL
-  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_PAR_HUE
-  { 0.0f, 1.0f, 0.0f },  // PULSE_TO_PAR_SAT
+  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_LIGHT
+  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_WIDTH
+  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_HUE
+  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_PAR_LEVEL
+  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_PAR_HUE
+  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_PAR_SAT
 };
 
-// The peak sits at mid-cycle, so the offset that lands a peak on a bar line
-// is a half-integer rather than a whole one.
+// Every wave peaks at its cycle's zero, so the offset that lands a peak on a
+// bar line is a whole number.
 static inline float nearestAnchor(float offset) {
-  return roundf(offset - 0.5f) + 0.5f;
+  return roundf(offset);
 }
 
 // The tracker's offset is what stops a rate change teleporting, and it is
@@ -176,9 +186,9 @@ static float anchoredPulsePhase(float beats, float rate) {
 
   // The transport restarted, and beat zero is a bar line by definition.
   if (elapsed < 0.0f) {
-    pulsePhase.offset = 0.5f;
+    pulsePhase.offset = 0.0f;
     pulsePhase.rate = rate;
-    return beats * rate + 0.5f;
+    return beats * rate;
   }
 
   const float phase = trackedPhase(pulsePhase, beats, rate);
@@ -256,30 +266,53 @@ static void reanchorTravel(PhaseTracker &tracker, float beats, bool bouncing,
   tracker.offset = wanted - beats * rate;
 }
 
-// Skew slides the peak through the cycle, so one side of the swell collapses
-// into a snap and a ramp becomes reachable. It warps the phase rather than
-// the output, which leaves the cycle's length alone: moving skew changes the
-// swell's shape without changing how often it lands.
-static float pulseWave(float phase, float shape, float skew) {
-  if (skew < -1.0f) skew = -1.0f;
-  else if (skew > 1.0f) skew = 1.0f;
+// Zero at 0 and one at 1, easing at both ends.
+static inline float raisedCosine(float x) {
+  const float t = (x < 0.0f) ? 0.0f : (x > 1.0f ? 1.0f : x);
+  return 0.5f - 0.5f * cosf((float)PI * t);
+}
 
-  const float k = 0.5f + 0.48f * skew;  // 0 and 1 would divide by zero
-  const float t = fract(phase);
-  const float warped = (t < k) ? (0.5f * t / k)
-                               : (0.5f + 0.5f * (t - k) / (1.0f - k));
-  const float lfo = 0.5f - 0.5f * cosf(2.0f * (float)PI * warped);
+// One byte, one axis: the peak never leaves the bar line, and what moves is
+// how the bar fills around it. Below the swell the attack shrinks as the
+// decay grows; above it the attack is gone and the decay both shortens and
+// flattens. Every named shape lands on a value a fader can reach — see
+// GEN_WAVE_* and docs/modulation.md § "The fork, settled".
+//
+// Saw down has to come before square. The other order leaves a crossfade
+// between two shapes that blends into neither; this way it is one decay
+// getting shorter and harder, and every value between is a wave worth
+// dialing.
+static float pulseWave(float phase, uint8_t wave) {
+  float attack, decay, hard;
+  if (wave <= GEN_WAVE_SAW_DOWN) {
+    decay = (float)wave / (float)GEN_WAVE_SAW_DOWN;
+    attack = 1.0f - decay;
+    hard = 0.0f;
+  } else {
+    attack = 0.0f;
+    const float toSquare = (float)(wave - GEN_WAVE_SAW_DOWN)
+                         / (float)(GEN_WAVE_SQUARE - GEN_WAVE_SAW_DOWN);
+    hard = (toSquare > 1.0f) ? 1.0f : toSquare;
+    decay = (wave <= GEN_WAVE_SQUARE)
+        ? 1.0f - 0.5f * toSquare
+        : 0.5f * powf(GEN_PULSE_MIN_WIDTH / 0.5f,
+                      (float)(wave - GEN_WAVE_SQUARE)
+                          / (float)(127 - GEN_WAVE_SQUARE));
+  }
 
-  // Steepening the sine toward a square is what makes a strobe reachable;
-  // no amount of depth on a sine ever produces an on/off edge. The sweep is
-  // linear because the visible swelling tracks softness in proportion: spread
-  // geometrically over the same range, half the fader's visible travel falls
-  // in its top ten steps and everything below reads as one flat square.
-  const float softness = 0.02f + 0.98f * shape;
-  float shaped = (lfo - 0.5f) / softness + 0.5f;
-  if (shaped < 0.0f) shaped = 0.0f;
-  else if (shaped > 1.0f) shaped = 1.0f;
-  return shaped;
+  const float u = fract(phase);
+  if (decay > 0.0f && u <= decay) {
+    // Dividing by what is left of softness is what turns a decay into a
+    // cliff: at the hard end every point above the floor saturates, which is
+    // the flat top a square needs.
+    const float soft = (1.0f - hard < 0.001f) ? 0.001f : 1.0f - hard;
+    const float shaped = raisedCosine(1.0f - u / decay) / soft;
+    return (shaped > 1.0f) ? 1.0f : shaped;
+  }
+  if (attack > 0.0f && u >= 1.0f - attack) {
+    return raisedCosine((u - (1.0f - attack)) / attack);
+  }
+  return 0.0f;
 }
 
 // How hard this destination is being pushed right now: signed, and zero at
@@ -287,7 +320,7 @@ static float pulseWave(float phase, float shape, float skew) {
 static float pulsePush(uint8_t target, float phase) {
   const PulseSend &send = pulseSends[target];
   if (fabsf(send.amount) < 0.001f) return 0.0f;
-  return send.amount * pulseWave(phase, send.shape, send.skew);
+  return send.amount * pulseWave(phase, send.wave);
 }
 
 // A push is a fraction of the way from the dialed value to one of its two
@@ -927,7 +960,7 @@ void Generator(CHSV color) {
     // shape branch already lit.
     const PulseSend &toLight = pulseSends[PULSE_TO_LIGHT];
     const float swell = 1.0f - toLight.amount
-        * (1.0f - pulseWave(stripPulse, toLight.shape, toLight.skew));
+        * (1.0f - pulseWave(stripPulse, toLight.wave));
 
     // A shape is anchored by its center, so growing it is a breath outward
     // rather than a wipe in from one end — which is what put this destination
@@ -1092,12 +1125,8 @@ void setPulseAmount(uint8_t target, uint8_t value) {
                                                          : ccBipolar(value);
 }
 
-void setPulseShape(uint8_t target, uint8_t value) {
-  pulseSends[target].shape = ccUnit(value);
-}
-
-void setPulseSkew(uint8_t target, uint8_t value) {
-  pulseSends[target].skew = ccBipolar(value);
+void setPulseWave(uint8_t target, uint8_t value) {
+  pulseSends[target].wave = value;
 }
 
 void setColorRegion(uint8_t value) { placed.isRegion = aurora_cc_is_on(value); }

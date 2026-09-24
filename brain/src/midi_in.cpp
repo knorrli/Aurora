@@ -34,32 +34,26 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
         case CC_GEN_ALTERNATE: setGeneratorAlternate(value); break;
         case CC_GEN_BOUNCE:    setGeneratorBounce(value); break;
 
-        // The pulse, destination by destination. The strips' brightness kept
-        // the three numbers it has always had; the rest are the 101–115
-        // block, three apiece in the order amount, shape, skew.
+        // The pulse, destination by destination. Each send is an amount and
+        // a wave; the skew numbers beside them in the 101–115 block are dead
+        // now that a wave is one byte, and leave with the block.
         case CC_GEN_PULSE_DEPTH: setPulseAmount(PULSE_TO_LIGHT, value); break;
-        case CC_GEN_PULSE_SHAPE: setPulseShape(PULSE_TO_LIGHT, value); break;
-        case CC_GEN_PULSE_SKEW:  setPulseSkew(PULSE_TO_LIGHT, value); break;
+        case CC_GEN_PULSE_SHAPE: setPulseWave(PULSE_TO_LIGHT, value); break;
 
         case CC_PULSE_WIDTH:       setPulseAmount(PULSE_TO_WIDTH, value); break;
-        case CC_PULSE_WIDTH_SHAPE: setPulseShape(PULSE_TO_WIDTH, value); break;
-        case CC_PULSE_WIDTH_SKEW:  setPulseSkew(PULSE_TO_WIDTH, value); break;
+        case CC_PULSE_WIDTH_SHAPE: setPulseWave(PULSE_TO_WIDTH, value); break;
 
         case CC_PULSE_HUE:       setPulseAmount(PULSE_TO_HUE, value); break;
-        case CC_PULSE_HUE_SHAPE: setPulseShape(PULSE_TO_HUE, value); break;
-        case CC_PULSE_HUE_SKEW:  setPulseSkew(PULSE_TO_HUE, value); break;
+        case CC_PULSE_HUE_SHAPE: setPulseWave(PULSE_TO_HUE, value); break;
 
         case CC_PULSE_PAR_LEVEL:       setPulseAmount(PULSE_TO_PAR_LEVEL, value); break;
-        case CC_PULSE_PAR_LEVEL_SHAPE: setPulseShape(PULSE_TO_PAR_LEVEL, value); break;
-        case CC_PULSE_PAR_LEVEL_SKEW:  setPulseSkew(PULSE_TO_PAR_LEVEL, value); break;
+        case CC_PULSE_PAR_LEVEL_SHAPE: setPulseWave(PULSE_TO_PAR_LEVEL, value); break;
 
         case CC_PULSE_PAR_HUE:       setPulseAmount(PULSE_TO_PAR_HUE, value); break;
-        case CC_PULSE_PAR_HUE_SHAPE: setPulseShape(PULSE_TO_PAR_HUE, value); break;
-        case CC_PULSE_PAR_HUE_SKEW:  setPulseSkew(PULSE_TO_PAR_HUE, value); break;
+        case CC_PULSE_PAR_HUE_SHAPE: setPulseWave(PULSE_TO_PAR_HUE, value); break;
 
         case CC_PULSE_PAR_SAT:       setPulseAmount(PULSE_TO_PAR_SAT, value); break;
-        case CC_PULSE_PAR_SAT_SHAPE: setPulseShape(PULSE_TO_PAR_SAT, value); break;
-        case CC_PULSE_PAR_SAT_SKEW:  setPulseSkew(PULSE_TO_PAR_SAT, value); break;
+        case CC_PULSE_PAR_SAT_SHAPE: setPulseWave(PULSE_TO_PAR_SAT, value); break;
     }
 }
 

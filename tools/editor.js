@@ -355,7 +355,7 @@
       const reset = el('button', 'tiny', 'reset');
       reset.addEventListener('click', () => resetNames([
         ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
-        ...(mod.dests || []).flatMap(d => [d.amount, d.shape, d.skew]),
+        ...(mod.dests || []).flatMap(d => [d.amount, d.wave]),
       ]));
       head.appendChild(reset);
       card.appendChild(head);
@@ -392,7 +392,7 @@
           dh.append(el('span', 'dest-name', d.name), el('span', 'dest-where', d.where));
           cell.appendChild(dh);
           const body2 = el('div');
-          buildRows(body2, [d.amount, d.shape, d.skew]);
+          buildRows(body2, [d.amount, d.wave]);
           cell.appendChild(body2);
           const canvas = el('canvas', 'destwave');
           cell.appendChild(canvas);
@@ -506,7 +506,7 @@
   const WAVE_CYCLES = 2;
 
   function departureAt(dest, phase, live) {
-    const wave = V.pulseWave(phase, live[dest.shape] / 127, P.bip(live[dest.skew]));
+    const wave = V.pulseWave(phase, live[dest.wave]);
     if (dest.key === 'light') return -(live.pulseDepth / 127) * (1 - wave);
     return P.bip(live[dest.amount]) * wave;
   }

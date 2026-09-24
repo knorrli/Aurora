@@ -132,8 +132,7 @@ extern void setGeneratorBounce(uint8_t value);
 // 100–114 for the rest. An amount of zero is a destination the pulse is not
 // using, never a connection that is not made.
 extern void setPulseAmount(uint8_t target, uint8_t value);
-extern void setPulseShape(uint8_t target, uint8_t value);
-extern void setPulseSkew(uint8_t target, uint8_t value);
+extern void setPulseWave(uint8_t target, uint8_t value);
 // The color layer — CC 41–57, and the scatter at 83–91. Hue, whiteness and
 // darkness pushed away from the three faders by a placed field, a wander, the
 // light level and the scatter. With every one centered the wall is exactly what
