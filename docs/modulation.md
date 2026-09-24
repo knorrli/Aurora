@@ -59,8 +59,17 @@ reaches so it can be seen without being opened, and one place listing
 every live route so "what is wired in this patch" is a glance rather than
 an audit.
 
-**Start at eight routes** — subject to the wave decision, which changes
-what a route costs and therefore how many fit.
+**The wave is one continuous byte**, running from a build through a swell
+to a stab, with the named shapes on exactly reachable values. See "The
+waves" below.
+
+**A push is a fraction of the distance to a limit**, everywhere except
+controls that wrap, which take a rotation instead. See "How a push lands".
+
+**Eight routes, four bytes each** — destination, amount, ratio, wave. That
+is 32 of the 51 CCs the retirement leaves free, so a source byte per route
+stays affordable and the count can still be raised. See "What it costs,
+measured".
 
 ## Every amount is a soldered route
 
@@ -134,26 +143,70 @@ expensive one. The pulse spends 18 CCs to reach six destinations; the same
 triple for all 43 reachable controls would be 129 CCs against the 128 that
 exist. That arithmetic is why the fixed list exists.
 
-Routes cost per route instead of per destination. There are **51 CCs to
-spend**: 33 spare after the regroup, plus the pulse's 18 reclaimed.
+Routes cost per route instead of per destination. Counted off
+`shared/aurora_protocol.h` rather than off the blocks, which are not
+final:
 
-| Bytes per route | What a route carries | Routes that fit |
-|----|----|----|
-| 4 | destination, amount, ratio, one wave byte | 12 |
-| 5 | destination, amount, ratio, shape, skew | 10 |
-| 6 | destination, amount, ratio, shape, skew, duty | 8 |
+| | CCs |
+|----|----|
+| CC numbers that exist, 0–127 | 128 |
+| Excluded, never to be assigned | −14 |
+| Assigned today: 2, 12–26, 33–35, 38–57, 60–77, 83–91, 101–115 | −81 |
+| Unassigned and usable | 33 |
+| Reclaimed by retiring the pulse's sends | +18 |
+| **Free** | **51** |
+| Eight routes at four bytes | −32 |
+| **Left over** | **19** |
+
+The 18 reclaimed are CCs 74, 76, 77 and 101–115: the five destinations in
+the 101 block, plus the strips' own brightness, whose amount, skew and
+shape sit at 74, 76 and 77. **CC 75 stays**, because it is the rate, and
+the rate becomes the clock.
+
+### The fourteen excluded numbers
+
+**0, 1, 7, 10, 11, 32 and 120–127 are excluded and must never be
+assigned.** The test is not that the spec names them — it names CC 64,
+74, 91 and 38 too, which are all in use here without trouble. The test is
+whether something else on the chain sends the number *without being
+asked*, and `DESIGN.md` makes that a live concern: one topology puts a DAW
+into the controller with soft-thru to the brain, another aims a computer
+straight at the brain.
+
+| CC | What sends it unbidden |
+|----|----|
+| 0, 32 | Bank Select, emitted ahead of a Program Change by most DAWs — and a Program Change is how a patch is selected |
+| 1 | a keyboard's mod wheel |
+| 7, 10, 11 | a DAW track's own volume, pan and expression automation |
+| 120–127 | Channel Mode messages — All Sound Off, Reset All Controllers, Local Control, All Notes Off, Omni/Mono/Poly — sent on transport stop, on panic and on track disarm, usually to every channel, so `AURORA_MIDI_CHANNEL` is no protection |
+
+A parameter parked on one of these does not fail randomly. It fails on a
+patch change or when the transport stops, which is precisely when nobody
+can afford to look at the wall.
+
+**The exclusion is a default, not a law.** If the map ever runs out, the
+harmless end is CC 122, Local Control, which is essentially only ever sent
+by hand, and then 124–127, which DAWs send far less often than the
+120/121/123 panic trio. The dangerous end is 0 and 32, where every patch
+change is another opportunity.
+
+**CC 64 fails the same test and is already assigned.** It is Sustain, it
+holds `CC_GEN_EDGE`, and a keyboard with a sustain pedal on channel 1
+would send it unbidden. It is in use rather than up for choice, so it is
+recorded here rather than acted on.
 
 **Raising the count later is safe.** An array size in two renderers and a
 loop bound in the editor. Nothing in storage, nothing on the wire, and
 nothing in patches already written, since an absent route's CCs arrive as
 zero and a zero-amount route does nothing. There is no migration and no
-version byte. What is *not* freely raisable is the ceiling: the table
-above is the whole of it.
+version byte. What is *not* freely raisable is the ceiling: 19 CCs left
+over is the whole of it, and a source byte would claim eight of them.
 
 **A source byte is not needed yet.** Adding wander, scatter or fan as
-route sources later costs one more CC per route, which fits inside what
-eight routes leave spare. So leaving it out now paints nothing into a
-corner. The catch when it comes: the wander and the scatter have a
+route sources later costs one more CC per route — eight at this count,
+against the 19 left over. So leaving it out now paints nothing into a
+corner. It is also why the count did not go higher: raising it later is
+safe and lowering it is not, and twelve routes would have left three. The catch when it comes: the wander and the scatter have a
 position, so pointing one at a global control needs a rule for where on
 the wall to sample it — the same unbuilt work `docs/generator.md` already
 records against sampling the color layer at the PARs.
@@ -175,6 +228,54 @@ the rate can shift that integer by one, which flips a halved route to the
 opposite phase: a control that inverts a slow swell when a different
 control is touched. Restricting ratios to whole multiples costs nothing
 and removes it entirely.
+
+## How a push lands
+
+Every destination takes one rule, with an exception for controls that have
+no top or bottom.
+
+**The default: a push is a fraction of the distance left.**
+
+    result = base + |amount| × (limit − base)
+
+The sign picks the limit — positive travels toward 127, negative toward 0.
+At full amount the control arrives exactly at that limit; at half, it
+covers half the remaining distance. A control dialed at 100 pushed +100%
+reaches 127; the same control pushed −50% reaches 50.
+
+This is `pushToward` in `brain/src/P_Generator.cpp:297` and
+`brain/src/dmx_out.cpp:46`, already used for width, the PAR level, the PAR
+saturation and the scatter's push on brightness. Adopting it everywhere is
+less a decision than finishing one.
+
+Two things fall out of it. Nothing can clip. And a control already sitting
+at a limit has nowhere to go that way, so a route aimed at it does nothing
+in that direction — which is intuitive, but it does mean the amount is not
+the same size twice, because what a route can do depends on where the
+control is parked.
+
+**The exception: circular controls.** Hue is a wheel. 0 and 127 are the
+same red, sitting next to each other, so there is no limit to travel
+toward and the rule above has nothing to compute. For these the amount is
+a rotation instead — how far around, and which way. The pulse's hue send
+uses half the wheel at full amount (`GEN_PULSE_MAX_HUE`); whether that
+span suits every circular control is not settled.
+
+**Which controls are circular is a per-control fact**, and it belongs next
+to the CC where the `[patch]` and `[switch]` tags already live, never in a
+table somewhere else that can drift out of step. Three read as circular
+today: hue, the pattern's standing position (CC 66, where the pattern
+repeats once per cell), and the fan's phase (CC 69, which runs on 128ths
+of a full turn). Tagging them is the same pass that answers which
+destinations are refused.
+
+**Brightness stops being the odd one out.** It multiplies today
+(`P_Generator.cpp:808`), and it is the only destination that rests at the
+wave's high point while the rest rest at its low point. Under one rule it
+rests at its dialed value like everything else, and a swell that pulls the
+wall down is a negative amount. Both behaviors are already in that file —
+the scatter pushes brightness the new way at `P_Generator.cpp:935` — so
+this picks the one used more.
 
 ## Rates as destinations
 
@@ -216,63 +317,70 @@ square-ness; moving that center gives duty.
 frame and the fastest rate, a 6 % stab is about one frame long; shorter
 lands between frames and flickers instead of shortening.
 
-### The fork, still open
+### The fork, settled
 
-**A selector** — sine, triangle, square, saw up, saw down, narrow pulse —
-is **one byte instead of three**, because a list containing the saws and a
-narrow pulse absorbs what skew and duty were approximating. That is its
-real argument, and it is a strong one: 12 routes instead of 8.
+**One continuous byte**, and both sides of the original fork are rejected.
+A selector was one byte but a switch, so two patches with different waves
+snap rather than travel. A detented sweep kept the continuum but cost
+three bytes, and it spent them on combinations nobody dials — a wide
+hard-edged bump and a wide soft one both read as a swell.
 
-Against it: it gives up everything between the named shapes, which is the
-direction this instrument is going — a continuous space rather than a
-fixed roster, and a wave selector is that roster one level down. It is
-also a switch, so two patches with different waves snap rather than
-travel.
+The byte is a single axis: the peak never leaves the bar line, and what
+moves is how the bar fills around it. Every named shape lands on a value a
+fader can actually reach.
 
-**A detented sweep** keeps the continuum and answers the selector's one
-genuine virtue, which is that it is dialable. The rig has solved this
-tension twice already the same way: the fan's frequency steps in eighths
-so "still" is exactly reachable, and the pulse's rate steps to bar-holding
-periods. Put the named shapes on detents — exact at both ends and the
-center rather than merely near them. Costs three bytes and eight routes.
+| Value | Wave | Lit above half |
+|----|----|----|
+| 0 | builds across the bar, drops on the bar line | 50% |
+| 32 | symmetric swell, peak on the bar line | 50% |
+| 64 | snaps up on the bar line, decays across it | 50% |
+| 96 | hard on for the first half of the bar | 49% |
+| 127 | one-frame stab | 6% |
 
-**A cheaper middle**, noted and not recommended: one "lean" byte instead
-of skew and duty, warping the phase when the wave is soft and biasing the
-clamp when it is hard. Reaches everything for two bytes, but a control
-that means two things depending on another control is close to the
-"parameter abuse" this whole discussion is trying to get away from, and it
-would be met at the bench rather than here.
+Below 64 the attack shrinks as the decay grows. Above 64 the attack is
+gone, and the decay both shortens and flattens — which is what puts a hit
+that holds and then falls at around 80, and a true square at 96. The 49%
+at 96 is the raised-cosine edge, about a quarter of a percent of the bar.
 
-**One thing the selector silently drops.** Skew is doing two jobs: shape
-when the wave is soft, and *placement* when it is hard, where sliding the
-stab through the cycle decides where in the bar it lands. A list absorbs
-the first job and loses the second, so the selector may hand back a
-question about whether a route wants its own phase offset.
+**Saw down has to come before square.** A list would suggest the other
+order, and that leaves a crossfade between two shapes blending into
+something neither. In this order there is no crossfade at all: it is one
+decay getting shorter and harder, and every value between is a wave worth
+dialing.
+
+**Triangle is not on the sweep, and that is free.** A triangle swell and a
+sine swell look the same on a light fixture. The corner where it would
+show is a destination that reads as motion rather than level, where
+constant travel and eased travel differ — and rates, the obvious such
+destination, are off-limits anyway.
+
+**Hold and decay are tied**, and that is the price of the byte. One number
+governs both how long the light holds and how fast it falls, so a short
+hold with a long tail is not reachable.
+
+**Everything peaks on the bar line.** No off-beat stab, no route
+deliberately lagging another. The anchor does this rather than the wave,
+and it is the question the fork was always going to hand back: whether a
+route wants its own phase offset. That is one more byte, which would make
+a route five and drop the ceiling to ten.
 
 ## Still open
 
-1. **How a push applies, per destination.** They do not agree today:
-   brightness multiplies (`swell = 1 − amount × …`), width pushes toward a
-   limit, hue adds scaled to the wheel. A route pointing anywhere needs one
-   rule, or a declared rule and unit per destination. This is the actual
-   work, and it is where the firmware and `tools/preview.js` can silently
-   drift apart.
-2. **Two routes on one destination** — sum the pushes and apply once, or
+1. **Two routes on one destination** — sum the pushes and apply once, or
    apply in turn. The color layer already sums; nothing else has had to
    answer it.
-3. **Fanned clock or plain clock, per route.** Today the strips read
+2. **Fanned clock or plain clock, per route.** Today the strips read
    `pulse + fanPulse × wave` and the washes read the plain phase, because a
    PAR is one position with no strip to be offset from. That distinction is
    implicit in where each destination is read in the frame. Once a route
    can point anywhere it has to be stated, or it gets decided by accident
    by whoever writes the loop.
-4. **Which destinations are refused**, and whether the quantized ones —
+3. **Which destinations are refused**, and whether the quantized ones —
    the fan's frequency in eighths, count as geometric whole numbers, the
    3-way ruler — are refused or allowed with the stepping treated as an
-   effect.
-5. **The wave fork**, above. It decides what a route costs and therefore
-   how many fit, so it is the one that unblocks the others.
-6. **Morphing between patches whose routes are aimed differently.** A
+   effect. The same pass tags which controls are circular, and settles the
+   rotation span each one takes.
+4. **Morphing between patches whose routes are aimed differently.** A
    destination is a switch, and switches land on arrival or on release at
    the end of a journey — so travelling from a patch where route 3 pushes
    width to one where route 3 pushes hue, the *amount* interpolates the
@@ -283,7 +391,7 @@ question about whether a route wants its own phase offset.
    destination so slot N means the same thing in every patch, or have the
    editor align slots when it builds a library. This is the one place the
    matrix is genuinely weaker than what it replaces.
-7. **Sequencing** — whether the pulse's eighteen retire in the same change
+5. **Sequencing** — whether the pulse's eighteen retire in the same change
    that brings routes, or after.
 
 ## Resuming this
@@ -296,10 +404,12 @@ block in `shared/aurora_protocol.h`; then the pulse machinery in
 `tools/preview.js`; then `docs/editor.md` for the panel model the new
 one has to fit into.
 
-**Answer the seven questions before building anything.** They are not
-independent: the wave decides what a route costs, which decides how many
-routes fit, which decides whether the fifteen soldered amounts are under
-any pressure at all.
+**Answer the remaining five questions before building anything.** The wave
+is settled and fixes a route at four bytes, which settled the count at
+eight and took the pressure off the fifteen soldered amounts. How a push
+lands is settled too. What is left is mostly per-control work: which
+destinations are refused, which wrap, and what happens when two routes
+land on one.
 
 **Then build in this order.** The editor comes last on purpose — its shape
 depends on what a route turns out to be.
@@ -309,9 +419,9 @@ depends on what a route turns out to be.
    and unit, while the existing six destinations stay hardwired. Nothing
    should change on the wall.
 2. The same in `tools/preview.js`, cross-checked function by function.
-3. The wave, both sides, whatever question 5 decided.
-4. The CC map: retire 101–115, add the route block, and check every
-   consumer number by number the way the regroup did.
+3. The wave, both sides: the one-byte sweep in "The waves" above.
+4. The CC map: retire 74, 76, 77 and 101–115, add the route block, and
+   check every consumer number by number the way the regroup did.
 5. Routes replace the six hardwired sends, both sides.
 6. The editor: the control list in `tools/patch.js`, the per-slider panel,
    the route marks, the route list, and `docs/editor.md`.

@@ -187,6 +187,17 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 // ---------------------------------------------------------------------------
 
 enum AuroraCC : uint8_t {
+    // Excluded, never to be assigned: 0, 1, 7, 10, 11, 32, 120–127. Not for
+    // being named in the MIDI spec — CC 64, 74, 91 and 38 are named there
+    // and are in use below — but because something else on the chain sends
+    // them unasked. Bank Select (0, 32) rides ahead of the Program Change
+    // that selects a patch; a DAW track's volume, pan and expression
+    // automation send 7, 10 and 11; a mod wheel sends 1. And 120–127 are
+    // Channel Mode messages, sent on transport stop, on panic and on track
+    // disarm, usually to every channel, so AURORA_MIDI_CHANNEL is no
+    // protection. See docs/modulation.md for which are least dangerous to
+    // break first if the map ever runs out.
+
     // 2–9 — transport / meta
     //
     // A half-time look is a real musical idea, and a song that wants one
@@ -198,7 +209,7 @@ enum AuroraCC : uint8_t {
     // own. Moved off 10, where it shared a number with pan.
     CC_TEMPO_DIVISION      = 2,  // [patch] note value one tempo pulse stands
                                  // for; value is an AuroraTempoDivision index
-    // 3–9 reserved (transport / meta), skipping 7
+    // 3–9 reserved (transport / meta), skipping 7. 10 and 11 excluded
 
     // 12–31 — the controller
     //
@@ -253,7 +264,7 @@ enum AuroraCC : uint8_t {
     // pair would say the key's identity a second time, and the model names
     // one destination at a time. See DESIGN.md § "Changing patch".
     CC_KEY_HELD            = 26, // [gesture] 127 while the key is held
-    // 27–31 reserved (the controller)
+    // 27–31 reserved (the controller); 32 excluded
 
     // 33–37 — washes / DMX fixtures. All three are [patch]: DESIGN.md
     // § "What a patch holds for them" names level, hue offset and saturation
@@ -464,6 +475,7 @@ enum AuroraCC : uint8_t {
     CC_PULSE_PAR_SAT_SHAPE = 114, // [patch]
     CC_PULSE_PAR_SAT_SKEW  = 115, // [patch]
     // 116–119 reserved (the pulse's destinations)
+    // 120–127 excluded
 };
 
 
