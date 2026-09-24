@@ -203,9 +203,8 @@
   const A = global.AuroraCC;
   const CC = A.CC;
 
-  // [rate] and [circular] are read off the enum through tools/cc.js rather
-  // than listed again here. Tempo division is refused for its own reason: it
-  // is an index into six note values, not a level, so there is no halfway.
+  // Tempo division is refused for its own reason: an index into six note
+  // values, not a level, so there is no halfway to push it to.
   const byTag = tag => new Set(A.tagged(tag).map(n => CC[n]));
   const ROUTE_REFUSED = new Set([...byTag('rate'), CC.tempoDivision]);
   const ROUTE_CIRCULAR = byTag('circular');
@@ -231,7 +230,8 @@
       const ratio = A.routeRatio(routeByte(s, r, 'Ratio'));
       const wave = s['route' + r + 'Wave'];
       const phase = ROUTE_PLAIN.has(dest) ? plainPhase : stripPhase;
-      push[dest] = (push[dest] || 0) + amount * pulseWave(phase * ratio, wave === undefined ? GEN_WAVE_SWELL : wave);
+      push[dest] = (push[dest] || 0)
+        + amount * pulseWave(phase * ratio, wave === undefined ? GEN_WAVE_SWELL : wave);
     }
     return push;
   }

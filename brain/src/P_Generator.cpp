@@ -685,48 +685,29 @@ static float fanFreqFrom(uint8_t value) {
   return (float)step * (GEN_FAN_MAX_CYCLES_PER_STRIP / GEN_FAN_FREQ_STEPS);
 }
 
-// Read once at the top of a frame rather than when each CC arrives, because a
-// route's push lands on the byte and the conversion has to see the pushed
-// value. Nothing pushes yet, so every value here is what the old setters
-// stored.
-//
-// The three fan amounts share one wave. Position and pulse are offsets into a
-// cycle, so only the spread between strips is visible and a full amount
-// spreads the five over exactly one cell or one swell. Rate is an absolute
-// speed added to Speed's, so the strip the wave reads zero at travels at
-// exactly what Speed says and the others are measured from it.
-//
-// Position covers half a cell each way, which is every place a shape can
-// stand, because the pattern repeats once per cell. The pulse rate is stepped
-// rather than continuous: its phase is anchored to the musical grid, and a
-// period the bar cannot hold a whole number of walks through the bar for ever.
-// Bipolar and squared like the shape branch's travel, for the same reason:
-// the slow end is where a color that reads as depth rather than as an effect
-// actually lives.
+// Squared, like every rate here: what reads as depth rather than as an effect
+// lives at the slow end, and spread evenly that end is a few steps of fader.
 static float placedCellsPerBeatFrom(uint8_t value) {
   const float x = ((float)value - 64.0f) / 63.0f;
   return (x < 0.0f ? -1.0f : 1.0f) * x * x * PLACED_MAX_CELLS_PER_BEAT;
 }
 
-// Squared like the two travel speeds, for the same reason: the slow end is
-// where a color reading as depth rather than as an effect lives. Unipolar
-// unlike them, because the wander is symmetric interference with no anchor
-// and reversing it gives the same look — measured in docs/generator.md
-// § Open, item 11. Frozen therefore stays at the end of the throw, rather
-// than at a center this taper makes hard to tell from a crawl.
+// Unipolar unlike the travel speeds, because the wander is symmetric
+// interference with no anchor: reversing it gives the same look. So frozen
+// sits at the end of the throw rather than at a center this taper makes hard
+// to tell from a crawl.
 static float wanderCyclesFrom(uint8_t value) {
   const float x = ccUnit(value);
   return x * x * WANDER_MAX_CYCLES_PER_BEAT;
 }
 
-// Squared like every other rate here, and for the same reason: a texture that
-// reads as the wall breathing rather than as an effect lives at the slow end,
-// and spread evenly that end is a few steps of the fader.
 static float scatterRateFrom(uint8_t value) {
   const float x = ccUnit(value);
   return x * x * SCATTER_MAX_CYCLES_PER_BEAT;
 }
 
+// Per frame rather than per CC, because a route's push lands on the byte and
+// the conversion has to see the pushed value.
 static void readDialedControls() {
   genWidth = ccUnit(routes::value(CC_GEN_WIDTH));
   genEdge = ccUnit(routes::value(CC_GEN_EDGE));

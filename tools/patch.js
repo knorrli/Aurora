@@ -298,9 +298,8 @@
   // Carrier, modulators, outputs. The two lanes hold only what the wall shows
   // with nothing pushing on it; everything that pushes is a source with its
   // amounts beside it, and every source is drawn the same way whatever it
-  // reaches. That is what the old panel could not say: the placed field, the
-  // wander and the light level were three unrelated boxes of sliders that all
-  // land on the same three qualities and add.
+  // reaches — the placed field, the wander and the light level all land on the
+  // same three qualities and add.
 
   const LANES = [
     {

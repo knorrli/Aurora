@@ -6,12 +6,10 @@ namespace destinations {
 
 static uint8_t dialed[AURORA_PATCH_CC_COUNT];
 
-// Where each control stands before anything has been sent. Bipolar controls
-// boot at 64 because that is their "no departure at all"; the rest boot at
-// the byte nearest what the renderers used to start from, which for a few is
-// not exact — 38 is 0.2992 where the old default read 0.3. No patch or look
-// depends on these, so nearest is close enough, and the alternative is a
-// second set of defaults nobody can dial.
+// Bipolar controls boot at 64, their "no departure at all". The rest boot at
+// the nearest byte to what the renderers want, which for a few is not exact —
+// 38 is 0.2992 where 0.3 was wanted. The alternative is a second set of
+// defaults nobody can dial.
 struct Dial {
   uint8_t cc;
   uint8_t value;

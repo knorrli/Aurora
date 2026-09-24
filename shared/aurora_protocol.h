@@ -412,9 +412,8 @@ enum AuroraCC : uint8_t {
                                  // whatever this says: a PAR is one position
                                  // with no strip to be offset from.
 
-    // One clock for the whole rig, and nothing beside it. What used to sit
-    // either side — an amount at 74 and a wave at 76/77, soldered to the
-    // strips' brightness — is route 0 now, and can aim anywhere.
+    // One clock for the whole rig, and nothing beside it: where a route aims
+    // and how hard belongs to the route.
     CC_GEN_PULSE_RATE      = 75, // [patch][rate] beats per swell; stepped,
                                  // see AURORA_PULSE_PERIODS
 
@@ -457,9 +456,8 @@ enum AuroraCC : uint8_t {
 // ---------------------------------------------------------------------------
 //
 // A route is four bytes: which control it pushes, how far, how fast against
-// the one clock, and what wave does the pushing. Eight of them replace the six
-// soldered sends the pulse used to have, and they can aim at any control the
-// map does not refuse. See docs/modulation.md.
+// the one clock, and what wave does the pushing. Eight of them, aimed at any
+// control the map does not refuse. See docs/modulation.md.
 //
 // The numbers are not one run, because the map has none long enough: 51 are
 // free but the longest stretch is 28, and 119 is the ceiling since 120–127 are
