@@ -125,6 +125,15 @@ There is no conflict in having both. The color layer already sums its
 pushes, so a soldered amount and a route landing on the same destination
 add, which needs no new rule.
 
+**The eighteen go in one change, not two.** Running the old sends
+alongside the routes would fit — the route block needs 32 of the 33
+usable CCs even before the retirement frees anything — but it buys only
+one thing, a rig that keeps working through the transition, and the rig
+is not playable today regardless. What it costs is worse: a mechanism
+half retired is the state most likely to be read as the design by whoever
+picks this up next. So the eighteen retire in the same change that wires
+the routes, and `shared/aurora_protocol.h` says so beside them.
+
 **And it is the same argument that parked palettes.** No patches exist
 yet, so how many simultaneous connections a real look needs is a guess.
 Retiring fifteen working, already-dialed, one-byte amounts on a guess is
@@ -515,9 +524,7 @@ a route five and drop the ceiling to ten.
    3-way ruler — are refused or allowed with the stepping treated as an
    effect. The same pass tags which controls are circular, and settles the
    rotation span each one takes.
-2. **Sequencing** — whether the pulse's eighteen retire in the same change
-   that brings routes, or after.
-3. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
+2. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
    computes one colour and one level and writes the same eight bytes to
    all four addresses; the only per-fixture data is calibration trim. So
    the PARs cannot strobe one after the other, and no route design changes
@@ -538,14 +545,14 @@ block in `shared/aurora_protocol.h`; then the pulse machinery in
 `tools/preview.js`; then `docs/editor.md` for the panel model the new
 one has to fit into.
 
-**Answer the first two of the remaining questions before building
-anything** — the third is output-layer work that routes neither need nor
-fix. The wave
+**Answer the first question before building anything** — the second is
+output-layer work that routes neither need nor fix. The wave
 is settled and fixes a route at four bytes, which settled the count at
 eight and took the pressure off the fifteen soldered amounts. How a push
 lands is settled too, including what two routes on one destination do and
-which clock each one reads. What morphing does to a route is settled too. What is left is mostly
-per-control work: which destinations are refused, and which of them wrap.
+which clock each one reads. What morphing does to a route is settled too, and so is the order the
+change lands in. All that is left is per-control work: which destinations
+are refused, and which of them wrap.
 
 **Then build in this order.** The editor comes last on purpose — its shape
 depends on what a route turns out to be.
@@ -557,12 +564,14 @@ depends on what a route turns out to be.
    should change on the wall.
 2. The same in `tools/preview.js`, cross-checked function by function.
 3. The wave, both sides: the one-byte sweep in "The waves" above.
-4. The CC map: retire 74, 76, 77 and 101–115, add the route block, and
-   check every consumer number by number the way the regroup did.
-5. Routes replace the six hardwired sends, both sides.
-6. The editor: the control list in `tools/patch.js`, the per-slider panel,
+4. The CC map and the routes, in one change: retire 74, 76, 77 and
+   101–115, add the route block, wire routes in place of the six hardwired
+   sends on both sides, and check every consumer number by number the way
+   the regroup did. One change rather than two, so the tree never holds a
+   half-retired pulse for someone to mistake for the design.
+5. The editor: the control list in `tools/patch.js`, the per-slider panel,
    the route marks, the route list, and `docs/editor.md`.
-7. Fold what is settled here into `docs/generator.md` and leave this file
+6. Fold what is settled here into `docs/generator.md` and leave this file
    as the record of why.
 
 **Check it with `node tools/crosscheck.mjs`.** It lifts a function and

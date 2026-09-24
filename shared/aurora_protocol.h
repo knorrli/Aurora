@@ -402,6 +402,10 @@ enum AuroraCC : uint8_t {
     // The pulse is one oscillator with one rate, and 74/76/77 are its amount
     // and its wave where it reaches the strips' brightness. Every other
     // destination carries its own three at 101–119.
+    //
+    // 74, 76, 77 and 101–115 are being removed, replaced by the route block
+    // in docs/modulation.md. Do not build anything that reads them and do not
+    // design around them surviving. CC 75 stays: it becomes the one clock.
     CC_GEN_PULSE_DEPTH     = 74, // [patch] how far the trough digs below full
                                  // light
     CC_GEN_PULSE_RATE      = 75, // [patch] beats per swell; stepped, see
@@ -452,10 +456,9 @@ enum AuroraCC : uint8_t {
     // how fast. Three per destination, always in the order amount, shape,
     // skew, so the block reads as a table.
     //
-    // Room for one more destination at 116–118. The one waiting for it aims
-    // the pulse at the fan's rate amount, which makes the strips drift apart
-    // and come back into alignment rather than drifting for ever — see
-    // TODO.md.
+    // This whole block is being removed, replaced by the route block in
+    // docs/modulation.md. Do not add a destination here and do not design
+    // around it surviving.
     CC_PULSE_WIDTH         = 101, // [patch] bipolar: toward full width /
                                   // toward nothing
     CC_PULSE_WIDTH_SHAPE   = 102, // [patch]
