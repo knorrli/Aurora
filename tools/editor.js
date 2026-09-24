@@ -215,10 +215,10 @@
 
   // The escape from putting the amounts at the source: a marker beside the
   // target saying which sources reach it and how hard.
-  const REACHED_CONTROL = {
-    width: 'genWidth', hue: 'hue',
-    parLevel: 'washLevel', parHue: 'washHueOffset', parSat: 'washSaturation',
-  };
+  // destination key -> the control whose row carries the mark
+  const REACHED_CONTROL = Object.fromEntries(
+    P.DESTINATIONS.filter(d => d.cc !== undefined)
+      .map(d => [d.key, window.AuroraCC.NAME_BY_CC[d.cc]]));
 
   // Brightness and Lit White rest at the bottom of their travel rather than
   // in the middle, so there is no sign to read off them.
@@ -233,6 +233,10 @@
       if (isNeutral(amount, v)) continue;
       const r = amountFraction(amount, v);
       parts.push(`${source} ${r >= 0 ? '+' : '−'}${Math.round(Math.abs(r) * 100)}%`);
+    }
+    for (const a of P.routesAimedAt(live, dest.cc)) {
+      const r = P.bip(a.amount);
+      parts.push(`route ${a.route + 1} ${r >= 0 ? '+' : '−'}${Math.round(Math.abs(r) * 100)}%`);
     }
     return parts.length ? '← ' + parts.join(' · ') : '';
   }
@@ -273,9 +277,7 @@
       }
     }
 
-    for (const [target, destKey] of Object.entries(
-      { width: 'genWidth', hue: 'hue', washLevel: 'parLevel',
-        washHueOffset: 'parHue', washSaturation: 'parSat' })) {
+    for (const [destKey, target] of Object.entries(REACHED_CONTROL)) {
       const r = rows[target];
       if (r && r.reached) r.reached.textContent = reachText(destKey, live);
     }
@@ -355,7 +357,7 @@
       const reset = el('button', 'tiny', 'reset');
       reset.addEventListener('click', () => resetNames([
         ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
-        ...(mod.dests || []).flatMap(d => [d.amount, d.wave]),
+        ...(mod.routes || []).flatMap(r => [r.destination, r.amount, r.ratio, r.wave]),
       ]));
       head.appendChild(reset);
       card.appendChild(head);
@@ -382,23 +384,23 @@
       }
       card.appendChild(body);
 
-      if (mod.dests) {
+      if (mod.routes) {
         const destBox = el('div');
-        destBox.appendChild(el('h4', null, 'Destinations'));
+        destBox.appendChild(el('h4', null, 'Routes'));
         const grid = el('div', 'dests');
-        for (const d of mod.dests) {
+        for (const route of mod.routes) {
           const cell = el('div', 'dest');
           const dh = el('div', 'dest-head');
-          dh.append(el('span', 'dest-name', d.name), el('span', 'dest-where', d.where));
+          dh.append(el('span', 'dest-name', route.name),
+                    el('span', 'dest-where', 'wherever it is aimed'));
           cell.appendChild(dh);
           const body2 = el('div');
-          buildRows(body2, [d.amount, d.wave]);
+          buildRows(body2, [route.destination, route.amount, route.ratio, route.wave]);
           cell.appendChild(body2);
           const canvas = el('canvas', 'destwave');
           cell.appendChild(canvas);
-          cell.appendChild(el('p', 'note', d.note));
           grid.appendChild(cell);
-          destCards[d.key] = { cell, canvas, dest: d };
+          destCards[route.key] = { cell, canvas, dest: route };
         }
         destBox.appendChild(grid);
         card.appendChild(destBox);
@@ -501,14 +503,13 @@
     }
   }
 
-  // ---- the pulse's waves -------------------------------------------------
+  // ---- a route's push, drawn ---------------------------------------------
 
   const WAVE_CYCLES = 2;
 
-  function departureAt(dest, phase, live) {
-    const wave = V.pulseWave(phase, live[dest.wave]);
-    if (dest.key === 'light') return -(live.pulseDepth / 127) * (1 - wave);
-    return P.bip(live[dest.amount]) * wave;
+  function departureAt(route, phase, live) {
+    const ratio = window.AuroraCC.routeRatio(live[route.ratio]);
+    return P.bip(live[route.amount]) * V.pulseWave(phase * ratio, live[route.wave]);
   }
 
   function drawWave(canvas, dest, live) {

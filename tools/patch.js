@@ -41,11 +41,20 @@
   // names are built to match: route3Amount is route 3's amount.
   const ROUTE_FIELDS = Object.keys(A.ROUTE_FIELD);
   const routeName = (r, field) => `route${r}${field[0].toUpperCase()}${field.slice(1)}`;
+  const ROUTE_NAMES = [];
   for (let r = 0; r < A.ROUTES; r++) {
-    for (const field of ROUTE_FIELDS) CC[routeName(r, field)] = A.routeCC(r, A.ROUTE_FIELD[field]);
+    for (const field of ROUTE_FIELDS) {
+      const name = routeName(r, field);
+      CC[name] = A.routeCC(r, A.ROUTE_FIELD[field]);
+      ROUTE_NAMES.push(name);
+    }
   }
 
-  const NAMES = Object.keys(CC);
+  // What a patch holds: the enum's [patch] and [switch], plus the routes. The
+  // controller's own reports are [ambient] and [gesture] — a fader position is
+  // where a hand left it, not something a look holds.
+  const NAMES = A.tagged('patch').concat(A.tagged('switch'), ROUTE_NAMES)
+    .sort((a, b) => CC[a] - CC[b]);
 
   // The four with no middle. A morph never moves one, and within a patch the
   // far ends share the base's — DESIGN.md § "Switches belong to the patch"
@@ -53,7 +62,7 @@
   // share switches.
   // A route's destination has no middle either: halfway between two controls
   // is not a control.
-  const SWITCHES = ['genAlternate', 'genBounce', 'colorRegion', 'colorRuler']
+  const SWITCHES = A.tagged('switch')
     .concat(Array.from({ length: A.ROUTES }, (_, r) => routeName(r, 'destination')));
   const CONTINUOUS = NAMES.filter(n => !SWITCHES.includes(n));
 
@@ -469,13 +478,17 @@
 
   // ---- reading the matrix the other way ----------------------------------
 
+  // The soldered amounts are fixed, so they are a table. What a route reaches
+  // is whatever it happens to be aimed at, so it is a lookup — routesAimedAt
+  // below. A destination carries `cc` when it is a control a route can name.
   const DESTINATIONS = [
     { key: 'light', name: 'the strips\u2019 brightness', lane: 'shape',
-      from: { pulse: 'pulseDepth', scatter: 'scatterLight' } },
+      cc: CC.value, from: { scatter: 'scatterLight' } },
     { key: 'genWidth', name: 'the shape\u2019s width', lane: 'shape',
-      from: { pulse: 'pulseWidth' } },
+      cc: CC.genWidth, from: {} },
     { key: 'hue', name: 'hue', lane: 'color',
-      from: { pulse: 'pulseHue', scatter: 'scatterHue', placed: 'placedHue',
+      cc: CC.hue,
+      from: { scatter: 'scatterHue', placed: 'placedHue',
               wander: 'wanderHue', lit: 'litHue' } },
     { key: 'white', name: 'whiteness', lane: 'color',
       from: { scatter: 'scatterWhite', placed: 'placedWhite',
@@ -483,12 +496,26 @@
     { key: 'dark', name: 'darkness', lane: 'color',
       from: { placed: 'placedDark', wander: 'wanderDark', lit: 'litDark' } },
     { key: 'parLevel', name: 'the PARs\u2019 level', lane: 'out',
-      from: { pulse: 'pulseParLevel' } },
+      cc: CC.washLevel, from: {} },
     { key: 'parHue', name: 'the PARs\u2019 hue', lane: 'out',
-      from: { pulse: 'pulseParHue' } },
+      cc: CC.washHueOffset, from: {} },
     { key: 'parSat', name: 'the PARs\u2019 saturation', lane: 'out',
-      from: { pulse: 'pulseParSat' } },
+      cc: CC.washSaturation, from: {} },
   ];
+
+  // Which routes are aimed at a control, for the mark beside its slider.
+  function routesAimedAt(state, cc) {
+    const aimed = [];
+    if (cc === undefined) return aimed;
+    for (let r = 0; r < A.ROUTES; r++) {
+      if (state[routeName(r, 'destination')] !== cc) continue;
+      const amount = state[routeName(r, 'amount')];
+      if (amount === undefined || Math.abs(bip(amount)) < 0.01) continue;
+      aimed.push({ route: r, amount, ratio: state[routeName(r, 'ratio')],
+                   wave: state[routeName(r, 'wave')] });
+    }
+    return aimed;
+  }
 
   const PARS = {
     controls: define([
@@ -496,7 +523,7 @@
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
       C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
     ]),
-    note: 'A PAR is one position with no length, so the shape lane cannot reach it: count, width, edge, tail, speed and fan all describe places along a strip. What a patch holds for them is a relationship to the strips rather than a second look. The pulse is the one part of the shape lane that does reach them, and all four take its unfanned phase.',
+    note: 'A PAR is one position with no length, so the shape lane cannot reach it: count, width, edge, tail, speed and fan all describe places along a strip. What a patch holds for them is a relationship to the strips rather than a second look. A route can reach these three, and all four PARs take the clock\u2019s unfanned reading.',
   };
 
   const TIMING = {
@@ -600,7 +627,7 @@
     OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
     unit, bip, ccCount, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
-    LANES, MODULATORS, ROUTES, DESTINATIONS, PARS, TIMING,
+    LANES, MODULATORS, ROUTES, DESTINATIONS, routesAimedAt, PARS, TIMING,
     ANCHORS, FAN_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

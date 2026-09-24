@@ -26,9 +26,20 @@ const camel = name =>
       .replace(/_(.)/g, (_, c) => c.toUpperCase());
 
 const enumBody = src.slice(src.indexOf('enum AuroraCC'), src.indexOf('};', src.indexOf('enum AuroraCC')));
+// The tags live beside each CC in the enum and are read from there, never
+// restated here: [patch] and [switch] are what a patch holds, [ambient] and
+// [gesture] are what the box reports, and [rate] and [circular] say what a
+// modulation route may do with it.
 const cc = {};
+const tags = {};
+for (const m of enumBody.matchAll(/^\s*(CC_[A-Z0-9_]+)\s*=\s*(\d+), *\/\/ *([^\n]*)/gm)) {
+  const key = camel(m[1]);
+  cc[key] = Number(m[2]);
+  tags[key] = [...m[3].matchAll(/\[(\w+)\]/g)].map(t => t[1]);
+}
 for (const m of enumBody.matchAll(/^\s*(CC_[A-Z0-9_]+)\s*=\s*(\d+),/gm)) {
-  cc[camel(m[1])] = Number(m[2]);
+  const key = camel(m[1]);
+  if (!(key in cc)) { cc[key] = Number(m[2]); tags[key] = []; }
 }
 
 const one = (re, what) => {
@@ -88,11 +99,14 @@ ${body}
   const GEN_WAVE_SQUARE = ${waveSquare};
   const GEN_PULSE_MIN_WIDTH = ${minWidth};
 
+  const TAGS = ${JSON.stringify(tags)};
+  const tagged = tag => Object.keys(TAGS).filter(n => TAGS[tag ? n : n].includes(tag));
+
   const NAME_BY_CC = {};
   for (const [name, number] of Object.entries(CC)) NAME_BY_CC[number] = name;
 
   global.AuroraCC = {
-    CC, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
+    CC, TAGS, tagged, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
     routeCC, routeRatio,
     GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_PULSE_MIN_WIDTH,
   };

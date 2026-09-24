@@ -203,13 +203,12 @@
   const A = global.AuroraCC;
   const CC = A.CC;
 
-  // Mirrors brain/src/routes.cpp. A rate feeds a running total, so a push on
-  // one accumulates and the wall drifts instead of returning.
-  const ROUTE_REFUSED = new Set([CC.tempoDivision, CC.placedSpeed, CC.wanderRate,
-    CC.genSpeed, CC.genFanRate, CC.genPulseRate, CC.scatterRate]);
-  // 0 and 127 are the same place, so there is no limit to travel toward.
-  const ROUTE_CIRCULAR = new Set([CC.hue, CC.washHueOffset, CC.genPosition,
-    CC.genFanPhase]);
+  // [rate] and [circular] are read off the enum through tools/cc.js rather
+  // than listed again here. Tempo division is refused for its own reason: it
+  // is an index into six note values, not a level, so there is no halfway.
+  const byTag = tag => new Set(A.tagged(tag).map(n => CC[n]));
+  const ROUTE_REFUSED = new Set([...byTag('rate'), CC.tempoDivision]);
+  const ROUTE_CIRCULAR = byTag('circular');
   // The fan's own amounts spread the five strips, and count sets the cell
   // geometry the strip loop is built on, so both are read before that loop
   // opens. The washes have no strip to be offset from.
