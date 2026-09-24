@@ -1,5 +1,5 @@
 #include "Aurora.h"
-#include "destinations.h"
+#include "routes.h"
 #include "dmx_out.h"
 #include "tempo.h"
 
@@ -72,17 +72,6 @@
 // second move of its own.
 #define GEN_POSITION_SETTLE_BEATS 2.0f
 
-// Where the named shapes sit on the wave byte. Whole numbers a fader lands on
-// exactly, which is why 32 and 96 rather than thirds of the range.
-#define GEN_WAVE_SWELL    32
-#define GEN_WAVE_SAW_DOWN 64
-#define GEN_WAVE_SQUARE   96
-
-// The shortest stab the rig can draw, as a fraction of a cycle: about one
-// 7–8 ms frame at 120 bpm, and below it a stab lands between frames and
-// flickers instead of shortening. See docs/bench-facts.md § "Frame timing".
-#define GEN_PULSE_MIN_WIDTH 0.06f
-
 // Below this a travel is a pixel a minute — slower than anything the roster
 // wants and slow enough to read as a standstill that quietly drifts.
 #define GEN_STILL_PIXELS_PER_BEAT 0.05f
@@ -147,24 +136,6 @@ static PhaseTracker pulsePhase = { 0.0f, 0.0f };
 //
 // Every destination is always connected and its amount may be zero: a morph
 // interpolates an amount and cannot snap a connection on.
-struct PulseSend {
-  float amount;
-  uint8_t wave;
-};
-
-// 32 is the symmetric swell, which is the wave that does least on its way to
-// somewhere else.
-static PulseSend pulseSends[PULSE_TARGET_COUNT] = {
-  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_LIGHT
-  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_WIDTH
-  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_HUE
-  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_PAR_LEVEL
-  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_PAR_HUE
-  { 0.0f, GEN_WAVE_SWELL },  // PULSE_TO_PAR_SAT
-};
-
-// Every wave peaks at its cycle's zero, so the offset that lands a peak on a
-// bar line is a whole number.
 static inline float nearestAnchor(float offset) {
   return roundf(offset);
 }
@@ -267,62 +238,6 @@ static void reanchorTravel(PhaseTracker &tracker, float beats, bool bouncing,
 }
 
 // Zero at 0 and one at 1, easing at both ends.
-static inline float raisedCosine(float x) {
-  const float t = (x < 0.0f) ? 0.0f : (x > 1.0f ? 1.0f : x);
-  return 0.5f - 0.5f * cosf((float)PI * t);
-}
-
-// One byte, one axis: the peak never leaves the bar line, and what moves is
-// how the bar fills around it. Below the swell the attack shrinks as the
-// decay grows; above it the attack is gone and the decay both shortens and
-// flattens. Every named shape lands on a value a fader can reach — see
-// GEN_WAVE_* and docs/modulation.md § "The fork, settled".
-//
-// Saw down has to come before square. The other order leaves a crossfade
-// between two shapes that blends into neither; this way it is one decay
-// getting shorter and harder, and every value between is a wave worth
-// dialing.
-static float pulseWave(float phase, uint8_t wave) {
-  float attack, decay, hard;
-  if (wave <= GEN_WAVE_SAW_DOWN) {
-    decay = (float)wave / (float)GEN_WAVE_SAW_DOWN;
-    attack = 1.0f - decay;
-    hard = 0.0f;
-  } else {
-    attack = 0.0f;
-    const float toSquare = (float)(wave - GEN_WAVE_SAW_DOWN)
-                         / (float)(GEN_WAVE_SQUARE - GEN_WAVE_SAW_DOWN);
-    hard = (toSquare > 1.0f) ? 1.0f : toSquare;
-    decay = (wave <= GEN_WAVE_SQUARE)
-        ? 1.0f - 0.5f * toSquare
-        : 0.5f * powf(GEN_PULSE_MIN_WIDTH / 0.5f,
-                      (float)(wave - GEN_WAVE_SQUARE)
-                          / (float)(127 - GEN_WAVE_SQUARE));
-  }
-
-  const float u = fract(phase);
-  if (decay > 0.0f && u <= decay) {
-    // Dividing by what is left of softness is what turns a decay into a
-    // cliff: at the hard end every point above the floor saturates, which is
-    // the flat top a square needs.
-    const float soft = (1.0f - hard < 0.001f) ? 0.001f : 1.0f - hard;
-    const float shaped = raisedCosine(1.0f - u / decay) / soft;
-    return (shaped > 1.0f) ? 1.0f : shaped;
-  }
-  if (attack > 0.0f && u >= 1.0f - attack) {
-    return raisedCosine((u - (1.0f - attack)) / attack);
-  }
-  return 0.0f;
-}
-
-// How hard this destination is being pushed right now: signed, and zero at
-// the bottom of the swell so the dialed value is what the wall rests at.
-static float pulsePush(uint8_t target, float phase) {
-  const PulseSend &send = pulseSends[target];
-  if (fabsf(send.amount) < 0.001f) return 0.0f;
-  return send.amount * pulseWave(phase, send.wave);
-}
-
 // A push is a fraction of the way from the dialed value to one of its two
 // limits, and its sign picks which. Nothing can clip, and a control already
 // sitting at a limit simply has nowhere to go that way — which is why the
@@ -710,14 +625,14 @@ static float scatterAt(uint8_t stripIndex, float alongPixels, float t) {
 // which leaves the color layer's own design alone.
 static CHSV colorAt(CHSV base, const PlacedField &field, float placedLevel,
                      uint8_t stripIndex, uint8_t pixelIndex,
-                     float profile, float wanderT, float pulseHue,
+                     float profile, float wanderT,
                      float scatter, bool wanderOn) {
   const float along01 = (float)pixelIndex / (float)(PIXELS_PER_STRIP - 1);
   const float wander = wanderOn ? wanderAt(stripIndex, along01, wanderT) : 0.0f;
 
   return applyPushes(base,
       placedLevel * field.hueReach + wander * wanderHueReach + profile * litHueReach
-          + scatter * scatterHueReach + pulseHue,
+          + scatter * scatterHueReach,
       placedLevel * field.whiteReach + wander * wanderWhiteReach + profile * litWhiteReach
           + scatter * scatterWhiteReach,
       placedLevel * field.darkReach + wander * wanderDarkReach + profile * litDarkReach);
@@ -813,54 +728,55 @@ static float scatterRateFrom(uint8_t value) {
 }
 
 static void readDialedControls() {
-  genWidth = ccUnit(destinations::value(CC_GEN_WIDTH));
-  genEdge = ccUnit(destinations::value(CC_GEN_EDGE));
-  genTail = ccUnit(destinations::value(CC_GEN_TAIL));
-  genCount = ccCount(destinations::value(CC_GEN_COUNT));
-  genPositionCells = ccBipolar(destinations::value(CC_GEN_POSITION)) * 0.5f;
-  genSpeedPixels = speedPixelsFrom(destinations::value(CC_GEN_SPEED));
-  genFanPosition = ccBipolar(destinations::value(CC_GEN_FAN)) * 0.5f;
-  genFanPulse = ccBipolar(destinations::value(CC_GEN_FAN_PULSE)) * 0.5f;
-  genFanRate = fanRateFrom(destinations::value(CC_GEN_FAN_RATE));
-  genFanFreq = fanFreqFrom(destinations::value(CC_GEN_FAN_FREQ));
-  genFanPhase = (float)destinations::value(CC_GEN_FAN_PHASE) / 128.0f;
-  genFanRandom = ccUnit(destinations::value(CC_GEN_FAN_RANDOM));
-  genPulseBeats = aurora_pulse_period(destinations::value(CC_GEN_PULSE_RATE));
+  genWidth = ccUnit(routes::value(CC_GEN_WIDTH));
+  genEdge = ccUnit(routes::value(CC_GEN_EDGE));
+  genTail = ccUnit(routes::value(CC_GEN_TAIL));
+  genCount = ccCount(routes::value(CC_GEN_COUNT));
+  genPositionCells = ccBipolar(routes::value(CC_GEN_POSITION)) * 0.5f;
+  genSpeedPixels = speedPixelsFrom(routes::value(CC_GEN_SPEED));
+  genFanPosition = ccBipolar(routes::value(CC_GEN_FAN)) * 0.5f;
+  genFanPulse = ccBipolar(routes::value(CC_GEN_FAN_PULSE)) * 0.5f;
+  genFanRate = fanRateFrom(routes::value(CC_GEN_FAN_RATE));
+  genFanFreq = fanFreqFrom(routes::value(CC_GEN_FAN_FREQ));
+  genFanPhase = (float)routes::value(CC_GEN_FAN_PHASE) / 128.0f;
+  genFanRandom = ccUnit(routes::value(CC_GEN_FAN_RANDOM));
+  genPulseBeats = aurora_pulse_period(routes::value(CC_GEN_PULSE_RATE));
 
-  placed.hueReach = ccBipolar(destinations::value(CC_PLACED_HUE)) * PLACED_MAX_HUE;
-  placed.whiteReach = ccBipolar(destinations::value(CC_PLACED_WHITE));
-  placed.darkReach = ccBipolar(destinations::value(CC_PLACED_DARK));
-  placed.width = ccUnit(destinations::value(CC_PLACED_WIDTH));
-  placed.edge = ccUnit(destinations::value(CC_PLACED_EDGE));
-  placed.count = ccCount(destinations::value(CC_PLACED_COUNT));
-  placed.cellsPerBeat = placedCellsPerBeatFrom(destinations::value(CC_PLACED_SPEED));
+  placed.hueReach = ccBipolar(routes::value(CC_PLACED_HUE)) * PLACED_MAX_HUE;
+  placed.whiteReach = ccBipolar(routes::value(CC_PLACED_WHITE));
+  placed.darkReach = ccBipolar(routes::value(CC_PLACED_DARK));
+  placed.width = ccUnit(routes::value(CC_PLACED_WIDTH));
+  placed.edge = ccUnit(routes::value(CC_PLACED_EDGE));
+  placed.count = ccCount(routes::value(CC_PLACED_COUNT));
+  placed.cellsPerBeat = placedCellsPerBeatFrom(routes::value(CC_PLACED_SPEED));
 
-  wanderHueReach = ccBipolar(destinations::value(CC_WANDER_HUE)) * WANDER_MAX_HUE;
-  wanderWhiteReach = ccBipolar(destinations::value(CC_WANDER_WHITE));
-  wanderDarkReach = ccBipolar(destinations::value(CC_WANDER_DARK));
-  wanderCycles = wanderCyclesFrom(destinations::value(CC_WANDER_RATE));
-  wanderScale = ccUnit(destinations::value(CC_WANDER_SCALE));
+  wanderHueReach = ccBipolar(routes::value(CC_WANDER_HUE)) * WANDER_MAX_HUE;
+  wanderWhiteReach = ccBipolar(routes::value(CC_WANDER_WHITE));
+  wanderDarkReach = ccBipolar(routes::value(CC_WANDER_DARK));
+  wanderCycles = wanderCyclesFrom(routes::value(CC_WANDER_RATE));
+  wanderScale = ccUnit(routes::value(CC_WANDER_SCALE));
 
-  litHueReach = ccBipolar(destinations::value(CC_LIT_HUE)) * LIT_MAX_HUE;
-  litWhiteReach = ccUnit(destinations::value(CC_LIT_WHITE));
-  litDarkReach = ccBipolar(destinations::value(CC_LIT_DARK));
+  litHueReach = ccBipolar(routes::value(CC_LIT_HUE)) * LIT_MAX_HUE;
+  litWhiteReach = ccUnit(routes::value(CC_LIT_WHITE));
+  litDarkReach = ccBipolar(routes::value(CC_LIT_DARK));
 
   // The scatter's grid is its own, not the shape branch's, so a fine texture
   // can lie over one wide bar. Drift is a displacement rather than a rate —
   // how far, and which way, a spot slides across its own cell over its life,
   // which is why it is not called speed like everything else here.
-  scatterRate = scatterRateFrom(destinations::value(CC_SCATTER_RATE));
-  scatterCount = ccCount(destinations::value(CC_SCATTER_COUNT));
-  scatterWidth = ccUnit(destinations::value(CC_SCATTER_WIDTH));
-  scatterEdge = ccUnit(destinations::value(CC_SCATTER_EDGE));
-  scatterStagger = ccUnit(destinations::value(CC_SCATTER_STAGGER));
-  scatterDrift = ccBipolar(destinations::value(CC_SCATTER_DRIFT));
-  scatterLightReach = ccBipolar(destinations::value(CC_SCATTER_LIGHT));
-  scatterHueReach = ccBipolar(destinations::value(CC_SCATTER_HUE)) * SCATTER_MAX_HUE;
-  scatterWhiteReach = ccBipolar(destinations::value(CC_SCATTER_WHITE));
+  scatterRate = scatterRateFrom(routes::value(CC_SCATTER_RATE));
+  scatterCount = ccCount(routes::value(CC_SCATTER_COUNT));
+  scatterWidth = ccUnit(routes::value(CC_SCATTER_WIDTH));
+  scatterEdge = ccUnit(routes::value(CC_SCATTER_EDGE));
+  scatterStagger = ccUnit(routes::value(CC_SCATTER_STAGGER));
+  scatterDrift = ccBipolar(routes::value(CC_SCATTER_DRIFT));
+  scatterLightReach = ccBipolar(routes::value(CC_SCATTER_LIGHT));
+  scatterHueReach = ccBipolar(routes::value(CC_SCATTER_HUE)) * SCATTER_MAX_HUE;
+  scatterWhiteReach = ccBipolar(routes::value(CC_SCATTER_WHITE));
 }
 
 void Generator(CHSV color) {
+  (void)color;
   readDialedControls();
 
   const float beats = tempo::beats();
@@ -898,11 +814,17 @@ void Generator(CHSV color) {
 
   const float pulse = anchoredPulsePhase(beats, 1.0f / genPulseBeats);
 
+  // Read twice. The first pass above has no pushes in it, which is what the
+  // clock's own rate needs, since a rate is a destination routes refuse. With
+  // the clock known, this pass takes the plain reading of it — everything the
+  // strip loop is built on before it opens.
+  routes::gather(pulse, pulse);
+  readDialedControls();
+
   const bool placedOn = placedActive(placed);
   const bool wanderOn = wanderActive();
-  const bool pulseHueOn = fabsf(pulseSends[PULSE_TO_HUE].amount) > 0.001f;
   const bool scatterOn = scatterActive();
-  const bool colorFlat = !placedOn && !wanderOn && !litActive() && !pulseHueOn
+  const bool colorFlat = !placedOn && !wanderOn && !litActive()
       && !scatterTints();
 
   // Both color rates go through the tracker for the same reason travel and
@@ -924,6 +846,14 @@ void Generator(CHSV color) {
     // washes take the unfanned phase whatever these say: a PAR is one
     // position with no strip to be offset from.
     const float stripPulse = pulse + genFanPulse * wave;
+
+    // Now this strip's own reading, so a push rolls across the wall instead of
+    // landing on all five at once.
+    routes::gather(pulse, stripPulse);
+    readDialedControls();
+    const CHSV stripColor = auroraColorFrom(routes::value(CC_HUE),
+                                            routes::value(CC_SATURATION),
+                                            routes::value(CC_VALUE));
 
     // A switch belongs to the patch, so the one moment it moves is an arrival
     // the performer caused and is watching — see DESIGN.md § "Switches belong
@@ -955,19 +885,7 @@ void Generator(CHSV color) {
         ? (halfCore + triangleSwing(fract(travelCycles)) * swingSpan)
         : fract(centerCells);
 
-    // Nothing sits above full light, so brightness is the one destination
-    // with no sign: its amount is how far the trough digs below what the
-    // shape branch already lit.
-    const PulseSend &toLight = pulseSends[PULSE_TO_LIGHT];
-    const float swell = 1.0f - toLight.amount
-        * (1.0f - pulseWave(stripPulse, toLight.wave));
-
-    // A shape is anchored by its center, so growing it is a breath outward
-    // rather than a wipe in from one end — which is what put this destination
-    // out of reach the first time it was tried.
-    const float width = pushToward(genWidth, pulsePush(PULSE_TO_WIDTH, stripPulse),
-                                   0.0f, 1.0f);
-    const float pulseHue = pulsePush(PULSE_TO_HUE, stripPulse) * GEN_PULSE_MAX_HUE;
+    const float width = genWidth;
 
     // The two sides of a shape are not the same length — a tail reaches much
     // further than an edge fade — so they are normalized separately. Halfway
@@ -1083,7 +1001,7 @@ void Generator(CHSV color) {
       // therefore has to be applied before an unlit pixel is culled, or the one
       // place a spot has the furthest to travel is the one place it could never
       // appear.
-      float brightness = profile * swell;
+      float brightness = profile;
       if (scatterOn) {
         brightness = pushToward(brightness, scatter * scatterLightReach, 0.0f, 1.0f);
       }
@@ -1092,10 +1010,10 @@ void Generator(CHSV color) {
       // Scaling the RGB rather than handing a low value to CHSV keeps the hue
       // where it was set: converting at a low value lets a channel truncate to
       // zero before its neighbor, which is what turns a dim yellow red.
-      CHSV tint = color;
+      CHSV tint = stripColor;
       if (!colorFlat) {
-        tint = colorAt(color, placed, placedAccumulated / (float)GEN_SUBSAMPLES,
-                        stripIndex, pixelIndex, profile, wanderT, pulseHue,
+        tint = colorAt(stripColor, placed, placedAccumulated / (float)GEN_SUBSAMPLES,
+                        stripIndex, pixelIndex, profile, wanderT,
                         scatter, wanderOn);
       }
       CRGB lit = CHSV(tint.hue, tint.saturation, 255);
@@ -1109,9 +1027,6 @@ void Generator(CHSV color) {
   // rather than applied here: dmx_out::tick() runs after every preset and
   // clears what it was given, which is what keeps a pulse dialed in here off
   // the washes while a hand-written preset is up.
-  dmx_out::setPulsePush(pulsePush(PULSE_TO_PAR_LEVEL, pulse),
-                        pulsePush(PULSE_TO_PAR_HUE, pulse) * GEN_PULSE_MAX_HUE,
-                        pulsePush(PULSE_TO_PAR_SAT, pulse));
 }
 
 void setGeneratorAlternate(uint8_t value) { genAlternate = aurora_cc_is_on(value); }
@@ -1120,15 +1035,6 @@ void setGeneratorBounce(uint8_t value)    { genBounce = aurora_cc_is_on(value); 
 // Brightness has no room above full, so its amount is unipolar and its only
 // direction is down. Every other destination has two sides and the sign of
 // the amount picks one.
-void setPulseAmount(uint8_t target, uint8_t value) {
-  pulseSends[target].amount = (target == PULSE_TO_LIGHT) ? ccUnit(value)
-                                                         : ccBipolar(value);
-}
-
-void setPulseWave(uint8_t target, uint8_t value) {
-  pulseSends[target].wave = value;
-}
-
 void setColorRegion(uint8_t value) { placed.isRegion = aurora_cc_is_on(value); }
 
 void setColorRuler(uint8_t value) {

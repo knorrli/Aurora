@@ -133,16 +133,25 @@ the next time a lane wants three numbers.
 | 12–31 | 20 | The controller | 15 | 5 |
 | 33–37 | 5 | Washes / DMX | 3 | 2 |
 | 38–59 | 22 | Color | 20 | 2 |
-| 60–82 | 23 | Generator — shape, fan, pulse source | 18 | 5 |
-| 83–100 | 18 | Scatter / texture | 9 | 9 |
-| 101–119 | 19 | Where the pulse reaches — three apiece | 15 | 4 |
+| 60–75 | 16 | Generator — shape, fan, the one clock | 16 | 0 |
+| 76–79 | 4 | Modulation route 0 | 4 | 0 |
+| 80–82 | 3 | Spare (the generator) | 0 | 3 |
+| 83–91 | 9 | Scatter / texture | 9 | 0 |
+| 92–119 | 28 | Modulation routes 1–7 | 28 | 0 |
 
 0, 1, 7, 10, 11 and 32 are skipped, each for a reason above. Everything else
 between 2 and 119 is in a block.
 
+**One block is split, and it is the routes.** Eight routes at four bytes need
+32 numbers; the longest free run is 28, and 119 is the ceiling because 120–127
+are Channel Mode messages. So route 0 sits in the generator's old pulse
+numbers and the other seven follow the scatter. `AURORA_ROUTE_BASE` in
+`shared/aurora_protocol.h` is the only place that knows, and the map wants
+regrouping again before the block grows.
+
 ## The map
 
-Every number, assigned. 81 spoken for, 33 spare.
+Every number, assigned. 95 spoken for, 19 spare.
 
 ### 2–9 · Transport / meta
 
@@ -229,12 +238,9 @@ Spare: 58, 59.
 | **71** | `GEN_FAN` | [patch] | — | bipolar; how far apart the strips stand in their cells |
 | **72** | `GEN_FAN_RATE` | [patch] | — | bipolar; how far apart their speeds stand |
 | **73** | `GEN_FAN_PULSE` | [patch] | — | bipolar; how far apart they stand in the swell |
-| **74** | `GEN_PULSE_DEPTH` | [patch] | — | how far the trough digs below full light |
-| **75** | `GEN_PULSE_RATE` | [patch] | — | stepped; beats per swell |
-| **76** | `GEN_PULSE_SKEW` | [patch] | — | bipolar; slides the peak through the cycle |
-| **77** | `GEN_PULSE_SHAPE` | [patch] | — | square through to sine |
+| **75** | `GEN_PULSE_RATE` | [patch][rate] | — | stepped; beats per swell. The one clock |
 
-Spare: 78, 79, 80, 81, 82.
+Spare: 74, 80, 81, 82. 76–79 are route 0, below.
 
 ### 83–100 · Scatter / texture
 
@@ -250,29 +256,28 @@ Spare: 78, 79, 80, 81, 82.
 | **90** | `SCATTER_HUE` | [patch] | — | bipolar; amount, up to half the wheel |
 | **91** | `SCATTER_WHITE` | [patch] | — | bipolar; toward white or toward a pure hue |
 
-Spare: 92, 93, 94, 95, 96, 97, 98, 99, 100.
+No spare: 92 onward is the route block.
 
-### 101–119 · Where the pulse reaches — three apiece
+### 76–79 and 92–119 · Modulation routes
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **101** | `PULSE_WIDTH` | [patch] | — | amount |
-| **102** | `PULSE_WIDTH_SHAPE` | [patch] | — | wave |
-| **103** | `PULSE_WIDTH_SKEW` | [patch] | — | skew |
-| **104** | `PULSE_HUE` | [patch] | — | amount |
-| **105** | `PULSE_HUE_SHAPE` | [patch] | — | wave |
-| **106** | `PULSE_HUE_SKEW` | [patch] | — | skew |
-| **107** | `PULSE_PAR_LEVEL` | [patch] | — | amount |
-| **108** | `PULSE_PAR_LEVEL_SHAPE` | [patch] | — | wave |
-| **109** | `PULSE_PAR_LEVEL_SKEW` | [patch] | — | skew |
-| **110** | `PULSE_PAR_HUE` | [patch] | — | amount |
-| **111** | `PULSE_PAR_HUE_SHAPE` | [patch] | — | wave |
-| **112** | `PULSE_PAR_HUE_SKEW` | [patch] | — | skew |
-| **113** | `PULSE_PAR_SAT` | [patch] | — | amount |
-| **114** | `PULSE_PAR_SAT_SHAPE` | [patch] | — | wave |
-| **115** | `PULSE_PAR_SAT_SKEW` | [patch] | — | skew |
+Four bytes apiece — destination, amount, ratio, wave — laid out by
+`AURORA_ROUTE_BASE`. The destination names the control it pushes by that
+control's own CC number, and it is a switch: a morph lands it on arrival
+rather than sliding it there.
 
-Spare: 116, 117, 118, 119.
+| Route | CCs |
+|---|---|
+| 0 | 76 destination, 77 amount, 78 ratio, 79 wave |
+| 1 | 92–95 |
+| 2 | 96–99 |
+| 3 | 100–103 |
+| 4 | 104–107 |
+| 5 | 108–111 |
+| 6 | 112–115 |
+| 7 | 116–119 |
+
+No spare: the block is full, and raising the count means finding four more
+numbers in a regroup.
 ## What is not a CC, and why
 
 - **Patch selection and the blackout** — Program Change. The keypad and the

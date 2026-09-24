@@ -18,11 +18,19 @@ static int8_t altColorModFactor = 0;
 static int8_t altColorModDirection = UP;
 static unsigned long color_mod_counter = 0;
 
+CHSV auroraColorFrom(uint8_t hueByte, uint8_t satByte, uint8_t valByte) {
+  return CHSV(map(hueByte, 0, 127, MIN_HUE, MAX_HUE),
+              map(satByte, 0, 127, MIN_SATURATION, MAX_SATURATION),
+              map(valByte, 0, 127, MIN_VALUE, MAX_VALUE));
+}
+
 void setCurrentColor() {
-  const uint8_t hue = map(destinations::value(CC_HUE), 0, 127, MIN_HUE, MAX_HUE);
-  const uint8_t saturation =
-      map(destinations::value(CC_SATURATION), 0, 127, MIN_SATURATION, MAX_SATURATION);
-  const uint8_t value = map(destinations::value(CC_VALUE), 0, 127, MIN_VALUE, MAX_VALUE);
+  const CHSV dialed = auroraColorFrom(destinations::value(CC_HUE),
+                                      destinations::value(CC_SATURATION),
+                                      destinations::value(CC_VALUE));
+  const uint8_t hue = dialed.hue;
+  const uint8_t saturation = dialed.saturation;
+  const uint8_t value = dialed.value;
 
   if (faderAltModeEnabled) {
     color_mod_counter += 1;

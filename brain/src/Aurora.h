@@ -83,6 +83,7 @@ extern void ShowStripOrder();
 
 // --- INPUT Color
 extern void setCurrentColor();
+extern CHSV auroraColorFrom(uint8_t hueByte, uint8_t satByte, uint8_t valByte);
 
 // --- RENDER Preset
 extern void renderPreset(uint8_t preset);

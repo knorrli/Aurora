@@ -120,12 +120,17 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     33 –  37 : washes / DMX fixtures
 //     38 –  59 : color — the three faders, the placed field, the wander,
 //                 the lit reach, and the two color switches
-//     60 –  82 : the generator — shape, the fan, and the pulse's own source
-//     83 – 100 : the scatter — a texture source and its three amounts
-//    101 – 119 : where else the pulse reaches, three apiece
+//     60 –  75 : the generator — shape, the fan, and the one clock
+//     76 –  79 : modulation route 0
+//     80 –  82 : spare (the generator)
+//     83 –  91 : the scatter — a texture source and its three amounts
+//     92 – 119 : modulation routes 1–7
 //    120 – 127 : AVOID — channel mode messages
 //
-// Nothing between 2 and 119 is outside a block, and no block is split.
+// Nothing between 2 and 119 is outside a block. One block is split: the routes
+// need 32 numbers and the longest free run is 28, so route 0 sits apart in the
+// generator's old pulse numbers. AURORA_ROUTE_BASE is the only place that
+// knows.
 //
 // The four AVOIDed numbers in the middle are the ones a DAW writes without
 // being asked: volume, pan, expression and bank select, which travels with
@@ -407,26 +412,15 @@ enum AuroraCC : uint8_t {
                                  // whatever this says: a PAR is one position
                                  // with no strip to be offset from.
 
-    // The pulse is one oscillator with one rate, and 74/76/77 are its amount
-    // and its wave where it reaches the strips' brightness. Every other
-    // destination carries its own three at 101–119.
-    //
-    // 74, 76, 77 and 101–115 are being removed, replaced by the route block
-    // in docs/modulation.md. Do not build anything that reads them and do not
-    // design around them surviving. CC 75 stays: it becomes the one clock.
-    CC_GEN_PULSE_DEPTH     = 74, // [patch] how far the trough digs below full
-                                 // light
-    CC_GEN_PULSE_RATE      = 75, // [patch][rate] beats per swell; stepped, see
-                                 // AURORA_PULSE_PERIODS
-    CC_GEN_PULSE_SKEW      = 76, // [patch] bipolar: 64 is an even rise and
-                                 // fall, either side slides the peak toward
-                                 // a ramp
-    CC_GEN_PULSE_SHAPE     = 77, // [patch] 0 = hard on/off square, 127 =
-                                 // smooth sine
+    // One clock for the whole rig, and nothing beside it. What used to sit
+    // either side — an amount at 74 and a wave at 76/77, soldered to the
+    // strips' brightness — is route 0 now, and can aim anywhere.
+    CC_GEN_PULSE_RATE      = 75, // [patch][rate] beats per swell; stepped,
+                                 // see AURORA_PULSE_PERIODS
 
-    // 78–82 reserved (the generator)
+    // 76–79 route 0, see AURORA_ROUTE_BASE. 74 and 80–82 spare.
 
-    // 83–100 — the scatter. The third source in the family: the pulse is
+    // 83–91 — the scatter. The third source in the family: the pulse is
     // regular in time and has no place on the wall, the wander is smooth over
     // both, the scatter is random over both. Six controls shape it and three
     // amounts aim it. See docs/generator.md § "The scatter".
@@ -454,40 +448,78 @@ enum AuroraCC : uint8_t {
                                  // wheel
     CC_SCATTER_WHITE       = 91, // [patch] amount toward white / toward a
                                  // pure hue
-    // 92–100 reserved (the scatter). The largest allowance in the map, and
-    // the only one backed by a costed plan: spots with a birth and a death,
-    // which raindrops and shooting stars need, is priced at eight to ten
-    // controls in docs/generator.md.
-
-    // 101–119 — where else the pulse reaches. One oscillator, one rate: a
-    // destination sets how far it is pushed and what wave pushes it, never
-    // how fast. Three per destination, always in the order amount, shape,
-    // skew, so the block reads as a table.
-    //
-    // This whole block is being removed, replaced by the route block in
-    // docs/modulation.md. Do not add a destination here and do not design
-    // around it surviving.
-    CC_PULSE_WIDTH         = 101, // [patch] bipolar: toward full width /
-                                  // toward nothing
-    CC_PULSE_WIDTH_SHAPE   = 102, // [patch]
-    CC_PULSE_WIDTH_SKEW    = 103, // [patch]
-    CC_PULSE_HUE           = 104, // [patch] bipolar, up to half the wheel
-    CC_PULSE_HUE_SHAPE     = 105, // [patch]
-    CC_PULSE_HUE_SKEW      = 106, // [patch]
-    CC_PULSE_PAR_LEVEL     = 107, // [patch] bipolar: toward full / toward
-                                  // dark
-    CC_PULSE_PAR_LEVEL_SHAPE = 108, // [patch]
-    CC_PULSE_PAR_LEVEL_SKEW  = 109, // [patch]
-    CC_PULSE_PAR_HUE       = 110, // [patch] bipolar
-    CC_PULSE_PAR_HUE_SHAPE = 111, // [patch]
-    CC_PULSE_PAR_HUE_SKEW  = 112, // [patch]
-    CC_PULSE_PAR_SAT       = 113, // [patch] toward a pure hue / toward white,
-                                  // measured from CC 35
-    CC_PULSE_PAR_SAT_SHAPE = 114, // [patch]
-    CC_PULSE_PAR_SAT_SKEW  = 115, // [patch]
-    // 116–119 reserved (the pulse's destinations)
-    // 120–127 excluded
+    // 92–119 routes 1–7, see AURORA_ROUTE_BASE.
 };
+
+
+// ---------------------------------------------------------------------------
+// Modulation routes
+// ---------------------------------------------------------------------------
+//
+// A route is four bytes: which control it pushes, how far, how fast against
+// the one clock, and what wave does the pushing. Eight of them replace the six
+// soldered sends the pulse used to have, and they can aim at any control the
+// map does not refuse. See docs/modulation.md.
+//
+// The numbers are not one run, because the map has none long enough: 51 are
+// free but the longest stretch is 28, and 119 is the ceiling since 120–127 are
+// Channel Mode messages. So route 0 sits in the generator's old pulse numbers
+// and the rest follow the scatter. The split lives here, in one table, rather
+// than in every consumer.
+//
+// Raising the count is an array size in two renderers and a loop bound in the
+// editor. A patch is a flat 128 bytes whatever this says, and a route nobody
+// has set arrives as zeroes — an amount of zero, which does nothing.
+
+// Where the named shapes sit on the wave byte. Whole numbers a fader lands on
+// exactly, which is why 32 and 96 rather than thirds of the range.
+#define GEN_WAVE_SWELL    32
+#define GEN_WAVE_SAW_DOWN 64
+#define GEN_WAVE_SQUARE   96
+
+// The shortest stab the rig can draw, as a fraction of a cycle: about one
+// 7-8 ms frame at 120 bpm, and below it a stab lands between frames and
+// flickers instead of shortening. See docs/bench-facts.md § "Frame timing".
+#define GEN_PULSE_MIN_WIDTH 0.06f
+
+static const uint8_t AURORA_ROUTES = 8;
+
+static const uint8_t AURORA_ROUTE_BASE[AURORA_ROUTES] = {
+    76, 92, 96, 100, 104, 108, 112, 116,
+};
+
+enum AuroraRouteField : uint8_t {
+    // [switch] — which control this route pushes, named by that control's own
+    // CC number. Never interpolated: a morph that slid it would spend the
+    // journey pushing one control with a number dialed for another.
+    ROUTE_DESTINATION = 0,
+    ROUTE_AMOUNT      = 1,  // [patch] bipolar; a fraction of the distance left
+    ROUTE_RATIO       = 2,  // [patch] whole multiples of the clock, never
+                            // divisions — a halved route peaks on whichever of
+                            // two cycles the offset's integer part lands on,
+                            // and nothing controls that
+    ROUTE_WAVE        = 3,  // [patch] one axis, a build through a swell to a
+                            // stab
+    ROUTE_FIELDS      = 4,
+};
+
+static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
+    return (uint8_t)(AURORA_ROUTE_BASE[route] + field);
+}
+
+// Whole multiples only, 1 through 8. Dividing would break the anchor: the
+// anchor fixes only the fraction of the tracker's offset, because a whole
+// cycle of offset is invisible — true for the clock and for any whole
+// multiple of it. A route at half rate takes two base cycles, and which of
+// the two it peaks on depends on the offset's integer part, which nothing
+// controls. Nudging the rate can flip it to the opposite phase.
+static const uint8_t AURORA_ROUTE_MAX_RATIO = 8;
+
+static inline uint8_t aurora_route_ratio(uint8_t value) {
+    const uint8_t last = AURORA_ROUTE_MAX_RATIO - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return (uint8_t)(1 + (step > last ? last : step));
+}
 
 
 // ---------------------------------------------------------------------------

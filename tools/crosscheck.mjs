@@ -24,8 +24,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const CPP_SOURCES = ['brain/src/P_Generator.cpp', 'brain/src/Aurora.h',
-                     'shared/aurora_protocol.h'];
+const CPP_SOURCES = ['brain/src/P_Generator.cpp', 'brain/src/routes.cpp',
+                     'brain/src/Aurora.h', 'shared/aurora_protocol.h'];
 const JS_SOURCE = 'tools/preview.js';
 
 // Loose, deliberately. The firmware computes in 32-bit floats and the preview
