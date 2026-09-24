@@ -33,41 +33,17 @@
 
   // Every [patch] and [switch] CC in shared/aurora_protocol.h, and nothing
   // else. A name here is the only handle the rest of the editor uses.
-  const CC = {
-    tempoDivision: 2,
+  const A = global.AuroraCC;
+  const CC = Object.assign({}, A.CC);
 
-    hue: 38, saturation: 39, value: 40,
-
-    placedHue: 43, placedWhite: 44, placedDark: 45,
-    placedCount: 46, placedWidth: 47, placedEdge: 48, placedSpeed: 49,
-
-    alternate: 60, bounce: 61, colorRegion: 41, colorRuler: 42,
-
-
-    washLevel: 33, washHueOffset: 34, washSaturation: 35,
-
-    width: 62, count: 63, edge: 64, tail: 65, speed: 67,
-    position: 66,
-
-    fan: 71, fanPulse: 73, fanRate: 72,
-    fanFreq: 68, fanPhase: 69, fanRandom: 70,
-
-    pulseDepth: 74, pulseRate: 75, pulseWave: 77,
-    pulseWidth: 101, pulseWidthWave: 102,
-    pulseHue: 104, pulseHueWave: 105,
-    pulseParLevel: 107, pulseParLevelWave: 108,
-    pulseParHue: 110, pulseParHueWave: 111,
-    pulseParSat: 113, pulseParSatWave: 114,
-
-    scatterRate: 83, scatterCount: 84, scatterWidth: 85, scatterEdge: 86,
-    scatterStagger: 87, scatterDrift: 88,
-    scatterLight: 89, scatterHue: 90, scatterWhite: 91,
-
-    wanderHue: 50, wanderWhite: 51, wanderDark: 52,
-    wanderRate: 53, wanderScale: 54,
-
-    litHue: 55, litWhite: 56, litDark: 57,
-  };
+  // The route CCs have no enum names of their own — the block is regular, so
+  // AURORA_ROUTE_BASE and the field offsets are the whole of it. Their control
+  // names are built to match: route3Amount is route 3's amount.
+  const ROUTE_FIELDS = Object.keys(A.ROUTE_FIELD);
+  const routeName = (r, field) => `route${r}${field[0].toUpperCase()}${field.slice(1)}`;
+  for (let r = 0; r < A.ROUTES; r++) {
+    for (const field of ROUTE_FIELDS) CC[routeName(r, field)] = A.routeCC(r, A.ROUTE_FIELD[field]);
+  }
 
   const NAMES = Object.keys(CC);
 
@@ -75,7 +51,10 @@
   // far ends share the base's — DESIGN.md § "Switches belong to the patch"
   // states the authoring rule directly: a patch and its own morph target
   // share switches.
-  const SWITCHES = ['alternate', 'bounce', 'colorRegion', 'colorRuler'];
+  // A route's destination has no middle either: halfway between two controls
+  // is not a control.
+  const SWITCHES = ['genAlternate', 'genBounce', 'colorRegion', 'colorRuler']
+    .concat(Array.from({ length: A.ROUTES }, (_, r) => routeName(r, 'destination')));
   const CONTINUOUS = NAMES.filter(n => !SWITCHES.includes(n));
 
   const OFF = 0, ON = 127;
@@ -139,32 +118,35 @@
   const DERIVED = {
     tempoDivision: v => (DIVISIONS.find(d => d[0] === v) || [0, 'quarter'])[1],
 
-    width: pct, edge: v => pct(v) + ' into the gap', tail: v => pct(v) + ' of the gap',
-    count: v => ccCount(v) + ' shapes',
-    position: v => Math.abs(bip(v)) < 0.02 ? 'center of the cell'
+    genWidth: pct, genEdge: v => pct(v) + ' into the gap', genTail: v => pct(v) + ' of the gap',
+    genCount: v => ccCount(v) + ' shapes',
+    genPosition: v => Math.abs(bip(v)) < 0.02 ? 'center of the cell'
                  : (bip(v) * 50).toFixed(0) + '% of a cell off center',
-    speed: v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
+    genSpeed: v => { const x = (v - 64) / 63; const s = Math.sign(x) * x * x * 60;
                   return Math.abs(s) < 0.05 ? 'still' : s.toFixed(1) + ' px/beat'; },
     // Both ends of a fan amount are the same wall with the wave turned over,
     // so these say how far apart the strips stand and not which way.
-    fan: v => fanAmount(v, 'of a cell apart'),
-    fanPulse: v => fanAmount(v, 'of a swell apart'),
-    fanRate: v => { const x = (v - 64) / 63; const r = x * x * 60;
+    genFan: v => fanAmount(v, 'of a cell apart'),
+    genFanPulse: v => fanAmount(v, 'of a swell apart'),
+    genFanRate: v => { const x = (v - 64) / 63; const r = x * x * 60;
                     return r < 0.05 ? 'every strip at Speed'
                          : '\u00b1' + r.toFixed(1) + ' px/beat either side of Speed'; },
-    fanFreq: v => fanTurns(v),
-    fanPhase: v => (v / 128 * 100).toFixed(0) + '% of a turn',
-    fanRandom: v => v === 0 ? 'the wave' : v > 125 ? 'a fixed draw per strip'
+    genFanFreq: v => fanTurns(v),
+    genFanPhase: v => (v / 128 * 100).toFixed(0) + '% of a turn',
+    genFanRandom: v => v === 0 ? 'the wave' : v > 125 ? 'a fixed draw per strip'
                     : pct(v) + ' scrambled',
 
     hue: v => Math.round(v / 127 * 250) + '/255',
     saturation: pct, value: pct,
 
-    pulseRate: v => PULSE_PERIOD_NAMES[periodStep(v)],
-    pulseDepth: v => v === 0 ? 'not reached' : pct(v) + ' down at the trough',
+    genPulseRate: v => PULSE_PERIOD_NAMES[periodStep(v)],
+    routeDestination: v => v === 0 ? 'not aimed' : (A.NAME_BY_CC[v] || 'CC ' + v),
+    routeAmount: v => Math.abs(bip(v)) < 0.01 ? 'nothing'
+                    : signedPct(v, 'toward the top', 'toward the bottom'),
+    routeRatio: v => '\u00d7' + A.routeRatio(v) + ' the clock',
     // One axis from a build to a stab, with the named shapes on values a
     // fader lands on exactly. See docs/modulation.md § "The fork, settled".
-    pulseWave: v => v === 0 ? 'builds, drops on the bar'
+    routeWave: v => v === 0 ? 'builds, drops on the bar'
                   : v === 32 ? 'swell'
                   : v === 64 ? 'snaps, decays across the bar'
                   : v === 96 ? 'hard half-bar'
@@ -173,11 +155,6 @@
                   : v < 64 ? 'swell, ' + pct((v - 32) * 4) + ' toward a snap'
                   : v < 96 ? 'snaps, ' + pct((v - 64) * 4) + ' toward square'
                   : 'hard, ' + pct((v - 96) * 4) + ' shorter',
-    pulseWidth: v => signedPct(v, 'toward full width', 'toward nothing'),
-    pulseHue: hueAmount,
-    pulseParLevel: v => signedPct(v, 'toward full', 'toward dark'),
-    pulseParHue: hueAmount,
-    pulseParSat: v => signedPct(v, 'toward a pure hue', 'toward white'),
 
     // The rate is squared in the renderer, so a linear readout here would be
     // wrong over most of the travel.
@@ -240,8 +217,13 @@
                        : pct(v) + ' of theirs',
   };
 
-  for (const n of ['pulseWidthWave', 'pulseHueWave', 'pulseParLevelWave',
-                   'pulseParHueWave', 'pulseParSatWave']) DERIVED[n] = DERIVED.pulseWave;
+  // Every route reads its four the same way.
+  for (let r = 0; r < A.ROUTES; r++) {
+    for (const field of ROUTE_FIELDS) {
+      DERIVED[routeName(r, field)] =
+          DERIVED['route' + field[0].toUpperCase() + field.slice(1)];
+    }
+  }
 
   // ---- what a control is -------------------------------------------------
   //
@@ -262,18 +244,13 @@
 
   const NEUTRAL = {
     tempoDivision: 0,
-    width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64,
-    fan: 64, fanPulse: 64, fanRate: 64, fanFreq: 32, fanPhase: 0, fanRandom: 0,
-    alternate: OFF, bounce: OFF,
+    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64,
+    genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
+    genAlternate: OFF, genBounce: OFF,
 
     hue: 20, saturation: 100, value: 110,
 
-    pulseRate: 64, pulseDepth: 0, pulseWave: 32,
-    pulseWidth: 64, pulseWidthWave: 32,
-    pulseHue: 64, pulseHueWave: 32,
-    pulseParLevel: 64, pulseParLevelWave: 32,
-    pulseParHue: 64, pulseParHueWave: 32,
-    pulseParSat: 64, pulseParSatWave: 32,
+    genPulseRate: 64,
 
     scatterRate: 60, scatterCount: 80, scatterWidth: 34, scatterEdge: 40,
     scatterStagger: 110, scatterDrift: 64,
@@ -292,11 +269,19 @@
   for (const n of ['slotA', 'slotB', 'slotC', 'slotD', 'slotE',
                    'slotF', 'slotG', 'slotH', 'slotI', 'slotJ']) NEUTRAL[n] = 0;
 
+  // Aimed nowhere, pushing nothing, at the clock's own rate, on the swell.
+  for (let r = 0; r < A.ROUTES; r++) {
+    NEUTRAL[routeName(r, 'destination')] = 0;
+    NEUTRAL[routeName(r, 'amount')] = 64;
+    NEUTRAL[routeName(r, 'ratio')] = 0;
+    NEUTRAL[routeName(r, 'wave')] = A.GEN_WAVE_SWELL;
+  }
+
   // A new patch is one shape traveling across a lit wall: something on the
   // screen the moment it exists, so the first thing you do is change it
   // rather than hunt for why the wall is dark.
   const DEFAULT = Object.assign({}, NEUTRAL, {
-    width: 40, count: 0, edge: 18, speed: 80,
+    genWidth: 40, genCount: 0, genEdge: 18, genSpeed: 80,
   });
 
   // ---- the surface -------------------------------------------------------
@@ -316,35 +301,35 @@
         {
           key: 'form', title: 'Form',
           controls: define([
-            C('count', 'Count', 'how many shapes along the strip, 1\u201320'),
-            C('width', 'Width', 'the solid core, as a proportion of one cell'),
-            C('edge', 'Edge', 'how far the glow reaches into the gap, both sides'),
-            C('tail', 'Tail', 'how far the trail reaches behind, into the gap'),
+            C('genCount', 'Count', 'how many shapes along the strip, 1\u201320'),
+            C('genWidth', 'Width', 'the solid core, as a proportion of one cell'),
+            C('genEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
+            C('genTail', 'Tail', 'how far the trail reaches behind, into the gap'),
           ]),
         },
         {
           key: 'travel', title: 'Travel',
           controls: define([
-            C('position', 'Position', 'where a still pattern stands in its cell'),
-            C('speed', 'Speed', 'center is still; either side travels'),
+            C('genPosition', 'Position', 'where a still pattern stands in its cell'),
+            C('genSpeed', 'Speed', 'center is still; either side travels'),
           ]),
           switches: define([
-            C('alternate', 'Alternate', 'the odd strips run the journey backwards',
-              { kind: 'two', options: [[OFF, 'together'], [ON, 'alternate']] }),
-            C('bounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
-              { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
+            C('genAlternate', 'Alternate', 'the odd strips run the journey backwards',
+              { kind: 'two', options: [[OFF, 'together'], [ON, 'genAlternate']] }),
+            C('genBounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
+              { kind: 'two', options: [[OFF, 'wrap'], [ON, 'genBounce']] }),
           ]),
           note: 'Bring Speed to a stop and the pattern walks home to Position over a beat or two, so a patch saved comes back to the same place. Under bounce the swing is anchored to the cell and Position does nothing.',
         },
         {
-          key: 'fan', title: 'Fan',
+          key: 'genFan', title: 'Fan',
           controls: define([
-            C('fanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
-            C('fanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
-            C('fanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),
-            C('fan', 'Position', 'how far apart the five strips stand in their cells'),
-            C('fanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
-            C('fanPulse', 'Pulse', 'how far apart they stand in the swell'),
+            C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
+            C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
+            C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),
+            C('genFan', 'Position', 'how far apart the five strips stand in their cells'),
+            C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
+            C('genFanPulse', 'Pulse', 'how far apart they stand in the swell'),
           ]),
           note: 'One wave running across the five strips, and three amounts aiming it at three places \u2014 so a wall of staggered bars can strobe in unison. Frequency at the top puts every strip opposite its neighbors, which is alternate; there the phase only scales how deep that is, and a quarter turn either side of it the fan goes quiet. Speed is what the strip the wave reads zero at travels at, and Rate is how far the others differ from it.',
         },
@@ -376,31 +361,21 @@
   // controls. What that costs is the view from the target’s end, and the
   // destination table below is what buys it back.
 
-  const PULSE_DESTS = [
-    { key: 'light', name: 'Brightness', where: 'the strips\u2019 own light',
-      amount: 'pulseDepth', wave: 'pulseWave',
-      note: 'Nothing sits above full, so this is the one amount with no sign: it digs the trough below whatever the shape lane already lit.' },
-    { key: 'width', name: 'Width', where: 'the shape\u2019s solid core',
-      amount: 'pulseWidth', wave: 'pulseWidthWave',
-      note: 'A shape is anchored by its center, so this breathes outward instead of wiping in from one end.' },
-    { key: 'hue', name: 'Hue', where: 'the strips, after the color lane',
-      amount: 'pulseHue', wave: 'pulseHueWave',
-      note: 'One push on what the other sources have already summed to \u2014 not a fourth source, so the color lane\u2019s own design is untouched.' },
-    { key: 'parLevel', name: 'PAR level', where: 'the four washes',
-      amount: 'pulseParLevel', wave: 'pulseParLevelWave',
-      note: 'The washes flashing against still strips is the look that justifies the whole matrix. Pull Level down first: a push toward full needs somewhere to go.' },
-    { key: 'parHue', name: 'PAR hue', where: 'the four washes',
-      amount: 'pulseParHue', wave: 'pulseParHueWave',
-      note: 'Rotates the washes off the strips on the swell and back between them.' },
-    { key: 'parSat', name: 'PAR saturation', where: 'the four washes',
-      amount: 'pulseParSat', wave: 'pulseParSatWave',
-      note: 'Toward white is the flash between strip strobes. It measures from the PARs\u2019 own saturation, so pulling them pale leaves the flash less far to travel.' },
-  ];
+  const ROUTES = Array.from({ length: A.ROUTES }, (_, r) => ({
+    key: 'route' + r,
+    name: 'Route ' + (r + 1),
+    destination: routeName(r, 'destination'),
+    amount: routeName(r, 'amount'),
+    ratio: routeName(r, 'ratio'),
+    wave: routeName(r, 'wave'),
+  }));
 
-  for (const d of PULSE_DESTS) {
+  for (const route of ROUTES) {
     define([
-      C(d.amount, 'Amount', 'how far the pulse pushes ' + d.where),
-      C(d.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
+      C(route.destination, 'Pushes', 'which control this route reaches'),
+      C(route.amount, 'Amount', 'how far, as a share of the distance left'),
+      C(route.ratio, 'Ratio', 'whole multiples of the clock'),
+      C(route.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
     ]);
   }
 
@@ -415,13 +390,13 @@
 
   const MODULATORS = [
     {
-      key: 'pulse', name: 'The pulse', tone: 'pulse',
+      key: 'pulse', name: 'The clock', tone: 'pulse',
       when: 'regular in time, and nowhere on the wall',
       source: define([
-        C('pulseRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
+        C('genPulseRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
       ]),
-      dests: PULSE_DESTS,
-      note: 'One oscillator with one rate. A destination says how far the pulse pushes it and what wave does the pushing, never how fast \u2014 every rate here feeds a running total, so a pulse aimed at one would move the wall permanently instead of returning it. Every destination is always connected and its amount may be zero: a morph interpolates an amount and cannot snap a connection on.',
+      routes: ROUTES,
+      note: 'One clock, and eight routes off it. A route says which control it reaches, how far, at what whole multiple of the clock, and what wave does the pushing. It cannot reach a rate: every rate feeds a running total, so a push on one would move the wall permanently instead of returning it. Two routes on one control add, and the sum stops at the limit.',
     },
     {
       key: 'scatter', name: 'The scatter', tone: 'scatter',
@@ -497,7 +472,7 @@
   const DESTINATIONS = [
     { key: 'light', name: 'the strips\u2019 brightness', lane: 'shape',
       from: { pulse: 'pulseDepth', scatter: 'scatterLight' } },
-    { key: 'width', name: 'the shape\u2019s width', lane: 'shape',
+    { key: 'genWidth', name: 'the shape\u2019s width', lane: 'shape',
       from: { pulse: 'pulseWidth' } },
     { key: 'hue', name: 'hue', lane: 'color',
       from: { pulse: 'pulseHue', scatter: 'scatterHue', placed: 'placedHue',
@@ -541,23 +516,23 @@
   // full-width look's strips cannot be seen to stand apart, which is why
   // Wave, Chase and Stutter below spend their amount on the swell.
   const SHAPE_FLAT = {
-    width: 127, count: 0, edge: 0, tail: 0, position: 64, speed: 64,
-    fan: 64, fanPulse: 64, fanRate: 64, fanFreq: 32, fanPhase: 0, fanRandom: 0,
-    alternate: OFF, bounce: OFF,
+    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64,
+    genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
+    genAlternate: OFF, genBounce: OFF,
   };
 
   const ANCHORS = {
-    Fill:       { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
-    Sweep:      { width: 40, count: 0, edge: 18, tail: 0, speed: 80, fan: 64, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
-    Rain:       { width: 40, count: 0, edge: 18, tail: 74, speed: 80, fan: 100, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
-    CrossSweep: { width: 40, count: 0, edge: 18, tail: 0, speed: 80, fan: 64, alternate: ON, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
-    Bars:       { width: 25, count: 0, edge: 15, tail: 0, speed: 88, fan: 64, bounce: ON, pulseDepth: 0, pulseRate: 64, pulseWave: 32 },
-    Breathe:    { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 100, pulseRate: 30, pulseWave: 32 },
-    Wave:       { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 104, pulseDepth: 100, pulseRate: 30, pulseWave: 32 },
-    Chase:      { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 114, pulseDepth: 127, pulseRate: 55, pulseWave: 88 },
-    Comet:      { width: 30, count: 0, edge: 30, tail: 99, speed: 80, fan: 114, pulseDepth: 0, pulseRate: 55, pulseWave: 32 },
-    Strobe:     { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, pulseDepth: 127, pulseRate: 100, pulseWave: 96 },
-    Stutter:    { width: 127, count: 0, edge: 0, tail: 0, speed: 64, fan: 64, fanPulse: 88, alternate: ON, pulseDepth: 127, pulseRate: 100, pulseWave: 96 },
+    Fill:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    Sweep:      { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    Rain:       { genWidth: 40, genCount: 0, genEdge: 18, genTail: 74, genSpeed: 80, genFan: 100, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    CrossSweep: { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, genAlternate: ON, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    Bars:       { genWidth: 25, genCount: 0, genEdge: 15, genTail: 0, genSpeed: 88, genFan: 64, genBounce: ON, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    Breathe:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 100, genPulseRate: 30, pulseWave: 32 },
+    Wave:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 104, pulseDepth: 100, genPulseRate: 30, pulseWave: 32 },
+    Chase:      { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 114, pulseDepth: 127, genPulseRate: 55, pulseWave: 88 },
+    Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 99, genSpeed: 80, genFan: 114, pulseDepth: 0, genPulseRate: 55, pulseWave: 32 },
+    Strobe:     { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
+    Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 88, genAlternate: ON, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
   };
 
   // The looks the fan rework was built against. The first is the patch that
@@ -568,18 +543,18 @@
   // the wave, so Speed at 20 — about −29 px/beat — is what stands the outer
   // strips still in Hypno together while the center runs.
   const FAN_LOOKS = {
-    'Bars, unison strobe': { width: 40, count: 68, edge: 0, tail: 0, speed: 64, fan: 100,
-                             pulseDepth: 127, pulseRate: 100, pulseWave: 96 },
-    'Diagonal bars':  { width: 25, count: 0, edge: 10, tail: 0, speed: 64, fan: 114, fanPhase: 0 },
-    'Chevron \u2227':     { width: 25, count: 0, edge: 10, tail: 0, speed: 64, fan: 114, fanPhase: 32 },
-    'Chevron \u2228':     { width: 25, count: 0, edge: 10, tail: 0, speed: 64, fan: 14, fanPhase: 32 },
-    'Comets':         { width: 12, count: 0, edge: 8, tail: 99, speed: 48, fan: 127, fanRandom: 127 },
-    'Shooting stars': { width: 10, count: 0, edge: 0, tail: 90, speed: 40, fanRate: 105, fanRandom: 127 },
-    'Hypno outer':    { width: 40, count: 68, edge: 0, tail: 0, speed: 64, fanRate: 108, fanPhase: 0 },
-    'Hypno together': { width: 40, count: 68, edge: 0, tail: 0, speed: 20, fanRate: 108, fanPhase: 32 },
-    'Hypno center':   { width: 40, count: 68, edge: 0, tail: 0, speed: 64, fanRate: 108, fanPhase: 32 },
-    'Alternate by rate': { width: 40, count: 68, edge: 0, tail: 0, speed: 64, fanRate: 108,
-                           fanFreq: 127, fanPhase: 64 },
+    'Bars, unison strobe': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 100,
+                             pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
+    'Diagonal bars':  { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 0 },
+    'Chevron \u2227':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 32 },
+    'Chevron \u2228':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 14, genFanPhase: 32 },
+    'Comets':         { genWidth: 12, genCount: 0, genEdge: 8, genTail: 99, genSpeed: 48, genFan: 127, genFanRandom: 127 },
+    'Shooting stars': { genWidth: 10, genCount: 0, genEdge: 0, genTail: 90, genSpeed: 40, genFanRate: 105, genFanRandom: 127 },
+    'Hypno outer':    { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 0 },
+    'Hypno together': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 20, genFanRate: 108, genFanPhase: 32 },
+    'Hypno center':   { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 32 },
+    'Alternate by rate': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108,
+                           genFanFreq: 127, genFanPhase: 64 },
   };
 
   const COLOR_FLAT = {
@@ -611,11 +586,11 @@
     COLOR_LOOKS[name] = Object.assign({}, COLOR_FLAT, COLOR_LOOKS[name]);
   }
   for (const name of Object.keys(FAN_LOOKS)) {
-    FAN_LOOKS[name] = Object.assign({}, SHAPE_FLAT, { position: 64 }, FAN_LOOKS[name]);
+    FAN_LOOKS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, FAN_LOOKS[name]);
   }
 
   for (const name of Object.keys(ANCHORS)) {
-    ANCHORS[name] = Object.assign({}, SHAPE_FLAT, { position: 64 }, ANCHORS[name]);
+    ANCHORS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, ANCHORS[name]);
   }
 
   global.AuroraPatch = {
@@ -625,7 +600,7 @@
     OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
     unit, bip, ccCount, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
-    LANES, MODULATORS, PULSE_DESTS, DESTINATIONS, PARS, TIMING,
+    LANES, MODULATORS, ROUTES, DESTINATIONS, PARS, TIMING,
     ANCHORS, FAN_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

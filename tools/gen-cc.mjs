@@ -44,6 +44,7 @@ if (bases.length !== routes) throw new Error('AURORA_ROUTE_BASE does not match A
 
 const fields = {};
 for (const m of src.matchAll(/^\s*(ROUTE_[A-Z]+)\s*=\s*(\d+),/gm)) {
+  if (m[1] === 'ROUTE_FIELDS') continue;  // the count, not a field
   fields[camel(m[1].replace(/^ROUTE_/, ''))] = Number(m[2]);
 }
 

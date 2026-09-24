@@ -212,29 +212,29 @@
 
   function readParams(s) {
     return {
-      width: ccUnit(s.width),
-      count: ccCount(s.count),
-      edge: ccUnit(s.edge),
-      tail: ccUnit(s.tail),
-      positionCells: ccBipolar(s.position) * 0.5,
-      speedPixels: stillBelowThreshold(ccSquared(s.speed, GEN_MAX_SPEED_PIXELS_PER_BEAT)),
+      width: ccUnit(s.genWidth),
+      count: ccCount(s.genCount),
+      edge: ccUnit(s.genEdge),
+      tail: ccUnit(s.genTail),
+      positionCells: ccBipolar(s.genPosition) * 0.5,
+      speedPixels: stillBelowThreshold(ccSquared(s.genSpeed, GEN_MAX_SPEED_PIXELS_PER_BEAT)),
       // One wave across the five strips, with three amounts aiming it at three
       // places. Position and pulse are offsets into a cycle, so only the
       // spread between strips is visible and 100 % spreads them over exactly
       // one cell or one swell. Rate is an absolute speed added to Speed's, so
       // the strip the wave reads zero at travels at exactly what Speed says
       // and the others are measured from it.
-      fanFreq: fanFrequency(orElse(s.fanFreq, GEN_FAN_FREQ_DEFAULT)),
-      fanPhase: or0(s.fanPhase) / 128,
-      fanRandom: ccUnit(or0(s.fanRandom)),
-      fanPosition: ccBipolar(s.fan) * 0.5,
+      fanFreq: fanFrequency(orElse(s.genFanFreq, GEN_FAN_FREQ_DEFAULT)),
+      fanPhase: or0(s.genFanPhase) / 128,
+      fanRandom: ccUnit(or0(s.genFanRandom)),
+      fanPosition: ccBipolar(s.genFan) * 0.5,
       // The same squared curve Speed runs on, so that mirroring one fader
       // about its center against the other cancels *exactly*: a still strip
       // at the wave's peak needs Speed to be the fan's opposite, and two
       // controls on different curves can only ever nearly cancel.
-      fanRate: ccSquared(orMid(s.fanRate), GEN_MAX_SPEED_PIXELS_PER_BEAT),
-      fanPulse: ccBipolar(orMid(s.fanPulse)) * 0.5,
-      pulseBeats: pulsePeriod(s.pulseRate),
+      fanRate: ccSquared(orMid(s.genFanRate), GEN_MAX_SPEED_PIXELS_PER_BEAT),
+      fanPulse: ccBipolar(orMid(s.genFanPulse)) * 0.5,
+      pulseBeats: pulsePeriod(s.genPulseRate),
 
       // One oscillator with one rate reaching six places, each with its own
       // amount and its own wave — which is what lets the washes breathe
@@ -249,8 +249,8 @@
         parSat:   send(s.pulseParSat, s.pulseParSatWave),
       },
 
-      alternate: isOn(s.alternate),
-      bounce: isOn(s.bounce),
+      alternate: isOn(s.genAlternate),
+      bounce: isOn(s.genBounce),
 
 
       litWhiteReach: ccUnit(s.litWhite),

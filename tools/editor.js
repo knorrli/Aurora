@@ -216,7 +216,7 @@
   // The escape from putting the amounts at the source: a marker beside the
   // target saying which sources reach it and how hard.
   const REACHED_CONTROL = {
-    width: 'width', hue: 'hue',
+    width: 'genWidth', hue: 'hue',
     parLevel: 'washLevel', parHue: 'washHueOffset', parSat: 'washSaturation',
   };
 
@@ -274,7 +274,7 @@
     }
 
     for (const [target, destKey] of Object.entries(
-      { width: 'width', hue: 'hue', washLevel: 'parLevel',
+      { width: 'genWidth', hue: 'hue', washLevel: 'parLevel',
         washHueOffset: 'parHue', washSaturation: 'parSat' })) {
       const r = rows[target];
       if (r && r.reached) r.reached.textContent = reachText(destKey, live);

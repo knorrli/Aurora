@@ -74,7 +74,7 @@
 
   const ROUTES = 8;
   const ROUTE_BASE = [76, 92, 96, 100, 104, 108, 112, 116];
-  const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"fields":4};
+  const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3};
   const ROUTE_MAX_RATIO = 8;
 
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
