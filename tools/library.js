@@ -5,6 +5,10 @@
 // shape it is DESIGN.md § "How a library gets there": a sync replaces the
 // whole library, it is strictly ordered, it stages and commits on one
 // rename, and nothing is acknowledged but the two ends.
+//
+// A library is P.PATCH_MAX fixed slots, any of them empty: `lib.slots[n]` is
+// the patch Program Change n plays, or null. On the wire and in a file only
+// the filled ones travel, each carrying its slot.
 
 (function (global) {
   'use strict';
@@ -20,7 +24,7 @@
   };
 
   const STATUS = ['ok', 'patch format not understood', 'out of sequence',
-                  'incomplete', 'storage failed', 'index out of range'];
+                  'incomplete', 'storage failed', 'slot or length out of range'];
   const LIB_STATE = ['a synced library is live', 'empty — running compiled defaults',
                      'something stored that cannot be read'];
 
@@ -128,23 +132,27 @@
     };
   }
 
+  const emptySlots = () => new Array(P.PATCH_MAX).fill(null);
+  const filledSlots = lib => lib.slots.flatMap((p, slot) => (p ? [slot] : []));
+
   const libToWire = lib => ({
     patchFormat: P.PATCH_FORMAT,
     keymap: lib.keymap.slice(),
-    patches: lib.patches.map(toWire),
+    patches: filledSlots(lib).map(slot => Object.assign({ slot }, toWire(lib.slots[slot]))),
   });
 
-  const libFromWire = w => ({
-    patchFormat: P.PATCH_FORMAT,
-    keymap: w.keymap.slice(),
-    patches: w.patches.map(fromWire),
-  });
+  // A library written before slots existed numbers its patches in order.
+  function libFromWire(w) {
+    const slots = emptySlots();
+    w.patches.forEach((p, i) => { slots[p.slot ?? i] = fromWire(p); });
+    return { patchFormat: P.PATCH_FORMAT, keymap: w.keymap.slice(), slots };
+  }
 
-  const newLibrary = () => ({
-    patchFormat: P.PATCH_FORMAT,
-    keymap: new Array(P.KEYS).fill(0),
-    patches: [newPatch('first')],
-  });
+  function newLibrary() {
+    const slots = emptySlots();
+    slots[0] = newPatch('first');
+    return { patchFormat: P.PATCH_FORMAT, keymap: new Array(P.KEYS).fill(0), slots };
+  }
 
   // A morph interpolates the continuous CCs and never a switch, and within one
   // patch a far end has no switches of its own to take — DESIGN.md
@@ -225,7 +233,7 @@
     out.push('  "patches": [');
     lib.patches.forEach((p, i) => {
       out.push('    {');
-      out.push(`      "name": ${JSON.stringify(p.name)},`);
+      out.push(`      "slot": ${p.slot}, "name": ${JSON.stringify(p.name)},`);
       out.push(`      "pattern": ${p.pattern}, "palette": ${p.palette}, "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
       out.push('      "sets": [');
       p.sets.forEach((set, n) => out.push(`        [${set.join(',')}]${n < P.SETS - 1 ? ',' : ''}`));
@@ -238,19 +246,25 @@
   }
 
   // A file is checked before any of it is sent, because SYNC_BEGIN declares a
-  // count the brain then waits for: discovering a bad patch halfway leaves the
-  // sync open, and the previous library is only safe because nothing commits.
+  // slot map the brain then waits for: discovering a bad patch halfway leaves
+  // the sync open, and the previous library is only safe because nothing
+  // commits.
   function validate(lib) {
     if (!lib || typeof lib !== 'object') return 'not a library file';
     if (lib.patchFormat !== P.PATCH_FORMAT)
       return `patch format ${lib.patchFormat}, this page speaks ${P.PATCH_FORMAT}`;
     if (!Array.isArray(lib.patches) || !lib.patches.length) return 'no patches in it';
-    if (lib.patches.length > P.PATCH_MAX)
-      return `${lib.patches.length} patches, and the brain holds ${P.PATCH_MAX}`;
-    if (!Array.isArray(lib.keymap) || lib.keymap.length !== P.KEYS)
-      return `the keymap should be ${P.KEYS} entries`;
+    if (!Array.isArray(lib.keymap) || lib.keymap.length !== P.KEYS
+        || lib.keymap.some(k => !Number.isInteger(k) || k < 0 || k >= P.PATCH_MAX))
+      return `the keymap should be ${P.KEYS} slots`;
+    const taken = new Set();
     for (let i = 0; i < lib.patches.length; i++) {
       const p = lib.patches[i];
+      const slot = p.slot ?? i;
+      if (!Number.isInteger(slot) || slot < 0 || slot >= P.PATCH_MAX)
+        return `patch ${i} is in slot ${slot}, and the slots run 0–${P.PATCH_MAX - 1}`;
+      if (taken.has(slot)) return `two patches in slot ${slot}`;
+      taken.add(slot);
       if (!Array.isArray(p.sets) || p.sets.length !== P.SETS)
         return `patch ${i} has ${p.sets && p.sets.length} parameter sets, expected ${P.SETS}`;
       for (let n = 0; n < P.SETS; n++) {
@@ -274,6 +288,17 @@
   }
 
   const nameOf = head => head.slice(4).map(c => String.fromCharCode(c)).join('').trim();
+
+  const MAP_LEN = Math.ceil(P.PATCH_MAX / 7);
+
+  function slotMapBytes(slots) {
+    const map = new Array(MAP_LEN).fill(0);
+    for (const slot of slots) map[Math.floor(slot / 7)] |= 1 << (slot % 7);
+    return map;
+  }
+
+  const slotsInMap = map => Array.from({ length: P.PATCH_MAX }, (_, slot) => slot)
+    .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
 
   function Link() {
     this.input = null;
@@ -338,37 +363,39 @@
   Link.prototype.queryLibrary = async function () {
     this.send(T.QUERY_LIBRARY);
     const m = await this.expect([T.LIBRARY_INFO]);
-    const [major, minor, format, state, count, ...keys] = m.payload;
+    const [major, minor, format, state, ...rest] = m.payload;
+    const slots = slotsInMap(rest.slice(P.KEYS, P.KEYS + MAP_LEN));
     return {
-      protocol: major + '.' + minor, format, state, count,
+      protocol: major + '.' + minor, format, state, slots, count: slots.length,
       stateText: LIB_STATE[state] || `unknown state ${state}`,
-      keymap: keys.slice(0, P.KEYS),
+      keymap: rest.slice(0, P.KEYS),
     };
   };
 
+  // Takes the wire shape, so the patches go out lowest slot first as the
+  // brain requires.
   Link.prototype.push = async function (lib, onProgress) {
-    const count = lib.patches.length;
-    const keys = Array.from({ length: P.KEYS },
-      (_, i) => Math.min(count - 1, Math.max(0, lib.keymap[i] | 0)));
+    const patches = lib.patches.slice().sort((a, b) => a.slot - b.slot);
+    const count = patches.length;
 
-    const begun = await this.ackFor(T.SYNC_BEGIN,
-      [lib.patchFormat || P.PATCH_FORMAT, count, ...keys]);
+    const begun = await this.ackFor(T.SYNC_BEGIN, [lib.patchFormat || P.PATCH_FORMAT,
+      ...lib.keymap.map(k => k & 0x7F), ...slotMapBytes(patches.map(p => p.slot))]);
     if (begun.status !== 0) return { ok: false, where: 'sync begin', status: begun.status };
 
-    for (let i = 0; i < count; i++) {
-      this.send(T.PATCH_HEAD, [i, ...headBytes(lib.patches[i])]);
+    patches.forEach((p, i) => {
+      this.send(T.PATCH_HEAD, [p.slot, ...headBytes(p)]);
       for (let set = 0; set < P.SETS; set++) {
-        this.send(T.PATCH_SET, [i, set, ...lib.patches[i].sets[set]]);
+        this.send(T.PATCH_SET, [p.slot, set, ...p.sets[set]]);
       }
       if (onProgress) onProgress(i + 1, count);
-    }
+    });
 
     const done = await this.ackFor(T.SYNC_COMMIT);
     return { ok: done.status === 0, where: 'commit', status: done.status, count };
   };
 
-  Link.prototype.readPatch = async function (index) {
-    this.send(T.QUERY_PATCH, [index]);
+  Link.prototype.readPatch = async function (slot) {
+    this.send(T.QUERY_PATCH, [slot]);
     const first = await this.expect([T.PATCH_HEAD_OUT, T.ACK]);
     if (first.type === T.ACK) return { error: first.payload[1] };
 
@@ -396,13 +423,13 @@
     if (info.state !== 0 || !info.count) return { error: info.stateText, info };
 
     const patches = [];
-    for (let i = 0; i < info.count; i++) {
-      const got = await this.readPatch(i);
+    for (const slot of info.slots) {
+      const got = await this.readPatch(slot);
       if (got.error !== undefined) {
-        return { error: `patch ${i}: ${STATUS[got.error] || got.error}`, info };
+        return { error: `slot ${slot}: ${STATUS[got.error] || got.error}`, info };
       }
-      patches.push(got.patch);
-      if (onProgress) onProgress(i + 1, info.count);
+      patches.push(Object.assign({ slot }, got.patch));
+      if (onProgress) onProgress(patches.length, info.count);
     }
     return { lib: { patchFormat: P.PATCH_FORMAT, keymap: info.keymap, patches }, info };
   };
@@ -443,9 +470,9 @@
   global.AuroraLibrary = {
     T, STATUS, LIB_STATE, HEAD_LEN,
     emptySet, setFromNamed, namedFromSet, readCC, writeCC,
-    newPatch, clonePatch, newLibrary, materialize, overriddenIn,
+    newPatch, clonePatch, newLibrary, emptySlots, filledSlots, materialize, overriddenIn,
     mix, moveOverrides, copyOverrides,
     toWire, fromWire, libToWire, libFromWire, blend,
-    serialize, validate, headBytes, nameOf, Link,
+    serialize, validate, headBytes, nameOf, slotMapBytes, slotsInMap, Link,
   };
 })(window);

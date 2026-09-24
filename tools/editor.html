@@ -84,6 +84,10 @@
     flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .patchlist .item .keys { flex: 0 0 auto; color: var(--accent); font-size: 10.5px; white-space: nowrap; }
+  .patchlist .item.dirty .name::after { content: ' \2022'; color: var(--accent); }
+  .saveto { margin-top: 7px; flex-wrap: nowrap; }
+  .saveto input { width: 52px; }
+  .saveto #saveOccupant { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .keypad .key {
@@ -318,11 +322,15 @@
       <h2>Library</h2>
       <div class="patchlist" id="patchList"></div>
       <div class="rowline" style="margin-top:10px">
+        <button class="tiny" id="patchSave">save</button>
+        <button class="tiny" id="patchDiscard">discard</button>
         <button class="tiny" id="patchNew">new</button>
-        <button class="tiny" id="patchDup">duplicate</button>
-        <button class="tiny" id="patchUp">&uarr;</button>
-        <button class="tiny" id="patchDown">&darr;</button>
         <button class="tiny" id="patchDel">delete</button>
+      </div>
+      <div class="rowline saveto">
+        <label class="cc">slot <input type="number" id="saveSlot" min="0" max="127"></label>
+        <span class="cc" id="saveOccupant"></span>
+        <button class="tiny" id="saveHere">save here</button>
       </div>
       <p class="note" id="libCount"></p>
     </section>

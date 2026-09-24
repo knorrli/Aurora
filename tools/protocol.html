@@ -70,7 +70,7 @@
 <div class="panel">
   <h2>Push a test library</h2>
   <div class="row">
-    <span>patches</span><input type="number" id="count" value="8" min="1" max="128">
+    <span>patches</span><input type="number" id="count" value="8" min="1" max="128" title="spread across the 128 slots, first and last included, so the empty ones between are exercised too">
     <button id="push" disabled>push</button>
     <button id="abort" disabled>abort mid-sync</button>
   </div>
@@ -95,7 +95,7 @@
 <div class="panel">
   <h2>Read back</h2>
   <div class="row">
-    <span>patch</span><input type="number" id="index" value="0" min="0" max="127">
+    <span>slot</span><input type="number" id="index" value="0" min="0" max="127">
     <button id="read" disabled>read one</button>
     <button id="verify" disabled>verify the whole library</button>
   </div>
@@ -113,11 +113,12 @@ const T = {
 };
 
 const STATUS = ['ok', 'format not understood', 'out of sequence', 'incomplete',
-                'storage failed', 'index out of range'];
+                'storage failed', 'slot or length out of range'];
 const LIB_STATE = ['a synced library is live', 'empty — running compiled defaults',
                    'something stored that cannot be read'];
 
-const PATCH_FORMAT = 1, CC_COUNT = 128, NAME_LEN = 16, SETS = 5, KEYS = 9;
+const PATCH_FORMAT = 1, CC_COUNT = 128, NAME_LEN = 16, SETS = 5, KEYS = 9, SLOTS = 128;
+const MAP_LEN = Math.ceil(SLOTS / 7);
 const HEAD_LEN = 4 + NAME_LEN;
 
 let input = null, output = null;
@@ -129,25 +130,41 @@ const waiters = [];
 // without holding a copy. Every value stays under 128 by construction, which
 // is the same thing that lets a patch cross SysEx without being encoded.
 
-const ccByte = (index, set, cc) => (index * 7 + set * 13 + cc * 3 + 11) & 0x7F;
+const ccByte = (slot, set, cc) => (slot * 7 + set * 13 + cc * 3 + 11) & 0x7F;
 
-function testPatch(index) {
+function testPatch(slot) {
   return {
-    name: `test ${index}`,
+    slot,
+    name: `test ${slot}`,
     pattern: 10,                 // the generator
-    palette: index % 9,          // reserved; its meaning is unsettled
-    rampJourney: (index * 2) & 0x7F,
-    rampAccent: (index * 3) & 0x7F,
+    palette: slot % 9,           // reserved; its meaning is unsettled
+    rampJourney: (slot * 2) & 0x7F,
+    rampAccent: (slot * 3) & 0x7F,
     sets: Array.from({ length: SETS }, (_, s) =>
-      Array.from({ length: CC_COUNT }, (_, n) => ccByte(index, s, n))),
+      Array.from({ length: CC_COUNT }, (_, n) => ccByte(slot, s, n))),
   };
 }
 
-const testLibrary = (count) => ({
-  patchFormat: PATCH_FORMAT,
-  keymap: Array.from({ length: KEYS }, (_, i) => i % count),
-  patches: Array.from({ length: count }, (_, i) => testPatch(i)),
-});
+const testSlots = count => count === 1 ? [0]
+  : [...new Set(Array.from({ length: count }, (_, i) => Math.round(i * (SLOTS - 1) / (count - 1))))];
+
+function testLibrary(count) {
+  const slots = testSlots(count);
+  return {
+    patchFormat: PATCH_FORMAT,
+    keymap: Array.from({ length: KEYS }, (_, i) => slots[i % slots.length]),
+    patches: slots.map(testPatch),
+  };
+}
+
+function slotMapBytes(slots) {
+  const map = new Array(MAP_LEN).fill(0);
+  for (const slot of slots) map[Math.floor(slot / 7)] |= 1 << (slot % 7);
+  return map;
+}
+
+const slotsInMap = map => Array.from({ length: SLOTS }, (_, slot) => slot)
+  .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
 
 function headBytes(p) {
   const name = String(p.name ?? '').padEnd(NAME_LEN, ' ').slice(0, NAME_LEN);
@@ -223,25 +240,32 @@ function reportStatus(what, status) {
 async function queryLibrary() {
   send(T.QUERY_LIBRARY);
   const m = await expect([T.LIBRARY_INFO]);
-  const [major, minor, format, state, count, ...keys] = m.payload;
+  const [major, minor, format, state, ...rest] = m.payload;
+  const keymap = rest.slice(0, KEYS);
+  const slots = slotsInMap(rest.slice(KEYS, KEYS + MAP_LEN));
   say(`protocol ${major}.${minor}, patch format ${format}`);
-  say(`${LIB_STATE[state] ?? `unknown state ${state}`} — ${count} patches`);
-  say(`keypad: ${keys.slice(0, KEYS).join(' ')}`);
-  return { state, count, keymap: keys.slice(0, KEYS) };
+  say(`${LIB_STATE[state] ?? `unknown state ${state}`} — ${slots.length} patches`);
+  if (slots.length) say(`slots: ${slots.join(' ')}`);
+  say(`keypad: ${keymap.join(' ')}`);
+  return { state, slots, keymap };
 }
 
+// A library written before slots existed numbers its patches in order.
 async function pushLibrary(lib, stopEarly = false) {
-  const count = lib.patches.length;
-  const keys = Array.from({ length: KEYS }, (_, i) => (lib.keymap?.[i] ?? 0) % count);
+  const patches = lib.patches.map((p, i) => ({ ...p, slot: p.slot ?? i }))
+    .sort((a, b) => a.slot - b.slot);
+  const count = patches.length;
+  const keys = Array.from({ length: KEYS }, (_, i) => (lib.keymap?.[i] ?? 0) & 0x7F);
 
-  const begun = await ackFor(T.SYNC_BEGIN, [lib.patchFormat ?? PATCH_FORMAT, count, ...keys]);
+  const begun = await ackFor(T.SYNC_BEGIN,
+    [lib.patchFormat ?? PATCH_FORMAT, ...keys, ...slotMapBytes(patches.map(p => p.slot))]);
   if (!reportStatus('sync begin', begun.status)) return;
 
   const upTo = stopEarly ? Math.max(1, Math.floor(count / 2)) : count;
-  for (let i = 0; i < upTo; i++) {
-    send(T.PATCH_HEAD, [i, ...headBytes(lib.patches[i])]);
+  for (const p of patches.slice(0, upTo)) {
+    send(T.PATCH_HEAD, [p.slot, ...headBytes(p)]);
     for (let set = 0; set < SETS; set++) {
-      send(T.PATCH_SET, [i, set, ...lib.patches[i].sets[set]]);
+      send(T.PATCH_SET, [p.slot, set, ...p.sets[set]]);
     }
   }
   say(`sent ${upTo} of ${count} patches — ${upTo * (1 + SETS) + 1} messages`);
@@ -256,12 +280,12 @@ async function pushLibrary(lib, stopEarly = false) {
   if (stopEarly && ok) bad('it committed a half library, which it must not');
 }
 
-async function readPatch(index) {
-  send(T.QUERY_PATCH, [index]);
+async function readPatch(slot) {
+  send(T.QUERY_PATCH, [slot]);
 
   const first = await expect([T.PATCH_HEAD_OUT, T.ACK]);
   if (first.type === T.ACK) {
-    reportStatus(`read patch ${index}`, first.payload[1]);
+    reportStatus(`read slot ${slot}`, first.payload[1]);
     return null;
   }
 
@@ -269,14 +293,14 @@ async function readPatch(index) {
   const sets = [];
   for (let s = 0; s < SETS; s++) {
     const m = await expect([T.PATCH_SET_OUT, T.ACK]);
-    if (m.type === T.ACK) { reportStatus(`read patch ${index}`, m.payload[1]); return null; }
+    if (m.type === T.ACK) { reportStatus(`read slot ${slot}`, m.payload[1]); return null; }
     sets.push(m.payload.slice(2));
   }
   return { head, sets };
 }
 
-function compare(index, got) {
-  const wantHead = headBytes(testPatch(index));
+function compare(slot, got) {
+  const wantHead = headBytes(testPatch(slot));
   const faults = [];
   if (got.head.length !== HEAD_LEN) faults.push(`head is ${got.head.length} bytes, expected ${HEAD_LEN}`);
   for (let i = 0; i < Math.min(HEAD_LEN, got.head.length); i++) {
@@ -284,7 +308,7 @@ function compare(index, got) {
   }
   for (let s = 0; s < SETS; s++) {
     for (let n = 0; n < CC_COUNT; n++) {
-      const want = ccByte(index, s, n);
+      const want = ccByte(slot, s, n);
       if (got.sets[s][n] !== want) {
         faults.push(`set ${s} byte ${n}: got ${got.sets[s][n]}, expected ${want}`);
         break;
@@ -298,13 +322,14 @@ function compare(index, got) {
 
 async function readLibrary() {
   const info = await queryLibrary();
-  if (info.state !== 0 || !info.count) { bad('nothing stored to save'); return null; }
+  if (info.state !== 0 || !info.slots.length) { bad('nothing stored to save'); return null; }
 
   const patches = [];
-  for (let i = 0; i < info.count; i++) {
-    const got = await readPatch(i);
-    if (!got) { bad(`patch ${i} could not be read — stopping rather than saving a gap`); return null; }
+  for (const slot of info.slots) {
+    const got = await readPatch(slot);
+    if (!got) { bad(`slot ${slot} could not be read — stopping rather than saving part of the library`); return null; }
     patches.push({
+      slot,
       name: nameOf(got.head),
       pattern: got.head[0], palette: got.head[1],
       rampJourney: got.head[2], rampAccent: got.head[3],
@@ -326,7 +351,7 @@ function serialize(lib) {
   out.push('  "patches": [');
   lib.patches.forEach((p, i) => {
     out.push('    {');
-    out.push(`      "name": ${JSON.stringify(p.name)},`);
+    out.push(`      "slot": ${p.slot}, "name": ${JSON.stringify(p.name)},`);
     out.push(`      "pattern": ${p.pattern}, "palette": ${p.palette}, "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
     out.push('      "sets": [');
     p.sets.forEach((set, n) => out.push(`        [${set.join(',')}]${n < SETS - 1 ? ',' : ''}`));
@@ -348,17 +373,22 @@ function download(filename, text) {
 }
 
 // A file is checked before any of it is sent, because SYNC_BEGIN declares a
-// count the brain then waits for: discovering a bad patch halfway leaves the
-// sync open and the previous library is only safe because nothing commits.
+// slot map the brain then waits for: discovering a bad patch halfway leaves
+// the sync open and the previous library is only safe because nothing
+// commits.
 function validate(lib) {
   if (!lib || typeof lib !== 'object') return 'not a library file';
   if (lib.patchFormat !== PATCH_FORMAT) return `patch format ${lib.patchFormat}, this page speaks ${PATCH_FORMAT}`;
   if (!Array.isArray(lib.patches) || !lib.patches.length) return 'no patches in it';
-  if (lib.patches.length > 128) return `${lib.patches.length} patches, and the brain holds 128`;
   if (!Array.isArray(lib.keymap) || lib.keymap.length !== KEYS) return `keymap should be ${KEYS} entries`;
 
+  const taken = new Set();
   for (let i = 0; i < lib.patches.length; i++) {
     const p = lib.patches[i];
+    const slot = p.slot ?? i;
+    if (!Number.isInteger(slot) || slot < 0 || slot >= SLOTS) return `patch ${i} is in slot ${slot}, and the slots run 0–${SLOTS - 1}`;
+    if (taken.has(slot)) return `two patches in slot ${slot}`;
+    taken.add(slot);
     if (!Array.isArray(p.sets) || p.sets.length !== SETS) return `patch ${i} has ${p.sets?.length} parameter sets, expected ${SETS}`;
     for (let n = 0; n < SETS; n++) {
       if (!Array.isArray(p.sets[n]) || p.sets[n].length !== CC_COUNT) return `patch ${i} set ${n} is not ${CC_COUNT} bytes`;
@@ -386,7 +416,7 @@ document.getElementById('query').addEventListener('click', run(queryLibrary));
 
 document.getElementById('push').addEventListener('click', run(async () => {
   const count = Math.min(128, Math.max(1, +document.getElementById('count').value));
-  say(`pushing ${count} patches`);
+  say(`pushing ${count} patches into slots ${testSlots(count).join(' ')}`);
   const started = performance.now();
   await pushLibrary(testLibrary(count));
   say(`took ${Math.round(performance.now() - started)} ms`);
@@ -401,28 +431,35 @@ document.getElementById('abort').addEventListener('click', run(async () => {
 }));
 
 document.getElementById('read').addEventListener('click', run(async () => {
-  const index = +document.getElementById('index').value;
-  const got = await readPatch(index);
+  const slot = +document.getElementById('index').value;
+  const got = await readPatch(slot);
   if (!got) return;
-  say(`patch ${index} is named "${nameOf(got.head)}"`);
-  const faults = compare(index, got);
-  if (!faults.length) good(`patch ${index} matches what was pushed, all ${HEAD_LEN + SETS * CC_COUNT} bytes`);
+  say(`slot ${slot} is named "${nameOf(got.head)}"`);
+  const faults = compare(slot, got);
+  if (!faults.length) good(`slot ${slot} matches what was pushed, all ${HEAD_LEN + SETS * CC_COUNT} bytes`);
   else faults.forEach(bad);
 }));
 
 document.getElementById('verify').addEventListener('click', run(async () => {
-  const { state, count } = await queryLibrary();
-  if (state !== 0 || !count) { bad('nothing stored to verify'); return; }
+  const { state, slots } = await queryLibrary();
+  if (state !== 0 || !slots.length) { bad('nothing stored to verify'); return; }
 
   let wrong = 0;
-  for (let i = 0; i < count; i++) {
-    const got = await readPatch(i);
+  for (const slot of slots) {
+    const got = await readPatch(slot);
     if (!got) { wrong++; continue; }
-    const faults = compare(i, got);
-    if (faults.length) { wrong++; bad(`patch ${i}: ${faults[0]}`); }
+    const faults = compare(slot, got);
+    if (faults.length) { wrong++; bad(`slot ${slot}: ${faults[0]}`); }
   }
-  if (wrong) bad(`${wrong} of ${count} patches came back wrong`);
-  else good(`all ${count} patches came back byte for byte`);
+  const empty = Array.from({ length: SLOTS }, (_, s) => s).find(s => !slots.includes(s));
+  if (empty !== undefined) {
+    send(T.QUERY_PATCH, [empty]);
+    const m = await expect([T.PATCH_HEAD_OUT, T.ACK]);
+    if (m.type === T.ACK && m.payload[1] === 5) good(`empty slot ${empty} is refused, as it should be`);
+    else { wrong++; bad(`empty slot ${empty} answered with something`); }
+  }
+  if (wrong) bad(`${wrong} checks of ${slots.length} patches came back wrong`);
+  else good(`all ${slots.length} patches came back byte for byte`);
 }));
 
 document.getElementById('save').addEventListener('click', run(async () => {

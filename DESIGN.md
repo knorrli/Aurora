@@ -269,8 +269,16 @@ decisions worth keeping, because each one bought something.
 **A sync replaces the whole library.** There is no "patch 47 changed"
 message. The brain's storage is a mirror of what the editor last sent, so
 neither side tracks which patches are stale, and a patch needs no identity
-beyond its index. A full push is about 85 KB, which is seconds — unmeasured
+beyond its slot. A full push is about 85 KB, which is seconds — unmeasured
 so far, and the flash write is the likelier half of that.
+
+**A library is 128 fixed slots, any of them empty** — added 2026-09-24. A
+slot is the Program Change that plays its patch, and a DAW's automation and
+the keypad address patches by it, so nothing may renumber one: deleting a
+patch empties its slot and moves nothing else. The sync opens with a map of
+the filled slots and sends only those; the brain's file holds them back to
+back, so a patch's place in it is the number of filled slots below it and
+the append-only write below still holds.
 
 **Everything lands in a staging file and becomes live on one rename.** A
 sync cut off anywhere leaves the previous library whole and current: there
@@ -280,8 +288,8 @@ not one commit, and there is no atomic way to do it.
 
 **A sync is strictly ordered and the brain appends.** One flash write per
 message, constant RAM, no seeking. Anything out of order is refused
-outright, because once both have been written a gap cannot be told from a
-reordering.
+outright, because once both have been written a missing patch cannot be
+told from a reordering.
 
 **A palette is a switch**, so it sits in the patch head and not in each
 parameter set: a fader's far end cannot be in a different palette from its

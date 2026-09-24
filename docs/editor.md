@@ -73,14 +73,26 @@ deliberately push. What you get on screen:
 - a far end dialed back onto the base value stops being an override, so the
   count never lies
 
-## The library saves itself
+## Edits go into a draft
 
-Every edit writes the whole library to `localStorage` as you make it. There is
-no save button for it and there should not be: a patch editor that can lose an
-evening to a closed tab is not one you would use at a desk. The two buttons
-that look like saving are both exports — **save a file** is the copy that
-survives the browser and belongs in the repo, **push the library** is the copy
-the brain holds.
+The library is 128 fixed slots, and a slot is the Program Change that plays its
+patch, so nothing ever renumbers: deleting a patch empties its slot, and the
+keypad keys on it stay on the empty slot. The list shows the filled ones.
+
+The first change to a patch opens a draft of it — base, far ends and the
+patch-wide row together — and the library does not change until the draft is
+saved. **save** writes it back into its own slot. The **slot** field under it
+saves into any slot, says what is there, and asks before replacing another
+patch; with no draft open that is how a patch is duplicated. **discard** drops
+the draft, and choosing another patch with one open asks first. **new** starts
+a draft with no slot, which it takes when saved. There is no undo history.
+
+The draft is kept in `localStorage` apart from the library, so a closed tab
+still loses nothing: it comes back on reload, marked unsaved. The two buttons
+under **The brain** that look like saving are both exports of the saved
+library, never the draft — **save a file** is the copy that survives the
+browser and belongs in the repo, **push the library** is the copy the brain
+holds.
 
 ## Auditioning
 
@@ -202,9 +214,6 @@ owns all 72 of them, which is the 63 that existed plus the scatter's nine.
 
 **Ramp times are stepped through `AURORA_PULSE_PERIODS`.** One table for every
 musical duration in the rig rather than a second convention.
-
-**Moving a patch in the library moves its Program Change.** The keypad follows;
-a DAW's automation lane does not, and the page says so when you do it.
 
 ## What went away
 

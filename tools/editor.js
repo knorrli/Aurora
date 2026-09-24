@@ -32,9 +32,13 @@
   // ---- state -------------------------------------------------------------
 
   const STORE = 'aurora.editor.library';
+  const STORE_DRAFT = 'aurora.editor.draft';
 
+  // Edits go into a draft of one patch, never into the library: the first
+  // change opens it, and it is saved into a slot or discarded. `slot` is the
+  // slot on screen, or null for a new patch not yet saved anywhere.
   let lib = loadStored() || L.newLibrary();
-  let patchIndex = 0;
+  let { slot, draft } = loadDraft();
   let setIndex = P.SET_BASE;
 
   const audition = { pos: 1, held: false, raf: null, seconds: 2, loop: false, from: null, to: null };
@@ -45,7 +49,17 @@
   const rows = {};
   const lastSent = new Array(P.CC_COUNT).fill(-1);
 
-  const patch = () => lib.patches[patchIndex];
+  const patch = () => draft || lib.slots[slot];
+  const patchAt = s => (s === slot && draft ? draft : lib.slots[s]);
+  const firstFilled = () => { const f = L.filledSlots(lib); return f.length ? f[0] : null; };
+
+  function editing() {
+    if (!draft) {
+      draft = L.clonePatch(lib.slots[slot]);
+      paintList();
+    }
+    return draft;
+  }
   const baseSet = () => patch().base;
   const activeSet = () => L.materialize(patch(), setIndex);
   const isFarEnd = () => setIndex !== P.SET_BASE;
@@ -60,7 +74,23 @@
     } catch { return null; }
   }
   function save() {
-    try { localStorage.setItem(STORE, JSON.stringify(L.libToWire(lib))); } catch {}
+    try {
+      localStorage.setItem(STORE, JSON.stringify(L.libToWire(lib)));
+      if (draft) localStorage.setItem(STORE_DRAFT, JSON.stringify({ slot, patch: draft }));
+      else localStorage.removeItem(STORE_DRAFT);
+    } catch {}
+  }
+
+  // A draft that no longer matches its slot, because the library it was
+  // opened against was replaced, is dropped rather than guessed at.
+  function loadDraft() {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(STORE_DRAFT)); } catch {}
+    const fits = stored && stored.patch && Array.isArray(stored.patch.base)
+      && (stored.slot === null || lib.slots[stored.slot]);
+    if (fits) return { slot: stored.slot, draft: stored.patch };
+    const first = L.filledSlots(lib)[0];
+    return first === undefined ? { slot: null, draft: L.newPatch('untitled') } : { slot: first, draft: null };
   }
 
   // ---- what is live ------------------------------------------------------
@@ -71,8 +101,8 @@
   // its own switches is judged on a picture it will rarely show, and this is
   // the picker that fixes it.
   function switchSource() {
-    if (setIndex === P.SET_ACCENT && audition.from != null && lib.patches[audition.from]) {
-      return lib.patches[audition.from].base;
+    if (setIndex === P.SET_ACCENT && audition.from != null && patchAt(audition.from)) {
+      return patchAt(audition.from).base;
     }
     return baseSet();
   }
@@ -84,7 +114,7 @@
   function liveNamed() {
     const p = patch();
     if (!isFarEnd()) {
-      const dest = audition.to != null ? lib.patches[audition.to] : null;
+      const dest = audition.to != null ? patchAt(audition.to) : null;
       if (dest && journeying()) {
         return L.blend(p.base, dest.base, audition.pos, p.base);
       }
@@ -99,7 +129,7 @@
   // is the far end following again, which is what makes the change count mean
   // something.
   function setValue(name, value) {
-    const p = patch();
+    const p = editing();
     if (!isFarEnd() || P.SWITCHES.includes(name)) {
       L.writeCC(p.base, name, value);
     } else if (P.clamp7(value) === (p.base[P.CC[name]] | 0)) {
@@ -117,7 +147,7 @@
   }
 
   function dropOverrides(names) {
-    const over = patch().overrides[setIndex];
+    const over = editing().overrides[setIndex];
     if (!over) return;
     for (const n of names) delete over[n];
     save(); paint(); sendLive();
@@ -268,8 +298,8 @@
         for (const [value2, b] of r.buttons) b.classList.toggle('on', r.lit(value2, value));
         r.root.classList.toggle('locked', farEnd);
         r.from.textContent = farEnd
-          ? (setIndex === P.SET_ACCENT && audition.from != null && audition.from !== patchIndex
-              ? `held at "${lib.patches[audition.from].name}"` : 'from the patch')
+          ? (setIndex === P.SET_ACCENT && audition.from != null && audition.from !== slot
+              ? `held at "${patchAt(audition.from).name}"` : 'from the patch')
           : '';
       }
     }
@@ -293,7 +323,7 @@
     if (isFarEnd()) {
       label.textContent = `${P.SET_NAMES[setIndex]} ${Math.round(audition.pos * 100)}%`;
     } else if (journey) {
-      label.textContent = `"${lib.patches[audition.to].name}" ${Math.round(audition.pos * 100)}%`;
+      label.textContent = `"${patchAt(audition.to).name}" ${Math.round(audition.pos * 100)}%`;
     } else if (surfacesUp()) {
       label.textContent = Object.entries(surfaces)
         .filter(([, v]) => v > 0)
@@ -627,7 +657,7 @@
     stopRun();
     audition.pos = 1;
     audition.held = false;
-    if (audition.from === null) audition.from = patchIndex;
+    if (audition.from === null) audition.from = slot;
     buildAudition();
     buildSurfaces();
     paint();
@@ -820,12 +850,12 @@
         wrap.appendChild(el('span', null, 'as heard from'));
         wrap.title = 'An accent plays with the switches of the patch you came from, because the destination\u2019s land on the release and not on arrival. Dial it against the patch it will actually follow.';
         const pick = el('select');
-        lib.patches.forEach((p, i) => {
-          const o = el('option', null, `${i} \u00b7 ${p.name}`);
-          o.value = i;
+        for (const s of L.filledSlots(lib)) {
+          const o = el('option', null, `${s} \u00b7 ${patchAt(s).name}`);
+          o.value = s;
           pick.appendChild(o);
-        });
-        pick.value = audition.from == null ? patchIndex : audition.from;
+        }
+        pick.value = audition.from == null ? slot : audition.from;
         pick.addEventListener('change', () => {
           audition.from = +pick.value;
           paint(); sendLive();
@@ -841,12 +871,12 @@
       wrap.appendChild(el('span', null, 'journey to'));
       const pick = el('select');
       pick.appendChild(el('option', null, '\u2014 nowhere \u2014')).value = '';
-      lib.patches.forEach((p, i) => {
-        if (i === patchIndex) return;
-        const o = el('option', null, `${i} \u00b7 ${p.name}`);
-        o.value = i;
+      for (const s of L.filledSlots(lib)) {
+        if (s === slot) continue;
+        const o = el('option', null, `${s} \u00b7 ${lib.slots[s].name}`);
+        o.value = s;
         pick.appendChild(o);
-      });
+      }
       pick.value = audition.to == null ? '' : audition.to;
       pick.addEventListener('change', () => {
         audition.to = pick.value === '' ? null : +pick.value;
@@ -882,9 +912,9 @@
       return wrap;
     };
     move.append(
-      picker('copy from\u2026', from => L.copyOverrides(patch(), from, setIndex)),
-      picker('move onto\u2026', to => L.moveOverrides(patch(), setIndex, to, false)),
-      picker('swap with\u2026', to => L.moveOverrides(patch(), setIndex, to, true)));
+      picker('copy from\u2026', from => L.copyOverrides(editing(), from, setIndex)),
+      picker('move onto\u2026', to => L.moveOverrides(editing(), setIndex, to, false)),
+      picker('swap with\u2026', to => L.moveOverrides(editing(), setIndex, to, true)));
     return move;
   }
 
@@ -905,7 +935,7 @@
       const o = el('option', null, text); o.value = v; pattern.appendChild(o);
     });
     pattern.addEventListener('change', () => {
-      patch().pattern = +pattern.value; save(); link.sendPC(patch().pattern); paint();
+      editing().pattern = +pattern.value; save(); link.sendPC(patch().pattern); paint();
     });
 
     const palette = $('pPalette');
@@ -913,7 +943,7 @@
       const o = el('option', null, 'palette ' + i); o.value = i; palette.appendChild(o);
     }
     palette.title = 'Carried, stored, and read by nothing — what a palette is has not been settled.';
-    palette.addEventListener('change', () => { patch().palette = +palette.value; save(); });
+    palette.addEventListener('change', () => { editing().palette = +palette.value; save(); });
 
     for (const [id, field] of [['pRampJourney', 'rampJourney'], ['pRampAccent', 'rampAccent']]) {
       const sel = $(id);
@@ -921,11 +951,11 @@
         const o = el('option', null, text); o.value = P.periodByte(step); sel.appendChild(o);
       });
       sel.title = 'Stepped to values that come back to the grid, so holding through a completed journey arrives on a beat.';
-      sel.addEventListener('change', () => { patch()[field] = +sel.value; save(); });
+      sel.addEventListener('change', () => { editing()[field] = +sel.value; save(); });
     }
 
     $('pName').addEventListener('input', () => {
-      patch().name = $('pName').value.slice(0, P.NAME_LEN);
+      editing().name = $('pName').value.slice(0, P.NAME_LEN);
       save(); paintList();
     });
   }
@@ -944,37 +974,63 @@
   function paintList() {
     const host = $('patchList');
     host.innerHTML = '';
-    lib.patches.forEach((p, i) => {
-      const keys = lib.keymap.map((k, n) => (k === i ? n + 1 : null)).filter(Boolean);
-      const b = el('button', 'item' + (i === patchIndex ? ' on' : ''));
+    const row = (s, p) => {
+      const keys = s === null ? []
+        : lib.keymap.map((k, n) => (k === s ? n + 1 : null)).filter(Boolean);
+      const on = s === slot;
+      const b = el('button', 'item' + (on ? ' on' : '') + (on && draft ? ' dirty' : ''));
       b.append(
-        el('span', 'pc', String(i)),
-        el('span', 'name', p.name || '(unnamed)'),
+        el('span', 'pc', s === null ? 'new' : String(s)),
+        el('span', 'name', (on ? patch() : p).name || '(unnamed)'),
         el('span', 'keys', !keys.length ? ''
           : keys.length > 3 ? `${keys.length} keys` : 'key ' + keys.join(',')));
-      b.title = keys.length ? `${p.name} \u2014 on keypad ${keys.join(', ')}` : p.name;
-      b.addEventListener('click', () => selectPatch(i));
+      b.title = keys.length ? `${p.name} — on keypad ${keys.join(', ')}` : p.name;
+      if (s !== null) b.addEventListener('click', () => selectPatch(s));
       host.appendChild(b);
-    });
-    $('libCount').textContent =
-      `${lib.patches.length} / ${P.PATCH_MAX}`;
+    };
+    if (slot === null) row(null, draft);
+    for (const s of L.filledSlots(lib)) row(s, lib.slots[s]);
+    $('libCount').textContent = `${L.filledSlots(lib).length} / ${P.PATCH_MAX}`;
+    paintSaving();
     paintKeypad();
+  }
+
+  function paintSaving() {
+    $('patchSave').disabled = !draft || slot === null;
+    $('patchDiscard').disabled = !draft;
+    $('patchDel').disabled = slot === null;
+    const target = $('saveSlot');
+    if (target.value === '' || !target.dataset.touched) {
+      target.value = slot !== null ? slot : lib.slots.findIndex(p => !p);
+    }
+    paintSaveTarget();
+  }
+
+  function paintSaveTarget() {
+    const n = +$('saveSlot').value;
+    const valid = $('saveSlot').value !== '' && Number.isInteger(n) && n >= 0 && n < P.PATCH_MAX;
+    $('saveHere').disabled = !valid;
+    $('saveOccupant').textContent = !valid ? ''
+      : n === slot ? 'this patch' : lib.slots[n] ? lib.slots[n].name : 'empty';
   }
 
   function paintKeypad() {
     const host = $('keypad');
     host.innerHTML = '';
     for (let key = 1; key <= P.KEYS; key++) {
-      const who = lib.patches[lib.keymap[key - 1]];
+      const target = lib.keymap[key - 1];
+      const who = lib.slots[target];
       const b = el('button', 'key');
       b.append(el('span', 'n', String(key)),
-               el('span', 'who', who ? who.name : '—'));
-      b.title = (who ? `Key ${key} plays "${who.name}". ` : '')
-              + `Click to put "${patch().name}" here.`;
+               el('span', 'who', who ? who.name : `${target} · empty`));
+      b.title = (who ? `Key ${key} plays slot ${target}, "${who.name}". ` : `Key ${key} plays slot ${target}, which is empty. `)
+              + (slot === null ? 'Save this patch into a slot to put it on a key.'
+                               : `Click to put slot ${slot} here.`);
       b.addEventListener('click', () => {
-        lib.keymap[key - 1] = patchIndex;
+        if (slot === null) { say('save the patch into a slot first', 'bad'); return; }
+        lib.keymap[key - 1] = slot;
         save(); paintList();
-        say(`key ${key} is now "${patch().name}"`);
+        say(`key ${key} is now slot ${slot}, "${lib.slots[slot].name}"`);
       });
       host.appendChild(b);
     }
@@ -983,14 +1039,21 @@
     host.appendChild(zero);
   }
 
-  function selectPatch(i) {
-    patchIndex = i;
+  const leaveDraft = () => !draft
+    || confirm(`Discard your changes to "${draft.name}"?`);
+
+  function show(s, newDraft) {
+    slot = s;
+    draft = newDraft || null;
     bypassed.clear();
     stopRun();
     audition.pos = 1;
     audition.held = false;
-    audition.from = i;
+    audition.from = s;
     audition.to = null;
+    delete $('saveSlot').dataset.touched;
+    $('saveSlot').value = '';
+    save();
     buildAudition();
     buildSurfaces();
     paint();
@@ -998,6 +1061,17 @@
     link.sendPC(patch().pattern);
     sendLive(true);
   }
+
+  function selectPatch(s) {
+    if (s === slot || !leaveDraft()) return;
+    show(s);
+  }
+
+  const showFirstOrNew = () => {
+    const first = firstFilled();
+    if (first === null) show(null, L.newPatch('untitled'));
+    else show(first);
+  };
 
   // ---- brain and files ---------------------------------------------------
 
@@ -1024,6 +1098,7 @@
       const info = await link.queryLibrary();
       say(`protocol ${info.protocol}, patch format ${info.format}`);
       say(`${info.stateText} — ${info.count} patches`, info.state === 0 ? 'ok' : 'warn');
+      if (info.count) say(`slots: ${info.slots.join(' ')}`);
       say(`keypad: ${info.keymap.join(' ')}`);
     }));
 
@@ -1031,7 +1106,7 @@
       const wire = L.libToWire(lib);
       const fault = L.validate(wire);
       if (fault) { say(fault, 'bad'); return; }
-      say(`pushing ${lib.patches.length} patches`);
+      say(`pushing ${wire.patches.length} patches${draft ? ' \u2014 not the unsaved draft' : ''}`);
       const started = performance.now();
       const r = await link.push(wire);
       if (r.ok) say(`stored ${r.count} patches in ${Math.round(performance.now() - started)} ms`, 'ok');
@@ -1042,16 +1117,17 @@
       say('reading the brain back');
       const r = await link.pull((n, of) => { if (n === of) say(`read ${n} patches`); });
       if (r.error) { say(r.error, 'bad'); return; }
+      if (!leaveDraft()) return;
       lib = L.libFromWire(r.lib);
-      patchIndex = 0; setIndex = P.SET_BASE;
-      save(); buildAudition(); buildSurfaces(); paint(); paintList();
-      say(`the editor now holds what the brain holds — ${lib.patches.length} patches`, 'ok');
+      setIndex = P.SET_BASE;
+      showFirstOrNew();
+      say(`the editor now holds what the brain holds — ${r.lib.patches.length} patches`, 'ok');
     }));
 
     $('fileSave').addEventListener('click', () => {
       const stamp = new Date().toISOString().slice(0, 10);
       download(`aurora-library-${stamp}.json`, L.serialize(L.libToWire(lib)));
-      say(`saved ${lib.patches.length} patches to a file`, 'ok');
+      say(`saved ${L.filledSlots(lib).length} patches to a file${draft ? ' \u2014 not the unsaved draft' : ''}`, 'ok');
     });
 
     $('fileLoad').addEventListener('click', () => $('filePick').click());
@@ -1064,54 +1140,53 @@
       catch { say(`${file.name} is not readable JSON`, 'bad'); return; }
       const fault = L.validate(loaded);
       if (fault) { say(`${file.name}: ${fault}`, 'bad'); return; }
+      if (!leaveDraft()) return;
       lib = L.libFromWire(loaded);
-      patchIndex = 0; setIndex = P.SET_BASE;
-      save(); buildAudition(); buildSurfaces(); paint(); paintList();
-      say(`loaded ${lib.patches.length} patches from ${file.name}`, 'ok');
+      setIndex = P.SET_BASE;
+      showFirstOrNew();
+      say(`loaded ${loaded.patches.length} patches from ${file.name}`, 'ok');
     }));
   }
 
   function wireLibraryButtons() {
-    $('patchNew').addEventListener('click', () => {
-      if (lib.patches.length >= P.PATCH_MAX) { say('the brain holds 128', 'bad'); return; }
-      lib.patches.push(L.newPatch('patch ' + lib.patches.length));
-      save(); selectPatch(lib.patches.length - 1);
+    $('patchSave').addEventListener('click', () => {
+      lib.slots[slot] = draft;
+      draft = null;
+      save(); paintList();
+      say(`saved "${lib.slots[slot].name}" in slot ${slot}`, 'ok');
     });
-    $('patchDup').addEventListener('click', () => {
-      if (lib.patches.length >= P.PATCH_MAX) { say('the brain holds 128', 'bad'); return; }
-      const copy = L.clonePatch(patch());
-      copy.name = (copy.name + ' 2').slice(0, P.NAME_LEN);
-      lib.patches.splice(patchIndex + 1, 0, copy);
-      shiftKeymap(patchIndex + 1, +1);
-      save(); selectPatch(patchIndex + 1);
+    $('patchDiscard').addEventListener('click', () => {
+      if (!confirm(`Discard your changes to "${draft.name}"?`)) return;
+      draft = null;
+      if (slot === null) showFirstOrNew();
+      else show(slot);
+    });
+    $('saveSlot').addEventListener('input', () => {
+      $('saveSlot').dataset.touched = '1';
+      paintSaveTarget();
+    });
+    $('saveHere').addEventListener('click', () => {
+      const n = +$('saveSlot').value;
+      const there = lib.slots[n];
+      if (n !== slot && there && !confirm(`Slot ${n} holds "${there.name}". Replace it?`)) return;
+      lib.slots[n] = L.clonePatch(patch());
+      slot = n;
+      draft = null;
+      delete $('saveSlot').dataset.touched;
+      save(); paint(); paintList();
+      say(`saved "${lib.slots[n].name}" in slot ${n}`, 'ok');
+    });
+    $('patchNew').addEventListener('click', () => {
+      if (!leaveDraft()) return;
+      show(null, L.newPatch('untitled'));
     });
     $('patchDel').addEventListener('click', () => {
-      if (lib.patches.length === 1) { say('a library needs one patch', 'bad'); return; }
-      if (!confirm(`Delete "${patch().name}"? The keypad keys pointing at it fall back to patch 0.`)) return;
-      lib.patches.splice(patchIndex, 1);
-      lib.keymap = lib.keymap.map(k => k === patchIndex ? 0 : k > patchIndex ? k - 1 : k);
-      save(); selectPatch(Math.max(0, patchIndex - 1));
+      const p = lib.slots[slot];
+      if (!confirm(`Empty slot ${slot}, "${p.name}"? Keypad keys on it stay on the empty slot.`)) return;
+      lib.slots[slot] = null;
+      draft = null;
+      showFirstOrNew();
     });
-    $('patchUp').addEventListener('click', () => movePatch(-1));
-    $('patchDown').addEventListener('click', () => movePatch(+1));
-  }
-
-  const shiftKeymap = (from, by) =>
-    lib.keymap = lib.keymap.map(k => k >= from ? k + by : k);
-
-  // The index is the Program Change that names a patch, so moving one moves
-  // what a DAW's automation lane points at. The keymap follows it here; a
-  // Mainstage set does not.
-  function movePatch(by) {
-    const to = patchIndex + by;
-    if (to < 0 || to >= lib.patches.length) return;
-    const [p] = lib.patches.splice(patchIndex, 1);
-    lib.patches.splice(to, 0, p);
-    lib.keymap = lib.keymap.map(k =>
-      k === patchIndex ? to : k === to ? patchIndex : k);
-    save();
-    selectPatch(to);
-    say('moved — a patch’s index is the Program Change that names it', 'warn');
   }
 
   // ---- clock -------------------------------------------------------------
@@ -1405,7 +1480,7 @@
     walls.base = makeWall('wallBase', 150, 240);
     walls.far = makeWall('wallFar', 150, 240);
 
-    audition.from = patchIndex;
+    audition.from = slot;
     buildAudition();
     buildSurfaces();
     paint();

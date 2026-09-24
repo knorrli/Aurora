@@ -13,29 +13,51 @@ const char *LIVE_PATH  = "/library.bin";
 const char *STAGE_PATH = "/library.new";
 
 const uint8_t  MAGIC[4]  = { 'A', 'U', 'R', 'L' };
-const uint16_t HEADER_LEN = 16; // magic, format, count, keymap, one spare
+const uint8_t  KEYS_AT   = 5;
+const uint8_t  MAP_AT    = KEYS_AT + AURORA_KEYPAD_KEYS;
+const uint16_t HEADER_LEN = MAP_AT + AURORA_SLOT_MAP_LEN; // magic, format, keymap, slot map
 
 LittleFS_Program fs;
 bool mounted = false;
 
 AuroraLibraryState liveState = LIBRARY_EMPTY;
-uint8_t liveCount = 0;
 uint8_t liveKeys[AURORA_KEYPAD_KEYS];
+uint8_t liveMap[AURORA_SLOT_MAP_LEN];
 
 File    stageFile;
 bool    staging   = false;
-uint8_t stageCount = 0;
-uint8_t nextIndex = 0;
+uint8_t stageMap[AURORA_SLOT_MAP_LEN];
+uint8_t nextSlot  = AURORA_PATCH_MAX; // AURORA_PATCH_MAX once every patch is in
 uint8_t nextPiece = 0; // 0 is the head; 1..AURORA_PATCH_SETS are the sets
 
-uint32_t patchOffset(uint8_t index) {
-    return HEADER_LEN + (uint32_t)index * AURORA_PATCH_LEN;
+uint8_t filledFrom(const uint8_t *map, uint16_t slot) {
+    while (slot < AURORA_PATCH_MAX && !aurora_slot_filled(map, slot)) slot++;
+    return slot;
+}
+
+uint8_t filledBelow(const uint8_t *map, uint8_t slot) {
+    uint8_t n = 0;
+    for (uint8_t s = 0; s < slot; s++) n += aurora_slot_filled(map, s);
+    return n;
+}
+
+// The last byte of the map has bits past the final slot, and a map with one
+// of them set was not written by anything that speaks this format.
+bool mapFits(const uint8_t *map) {
+    for (uint16_t bit = AURORA_PATCH_MAX; bit < AURORA_SLOT_MAP_LEN * 7u; bit++) {
+        if ((map[bit / 7] >> (bit % 7)) & 1) return false;
+    }
+    return true;
+}
+
+uint32_t patchOffset(uint8_t filledBefore) {
+    return HEADER_LEN + (uint32_t)filledBefore * AURORA_PATCH_LEN;
 }
 
 void forgetLive() {
     liveState = LIBRARY_EMPTY;
-    liveCount = 0;
     for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) liveKeys[i] = 0;
+    for (uint8_t i = 0; i < AURORA_SLOT_MAP_LEN; i++) liveMap[i] = 0;
 }
 
 void loadLive() {
@@ -54,25 +76,27 @@ void loadLive() {
     for (uint8_t i = 0; i < 4; i++) {
         if (head[i] != MAGIC[i]) { liveState = LIBRARY_UNREADABLE; return; }
     }
-    if (head[4] != AURORA_PATCH_FORMAT || head[5] > AURORA_PATCH_MAX) {
+    if (head[4] != AURORA_PATCH_FORMAT || !mapFits(head + MAP_AT)) {
         liveState = LIBRARY_UNREADABLE;
         return;
     }
     // A file cut short by a power loss between the write and the rename
     // would still carry a valid header, so the length is what catches it.
-    if (size != patchOffset(head[5])) { liveState = LIBRARY_UNREADABLE; return; }
+    const uint8_t count = filledBelow(head + MAP_AT, AURORA_PATCH_MAX);
+    if (count == 0 || size != patchOffset(count)) { liveState = LIBRARY_UNREADABLE; return; }
 
-    liveCount = head[5];
-    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) liveKeys[i] = head[6 + i];
+    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) liveKeys[i] = head[KEYS_AT + i];
+    for (uint8_t i = 0; i < AURORA_SLOT_MAP_LEN; i++) liveMap[i] = head[MAP_AT + i];
     liveState = LIBRARY_STORED;
 }
 
-bool readAt(uint8_t index, uint32_t offset, uint8_t *out, uint16_t len) {
-    if (!mounted || liveState != LIBRARY_STORED || index >= liveCount) return false;
+bool readAt(uint8_t slot, uint32_t offset, uint8_t *out, uint16_t len) {
+    if (!mounted || liveState != LIBRARY_STORED) return false;
+    if (slot >= AURORA_PATCH_MAX || !aurora_slot_filled(liveMap, slot)) return false;
 
     File f = fs.open(LIVE_PATH, FILE_READ);
     if (!f) return false;
-    const bool ok = f.seek(patchOffset(index) + offset)
+    const bool ok = f.seek(patchOffset(filledBelow(liveMap, slot)) + offset)
                  && f.read(out, len) == (int)len;
     f.close();
     return ok;
@@ -95,13 +119,13 @@ void begin() {
 }
 
 AuroraLibraryState state()   { return liveState; }
-uint8_t patchCount()         { return liveState == LIBRARY_STORED ? liveCount : 0; }
 const uint8_t *keymap()      { return liveKeys; }
+const uint8_t *slotMap()     { return liveMap; }
 
-uint8_t stageBegin(uint8_t format, uint8_t count, const uint8_t *keys) {
+uint8_t stageBegin(uint8_t format, const uint8_t *keys, const uint8_t *map) {
     if (!mounted) return SYSEX_ERR_STORAGE;
     if (format != AURORA_PATCH_FORMAT) return SYSEX_ERR_FORMAT;
-    if (count == 0 || count > AURORA_PATCH_MAX) return SYSEX_ERR_RANGE;
+    if (!mapFits(map) || filledFrom(map, 0) == AURORA_PATCH_MAX) return SYSEX_ERR_RANGE;
 
     stageAbort();
 
@@ -113,25 +137,23 @@ uint8_t stageBegin(uint8_t format, uint8_t count, const uint8_t *keys) {
     for (uint8_t i = 0; i < HEADER_LEN; i++) head[i] = 0;
     for (uint8_t i = 0; i < 4; i++) head[i] = MAGIC[i];
     head[4] = AURORA_PATCH_FORMAT;
-    head[5] = count;
-    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) {
-        head[6 + i] = keys[i] < count ? keys[i] : 0;
-    }
+    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) head[KEYS_AT + i] = keys[i];
+    for (uint8_t i = 0; i < AURORA_SLOT_MAP_LEN; i++) head[MAP_AT + i] = map[i];
 
     if (stageFile.write(head, HEADER_LEN) != HEADER_LEN) {
         stageAbort();
         return SYSEX_ERR_STORAGE;
     }
 
-    stageCount = count;
-    nextIndex  = 0;
-    nextPiece  = 0;
+    for (uint8_t i = 0; i < AURORA_SLOT_MAP_LEN; i++) stageMap[i] = map[i];
+    nextSlot  = filledFrom(stageMap, 0);
+    nextPiece = 0;
     return SYSEX_OK;
 }
 
-uint8_t stageHead(uint8_t index, const uint8_t *head) {
+uint8_t stageHead(uint8_t slot, const uint8_t *head) {
     if (!staging) return SYSEX_ERR_SEQUENCE;
-    if (index != nextIndex || nextPiece != 0) return SYSEX_ERR_SEQUENCE;
+    if (slot != nextSlot || nextPiece != 0) return SYSEX_ERR_SEQUENCE;
 
     if (stageFile.write(head, AURORA_PATCH_HEAD_LEN) != AURORA_PATCH_HEAD_LEN) {
         stageAbort();
@@ -141,9 +163,9 @@ uint8_t stageHead(uint8_t index, const uint8_t *head) {
     return SYSEX_OK;
 }
 
-uint8_t stageSet(uint8_t index, uint8_t set, const uint8_t *cc) {
+uint8_t stageSet(uint8_t slot, uint8_t set, const uint8_t *cc) {
     if (!staging) return SYSEX_ERR_SEQUENCE;
-    if (index != nextIndex || nextPiece == 0 || set != nextPiece - 1) {
+    if (slot != nextSlot || nextPiece == 0 || set != nextPiece - 1) {
         return SYSEX_ERR_SEQUENCE;
     }
 
@@ -155,14 +177,14 @@ uint8_t stageSet(uint8_t index, uint8_t set, const uint8_t *cc) {
     nextPiece++;
     if (nextPiece > AURORA_PATCH_SETS) {
         nextPiece = 0;
-        nextIndex++;
+        nextSlot  = filledFrom(stageMap, (uint16_t)nextSlot + 1);
     }
     return SYSEX_OK;
 }
 
 uint8_t stageCommit() {
     if (!staging) return SYSEX_ERR_SEQUENCE;
-    if (nextIndex != stageCount || nextPiece != 0) {
+    if (nextSlot != AURORA_PATCH_MAX || nextPiece != 0) {
         stageAbort();
         return SYSEX_ERR_INCOMPLETE;
     }
@@ -194,20 +216,19 @@ void stageAbort() {
         staging = false;
     }
     if (mounted && fs.exists(STAGE_PATH)) fs.remove(STAGE_PATH);
-    stageCount = 0;
-    nextIndex  = 0;
-    nextPiece  = 0;
+    nextSlot  = AURORA_PATCH_MAX;
+    nextPiece = 0;
 }
 
-bool readHead(uint8_t index, uint8_t *out) {
-    return readAt(index, 0, out, AURORA_PATCH_HEAD_LEN);
+bool readHead(uint8_t slot, uint8_t *out) {
+    return readAt(slot, 0, out, AURORA_PATCH_HEAD_LEN);
 }
 
-bool readSet(uint8_t index, uint8_t set, uint8_t *out) {
+bool readSet(uint8_t slot, uint8_t set, uint8_t *out) {
     if (set >= AURORA_PATCH_SETS) return false;
     const uint32_t offset = AURORA_PATCH_HEAD_LEN
                           + (uint32_t)set * AURORA_PATCH_CC_COUNT;
-    return readAt(index, offset, out, AURORA_PATCH_CC_COUNT);
+    return readAt(slot, offset, out, AURORA_PATCH_CC_COUNT);
 }
 
 } // namespace patch_store

@@ -598,14 +598,36 @@ it becomes a build item.
       why an accent is heard from another patch. Descriptions come back one
       at a time, when something is found missing.
 
-- [ ] **Edit a draft, save it explicitly.** Raised 2026-09-24. Every change
-      writes straight into the patch and the library saves itself, so there
-      is no way back from an experiment. Instead: the first change opens a
-      draft, which is either discarded or saved into a chosen Program Change
-      slot. No undo history. This reverses `docs/editor.md` § "The library
-      saves itself": what that section protects against, losing an evening to
-      a closed tab, still has to hold, so the draft itself has to survive a
-      reload.
+- [x] **Edit a draft, save it explicitly.** Raised, designed and built
+      2026-09-24: see `docs/editor.md` § "Edits go into a draft" and
+      `DESIGN.md` § "How a library gets there". The brain's side compiles and
+      was run on the desktop against the editor's own bytes — push, read back,
+      reboot, an empty slot, an out-of-order sync — and has **never run on
+      the Teensy**. What was decided:
+
+      - **One draft, for one patch.** The first change to a patch opens a
+        draft of it: base, far ends and patch-wide settings together. The
+        wall plays the draft. Choosing another patch with a draft open asks
+        to save or discard first.
+      - **128 fixed slots, any of them empty.** A slot number is the Program
+        Change that plays it and never changes: nothing renumbers, so a DAW's
+        automation and the keypad stay pointed at the right patch. The
+        up/down buttons and the renumbering warning go.
+      - **Save** writes the draft back into its own slot without asking.
+        **Save to a slot** picks any number and shows what is there; a taken
+        slot is replaced after asking which patch it holds. **Discard** drops
+        the draft. **New** starts a draft with no slot, which it takes only
+        when saved. **Delete** empties a slot after asking. No undo history.
+      - **A draft survives a reload**, held apart from the saved library
+        until it is saved or discarded, so a closed tab still loses nothing.
+      - **The library lists only filled slots**, by number, with names.
+
+      The wire changed with it: a sync was a count and then patches 0 to
+      count − 1 with no gaps, and now opens with a map of the filled slots
+      (`shared/aurora_protocol.h` § "A sync replaces the whole library"), with
+      the brain's storage following. Nothing had reached the brain, so
+      nothing needed migrating. A library stored by the editor before
+      slots existed loads with its patches numbered in order.
 
 - [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
       browser and has **never driven the rig**. The old page went anyway, since

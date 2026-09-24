@@ -46,33 +46,35 @@ void fail(uint8_t type, uint8_t status) {
 }
 
 void sendLibraryInfo() {
-    uint8_t payload[5 + AURORA_KEYPAD_KEYS];
+    const uint8_t KEYS_AT = 4, MAP_AT = KEYS_AT + AURORA_KEYPAD_KEYS;
+    uint8_t payload[MAP_AT + AURORA_SLOT_MAP_LEN];
     payload[0] = AURORA_PROTOCOL_VERSION_MAJOR;
     payload[1] = AURORA_PROTOCOL_VERSION_MINOR;
     payload[2] = AURORA_PATCH_FORMAT;
     payload[3] = (uint8_t)patch_store::state();
-    payload[4] = patch_store::patchCount();
 
     const uint8_t *keys = patch_store::keymap();
-    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) payload[5 + i] = keys[i];
+    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) payload[KEYS_AT + i] = keys[i];
+    const uint8_t *map = patch_store::slotMap();
+    for (uint8_t i = 0; i < AURORA_SLOT_MAP_LEN; i++) payload[MAP_AT + i] = map[i];
 
     send(SYSEX_LIBRARY_INFO, payload, sizeof(payload));
 }
 
-void sendPatch(uint8_t index) {
+void sendPatch(uint8_t slot) {
     uint8_t payload[2 + AURORA_PATCH_CC_COUNT];
 
-    payload[0] = index;
-    if (!patch_store::readHead(index, payload + 1)) {
+    payload[0] = slot;
+    if (!patch_store::readHead(slot, payload + 1)) {
         ack(SYSEX_QUERY_PATCH, SYSEX_ERR_RANGE);
         return;
     }
     send(SYSEX_PATCH_HEAD_OUT, payload, 1 + AURORA_PATCH_HEAD_LEN);
 
     for (uint8_t set = 0; set < AURORA_PATCH_SETS; set++) {
-        payload[0] = index;
+        payload[0] = slot;
         payload[1] = set;
-        if (!patch_store::readSet(index, set, payload + 2)) {
+        if (!patch_store::readSet(slot, set, payload + 2)) {
             ack(SYSEX_QUERY_PATCH, SYSEX_ERR_STORAGE);
             return;
         }
@@ -102,12 +104,13 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
 
     switch (type) {
         case SYSEX_SYNC_BEGIN: {
-            if (payloadLen != 2 + AURORA_KEYPAD_KEYS) {
+            if (payloadLen != 1 + AURORA_KEYPAD_KEYS + AURORA_SLOT_MAP_LEN) {
                 ack(type, SYSEX_ERR_RANGE);
                 return;
             }
             pendingError = SYSEX_OK;
-            ack(type, patch_store::stageBegin(payload[0], payload[1], payload + 2));
+            ack(type, patch_store::stageBegin(payload[0], payload + 1,
+                                              payload + 1 + AURORA_KEYPAD_KEYS));
             return;
         }
 

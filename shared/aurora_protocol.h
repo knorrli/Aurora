@@ -688,8 +688,8 @@ enum AuroraNote : uint8_t {
 // another 0x7D device does not hand us its traffic.
 //
 // Every byte after F0 is 7-bit already: a parameter byte is a CC value, a
-// patch index runs 0–127, and names are clamped to printable ASCII. Nothing
-// needs a packing scheme to survive the transport.
+// slot runs 0–127, and names are clamped to printable ASCII. The slot map is
+// the one thing packed, seven slots to a byte.
 //
 // Messages stay far below 290 bytes, which is USB_MIDI_SYSEX_MAX in
 // cores/teensy4/usb_midi.h — a bare #define, so no build flag raises it.
@@ -702,7 +702,13 @@ enum AuroraNote : uint8_t {
 // The editor holds the master library and pushes all of it. There is no
 // "patch 47 changed" message, and deliberately so — the brain's storage is
 // a mirror of what the editor last sent, so neither side tracks which
-// patches are stale and no patch needs an identity beyond its index.
+// patches are stale and no patch needs an identity beyond its slot.
+//
+// A library is AURORA_PATCH_MAX fixed slots, any of them empty. A slot is
+// the Program Change that names its patch and never changes, so deleting or
+// adding a patch renumbers nothing a DAW's automation or the keypad points
+// at. SYSEX_SYNC_BEGIN carries the slot map, and a patch is sent under its
+// slot.
 //
 // Everything lands in a staging file and becomes live only when
 // SYSEX_SYNC_COMMIT arrives. A sync cut off anywhere — unplugged cable,
@@ -710,12 +716,13 @@ enum AuroraNote : uint8_t {
 // current. There is no state in which the brain holds half of one library
 // and half of another.
 //
-// **A sync is strictly ordered**: patch 0's head, then its five sets, then
-// patch 1, and so on to the count declared in SYSEX_SYNC_BEGIN. The brain
-// appends as it receives and never seeks, which keeps one flash write per
-// message and a constant amount of RAM in use. Anything out of order is
-// refused rather than stored, because a gap cannot be told from a
-// reordering once both have been written.
+// **A sync is strictly ordered**: the lowest filled slot's head, then its
+// five sets, then the next filled slot up, and so on through the map
+// declared in SYSEX_SYNC_BEGIN. The brain appends as it receives and never
+// seeks, which keeps one flash write per message and a constant amount of
+// RAM in use. Anything out of order is refused rather than stored, because a
+// missing patch cannot be told from a reordering once both have been
+// written.
 //
 // The brain answers SYSEX_SYNC_BEGIN and SYSEX_SYNC_COMMIT and stays quiet
 // through the data in between. Those two are what the editor needs: the
@@ -723,7 +730,7 @@ enum AuroraNote : uint8_t {
 // the library is stored and how much of it arrived. Acknowledging every
 // data message would say nothing extra — USB does not deliver a corrupted
 // packet, and a lost one shows up as a wrong index at once and a short
-// count at commit.
+// patch short at commit.
 //
 // ---------------------------------------------------------------------------
 
@@ -737,17 +744,18 @@ static const uint8_t AURORA_SYSEX_FRAME_LEN  = AURORA_SYSEX_HEADER_LEN + 1;
 
 enum AuroraSysEx : uint8_t {
     // 0x01–0x1F — editor to brain
-    SYSEX_SYNC_BEGIN      = 0x01, // format, count, keymap[9]
-    SYSEX_PATCH_HEAD      = 0x02, // index, then AURORA_PATCH_HEAD_LEN bytes
-    SYSEX_PATCH_SET       = 0x03, // index, set, then 128 CC bytes
+    SYSEX_SYNC_BEGIN      = 0x01, // format, keymap[9], slot map
+    SYSEX_PATCH_HEAD      = 0x02, // slot, then AURORA_PATCH_HEAD_LEN bytes
+    SYSEX_PATCH_SET       = 0x03, // slot, set, then 128 CC bytes
     SYSEX_SYNC_COMMIT     = 0x04, // no payload
     SYSEX_SYNC_ABORT      = 0x05, // no payload
     SYSEX_QUERY_LIBRARY   = 0x06, // no payload
-    SYSEX_QUERY_PATCH     = 0x07, // index
+    SYSEX_QUERY_PATCH     = 0x07, // slot
 
     // 0x40–0x5F — brain to editor
     SYSEX_ACK             = 0x40, // type being answered, status, detail
-    SYSEX_LIBRARY_INFO    = 0x41, // see AuroraLibraryState
+    SYSEX_LIBRARY_INFO    = 0x41, // version[2], format, AuroraLibraryState,
+                                  // keymap[9], slot map
     SYSEX_PATCH_HEAD_OUT  = 0x42, // same payload as SYSEX_PATCH_HEAD
     SYSEX_PATCH_SET_OUT   = 0x43, // same payload as SYSEX_PATCH_SET
 };
@@ -758,7 +766,7 @@ enum AuroraSysExStatus : uint8_t {
     SYSEX_ERR_SEQUENCE    = 2, // data outside a sync, or not the expected piece
     SYSEX_ERR_INCOMPLETE  = 3, // commit arrived with patches still missing
     SYSEX_ERR_STORAGE     = 4, // the flash refused a write or the rename failed
-    SYSEX_ERR_RANGE       = 5, // an index or count outside what a patch can hold
+    SYSEX_ERR_RANGE       = 5, // a slot, length or map outside what a library can hold
 };
 
 // What the brain is running, reported in SYSEX_LIBRARY_INFO.
@@ -789,6 +797,13 @@ static const uint8_t AURORA_PATCH_MAX       = 128; // what a Program Change name
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LEN  = 16;
 static const uint8_t AURORA_KEYPAD_KEYS     = 9;
+
+// Which slots hold a patch: slot n is bit (n % 7) of byte (n / 7).
+static const uint8_t AURORA_SLOT_MAP_LEN    = (AURORA_PATCH_MAX + 6) / 7;
+
+static inline bool aurora_slot_filled(const uint8_t *map, uint8_t slot) {
+    return (map[slot / 7] >> (slot % 7)) & 1;
+}
 
 enum AuroraPatchSet : uint8_t {
     PATCH_SET_BASE     = 0,
@@ -821,6 +836,6 @@ static const uint16_t AURORA_PATCH_LEN =
 // ---------------------------------------------------------------------------
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 10
+#define AURORA_PROTOCOL_VERSION_MINOR 11
 
 #endif // AURORA_PROTOCOL_H
