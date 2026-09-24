@@ -253,6 +253,41 @@ board.
 library treats USB and serial MIDI almost identically, so it is the same
 code either way. The live rig uses DIN.
 
+## The file layout is v1's, by inheritance rather than by decision
+
+Raised 2026-09-24, recorded rather than acted on.
+
+`P_Fills.cpp`, `P_Movements.cpp`, `P_Strobes.cpp` and `IR_Preset.cpp` are
+the nine-preset roster, `PRESET_*` 0–9. The generator is
+`PRESET_GENERATOR = 10` — one preset among eleven, standing beside the
+thing it is meant to replace. The setter-per-CC pattern, where a control
+is converted to internal units the moment its CC arrives, fits "a knob
+changes a variable", which is what v1 was. `presetColor` as a global read
+by both the strips and the washes is the same inheritance.
+
+None of that is wrong, and none of it was chosen for what Aurora is
+becoming. The rule this records is only that the current shape is not an
+argument for itself: where it no longer fits, redesign rather than work
+around.
+
+**One job serves three purposes, and it does not look like it.** Making
+`Generator()` run on a host — stubbing FastLED, `CHSV` and
+`tempo::beats()` — is written down in `docs/modulation.md` as what blocks
+comparing a whole rendered frame. It also buys real testability, and it is
+the first half of the only serious route to one renderer instead of two:
+extract the maths as plain functions over a parameter block with no
+Arduino in them, wrap it with FastLED for the brain and with WASM for the
+editor. `tools/crosscheck.mjs` exists purely to stop the two
+implementations drifting, so it is a symptom of the duplication, not an
+asset.
+
+**The counter-argument, which is real.** `tools/preview.js` states that
+the color layer was designed there first and ported once it survived. A
+fast, disposable JavaScript implementation is how this instrument gets
+designed, and one shared renderer takes that away or puts a rebuild in
+front of every experiment. Worth weighing rather than assuming the
+duplication is pure cost.
+
 ## Explicitly not wanted
 
 - **Wireless between controller and brain.** Stage reliability beats
