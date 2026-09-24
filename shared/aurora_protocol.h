@@ -57,7 +57,7 @@ static const uint8_t AURORA_MIDI_CHANNEL = 1;
 //
 // Layout:
 //      0 –   9 : preset select (0 = off, 1–9 = preset slots)
-//           10 : the parametric generator (experiment; see P_Generator.cpp)
+//           10 : the parametric generator (experiment; see shared/render/generator.cpp)
 //           11 : strip-order rigging aid
 //     11 –  63 : RESERVED for preset expansion (more slots, banks)
 //     64 –  72 : palette select (palettes 0–8)

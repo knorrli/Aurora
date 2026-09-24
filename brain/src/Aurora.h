@@ -1,4 +1,5 @@
 #include <FastLED.h>
+#include <render.h>
 #include "aurora_protocol.h"
 
 // GLOBAL SETTINGS
@@ -66,10 +67,10 @@ extern CHSV randomColor();
 extern void showBootIndicatorReady();
 extern uint8_t mirroredStrip(uint8_t stripIndex);
 extern void ShowStripOrder();
+extern void showRendered(const render::Rgb *rendered);
 
 // --- INPUT Color
 extern void setCurrentColor();
-extern CHSV auroraColorFrom(uint8_t hueByte, uint8_t satByte, uint8_t valByte);
 
 // --- RENDER Preset
 extern void renderPreset(uint8_t preset);
@@ -111,21 +112,10 @@ extern void resetStutter();
 extern void Chaos(CHSV color);
 extern void resetChaos();
 extern void Glitch(CHSV color);
-// The parametric generator — shape comes from CC 70–80, 100–114 and 115, not from here
+// The parametric generator — see shared/render/generator.cpp. The washes
+// take its wash while it is the pattern being drawn.
 extern void Generator(CHSV color);
-extern void setGeneratorAlternate(uint8_t value);
-extern void setGeneratorBounce(uint8_t value);
-// The pulse's destinations — CC 77/79/80 for the strips' brightness and
-// 100–114 for the rest. An amount of zero is a destination the pulse is not
-// using, never a connection that is not made.
-extern void setPulseAmount(uint8_t target, uint8_t value);
-extern void setPulseWave(uint8_t target, uint8_t value);
-// The color layer — CC 41–57, and the scatter at 83–91. Hue, whiteness and
-// darkness pushed away from the three faders by a placed field, a wander, the
-// light level and the scatter. With every one centered the wall is exactly what
-// the faders say. See P_Generator.cpp § "The color layer".
-extern void setColorRegion(uint8_t value);
-extern void setColorRuler(uint8_t value);
+extern const render::Wash &generatorWash();
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

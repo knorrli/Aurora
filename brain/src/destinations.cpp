@@ -20,6 +20,7 @@ static const Dial BOOT[] = {
   { CC_WASH_SATURATION, 127 },
   { CC_SATURATION,      127 },
   { CC_VALUE,           127 },
+  { CC_COLOR_RULER,      64 },
   { CC_GEN_WIDTH,        38 },
   { CC_GEN_EDGE,         19 },
   { CC_GEN_POSITION,     64 },

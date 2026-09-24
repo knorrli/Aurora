@@ -60,7 +60,7 @@ void loop()
   if (tempoGate) lastGateMillis = currentMillis;
 
   perform();
-  render();
+  renderFrame();
 
   elapsedLoopTime = millis() - currentMillis;
 
@@ -80,7 +80,7 @@ void perform()
   }
 }
 
-void render()
+void renderFrame()
 {
   FastLED.clear(false);
   renderPreset(currentPreset);
@@ -95,7 +95,9 @@ void render()
 
   FastLED.show();
   renderTempo();
-  dmx_out::tick();
+  dmx_out::tick(currentPreset == PRESET_GENERATOR
+                    ? generatorWash()
+                    : render::washFrom(destinations::all(), nullptr));
 }
 
 #ifdef AURORA_DEBUG

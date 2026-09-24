@@ -44,9 +44,9 @@ Everything lives on **`main`**. The last v1 commit is tagged
   the patch library, the morph control and a row of color looks. The routes
   are a third branch on it, since they reach both the others and the washes.
 - **The wall on screen** — `tools/preview.js`, five strips and four PARs
-  rendered from a port of the firmware, so a look can be dialed with
-  nothing plugged in. The color layer was designed here before it was
-  flashed.
+  drawn by the brain's own renderer compiled to WebAssembly, so a look can
+  be dialed with nothing plugged in and what lights is what the strips are
+  sent.
 - **The scatter**, 2026-09-23. Nine CCs at 83–91: a grid of cells, each on
   its own clock, each lighting a spot that pushes the strips' brightness, hue
   and whiteness. Ported from `tools/preview.js`, where it was designed, and
@@ -54,13 +54,16 @@ Everything lives on **`main`**. The last v1 commit is tagged
   wall**. See `docs/generator.md` § "The scatter".
 - **A strip-order rigging aid** on PC 11 — each strip a flat color in
   data-chain order.
-- **The cross-check harness**, 2026-09-24. `node tools/crosscheck.mjs`
-  lifts a function and its dependencies out of `brain/src/P_Generator.cpp`
-  and out of `tools/preview.js`, drives both over the same grid and reports
-  where they disagree. Six checks seeded, and it was shown to catch a
-  deliberately broken edge fade in three of them at once. The two renderers
-  are the same maths written twice and nothing else was keeping them
-  honest.
+- **One renderer**, 2026-09-24. `shared/render/` is the generator, the
+  routes and the washes' color, and both the brain and the editor run it.
+  Before the JavaScript copy was deleted the two were compared frame by
+  frame: 72 000 frames of random patches and every saved look agreed to
+  within 6 of 255. They part only where the old code was wrong: a route on
+  the count, the width or the fan's shape now reaches the pattern's geometry
+  rather than being read after it was laid out, and a route that switches a
+  color source on is heard on the strips whose phase has it on, not on
+  none of them.
+  See `docs/architecture.md` § "One renderer, compiled twice".
 
 Measurements in `docs/bench-facts.md`.
 
@@ -348,12 +351,10 @@ it becomes a build item.
       is; `docs/modulation.md` is why. Not yet seen on the wall, and the
       editor has not been opened in a browser since.
 
-- [ ] **One renderer for the brain and the editor.** Decided 2026-09-24:
-      the generator's maths becomes one C++ implementation with no Arduino
-      in it, wrapped with FastLED on the brain and compiled to WebAssembly
-      for the editor. `tools/preview.js` and `tools/crosscheck.mjs` both go
-      when it lands, so nothing further is spent cross-checking the routes.
-      See `docs/architecture.md` § "One renderer, compiled twice".
+- [x] **One renderer for the brain and the editor.** Decided and built
+      2026-09-24. See `docs/architecture.md` § "One renderer, compiled
+      twice". Not flashed yet: the brain builds against it and the editor
+      draws with it, and neither has met the wall since.
 
 - [ ] **Patch variants — one patch, a few overrides.** Raised 2026-09-22.
       Tempo division and palette are both per-patch, so the same look at
@@ -798,6 +799,7 @@ it becomes a build item.
 
 ```bash
 cd brain      && pio run -e teensy40 -t upload   # flash the brain
+node tools/build-render.mjs                      # after changing shared/render/
 cd controller && pio run -t upload               # future: controller node
 pio device monitor                               # serial console
 ```

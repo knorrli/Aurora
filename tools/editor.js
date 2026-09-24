@@ -1138,14 +1138,12 @@
 
   // The overlay goes on the big wall only. On a small one the five dots land
   // within a few pixels of each other and report nothing.
-  function drawOne(wall, named, beats, pattern, motion) {
-    let p = null;
-    if (pattern === 11) V.renderStripOrder();
-    else if (pattern === 0) V.wall.fill(0);
-    else p = V.render(named, beats, motion || wall.motion);
-    V.draw(wall.ctx, wall.glow, order(), flipped,
-           p ? V.parColor(p) : [0, 0, 0], wall.w, wall.h,
-           showFan && p && wall === walls.main ? V.fanReading(p) : null);
+  function drawOne(wall, named, beats, pattern) {
+    const frame = pattern === 11 ? V.renderStripOrder()
+      : pattern === 0 ? V.blank()
+      : V.render(L.setFromNamed(named), beats, wall.motion);
+    V.draw(wall.ctx, wall.glow, frame, order(), flipped, wall.w, wall.h,
+           showFan && wall === walls.main);
   }
 
   // The two small walls are drawn on the big wall's clock, not on clocks of
@@ -1157,19 +1155,21 @@
   // sit a constant distance apart for ever, which is what made the small wall
   // read as exactly off-phase from the big one the moment Speed was touched.
   //
-  // So each small wall renders from a throwaway copy of the big wall's phases,
-  // which puts all three at the same instant. What that gives up is that a far
-  // end differing only in a rate looks identical in the still: you see that
-  // difference by running the audition, which is what it is for.
+  // So each small wall renders from a copy of the big wall's phases, taken
+  // fresh every frame, which puts all three at the same instant. What that
+  // gives up is that a far end differing only in a rate looks identical in the
+  // still: you see that difference by running the audition, which is what it
+  // is for.
   function frame() {
     const beats = ((performance.now() - startedAt) / 60000) * bpm();
     const pattern = patch().pattern;
     drawOne(walls.main, liveNamed(), beats, pattern);
     if (isFarEnd()) {
-      const now = V.cloneMotion(walls.main.motion);
-      drawOne(walls.base, L.namedFromSet(baseSet()), beats, pattern, V.cloneMotion(now));
+      V.copyMotion(walls.base.motion, walls.main.motion);
+      V.copyMotion(walls.far.motion, walls.main.motion);
+      drawOne(walls.base, L.namedFromSet(baseSet()), beats, pattern);
       drawOne(walls.far, L.blend(baseSet(), L.materialize(patch(), setIndex), 1, switchSource()),
-              beats, pattern, V.cloneMotion(now));
+              beats, pattern);
     }
     requestAnimationFrame(frame);
   }
@@ -1210,49 +1210,51 @@
 
   // ---- go ----------------------------------------------------------------
 
-  buildLanes();
-  buildModulators();
-  buildStarts();
-  buildOutputs();
-  buildMatrix();
-  buildTabs();
-  buildHead();
-  wireBrain();
-  wireLibraryButtons();
+  V.ready.then(() => {
+    buildLanes();
+    buildModulators();
+    buildStarts();
+    buildOutputs();
+    buildMatrix();
+    buildTabs();
+    buildHead();
+    wireBrain();
+    wireLibraryButtons();
 
-  $('pvOrder').value = V.WALL_STRIP_ORDER.join(',');
-  $('pvFan').classList.toggle('on', showFan);
-  $('pvFan').addEventListener('click', () => {
-    showFan = !showFan;
+    $('pvOrder').value = V.WALL_STRIP_ORDER.join(',');
     $('pvFan').classList.toggle('on', showFan);
+    $('pvFan').addEventListener('click', () => {
+      showFan = !showFan;
+      $('pvFan').classList.toggle('on', showFan);
+    });
+    $('pvFlip').addEventListener('click', () => {
+      flipped = !flipped;
+      $('pvFlip').textContent = flipped ? 'pixel 0 at top' : 'pixel 0 at bottom';
+    });
+    $('clockToggle').addEventListener('click', () => setClock(!clockOn));
+    $('sendPatch').addEventListener('click', sendPatchToWall);
+    $('rigBlackout').addEventListener('click', () => { link.sendPC(0); say('PC 0 — blackout'); });
+    $('rigOrder').addEventListener('click', () => { link.sendPC(11); say('PC 11 — strip order'); });
+
+    // The header wraps at narrow widths, so how far down the rails have to sit
+    // is a measurement rather than a number.
+    const topbar = $('topbar');
+    const measureTop = () => document.documentElement.style
+      .setProperty('--topbar', Math.round(topbar.getBoundingClientRect().height) + 'px');
+    new ResizeObserver(measureTop).observe(topbar);
+    measureTop();
+
+    walls.main = makeWall('wallMain', 300, 480);
+    walls.base = makeWall('wallBase', 150, 240);
+    walls.far = makeWall('wallFar', 150, 240);
+
+    audition.from = patchIndex;
+    buildAudition();
+    buildSurfaces();
+    paint();
+    paintList();
+    requestAnimationFrame(frame);
+    initMidi();
+    say('ready — ask the brain what it holds to check the link');
   });
-  $('pvFlip').addEventListener('click', () => {
-    flipped = !flipped;
-    $('pvFlip').textContent = flipped ? 'pixel 0 at top' : 'pixel 0 at bottom';
-  });
-  $('clockToggle').addEventListener('click', () => setClock(!clockOn));
-  $('sendPatch').addEventListener('click', sendPatchToWall);
-  $('rigBlackout').addEventListener('click', () => { link.sendPC(0); say('PC 0 — blackout'); });
-  $('rigOrder').addEventListener('click', () => { link.sendPC(11); say('PC 11 — strip order'); });
-
-  // The header wraps at narrow widths, so how far down the rails have to sit
-  // is a measurement rather than a number.
-  const topbar = $('topbar');
-  const measureTop = () => document.documentElement.style
-    .setProperty('--topbar', Math.round(topbar.getBoundingClientRect().height) + 'px');
-  new ResizeObserver(measureTop).observe(topbar);
-  measureTop();
-
-  walls.main = makeWall('wallMain', 300, 480);
-  walls.base = makeWall('wallBase', 150, 240);
-  walls.far = makeWall('wallFar', 150, 240);
-
-  audition.from = patchIndex;
-  buildAudition();
-  buildSurfaces();
-  paint();
-  paintList();
-  requestAnimationFrame(frame);
-  initMidi();
-  say('ready — ask the brain what it holds to check the link');
 })();

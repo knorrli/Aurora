@@ -76,7 +76,7 @@
 
   // ---- readouts ----------------------------------------------------------
   //
-  // Mirrors of the mappings in brain/src/P_Generator.cpp and tools/preview.js.
+  // Mirrors of the mappings in shared/render/generator.cpp, for labels only.
   // If those change these lie until they are changed to match.
 
   const unit = v => v / 127;

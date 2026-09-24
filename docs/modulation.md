@@ -270,10 +270,10 @@ At full amount the control arrives exactly at that limit; at half, it
 covers half the remaining distance. A control dialed at 100 pushed +100%
 reaches 127; the same control pushed −50% reaches 50.
 
-This is `pushToward` in `brain/src/P_Generator.cpp:297` and
-`brain/src/dmx_out.cpp:46`, already used for width, the PAR level, the PAR
-saturation and the scatter's push on brightness. Adopting it everywhere is
-less a decision than finishing one.
+This was `pushToward` in the generator and in the DMX output before routes,
+already used for width, the PAR level, the PAR saturation and the scatter's
+push on brightness, so adopting it everywhere was less a decision than
+finishing one. It is `routed()` in `shared/render/routes.cpp` now.
 
 Two things fall out of it. Nothing can clip. And a control already sitting
 at a limit has nowhere to go that way, so a route aimed at it does nothing
@@ -317,11 +317,10 @@ waves or the ratios differ, which is the slow swell against the fast stab
 that one shared rate made impossible.
 
 **The sum is capped at the whole distance**, so +80% and +50% together
-arrive exactly at the limit rather than sailing past it. Nothing reaches
-this today, because each destination has exactly one send carrying one
-amount — which is why the two implementations already disagree about it.
-`brain/src/dmx_out.cpp:46` caps the amount; `brain/src/P_Generator.cpp:297`
-and its mirror in `tools/preview.js` do not. Routes make it reachable.
+arrive exactly at the limit rather than sailing past it. Before routes
+nothing could reach this, because each destination had exactly one send
+carrying one amount, and the DMX output capped where the generator did not.
+`routed()` caps it.
 
 **A push lands on one fixture family.** CC 38, 39 and 40 are the strips'
 hue, saturation and brightness — the editor already draws the pulse as one
@@ -331,22 +330,23 @@ relationship to the strips' *dialed* colour: an offset is measured from
 where the fader sits, not from where the modulation has it at that
 instant.
 
-This is what happens today, but by accident rather than by decision —
-`brain/src/dmx_out.cpp:71` reads `presetColor` straight, while the strips
-get their pushes added in `colorAt`. It has to be written down, or someone
+This is what happened before routes, but by accident rather than by
+decision — the DMX output read the dialed colour straight, while the strips
+got their pushes added in `colorAt`. `washFrom` in
+`shared/render/generator.cpp` does it on purpose. It has to be written
+down, or someone
 building "a base plus a modulation sum" will quite reasonably make the
 PARs follow the modulated base, and then every hue swell drags them along.
 The consequence is that swinging the strips and the PARs together takes
 two routes, one on each side — affordable at eight, and probably what you
 want anyway, since the two rarely ask for the same depth.
 
-**Brightness stops being the odd one out.** It multiplies today
-(`P_Generator.cpp:808`), and it is the only destination that rests at the
-wave's high point while the rest rest at its low point. Under one rule it
-rests at its dialed value like everything else, and a swell that pulls the
-wall down is a negative amount. Both behaviors are already in that file —
-the scatter pushes brightness the new way at `P_Generator.cpp:935` — so
-this picks the one used more.
+**Brightness stops being the odd one out.** Before routes it multiplied,
+and it was the only destination that rested at the wave's high point while
+the rest rested at its low point. Under one rule it rests at its dialed
+value like everything else, and a swell that pulls the wall down is a
+negative amount. Both behaviors were already in the generator — the scatter
+pushed brightness the new way — so this picked the one used more.
 
 ## Which clock a route reads
 
@@ -361,18 +361,17 @@ identical — so this is one clock read two ways, not two clocks.
 **The route does not choose. Its destination does.** A destination that
 lives on a strip reads that strip's shifted reading; a global one reads
 the plain clock. This costs nothing, keeps a route at four bytes, and
-reproduces exactly what happens today, where the choice is made only by
-which line of the frame each send happens to sit on
-(`brain/src/P_Generator.cpp:773` for the strips, `:959` for the PARs).
+reproduces exactly what happened before routes, where the choice was made
+only by which line of the frame each send happened to sit on.
 
 What the table records is not a fanned-or-plain flag but **where the
 destination sits**, because the same column answers the unbuilt question
 of where on the wall to sample the wander and the scatter when a route
 points one of them at a global control.
 
-The split is lopsided. Everything inside the strip loop at
-`brain/src/P_Generator.cpp:762` is on a strip, and that is most of the
-map:
+The split is lopsided. Everything read inside the strip loop of
+`renderGenerator` in `shared/render/generator.cpp` is on a strip, and that
+is most of the map:
 
 | | CCs |
 |----|----|
@@ -485,7 +484,8 @@ as the pattern jumping is a wall question, not one to settle here.
 **Everything else takes the ordinary push**: 33, 35, 39, 40, 43, 44, 45,
 47, 48, 50, 51, 52, 54, 55, 56, 57, 62, 64, 65, 70, 71, 73, 85, 86, 87,
 88, 89, 90, 91. CC 88 belongs here despite its name — the scatter's drift
-is a position offset taken from a cell's age (`P_Generator.cpp:670`), not
+is a position offset taken from a cell's age (`scatterAt` in
+`shared/render/generator.cpp`), not
 an integrated speed.
 
 **Four of those read the plain clock** although they live on a strip: 68,
@@ -571,9 +571,10 @@ a route five and drop the ceiling to ten.
 
 ## Still open
 
-1. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
-   computes one colour and one level and writes the same eight bytes to
-   all four addresses; the only per-fixture data is calibration trim. So
+1. **The PARs are one fixture, not four.** `washFrom` in
+   `shared/render/generator.cpp` computes one colour and one level, and
+   `brain/src/dmx_out.cpp` writes the same eight bytes to all four
+   addresses; the only per-fixture data is calibration trim. So
    the PARs cannot strobe one after the other, and no route design changes
    that — each would need a position the way a strip has one. Two pieces
    are missing: the per-fixture computation, and any record of which PAR
@@ -586,8 +587,8 @@ a route five and drop the ceiling to ten.
 
 **Read in this order.** This file; then `docs/generator.md` §§ "Routes", "The
 fan is a wave" and "The scatter"; then § "Modulation routes" in
-`shared/aurora_protocol.h`; then `brain/src/routes.cpp` and its mirror in
-`tools/preview.js`; then `docs/editor.md` for the panel model.
+`shared/aurora_protocol.h`; then `shared/render/routes.cpp`, which the
+brain and the editor both run; then `docs/editor.md` for the panel model.
 
 It went in six changes, in this order, and the editor came last on purpose
 because its shape depended on what a route turned out to be.
@@ -606,14 +607,17 @@ because its shape depended on what a route turned out to be.
    stop being special cases in the middle of the frame.
 5. **The editor.**
 6. **This fold.**
+7. **One renderer**, the same day. The generator and the routes moved into
+   `shared/render/`, the brain calls them and the editor runs them as
+   WebAssembly, so steps 2 and 3 no longer have a second side. See
+   `docs/architecture.md` § "One renderer, compiled twice".
 
-**What the cross-check harness covers now**: every byte-to-value conversion,
-the wave over all 128 wave bytes against 256 phases, and the route ratio.
-`node tools/gen-cc.mjs --check` covers the rest of the seam — it fails if
+**What keeps the seams honest**: `node tools/gen-cc.mjs --check` fails if
 `tools/cc.js` is stale against the header, and if the three switches in
-`brain/src/routes.cpp` disagree with the enum's `[rate]`, `[circular]` and
-`[plain]` tags.
+`shared/render/routes.cpp` disagree with the enum's `[rate]`, `[circular]`
+and `[plain]` tags. `node tools/build-render.mjs --check` fails if
+`tools/render.js` was built from anything other than the current
+`shared/render/`.
 
-**What has never been done**: any of this on the wall, or in a browser. The
-model, the renderer and the maths are checked headlessly; the editor's panel
-wiring is not.
+**What has never been done**: any of this on the wall. The editor's panel
+wiring has been opened in a browser but not played.

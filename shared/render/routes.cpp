@@ -2,12 +2,7 @@
 
 #include <math.h>
 
-#include "aurora_protocol.h"
-#include "destinations.h"
-
-namespace routes {
-
-static float push[AURORA_PATCH_CC_COUNT];
+namespace render {
 
 static inline float fract(float x) { return x - floorf(x); }
 
@@ -106,31 +101,31 @@ static inline float bipolar(uint8_t value) {
                     : ((float)value - 64.0f) / 63.0f;
 }
 
-void gather(float plainPhase, float stripPhase) {
-  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) push[i] = 0.0f;
+void gatherRoutes(const uint8_t *dialed, float plainPhase, float stripPhase,
+                  Pushes &out) {
+  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) out.amount[i] = 0.0f;
 
   for (uint8_t r = 0; r < AURORA_ROUTES; r++) {
-    const uint8_t dest =
-        destinations::value(aurora_route_cc(r, ROUTE_DESTINATION));
+    const uint8_t dest = dialed[aurora_route_cc(r, ROUTE_DESTINATION)];
     // CC 0 is never assigned, so it is free to mean "not aimed anywhere".
     if (dest == 0 || refused(dest)) continue;
 
-    const float amount =
-        bipolar(destinations::value(aurora_route_cc(r, ROUTE_AMOUNT)));
+    const float amount = bipolar(dialed[aurora_route_cc(r, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
 
     const uint8_t ratio =
-        aurora_route_ratio(destinations::value(aurora_route_cc(r, ROUTE_RATIO)));
-    const uint8_t wave = destinations::value(aurora_route_cc(r, ROUTE_WAVE));
+        aurora_route_ratio(dialed[aurora_route_cc(r, ROUTE_RATIO)]);
+    const uint8_t wave = dialed[aurora_route_cc(r, ROUTE_WAVE)];
     const float phase = plainClock(dest) ? plainPhase : stripPhase;
 
-    push[dest] += amount * pulseWave(phase * (float)ratio, wave);
+    out.amount[dest] += amount * pulseWave(phase * (float)ratio, wave);
   }
 }
 
-uint8_t value(uint8_t cc) {
-  float amount = push[cc];
-  const uint8_t base = destinations::value(cc);
+uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
+  const uint8_t base = dialed[cc];
+  if (!pushes) return base;
+  float amount = pushes->amount[cc];
   if (amount > -0.001f && amount < 0.001f) return base;
 
   if (amount > 1.0f) amount = 1.0f;
@@ -148,4 +143,4 @@ uint8_t value(uint8_t cc) {
   return (uint8_t)(reached < 0 ? 0 : (reached > 127 ? 127 : reached));
 }
 
-}  // namespace routes
+}  // namespace render

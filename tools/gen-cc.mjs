@@ -113,10 +113,10 @@ ${body}
 })(typeof window === 'undefined' ? globalThis : window);
 `;
 
-// The firmware cannot read a comment, so routes.cpp restates the tags as three
+// The renderer cannot read a comment, so routes.cpp restates the tags as three
 // switches. This is what stops the two from drifting.
-function checkFirmware() {
-  const src = readFileSync(join(ROOT, 'brain/src/routes.cpp'), 'utf8');
+function checkRenderer() {
+  const src = readFileSync(join(ROOT, 'shared/render/routes.cpp'), 'utf8');
   const cases = fn => {
     const at = src.indexOf(`static bool ${fn}(uint8_t cc)`);
     if (at < 0) throw new Error(`routes.cpp: no ${fn}()`);
@@ -140,9 +140,9 @@ function checkFirmware() {
 const tagged = tag => Object.keys(tags).filter(n => tags[n].includes(tag));
 
 if (process.argv.includes('--check')) {
-  const problems = checkFirmware();
+  const problems = checkRenderer();
   if (problems.length) {
-    for (const line of problems) console.error('brain/src/routes.cpp: ' + line);
+    for (const line of problems) console.error('shared/render/routes.cpp: ' + line);
     process.exit(1);
   }
   let current = '';

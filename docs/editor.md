@@ -2,8 +2,9 @@
 
 `tools/editor.html`, with `tools/patch.js` (what a control is), `tools/library.js`
 (what a patch is and how it crosses the wire), `tools/editor.js` (the page) and
-`tools/preview.js` (the wall). Plain scripts rather than modules, so it opens
-from a `file://` URL with no server.
+`tools/preview.js` (the wall, drawn by the brain's own renderer in
+`tools/render.js`). Plain scripts rather than modules, so it opens from a
+`file://` URL with no server.
 
 Built 2026-09-23 in one pass, **untested against hardware**. It runs in a
 browser and the preview is a real check, so what is verified is that the page

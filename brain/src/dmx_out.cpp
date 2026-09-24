@@ -1,7 +1,6 @@
 #include "dmx_out.h"
 
 #include "Aurora.h"
-#include "routes.h"
 #include <TeensyDMX.h>
 
 namespace teensydmx = ::qindesign::teensydmx;
@@ -32,58 +31,19 @@ static Fixture fixtures[] = {
 
 static uint8_t lastWritten[8] = { 0 };
 
-static float pulseLevel = 0.0f;
-static float pulseHue = 0.0f;
-static float pulseSaturation = 0.0f;
-
-// A push is a fraction of the way from the dialed value toward one of its
-// limits, and its sign picks which — so a wash at full has nowhere to go up
-// and everything stays inside the channel either way. Same rule the
-// generator pushes width and the strips' color by.
-static uint8_t pushToward(uint8_t base, float push, uint8_t low, uint8_t high) {
-    const float limit = (push >= 0.0f) ? (float)high : (float)low;
-    const float amount = (push < 0.0f) ? -push : push;
-    return (uint8_t)((float)base + (amount > 1.0f ? 1.0f : amount) * (limit - (float)base));
-}
-
 namespace dmx_out {
 
 void begin() {
     dmx.begin();
 }
 
-void tick() {
-    // The washes' own three take their routes; presetColor below does not,
-    // because a push reaches one fixture family and CC 38-40 are the strips'.
-    const uint8_t washLevel = map(routes::value(CC_WASH_LEVEL), 0, 127, 0, 255);
-    const uint8_t washHueOffset =
-        map(routes::value(CC_WASH_HUE_OFFSET), 0, 127, 0, 255);
-    const uint8_t washSaturation =
-        map(routes::value(CC_WASH_SATURATION), 0, 127, 0, 255);
-
-    // Color is converted at full value and brightness is carried by the
-    // fixture's own dimmer, so the emitters stay near full scale where
-    // they have the most resolution. Scaling RGBW down instead — the only
-    // option the 4-channel personality offers — bands on slow fades at
-    // the low levels the washes normally sit at.
-    const uint8_t master = pushToward(washLevel, pulseLevel, 0, 255);
-
+void tick(const render::Wash &wash) {
     // Key 0 is an override, not a look, and it reads selectedPreset for the
-    // reason Aurora.ino's gate does. Nothing above is skipped: the frame is
-    // computed and then thrown away at the write below.
+    // reason Aurora.ino's gate does. The wash still arrives computed; it is
+    // thrown away at the write below.
     const bool blackout = (selectedPreset == PRESET_OFF);
-
-    CHSV hsv = presetColor;
-    const uint8_t level = scale8(hsv.value, master);
-    hsv.value = 255;
-    hsv.hue += washHueOffset + (int16_t)pulseHue;
-    // A scale down rather than a setting: the washes are a relationship to
-    // the strips, and this is where the pulse's push measures from.
-    hsv.saturation = pushToward(scale8(hsv.saturation, washSaturation),
-                                pulseSaturation, 0, 255);
-
-    CRGB rgb;
-    hsv2rgb_rainbow(hsv, rgb);
+    const render::Rgb rgb = wash.color;
+    const uint8_t level = wash.level;
 
     // Pull the common component out into the white channel: an RGBW
     // fixture mixing white from its color emitters is dimmer than its
@@ -114,19 +74,6 @@ void tick() {
 
         if (i == 0) memcpy(lastWritten, values, sizeof(lastWritten));
     }
-
-    // Consumed, not held. Only the generator writes a push, and only while
-    // it is the preset being drawn; clearing here is what stops the last
-    // frame it drew from following the washes into the next preset.
-    pulseLevel = 0.0f;
-    pulseHue = 0.0f;
-    pulseSaturation = 0.0f;
-}
-
-void setPulsePush(float level, float hueOffset, float saturation) {
-    pulseLevel = level;
-    pulseHue = hueOffset;
-    pulseSaturation = saturation;
 }
 
 const uint8_t *lastValues() {

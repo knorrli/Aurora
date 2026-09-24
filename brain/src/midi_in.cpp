@@ -22,19 +22,9 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
     // pushes the byte and the conversion has to see the pushed value.
     destinations::store(control, value);
 
-    // What is left below is the controls that do more than be stored: the
-    // transport, the switches, which have no middle for a push to land in,
-    // and the pulse's sends, which are on their way out with the route block.
-    switch (control) {
-        case CC_TEMPO_DIVISION:
-            tempo::setDivision(value);
-            break;
-        case CC_COLOR_REGION:  setColorRegion(value); break;
-        case CC_COLOR_RULER:   setColorRuler(value); break;
-        case CC_GEN_ALTERNATE: setGeneratorAlternate(value); break;
-        case CC_GEN_BOUNCE:    setGeneratorBounce(value); break;
-
-    }
+    // Tempo division is the one control that does more than be stored: it
+    // re-times the clock, which is not a renderer's to read.
+    if (control == CC_TEMPO_DIVISION) tempo::setDivision(value);
 }
 
 static void handleNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {

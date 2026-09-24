@@ -272,12 +272,20 @@ around.
 
 ## One renderer, compiled twice
 
-Settled 2026-09-24. The generator's maths is one C++ implementation: plain
-functions over a parameter block, with no Arduino in them. The brain wraps
-it with FastLED; the editor runs the same source compiled to WebAssembly.
-`tools/preview.js` as a second implementation goes, and
-`tools/crosscheck.mjs` goes with it — it existed only to keep two copies
-from drifting apart.
+Settled and built 2026-09-24. The generator, the routes and the washes'
+color are one C++ implementation in `shared/render/`, with no Arduino in
+it: a frame is a function of the patch's control bytes, the musical
+position and a `render::Motion` the caller keeps between frames. The brain
+pulls it in as a PlatformIO library and copies the frame into FastLED and
+DMX. The editor runs the same source compiled to WebAssembly —
+`tools/render-api.cpp` is its entry point and `node tools/build-render.mjs`
+writes `tools/render.js`, which is committed so the page still opens from a
+double-click. `tools/preview.js` only draws.
+
+FastLED's color conversion is ported into `shared/render/color8.h` rather
+than called, so the two sides cannot convert a hue differently. A second
+JavaScript renderer, and the cross-check harness that kept it honest, were
+deleted when this landed.
 
 The case against was that looks get designed in fast, disposable
 JavaScript and ported once they survive. It did not hold: the performer

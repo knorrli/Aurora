@@ -13,7 +13,7 @@ void begin();
 
 void store(uint8_t cc, uint8_t value);
 
-// The dialed byte. routes::value() is the same byte with the routes applied.
+// The dialed byte. render::routed() is the same byte with the routes applied.
 uint8_t value(uint8_t cc);
 
 // Every byte, indexed by CC number — what a patch is, see DESIGN.md § "Patch

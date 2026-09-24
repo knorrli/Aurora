@@ -1158,10 +1158,11 @@ nearly free and the question shrinks to what 4 and 5 need.
 ## Tools
 
 - `tools/preview.js` — the wall on screen: five strips and four PARs,
-  rendered from a port of `P_Generator.cpp` and `dmx_out.cpp`. The color
-  layer was designed here before it was flashed, and the constants in the
-  two are meant to stay identical. It diverges deliberately in two places,
-  both written at the top of the file.
+  drawn from `shared/render/`, the brain's own renderer compiled to
+  WebAssembly as `tools/render.js`. Rebuild that with
+  `node tools/build-render.mjs` after changing anything under
+  `shared/render/`. What it cannot show is a WS2812's own quirks, written at
+  the top of the file.
 
   Travel's phase is the one thing it cannot match. `trackedPhase` carries
   an offset across every rate change so a fader never makes a shape jump,
