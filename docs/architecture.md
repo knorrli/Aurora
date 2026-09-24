@@ -270,23 +270,22 @@ becoming. The rule this records is only that the current shape is not an
 argument for itself: where it no longer fits, redesign rather than work
 around.
 
-**One job serves three purposes, and it does not look like it.** Making
-`Generator()` run on a host — stubbing FastLED, `CHSV` and
-`tempo::beats()` — is written down in `docs/modulation.md` as what blocks
-comparing a whole rendered frame. It also buys real testability, and it is
-the first half of the only serious route to one renderer instead of two:
-extract the maths as plain functions over a parameter block with no
-Arduino in them, wrap it with FastLED for the brain and with WASM for the
-editor. `tools/crosscheck.mjs` exists purely to stop the two
-implementations drifting, so it is a symptom of the duplication, not an
-asset.
+## One renderer, compiled twice
 
-**The counter-argument, which is real.** `tools/preview.js` states that
-the color layer was designed there first and ported once it survived. A
-fast, disposable JavaScript implementation is how this instrument gets
-designed, and one shared renderer takes that away or puts a rebuild in
-front of every experiment. Worth weighing rather than assuming the
-duplication is pure cost.
+Settled 2026-09-24. The generator's maths is one C++ implementation: plain
+functions over a parameter block, with no Arduino in them. The brain wraps
+it with FastLED; the editor runs the same source compiled to WebAssembly.
+`tools/preview.js` as a second implementation goes, and
+`tools/crosscheck.mjs` goes with it — it existed only to keep two copies
+from drifting apart.
+
+The case against was that looks get designed in fast, disposable
+JavaScript and ported once they survive. It did not hold: the performer
+never edits the renderer, so a look is found by turning controls in the
+editor, and whoever writes the code writes C++ as quickly as JavaScript.
+What it costs is a compile between editing the renderer and seeing it in
+the preview, and a renderer that has to build for both the Teensy and the
+browser.
 
 ## Explicitly not wanted
 

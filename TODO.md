@@ -348,6 +348,13 @@ it becomes a build item.
       is; `docs/modulation.md` is why. Not yet seen on the wall, and the
       editor has not been opened in a browser since.
 
+- [ ] **One renderer for the brain and the editor.** Decided 2026-09-24:
+      the generator's maths becomes one C++ implementation with no Arduino
+      in it, wrapped with FastLED on the brain and compiled to WebAssembly
+      for the editor. `tools/preview.js` and `tools/crosscheck.mjs` both go
+      when it lands, so nothing further is spent cross-checking the routes.
+      See `docs/architecture.md` § "One renderer, compiled twice".
+
 - [ ] **Patch variants — one patch, a few overrides.** Raised 2026-09-22.
       Tempo division and palette are both per-patch, so the same look at
       half time, or in a cooler palette, is a second patch today. Three
