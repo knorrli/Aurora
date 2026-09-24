@@ -122,25 +122,53 @@ void gatherRoutes(const uint8_t *dialed, float plainPhase, float stripPhase,
   }
 }
 
-uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
-  const uint8_t base = dialed[cc];
-  if (!pushes) return base;
-  float amount = pushes->amount[cc];
-  if (amount > -0.001f && amount < 0.001f) return base;
-
+// Unwrapped: a circular control may land below 0 or above 127, and routed()
+// wraps it where routeReach() leaves it for the editor to draw both ends.
+static int16_t landing(uint8_t cc, uint8_t base, float amount) {
   if (amount > 1.0f) amount = 1.0f;
   else if (amount < -1.0f) amount = -1.0f;
 
   if (circular(cc)) {
     // Half the wheel at a full amount. Whether that span suits every circular
     // control is not settled.
-    const int16_t turned = (int16_t)base + (int16_t)lroundf(amount * 64.0f);
-    return (uint8_t)((turned % 128 + 128) % 128);
+    return (int16_t)base + (int16_t)lroundf(amount * 64.0f);
   }
 
   const float limit = (amount >= 0.0f) ? 127.0f : 0.0f;
   const long reached = lroundf((float)base + fabsf(amount) * (limit - (float)base));
-  return (uint8_t)(reached < 0 ? 0 : (reached > 127 ? 127 : reached));
+  return (int16_t)(reached < 0 ? 0 : (reached > 127 ? 127 : reached));
+}
+
+uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
+  const uint8_t base = dialed[cc];
+  if (!pushes) return base;
+  const float amount = pushes->amount[cc];
+  if (amount > -0.001f && amount < 0.001f) return base;
+
+  const int16_t landed = landing(cc, base, amount);
+  return circular(cc) ? (uint8_t)((landed % 128 + 128) % 128) : (uint8_t)landed;
+}
+
+// Every wave rests at zero and peaks at one, so the furthest a control goes
+// up is every raising route at its peak at once, and the same going down.
+bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) {
+  low = high = dialed[cc];
+  if (cc == 0 || refused(cc)) return false;
+
+  float up = 0.0f;
+  float down = 0.0f;
+  bool aimed = false;
+  for (uint8_t r = 0; r < AURORA_ROUTES; r++) {
+    if (dialed[aurora_route_cc(r, ROUTE_DESTINATION)] != cc) continue;
+    const float amount = bipolar(dialed[aurora_route_cc(r, ROUTE_AMOUNT)]);
+    if (amount > -0.001f && amount < 0.001f) continue;
+    aimed = true;
+    if (amount > 0.0f) up += amount;
+    else down += amount;
+  }
+  low = landing(cc, dialed[cc], down);
+  high = landing(cc, dialed[cc], up);
+  return aimed;
 }
 
 }  // namespace render

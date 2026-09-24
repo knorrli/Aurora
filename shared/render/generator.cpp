@@ -831,6 +831,7 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
   Params p;
   readParams(dialed, nullptr, p);
   const float pulse = anchoredPulsePhase(motion, beats, 1.0f / p.pulseBeats);
+  out.clock = pulse;
 
   Pushes pushes;
   gatherRoutes(dialed, pulse, pulse, pushes);
@@ -884,6 +885,7 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
     // washes take the unfanned phase whatever these say: a PAR is one
     // position with no strip to be offset from.
     const float stripPulse = pulse + p.fanPulse * wave;
+    out.stripClock[stripIndex] = stripPulse;
 
     Params s;
     gatherRoutes(dialed, pulse, stripPulse, pushes);

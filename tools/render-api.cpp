@@ -10,6 +10,7 @@
 
 static uint8_t controls[AURORA_PATCH_CC_COUNT];
 static render::Frame frame;
+static float reach[2];
 
 // tools/preview.js reads FanReading as one run of floats in this order.
 static_assert(offsetof(render::FanReading, curve) == sizeof(float) * render::STRIPS, "");
@@ -57,6 +58,23 @@ EMSCRIPTEN_KEEPALIVE float aurora_light_left(float dark) { return render::lightL
 // CC, so they get the table's own lookup rather than convert().
 EMSCRIPTEN_KEEPALIVE float aurora_pulse_period_beats(int value) {
   return aurora_pulse_period((uint8_t)value);
+}
+
+// Where a control stands on one strip this frame, as the last render's routes
+// pushed it.
+EMSCRIPTEN_KEEPALIVE int aurora_strip_value(int cc, int strip) {
+  render::Pushes pushes;
+  render::gatherRoutes(controls, frame.clock, frame.stripClock[strip], pushes);
+  return render::routed(controls, &pushes, (uint8_t)cc);
+}
+
+// The band a control's routes can push it across, or null if none reach it.
+EMSCRIPTEN_KEEPALIVE float *aurora_route_reach(int cc) {
+  int16_t low, high;
+  if (!render::routeReach(controls, (uint8_t)cc, low, high)) return nullptr;
+  reach[0] = low;
+  reach[1] = high;
+  return reach;
 }
 
 }  // extern "C"

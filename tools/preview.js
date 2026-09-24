@@ -71,6 +71,13 @@
       lightLeft: dark => m._aurora_light_left(dark),
       pulsePeriodBeats: value => m._aurora_pulse_period_beats(value),
 
+      // Both read the last render, so call them before the next one.
+      stripValues: cc => Array.from({ length: STRIPS }, (_, i) => m._aurora_strip_value(cc, i)),
+      routeReach(cc) {
+        const at = m._aurora_route_reach(cc);
+        return at ? [m.HEAPF32[at >> 2], m.HEAPF32[(at >> 2) + 1]] : null;
+      },
+
       render(bytes, beats, motion) {
         m.HEAPU8.set(bytes, controls);
         m._aurora_render(motion, beats);

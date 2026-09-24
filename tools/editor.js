@@ -1136,6 +1136,73 @@
     return parsed.length === V.STRIPS ? parsed : V.WALL_STRIP_ORDER.map(n => n - 1);
   }
 
+  // Every slider's track is painted here rather than by the browser, which
+  // draws track and handle as one piece: anything laid over the slider would
+  // cover the handle. In the track, the routes' band and marks sit under it,
+  // and a mark resting at the dialed value hides behind the handle until the
+  // route moves it.
+  //
+  // The band is as far as the routes can reach a control, and each mark is
+  // where one strip has it this frame. The marks sit on top of one another
+  // unless the fan spreads the strips' clocks.
+  const HANDLE_RADIUS = 8;
+
+  function along(input, v) {
+    const min = input.min === '' ? 0 : +input.min;
+    const max = input.max === '' ? 100 : +input.max;
+    return `calc(${HANDLE_RADIUS}px + ${(v - min) / (max - min)} * (100% - ${2 * HANDLE_RADIUS}px))`;
+  }
+
+  const stops = (...pairs) => 'linear-gradient(90deg, '
+    + pairs.map(([color, from, to]) => `${color} ${from}, ${color} ${to}`).join(', ') + ')';
+
+  function markLayer(at) {
+    const off = px => `calc(${at} + ${px}px)`;
+    return stops(['transparent', '0%', off(-2)], ['var(--bg)', off(-2), off(-1)],
+                 ['#fff', off(-1), off(1)], ['var(--bg)', off(1), off(2)],
+                 ['transparent', off(2), '100%']);
+  }
+
+  function swingOf(name) {
+    const cc = P.CC[name];
+    const reach = cc === undefined ? null : V.routeReach(cc);
+    if (!reach) return null;
+    // A circular control's band runs off one end and comes back at the other.
+    const [low, high] = reach;
+    const spans = [[Math.max(0, low), Math.min(127, high)]];
+    if (low < 0) spans.push([low + 128, 127]);
+    if (high > 127) spans.push([0, high - 128]);
+    return { spans, marks: V.stripValues(cc) };
+  }
+
+  function paintTrack(input, swing) {
+    const layers = [];
+    if (swing) {
+      for (const v of swing.marks) layers.push(markLayer(along(input, v)));
+      for (const [low, high] of swing.spans) {
+        layers.push(stops(['transparent', '0%', along(input, low)],
+                          ['var(--pulse)', along(input, low), along(input, high)],
+                          ['transparent', along(input, high), '100%']));
+      }
+    }
+    const at = along(input, +input.value);
+    layers.push(stops(['var(--fill)', '0%', at], ['var(--rest)', at, '100%']));
+    const track = layers.join(', ');
+    if (input.dataset.track !== track) {
+      input.dataset.track = track;
+      input.style.setProperty('--track', track);
+    }
+  }
+
+  // Routes are read off the last render, so only a frame the generator drew
+  // has any to show.
+  function paintTracks(rendered) {
+    for (const input of document.querySelectorAll('input[type=range]')) {
+      const name = input.closest('.row')?.dataset.name;
+      paintTrack(input, rendered && name && rows[name] ? swingOf(name) : null);
+    }
+  }
+
   // The overlay goes on the big wall only. On a small one the five dots land
   // within a few pixels of each other and report nothing.
   function drawOne(wall, named, beats, pattern) {
@@ -1164,6 +1231,7 @@
     const beats = ((performance.now() - startedAt) / 60000) * bpm();
     const pattern = patch().pattern;
     drawOne(walls.main, liveNamed(), beats, pattern);
+    paintTracks(pattern !== 0 && pattern !== 11);
     if (isFarEnd()) {
       V.copyMotion(walls.base.motion, walls.main.motion);
       V.copyMotion(walls.far.motion, walls.main.motion);

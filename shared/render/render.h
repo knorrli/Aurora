@@ -67,6 +67,10 @@ struct Frame {
   Rgb pixels[STRIPS * PIXELS];  // strip by strip, pixel 0 first
   Wash wash;
   FanReading fan;
+  // The clock as the routes read it this frame: plainly, and as each strip
+  // reads it shifted by the fan.
+  float clock;
+  float stripClock[STRIPS];
 };
 
 void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &out);

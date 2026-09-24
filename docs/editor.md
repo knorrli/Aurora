@@ -4,7 +4,7 @@
 (what a patch is and how it crosses the wire), `tools/editor.js` (the page) and
 `tools/preview.js` (the wall, drawn by the brain's own renderer in
 `tools/render.js`). Plain scripts rather than modules, so it opens from a
-`file://` URL with no server.
+`file://` URL with no server. Chrome only: it is the browser with Web MIDI.
 
 Built 2026-09-23 in one pass, **untested against hardware**. It runs in a
 browser and the preview is a real check, so what is verified is that the page
@@ -153,6 +153,16 @@ arrival.
 The accent tab carries **as heard from**. An accent plays with the switches of
 the patch you came from, so an accent dialed against its own is judged on a
 picture it will rarely show. Pick the patch it will actually follow.
+
+## A route shows on the control it moves
+
+A slider a route is aimed at carries a band from the dialed value to the
+furthest the routes can push it, and five marks, one per strip, where each
+strip has it this frame. The marks move together unless the fan spreads the
+strips' clocks, and then they move the way the strips do. Both are read off
+the renderer, not worked out in the page. They are painted into the slider's
+own track so the handle stays on top: the handle is the value that is saved,
+and nothing modulation does may cover it.
 
 ## Rulings made without the performer
 

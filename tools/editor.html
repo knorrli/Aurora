@@ -178,6 +178,21 @@
 
   .track { position: relative; display: flex; align-items: center; height: 20px; }
   .track input[type=range] { width: 100%; margin: 0; }
+
+  /* The track is painted by paintTrack in editor.js, so the routes' band can
+     sit under the handle. */
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; background: transparent; height: 16px;
+    --fill: #1f78f0; --rest: #e6e7ec;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 3px; background: var(--track, var(--rest));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; margin-top: -5px;
+    border: 0; border-radius: 50%; background: var(--fill);
+  }
+
   .track .ghost {
     position: absolute; top: 2px; bottom: 2px; width: 2px; background: var(--dim);
     opacity: .75; pointer-events: none; display: none; border-radius: 1px;
