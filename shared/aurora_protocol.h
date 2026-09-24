@@ -281,13 +281,15 @@ enum AuroraCC : uint8_t {
     // 33–37 — washes / DMX fixtures. All three are [patch]: DESIGN.md
     // § "What a patch holds for them" names level, hue offset and saturation
     // as the whole of what a patch keeps for the PARs.
-    CC_WASH_LEVEL          = 33, // [patch] wash master, independent of the
+    CC_WASH_LEVEL          = 33, // [patch][plain] wash master, independent of
+                                 // the
                                  // strips so the washes can be pulled down
                                  // under a running pattern. PRESET_OFF
                                  // overrides it and darkens them: numpad 0 is
                                  // an emergency stop, and one key has to kill
                                  // the rig on its own.
-    CC_WASH_HUE_OFFSET     = 34, // [patch][circular] rotates the washes off
+    CC_WASH_HUE_OFFSET     = 34, // [patch][circular][plain] rotates the washes
+                                 // off
                                  // the strips' hue, so they can sit
                                  // complementary or
                                  // merely adjacent instead of matching. 0
@@ -297,7 +299,7 @@ enum AuroraCC : uint8_t {
     // 0 is white. A relationship rather than a color of their own, like
     // every other wash control — see DESIGN.md § "The PAR cans". It is also
     // where the pulse's push at 113–115 measures from.
-    CC_WASH_SATURATION     = 35, // [patch]
+    CC_WASH_SATURATION     = 35, // [patch][plain] 
     // 36–37 reserved (washes)
 
     // 38–59 — color. One block, where it used to be split across 20–29 and
@@ -360,7 +362,8 @@ enum AuroraCC : uint8_t {
                                  // of wrapping
     CC_GEN_WIDTH           = 62, // [patch] how much of one cell the shape's
                                  // solid core takes
-    CC_GEN_COUNT           = 63, // [patch] how many shapes along the strip,
+    CC_GEN_COUNT           = 63, // [patch][plain] how many shapes along the
+                                 // strip,
                                  // 1–20, geometric so a morph doubles
     CC_GEN_EDGE            = 64, // [patch] symmetric softness at both ends
     CC_GEN_TAIL            = 65, // [patch] asymmetric fade behind the shape
@@ -391,11 +394,14 @@ enum AuroraCC : uint8_t {
     // sits opposite its neighbors: the phase only scales how deep the
     // alternation is rather than moving it, and a quarter turn either side of
     // it every strip reads zero and the fan goes quiet.
-    CC_GEN_FAN_FREQ        = 68, // [patch] 0 = all five alike, up to two
+    CC_GEN_FAN_FREQ        = 68, // [patch][plain] 0 = all five alike, up to
+                                 // two
                                  // turns across the wall
-    CC_GEN_FAN_PHASE       = 69, // [patch][circular] where the wave sits on
+    CC_GEN_FAN_PHASE       = 69, // [patch][circular][plain] where the wave
+                                 // sits on
                                  // the strips: a staircase through a chevron
-    CC_GEN_FAN_RANDOM      = 70, // [patch] 0 = the wave, 127 = a fixed draw
+    CC_GEN_FAN_RANDOM      = 70, // [patch][plain] 0 = the wave, 127 = a fixed
+                                 // draw
                                  // per strip
     // The three amounts. Bipolar, and 100 % spreads the five strips over
     // exactly one cell or one swell — both ends of a range are the same wall
@@ -403,11 +409,13 @@ enum AuroraCC : uint8_t {
     // CC 67's, on CC 67's own squared curve, so mirroring one fader about its
     // center against the other cancels exactly: that is what stands one strip
     // still while the rest run.
-    CC_GEN_FAN             = 71, // [patch] how far apart the five strips
+    CC_GEN_FAN             = 71, // [patch][plain] how far apart the five
+                                 // strips
                                  // stand in their cells
     CC_GEN_FAN_RATE        = 72, // [patch][rate] how far apart their speeds
                                  // stand, either side of Speed
-    CC_GEN_FAN_PULSE       = 73, // [patch] how far apart they stand in the
+    CC_GEN_FAN_PULSE       = 73, // [patch][plain] how far apart they stand in
+                                 // the
                                  // swell. The washes take the unfanned phase
                                  // whatever this says: a PAR is one position
                                  // with no strip to be offset from.

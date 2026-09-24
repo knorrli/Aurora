@@ -208,12 +208,7 @@
   const byTag = tag => new Set(A.tagged(tag).map(n => CC[n]));
   const ROUTE_REFUSED = new Set([...byTag('rate'), CC.tempoDivision]);
   const ROUTE_CIRCULAR = byTag('circular');
-  // The fan's own amounts spread the five strips, and count sets the cell
-  // geometry the strip loop is built on, so both are read before that loop
-  // opens. The washes have no strip to be offset from.
-  const ROUTE_PLAIN = new Set([CC.washLevel, CC.washHueOffset, CC.washSaturation,
-    CC.genCount, CC.genFan, CC.genFanPulse, CC.genFanFreq, CC.genFanPhase,
-    CC.genFanRandom]);
+  const ROUTE_PLAIN = byTag('plain');
 
   const routeByte = (s, r, field) => {
     const v = s['route' + r + field];

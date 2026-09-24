@@ -27,11 +27,10 @@ Everything lives on **`main`**. The last v1 commit is tagged
 - **The parametric generator** on PC 10, with the redesigned color layer
   in the firmware as of 2026-09-21. See `docs/generator.md`.
 - **The pulse's destinations**, 2026-09-22. One oscillator with one rate
-  reaching the strips' brightness, width and hue and the washes' level, hue
-  offset and saturation, each with its own amount and its own wave. Its
-  phase is anchored to the bar and its rate is stepped to the periods a bar
-  can hold. Flashed but **not yet seen on the wall**. See
-  `docs/generator.md` § "Where the pulse reaches".
+  with eight routes off it, each naming the control it pushes, how far, at
+  what multiple of the clock and with what wave. Its phase is anchored to the
+  bar and its rate is stepped to the periods a bar can hold. **Not yet seen
+  on the wall.** See `docs/generator.md` § "Routes".
 - **The washes' own saturation**, 2026-09-22, on CC 35. A scale down from
   the strips' saturation, and the origin the pulse's push toward white
   measures from. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
@@ -306,7 +305,7 @@ designing there. See `docs/bench-facts.md`.
       built for, and each is one patch: the washes swelling under still
       strips, a white flash on the washes between strip strobes, and the
       shapes breathing on width while the light holds. See
-      `docs/generator.md` § "Where the pulse reaches".
+      `docs/generator.md` § "Routes".
 - [ ] **Judge the anchor against a click.** The *peak* is what lands on the
       beat, because "a deep slow swell peaks wherever it happens to" was
       the complaint. A square is that swell clipped around its own
@@ -342,15 +341,12 @@ designing there. See `docs/bench-facts.md`.
 Raised in conversation and not yet settled. Each needs a decision before
 it becomes a build item.
 
-- [ ] **Modulation routing — one clock, and routes to anything.** Raised
-      2026-09-23 and half settled; `docs/modulation.md` is the whole of it.
-      Settled there: one clock with a per-route ratio rather than several
-      oscillators, ratios that multiply and never divide, no free-running
-      modulator, a destination named by its own CC number, the pulse's
-      eighteen destination CCs retired and the fifteen single-byte amounts
-      kept. Six questions remain, and the one that decides the others is
-      the wave — a selector at four CCs a route and twelve routes, or a
-      detented sweep at six and eight. Resume there.
+- [x] **Modulation routing — one clock, and routes to anything.** Raised
+      2026-09-23, built 2026-09-24. Eight routes of four bytes, a one-byte
+      wave, a push that is a fraction of the distance left, and the six
+      soldered pulse sends retired. `docs/generator.md` § "Routes" is what it
+      is; `docs/modulation.md` is why. Not yet seen on the wall, and the
+      editor has not been opened in a browser since.
 
 - [ ] **Patch variants — one patch, a few overrides.** Raised 2026-09-22.
       Tempo division and palette are both per-patch, so the same look at

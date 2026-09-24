@@ -150,66 +150,84 @@ pixel, then a lit sliver at the far end. It is the loop working, not a fault,
 and it is only reachable at count 1 with the shape both off-center and nearly
 as wide as the strip.
 
-### Where the pulse reaches, built 2026-09-22
+### Routes, built 2026-09-24
 
-One oscillator with one rate, pushing on six things at once. Each
-destination carries its own **amount**, its own **shape** and its own
-**skew** — the same phase, shaped differently — which is what buys the
-washes breathing while the strips strobe.
+One clock, and eight routes off it. A route is four bytes — which control it
+pushes, how far, at what whole multiple of the clock, and what wave does the
+pushing — so where modulation lands is part of the patch rather than fixed in
+the firmware. The layout is `shared/aurora_protocol.h` § "Modulation routes";
+`docs/modulation.md` is the record of why each of these is what it is.
 
-| Destination | Amount | CC |
-|---|---|---|
-| The strips' brightness | unipolar: how far the trough digs | 77, 80, 79 |
-| Width | toward full width / toward nothing | 100–102 |
-| The strips' hue | ± half the wheel, after the color layer has summed | 103–105 |
-| PAR level | toward full / toward dark | 106–108 |
-| PAR hue offset | ± half the wheel | 109–111 |
-| PAR saturation | toward a pure hue / toward white | 112–114 |
+**A route names its destination by that control's own CC number.** No second
+numbering to keep stable and no mapping table to drift. Whether a control may
+be a destination is a tag beside it in the enum.
 
-Every destination is measured from a control the performer set, which is
-what makes the wall rest at exactly what was dialed. PAR saturation was
-the one without such a control and measured from the strips' S fader
-instead; it measures from CC 35 now.
+**A push is a fraction of the distance left**: `base + |amount| × (limit −
+base)`, with the amount's sign picking the limit. Nothing can clip, a control
+already sitting at a limit has nowhere to go that way, and the wall rests at
+exactly what was dialed wherever the wave reads zero. It is the same rule the
+color layer's darkness push already used.
 
-**A push runs from the dialed value toward one of its two limits, and the
-amount's sign picks which.** Nothing can clip, a control already sitting
-at a limit simply has nowhere to go that way, and the wall rests at
-exactly what was dialed whenever the swell is at its bottom. It is the
-same rule the color layer's darkness push already used.
+**Two routes on one control add**, and the sum stops at the limit. Not an
+average: a second quiet route must not weaken the first, or layering a subtle
+stab over a big swell would flatten the swell.
 
-**The strips' brightness is the one destination with no sign**, because
-there is nothing above full light for a push to run toward. Its amount is
-how far the trough digs below whatever the shape branch already lit, which
-is what Depth has always meant. Making it bipolar would spend half of the
-most-used fader on an inverted strobe nobody has asked for.
+**Controls that wrap take a rotation instead**, because a wheel has no limit
+to travel toward — hue, the wash hue offset, the pattern's standing position
+and the fan's phase, all tagged `[circular]`. Half the wheel at a full amount.
+The hue *amounts* are not among them: their two ends are opposite extremes,
+not the same color.
 
-**Width is back, and the reason it failed before is gone.** A shape was
+**Rates are refused**, and tagged `[rate]`. Speed, placed speed, wander rate,
+the fan's rate spread and the scatter's rate all feed a running total, so a
+push on one shifts position permanently: turn the amount up and back down and
+the shape sits somewhere else with every control where it started. The looks
+that wanted them want easing, which is locked to the traversal and cannot
+drift. Tempo division is refused for its own reason — an index into six note
+values, not a level, so there is no halfway. The wander's rate is the honest
+exception, having no grid to fall off, and is left out for now because it is
+the least interesting of the five.
+
+**Which reading of the clock a destination takes is the destination's own
+property**, not the route's, and is tagged `[plain]`. A destination on a strip
+reads that strip's fanned reading, so a push rolls across the wall. The washes
+read the plain one, a PAR being one position with no strip to be offset from.
+So do the fan's three amounts — a route aimed at one while reading the fanned
+clock would need its own phase to compute what sets its own phase — and so
+does the shape count, which sets the cell geometry the strip loop is built on
+before that loop opens.
+
+**A push reaches one fixture family.** CC 38–40 are the strips' hue,
+saturation and brightness; CC 33–35 are the washes', expressed as a
+relationship to the strips' *dialed* color. Swinging both together therefore
+takes two routes, which is usually what you want anyway, since the two rarely
+ask for the same depth.
+
+**Width is reachable, and the reason it failed before is gone.** A shape was
 anchored by its head then, and the head sits at one end of the strip when
-nothing is traveling, so a swell read as a fill creeping in from that end
-and a fast swell read as a traveling wipe rather than a flash. A shape is
-anchored by its center now, so growing it is a breath outward. Under
-bounce the turn stays where the *dialed* width puts it: letting the swell
-move it would put the pulse into the travel rate, which is the one thing a
-destination may never be.
+nothing is traveling, so a swell read as a fill creeping in from that end. A
+shape is anchored by its center now, so growing it is a breath outward. Under
+bounce the turn stays where the *dialed* width puts it.
 
-**The washes take the unfanned phase.** A PAR is one position with no strip
-to be offset from. Reaching the four of them separately is a different job
-— see `DESIGN.md` § "The PAR cans".
+**The wave is one byte**, one axis: the peak never leaves the bar line and
+what moves is how the bar fills around it. Every named shape lands on a value
+a fader can reach exactly.
 
-**The fan's pulse amount is not a destination.** It is the one that is not
-a plain push: the pulse's own per-strip phase is `fract(pulse + fan)`, so
-aiming the pulse at it feeds the pulse back into itself. The position and
-rate amounts carry no such loop and could be pushed — see § "The fan is a
-wave" for what that costs and why it is not built.
+| Value | Wave | Lit above half |
+|----|----|----|
+| 0 | builds across the bar, drops on the bar line | 50% |
+| 32 | symmetric swell | 50% |
+| 64 | snaps up on the bar line, decays across it | 50% |
+| 96 | hard on for the first half | 49% |
+| 127 | one-frame stab | 6% |
 
-**Rates are not destinations at all.** Speed, placed speed and wander rate
-all feed a running total, so a pulse aimed at one shifts position
-permanently: turn the amount up and back down and the shape sits somewhere
-else with every control where it started. The looks that wanted them want
-easing, which is locked to the traversal and cannot drift.
+Below 64 the attack shrinks as the decay grows. Above it the attack is gone
+and the decay both shortens and flattens, which is what puts a hit that holds
+and then falls at around 80. Saw down has to come before square: the other
+order leaves a crossfade between two shapes that blends into neither.
 
-A sine can never produce an on/off edge no matter how deep it goes, which
-is why pulse shape exists as a separate control.
+A sine can never produce an on/off edge no matter how deep it goes, which is
+why the hard end of this sweep exists.
 
 ### The pulse lands on the bar, built 2026-09-22
 
@@ -634,43 +652,39 @@ of destinations, and an **amount** for each. That is the
 synth pattern, and naming it makes a fourth word the two branches share,
 alongside Form, Travel and Shape.
 
-**The amounts live at the source.** Both arrangements exist on real
-instruments — an amount beside the modulator saying where it goes, or an
-amount beside each target saying what reaches it — and the choice is a
-real one. It goes to the source here because most of Aurora's
-destinations are not controls: the pulse's main target is how lit a pixel
-is, and the wander's are what color it is, and neither is a slider
-anywhere. They are the outputs of their branches. Putting amounts at the
-target would mean inventing rows for things that are not controls, purely
-to have somewhere to hang the amount. Width is the one exception, and
-splitting one destination from the other two is worse than either
-consistent choice.
+**The amounts live at the source, except the routes'.** Both arrangements
+exist on real instruments — an amount beside the modulator saying where it
+goes, or an amount beside each target saying what reaches it. The soldered
+sources keep the first, because most of their destinations are not controls:
+the wander's targets are what color a pixel is, and putting an amount at the
+target would mean inventing rows for things no slider exists for. The routes
+are the second, since a route's whole point is that its destination is
+something you choose.
 
-The escape from the one thing this costs — you cannot see what is pushing
-a given control — is a read-only marker beside the target showing that
-the pulse reaches it, and how hard. Built in `tools/index.html`: Width,
-Hue, PAR level, PAR hue offset and PAR saturation each carry one. The last
-of those had no control to sit beside until the washes got a saturation of
-their own, which was its own argument for building one.
+What the first costs — you cannot see what is pushing a given control — is
+paid back by a read-only marker beside the target saying what reaches it and
+how hard. For the soldered amounts that marker is a table; for the routes it
+is a lookup, since what reaches a control is whichever routes happen to be
+aimed at it.
 
-**Built 2026-09-22: a fixed-amount matrix.** Six destinations, all of them
-always present, each with an amount that may be zero and a wave of its own.
-See § "Where the pulse reaches" above.
+**Patchable routing, rejected 2026-09-21 and built 2026-09-24.** The
+objection was that a connection is either made or not, so there is no halfway
+between "pulse to hue" and "pulse to count", and a morph across two patches
+with different routing would have to snap the graph — the abrupt jump this
+whole instrument exists to remove.
 
-**Not deferred, rejected: patchable routing.** Every patch has to be a
-valid morph destination from any live state, and a connection is either
-made or not — so there is no halfway between "pulse to hue" and "pulse to
-count", and a morph across two patches with different routing has to snap
-the graph. That is the abrupt jump this whole experiment exists to
-remove. Amounts interpolate; connections do not, and an amount rising
-from zero is a connection fading in, which no patch cable can do.
+What answered it: a destination is a switch, and switches already land on
+arrival rather than sliding. Inside a patch the editor aligns route slots
+across its five sets, so a destination that differs between two of them
+becomes one amount falling to zero while another rises — a crossfade, because
+an absent route and a route at zero amount are the same thing. Between
+patches a disagreeing route holds whole and lands on arrival, like every
+other switch. `docs/modulation.md` § "What a morph does to a route" is the
+working.
 
-A per-control version — every control with its own wave and timing rather
-than one source fanned out — survives the morph objection, since all of
-it is continuous numbers. What it does not survive is the parameter
-count: roughly three parameters per modulatable control outgrows
-one CC per parameter, so it drags in the patch-storage work first. It
-wants to be wanted before it is built.
+The parameter-count objection was the other half, and the wave answered it.
+Three bytes per destination for all 43 reachable controls is 129 CCs against
+the 128 that exist; four bytes per *route* for eight routes is 32.
 
 ### Travel easing is a curve, not a modulation route
 

@@ -113,14 +113,46 @@ ${body}
 })(typeof window === 'undefined' ? globalThis : window);
 `;
 
+// The firmware cannot read a comment, so routes.cpp restates the tags as three
+// switches. This is what stops the two from drifting.
+function checkFirmware() {
+  const src = readFileSync(join(ROOT, 'brain/src/routes.cpp'), 'utf8');
+  const cases = fn => {
+    const at = src.indexOf(`static bool ${fn}(uint8_t cc)`);
+    if (at < 0) throw new Error(`routes.cpp: no ${fn}()`);
+    const body = src.slice(at, src.indexOf('\n}', at));
+    return new Set([...body.matchAll(/case (CC_[A-Z0-9_]+):/g)].map(m => camel(m[1])));
+  };
+  const want = {
+    refused: new Set([...tagged('rate'), 'tempoDivision']),
+    circular: new Set(tagged('circular')),
+    plainClock: new Set(tagged('plain')),
+  };
+  const problems = [];
+  for (const [fn, expected] of Object.entries(want)) {
+    const got = cases(fn);
+    for (const n of expected) if (!got.has(n)) problems.push(`${fn}() is missing ${n}`);
+    for (const n of got) if (!expected.has(n)) problems.push(`${fn}() has ${n}, which the enum does not tag`);
+  }
+  return problems;
+}
+
+const tagged = tag => Object.keys(tags).filter(n => tags[n].includes(tag));
+
 if (process.argv.includes('--check')) {
+  const problems = checkFirmware();
+  if (problems.length) {
+    for (const line of problems) console.error('brain/src/routes.cpp: ' + line);
+    process.exit(1);
+  }
   let current = '';
   try { current = readFileSync(OUT, 'utf8'); } catch { }
   if (current !== out) {
     console.error('tools/cc.js is out of date — run: node tools/gen-cc.mjs');
     process.exit(1);
   }
-  console.log(`tools/cc.js up to date — ${pairs.length} controls, ${routes} routes`);
+  console.log(`tools/cc.js up to date — ${pairs.length} controls, ${routes} routes,`
+    + ` and routes.cpp agrees with the enum's tags`);
 } else {
   writeFileSync(OUT, out);
   console.log(`tools/cc.js written — ${pairs.length} controls, ${routes} routes`);

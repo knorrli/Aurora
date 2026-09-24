@@ -1,10 +1,12 @@
 # Modulation routing
 
-Raised 2026-09-23, not settled. What sends a modulator at a control, how
-many can be live at once, and what shape the wave is.
+Raised 2026-09-23, settled and built 2026-09-24. What sends a modulator at a
+control, how many can be live at once, and what shape the wave is.
 
-Nothing here is built. The rig today has one oscillator reaching six
-hardwired destinations, and that is what this would replace.
+**This file is the record of why.** What a route *is* lives in
+`docs/generator.md` § "Routes" and `shared/aurora_protocol.h` § "Modulation
+routes"; what is here is the reasoning behind each of those, including the
+options that were rejected and what it would cost to revisit them.
 
 ## What started it
 
@@ -580,66 +582,38 @@ a route five and drop the ceiling to ten.
    1, 9, 17 and 25 in chain order. Output-layer work that routes neither
    need nor fix, recorded here because a wanted look ran into it.
 
-## Resuming this
+## How it was built
 
-**Read in this order.** This file; then `docs/generator.md` §§ "Where the
-pulse reaches", "The fan is a wave" and "The scatter"; then the 101–119
-block in `shared/aurora_protocol.h`; then the pulse machinery in
-`brain/src/P_Generator.cpp` — `PulseSend`, `pulseWave`, `pulsePush`,
-`anchoredPulsePhase`, `pushToward` — and its mirror in
-`tools/preview.js`; then `docs/editor.md` for the panel model the new
-one has to fit into.
+**Read in this order.** This file; then `docs/generator.md` §§ "Routes", "The
+fan is a wave" and "The scatter"; then § "Modulation routes" in
+`shared/aurora_protocol.h`; then `brain/src/routes.cpp` and its mirror in
+`tools/preview.js`; then `docs/editor.md` for the panel model.
 
-**Nothing here blocks building any more.** The one item left open is
-output-layer work that routes neither need nor fix. The wave
-is settled and fixes a route at four bytes, which settled the count at
-eight and took the pressure off the fifteen soldered amounts. How a push
-lands is settled too, including what two routes on one destination do and
-which clock each one reads. What morphing does to a route is settled too, the order the change lands
-in, and which destinations a route may aim at. The rotation span a
-circular destination takes is the one detail still to pick, and it is a
-number to try on the wall rather than a question to argue.
+It went in six changes, in this order, and the editor came last on purpose
+because its shape depended on what a route turned out to be.
 
-**Then build in this order.** The editor comes last on purpose — its shape
-depends on what a route turns out to be.
+1. **The destination table.** Every modulatable control became the byte that
+   arrived, converted where it is drawn rather than when its CC lands, since
+   a push arrives in CC units and the conversion has to see the pushed value.
+   `brain/src/destinations.{h,cpp}`.
+2. **The same in `tools/preview.js`**, which turned out to already work that
+   way — so what this step owed was the proof, and it is ten cross-checks,
+   one per conversion, each exhaustive across all 128 byte values.
+3. **The wave**, both sides.
+4. **The CC map and the routes, in one change.** 74, 76, 77 and 101–115
+   retired; the route block added; the six soldered sends deleted rather
+   than rewired, because once every control is a byte a route can push, they
+   stop being special cases in the middle of the frame.
+5. **The editor.**
+6. **This fold.**
 
-1. The destination table in the firmware: every modulatable parameter
-   becomes a base plus a modulation sum, with a declared application rule
-   and unit and the sum capped at the whole distance, while the existing
-   six destinations stay hardwired. Nothing
-   should change on the wall.
-2. The same in `tools/preview.js`, cross-checked function by function.
-3. The wave, both sides: the one-byte sweep in "The waves" above.
-4. The CC map and the routes, in one change: retire 74, 76, 77 and
-   101–115, add the route block, wire routes in place of the six hardwired
-   sends on both sides, and check every consumer number by number the way
-   the regroup did. One change rather than two, so the tree never holds a
-   half-retired pulse for someone to mistake for the design.
-5. The editor: the control list in `tools/patch.js`, the per-slider panel,
-   the route marks, the route list, and `docs/editor.md`.
-6. Fold what is settled here into `docs/generator.md` and leave this file
-   as the record of why.
+**What the cross-check harness covers now**: every byte-to-value conversion,
+the wave over all 128 wave bytes against 256 phases, and the route ratio.
+`node tools/gen-cc.mjs --check` covers the rest of the seam — it fails if
+`tools/cc.js` is stale against the header, and if the three switches in
+`brain/src/routes.cpp` disagree with the enum's `[rate]`, `[circular]` and
+`[plain]` tags.
 
-**Check it with `node tools/crosscheck.mjs`.** It lifts a function and
-its dependencies out of both renderers, drives them over the same grid,
-and reports where they disagree — the discipline that keeps two
-implementations of the same maths identical. Add a check for every
-function this work touches; a check is a few lines of table. Sweep on
-binary-exact steps, halves and quarters rather than tenths, or the two
-sides are handed different inputs before the function is even called.
-
-Two things it cannot do yet, both worth building when they are needed
-rather than now:
-
-- **Compare a whole rendered frame** rather than one function. This one
-  keeps its value whatever happens to the looks, because it catches the two
-  implementations disagreeing somewhere nobody thought to write a check —
-  which is the standing weakness of a per-function harness. Blocked on the
-  firmware's `Generator()` needing FastLED, `CHSV` and `tempo::beats()` to
-  run on a host, so it is real work rather than an afternoon.
-- **Compare against a stored baseline** instead of against the other
-  implementation — proof that a refactor changed no behavior. Not wanted
-  here, and this is the correction: there is nothing to stay compatible
-  with. No patches exist and no look is being ported, so a baseline would
-  defend a wall nobody is keeping. Build it if a refactor ever has to
-  preserve a library; do not build it for step 1.
+**What has never been done**: any of this on the wall, or in a browser. The
+model, the renderer and the maths are checked headlessly; the editor's panel
+wiring is not.
