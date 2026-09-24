@@ -73,6 +73,11 @@ and the PARs' are CC 33–35. See "How a push lands".
 route — a destination on a strip reads that strip's fanned reading, a
 global one reads the plain clock. See "Which clock a route reads".
 
+**The editor aligns route slots across a patch's five sets**, so a fader
+morph never changes a destination mid-journey. Between patches, a route
+whose destination differs at the two ends lands on arrival like any other
+switch. See "What a morph does to a route".
+
 **Eight routes, four bytes each** — destination, amount, ratio, wave. That
 is 32 of the 51 CCs the retirement leaves free, so a source byte per route
 stays affordable and the count can still be raised. See "What it costs,
@@ -371,6 +376,51 @@ four consecutive numbers make raising the count free and a fifth byte
 expensive, and giving each parameter its own block of eight does the
 reverse. That belongs to the CC map step, not here.
 
+## What a morph does to a route
+
+One of a route's four bytes — the destination — is a switch, and
+`DESIGN.md` § "Switches belong to the patch" allows a switch to move only
+on arrival. That is new ground. Today the two ends of a journey always
+agree about what pushes what, because the six sends are hardwired;
+`tools/patch.js` states it outright: every destination is always connected
+and its amount may be zero, so a morph interpolates an amount and can
+never snap a connection on. Routes make the connection itself a value, so
+the ends can disagree.
+
+What that opens: patch A's route 3 pushes width at +60%, patch B's pushes
+hue at −40%. The destination holds A's value the whole way while the
+amount slides, so halfway across width is being pushed by +10% — a number
+dialed for hue — and on arrival it jumps.
+
+**Inside a patch, the editor aligns the slots.** A patch is five CC sets
+and every fader move is a morph between two of them, so untreated this
+would bite on every fader. The editor collects the destinations used
+anywhere in the five, gives each a fixed slot across all five, and writes
+zero where a set does not use it. An absent route and a route at zero
+amount are the same thing, so a destination that differs between two sets
+becomes one amount falling to zero while another rises — a crossfade, for
+free, with the firmware still doing nothing but interpolating bytes.
+
+The limit: the destinations used across the five sets have to fit in eight
+slots. A far end is usually a variation of its base rather than a separate
+patch, so they overlap heavily — but the editor has to notice when they do
+not and say so, rather than silently dropping one.
+
+**Between patches, a disagreeing route lands on arrival**, exactly like any
+other switch. The editor cannot align here: any patch can follow any other
+on the keypad, and making every pair agree would mean one slot assignment
+across the whole library, which eight slots against 43 destinations cannot
+carry. So a route whose destination differs at the two ends holds whole —
+destination, amount, ratio and wave together — and changes on arrival. A
+route whose destination matches at both ends interpolates its amount as
+usual, because nothing about it is ambiguous.
+
+**The UI decides whether this is usable**, and it is not designed. Slots
+are bookkeeping the performer should never have to think about; what they
+say is "the wander pushes width here". Whether alignment reads as the
+editor helping or as the editor moving things behind their back is a
+question for the editor work, which the build order already puts last.
+
 ## Rates as destinations
 
 Every rate feeds a running total through a `PhaseTracker`, so a push on a
@@ -465,22 +515,9 @@ a route five and drop the ceiling to ten.
    3-way ruler — are refused or allowed with the stepping treated as an
    effect. The same pass tags which controls are circular, and settles the
    rotation span each one takes.
-2. **Morphing between patches whose routes are aimed differently.** A
-   destination is a switch, and switches land on arrival or on release at
-   the end of a journey — so travelling from a patch where route 3 pushes
-   width to one where route 3 pushes hue, the *amount* interpolates the
-   whole way while the destination stays on width and snaps at the end.
-   Halfway across, width is being pushed by a number dialed for hue.
-   Soldered amounts cannot do this, because their destinations never
-   disagree. Two ways out, both cheap: order routes canonically by
-   destination so slot N means the same thing in every patch, or have the
-   editor align slots when it builds a library. Summing is what makes the
-   first one safe — reordering slots cannot change a look once the pushes
-   add. This is the one place the
-   matrix is genuinely weaker than what it replaces.
-3. **Sequencing** — whether the pulse's eighteen retire in the same change
+2. **Sequencing** — whether the pulse's eighteen retire in the same change
    that brings routes, or after.
-4. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
+3. **The PARs are one fixture, not four.** `brain/src/dmx_out.cpp:88`
    computes one colour and one level and writes the same eight bytes to
    all four addresses; the only per-fixture data is calibration trim. So
    the PARs cannot strobe one after the other, and no route design changes
@@ -501,14 +538,14 @@ block in `shared/aurora_protocol.h`; then the pulse machinery in
 `tools/preview.js`; then `docs/editor.md` for the panel model the new
 one has to fit into.
 
-**Answer the first three of the remaining questions before building
-anything** — the fourth is output-layer work that routes neither need nor
+**Answer the first two of the remaining questions before building
+anything** — the third is output-layer work that routes neither need nor
 fix. The wave
 is settled and fixes a route at four bytes, which settled the count at
 eight and took the pressure off the fifteen soldered amounts. How a push
 lands is settled too, including what two routes on one destination do and
-which clock each one reads. What is left is mostly per-control work:
-which destinations are refused, and which of them wrap.
+which clock each one reads. What morphing does to a route is settled too. What is left is mostly
+per-control work: which destinations are refused, and which of them wrap.
 
 **Then build in this order.** The editor comes last on purpose — its shape
 depends on what a route turns out to be.
