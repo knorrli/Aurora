@@ -416,21 +416,6 @@ it becomes a build item.
       Settle by looking, with the faders in hand. Whatever wins, the editor and
       the firmware have to say the same thing.
 
-- [ ] **The editor's modulation, next.** Built 2026-09-24: a route lives on
-      the control it moves — a **~** on the row opens its routes in a panel
-      under it, the slider carries the band the routes reach and one mark per
-      strip, and every track notches its center, the wave's named shapes and
-      the steps of a stepped control. See `docs/editor.md` § "A route shows
-      on the control it moves". What is left:
-
-      - **Say the range in the control's own units** beside the fader, "8 →
-        14 px/beat", from `render::convert` the way the labels already are.
-        Deferred 2026-09-24 until the band alone is found wanting while
-        dialing a route: little patch design has been done yet, and the
-        readout numbers are not being looked at.
-      - **Another visual pass** on the panel, its width above all, deferred
-        until it has been used for a while.
-
 - [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
       browser and has **never driven the rig**. The old page went anyway, since
       keeping it meant maintaining a second copy of the CC map through the
