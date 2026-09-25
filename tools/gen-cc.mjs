@@ -134,7 +134,7 @@ function checkRenderer() {
     return new Set([...body.matchAll(/case (CC_[A-Z0-9_]+):/g)].map(m => camel(m[1])));
   };
   const want = {
-    refused: new Set(['tempoDivision', 'genLfoRate']),
+    refused: new Set(['tempoDivision', 'genLfoRate', 'washHuePeriod']),
     swings: new Set(tagged('rate')),
     circular: new Set(tagged('circular')),
     plainLfo: new Set(tagged('plain')),

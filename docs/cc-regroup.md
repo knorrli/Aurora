@@ -103,11 +103,12 @@ That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ## The budget
 
-Aurora needs **106 numbers**: 66 controls and eight routes of five bytes.
-There are 114 safe ones, so the map spends them all but eight.
+Aurora needs **111 numbers**: 71 controls and eight routes of five bytes.
+There are 114 safe ones, so the map spends them all but three.
 
-**The eight are 3–6, 8, 9, 30 and 31.** None is in the color, generator or
-scatter blocks, so the next control in any of them means a regroup.
+**The three are 6, 8 and 9.** None is in the color, generator or scatter
+blocks, so the next control in any of them means a regroup, and the fourth
+new control of any kind means the ceiling decision below.
 
 **The scatter's lifetime fork no longer fits.** Spots with a birth and a
 death, which is what raindrops and shooting stars need, is priced in
@@ -126,16 +127,18 @@ channel is free for the taking but nothing is built to tell them apart.
 
 | Range | Slots | Category | Assigned | Spare |
 |---|---|---|---|---|
-| 2–9 | 7 | Transport / meta | 1 | 6 |
+| 2 | 1 | Transport / meta | 1 | 0 |
+| 3–9 | 6 | Washes' shuffle | 3 | 3 |
 | 12–26 | 15 | The controller | 15 | 0 |
-| 27–31 | 5 | Washes / DMX | 3 | 2 |
+| 27–31 | 5 | Washes / DMX | 5 | 0 |
 | 33–53 | 21 | Color | 21 | 0 |
 | 54–69 | 16 | Generator — shape, fan, the LFO, the bend | 16 | 0 |
 | 70–79 | 10 | Scatter / texture | 10 | 0 |
 | 80–119 | 40 | Modulation routes | 40 | 0 |
 
 0, 1, 7, 10, 11 and 32 are skipped, each for a reason above. Everything else
-between 2 and 119 is in a block, and no block is split.
+between 2 and 119 is in a block. The washes are the one block split in two:
+they needed eight numbers, 27–31 holds five, and 3–5 was the only other room.
 
 **How it got here.** Five-byte routes needed 40 numbers, and the first map
 had 36 where a route could sit without leaving its own block. The washes
@@ -146,15 +149,18 @@ counted in `docs/controls.md`.
 
 ## The map
 
-Every number, assigned. 105 spoken for, 9 spare.
+Every number, assigned. 111 spoken for, 3 spare.
 
-### 2–9 · Transport / meta
+### 2–9 · Transport / meta, and the washes' shuffle
 
 | CC | | | |
 |---|---|---|---|
 | **2** | `TEMPO_DIVISION` | [switch] | note value one tempo pulse stands for |
+| **3** | `WASH_HUE_SHUFFLE` | [patch][plain] | chance the PARs' colors are dealt anew |
+| **4** | `WASH_HUE_PERIOD` | [patch] | how often the hue shuffle rolls |
+| **5** | `WASH_LFO_SHUFFLE` | [patch][plain] | chance the PARs' LFO slots are dealt anew |
 
-Spare: 3, 4, 5, 6, 8, 9.
+Spare: 6, 8, 9.
 
 ### 12–26 · The controller
 
@@ -185,8 +191,10 @@ No spare.
 | **27** | `WASH_LEVEL` | [patch][plain] | wash master |
 | **28** | `WASH_HUE_OFFSET` | [patch][circular][plain] | rotates the washes off the strips' hue |
 | **29** | `WASH_SATURATION` | [patch][plain] | scales the washes down from the strips' saturation |
+| **30** | `WASH_HUE_SPREAD` | [patch][plain] | each PAR further round the palette than the last |
+| **31** | `WASH_LFO_SPREAD` | [patch][plain] | each PAR further into the LFO's cycle than the last |
 
-Spare: 30, 31.
+No spare.
 
 ### 33–53 · Color
 

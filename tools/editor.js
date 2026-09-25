@@ -1364,7 +1364,11 @@
       return [64];
     }
     if (name === 'genBendAt') return [64];
-    if (name === 'genLfoRate' || name === 'genFanFreq') {
+    if (name === 'washLfoSpread') {
+      const at = v => V.convert(P.CC[name], v);
+      return stepPoints(at).filter(v => at(v) % 0.25 === 0);
+    }
+    if (name === 'genLfoRate' || name === 'genFanFreq' || name === 'washHuePeriod') {
       return stepPoints(v => V.convert(P.CC[name], v));
     }
     const cc = P.CC[name];
@@ -1379,6 +1383,9 @@
                  ['transparent', off(2), '100%']);
   }
 
+  // The washes' own three, which each lamp reads at its own shift of the LFO.
+  const READ_PER_WASH = new Set(['washLevel', 'washHueOffset', 'washSaturation']);
+
   function swingOf(name) {
     const cc = P.CC[name];
     const reach = cc === undefined ? null : V.routeReach(cc);
@@ -1388,7 +1395,7 @@
     const spans = [[Math.max(0, low), Math.min(127, high)]];
     if (low < 0) spans.push([low + 128, 127]);
     if (high > 127) spans.push([0, high - 128]);
-    return { spans, marks: V.stripValues(cc) };
+    return { spans, marks: READ_PER_WASH.has(name) ? V.washValues(cc) : V.stripValues(cc) };
   }
 
   function paintTrack(input, swing, points) {

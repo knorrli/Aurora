@@ -17,6 +17,8 @@ static float reach[2];
 static_assert(offsetof(render::FanReading, curve) == sizeof(float) * render::STRIPS, "");
 static_assert(offsetof(render::FanReading, turns)
                   == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS), "");
+// And each Wash as four bytes: red, green, blue, level.
+static_assert(sizeof(render::Wash) == 4, "");
 static_assert(sizeof(render::FanReading)
                   == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS + 6), "");
 
@@ -24,11 +26,12 @@ extern "C" {
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return controls; }
 EMSCRIPTEN_KEEPALIVE render::Rgb *aurora_pixels() { return frame.pixels; }
-EMSCRIPTEN_KEEPALIVE render::Wash *aurora_wash() { return &frame.wash; }
+EMSCRIPTEN_KEEPALIVE render::Wash *aurora_washes() { return frame.washes; }
 EMSCRIPTEN_KEEPALIVE render::FanReading *aurora_fan() { return &frame.fan; }
 EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
 
 EMSCRIPTEN_KEEPALIVE int aurora_strips() { return render::STRIPS; }
+EMSCRIPTEN_KEEPALIVE int aurora_washes_count() { return render::WASHES; }
 EMSCRIPTEN_KEEPALIVE int aurora_pixels_per_strip() { return render::PIXELS; }
 EMSCRIPTEN_KEEPALIVE int aurora_fan_curve_points() { return render::FAN_CURVE_POINTS; }
 EMSCRIPTEN_KEEPALIVE int aurora_bend_points() { return render::BEND_POINTS; }
@@ -73,6 +76,14 @@ EMSCRIPTEN_KEEPALIVE int aurora_strip_value(int cc, int strip) {
   render::Pushes pushes;
   const float beatsPerCycle = render::convert(CC_GEN_LFO_RATE, controls[CC_GEN_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripLfo[strip], pushes);
+  return render::routedForDisplay(controls, &pushes, (uint8_t)cc);
+}
+
+// The same for one wash, which reads the LFO at its own spread.
+EMSCRIPTEN_KEEPALIVE int aurora_wash_value(int cc, int wash) {
+  render::Pushes pushes;
+  const float beatsPerCycle = render::convert(CC_GEN_LFO_RATE, controls[CC_GEN_LFO_RATE]);
+  render::gatherRoutes(controls, beatsPerCycle, frame.washLfo[wash], frame.washLfo[wash], pushes);
   return render::routedForDisplay(controls, &pushes, (uint8_t)cc);
 }
 

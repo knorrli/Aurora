@@ -56,6 +56,10 @@ static const float GEN_FAN_MAX_CYCLES_PER_STRIP = 0.5f;
 // another pattern.
 static const uint8_t GEN_FAN_HASH_SALT = 118;
 
+// The washes' LFO spread runs to half a cycle between neighbors in 16 steps
+// each way, so a chase at a quarter and pairs at a half both land exactly.
+static const float WASH_LFO_SPREAD_STEPS = 16.0f;
+
 // How long the LFO takes to walk back onto the musical grid after its rate
 // has been moved, measured in its own cycles so the correction is always the
 // same fraction of a swell and never a visible lurch.
@@ -832,6 +836,10 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_WASH_LEVEL:
     case CC_WASH_HUE_OFFSET:
     case CC_WASH_SATURATION: return ccToByte(value, 255);
+    case CC_WASH_HUE_SPREAD: return ccBipolar(value) * 128.0f;
+    case CC_WASH_LFO_SPREAD: return roundf(ccBipolar(value) * WASH_LFO_SPREAD_STEPS)
+                                    / (2.0f * WASH_LFO_SPREAD_STEPS);
+    case CC_WASH_HUE_PERIOD: return aurora_lfo_period(value);
 
     case CC_GEN_COUNT:
     case CC_PLACED_COUNT:
@@ -889,7 +897,9 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_EDGE:
     case CC_SCATTER_PLACE:
-    case CC_SCATTER_STAGGER: return ccUnit(value);
+    case CC_SCATTER_STAGGER:
+    case CC_WASH_HUE_SHUFFLE:
+    case CC_WASH_LFO_SHUFFLE: return ccUnit(value);
 
     default:                 return (float)value;
   }
@@ -973,26 +983,87 @@ Hsv colorFrom(const uint8_t *dialed, const Pushes *pushes) {
   return { at(CC_HUE), at(CC_SATURATION), at(CC_VALUE) };
 }
 
+// ---------------------------------------------------------------------------
+// The washes
+//
+// Four lamps known only by the order they are plugged in, since a venue
+// guarantees nothing about where they stand. Each spread moves a lamp by its
+// slot, 0 to 3, and each shuffle deals the slots out to the lamps in a new
+// order now and then. See DESIGN.md § "Four lamps in order, not four points on
+// the wall".
+
+// How far back a cycle that did not reshuffle looks for the last one that did.
+// Past it the lamps fall back into their order, which at a chance low enough
+// to reach it is where they stood almost every cycle anyway.
+static const uint16_t WASH_DEAL_LOOKBACK = 128;
+static const uint8_t WASH_HUE_SALT = 29;
+static const uint8_t WASH_LFO_SALT = 71;
+
+// Which slot each lamp takes in the cycle `cycles` falls in. Stateless: a
+// cycle's roll and its order are hashes of its number, so the brain and the
+// editor deal the same hands without sharing anything.
+static void dealSlots(float cycles, float chance, uint8_t salt, uint8_t *slots) {
+  for (uint8_t i = 0; i < WASHES; i++) slots[i] = i;
+  if (chance < 0.001f) return;
+
+  int32_t cycle = (int32_t)floorf(cycles);
+  for (uint16_t back = 0; back < WASH_DEAL_LOOKBACK; back++, cycle--) {
+    const float roll = ((float)hash8((uint32_t)cycle, WASHES, salt) + 0.5f) / 256.0f;
+    if (roll >= chance) continue;
+    for (uint8_t i = WASHES - 1; i > 0; i--) {
+      const uint8_t j = hash8((uint32_t)cycle, i, salt) % (i + 1);
+      const uint8_t held = slots[i];
+      slots[i] = slots[j];
+      slots[j] = held;
+    }
+    return;
+  }
+}
+
 // The washes take the strips' dialed color and never its pushes: a push
-// reaches one fixture family, and CC 33-35 are the strips'. Their own three
-// take theirs. Color is converted at full value and the light is carried by
-// the fixture's own dimmer, so the emitters stay near full scale where they
-// have the most resolution.
+// reaches one fixture family, and CC 33-35 are the strips'. Their own take
+// theirs. Color is converted at full value and the light is carried by the
+// fixture's own dimmer, so the emitters stay near full scale where they have
+// the most resolution.
 static Rgb hueToRgb(uint8_t palette, uint8_t hue, uint8_t sat, uint8_t val) {
   return withSatVal(paletteRgb(palette, hue), sat, val);
 }
 
-Wash washFrom(const uint8_t *dialed, const Pushes *pushes) {
+static Wash washAt(const uint8_t *dialed, const Pushes *pushes, float hueFromOffset) {
   auto at = [&](uint8_t cc) { return (uint8_t)convert(cc, routed(dialed, pushes, cc)); };
   const Hsv strips = colorFrom(dialed, nullptr);
-  const uint8_t level = at(CC_WASH_LEVEL);
-  const uint8_t hueOffset = at(CC_WASH_HUE_OFFSET);
+  const int32_t hue = (int32_t)strips.h + at(CC_WASH_HUE_OFFSET) + (int32_t)lroundf(hueFromOffset);
   // A scale down from the strips' saturation rather than a setting: the
   // washes are a relationship to the strips.
-  const uint8_t saturation = at(CC_WASH_SATURATION);
+  const uint8_t saturation = scale8(strips.s, at(CC_WASH_SATURATION));
+  return { hueToRgb(dialed[CC_PALETTE], (uint8_t)(hue & 255), saturation, 255),
+           scale8(strips.v, at(CC_WASH_LEVEL)) };
+}
 
-  return { hueToRgb(dialed[CC_PALETTE], (uint8_t)(strips.h + hueOffset), scale8(strips.s, saturation), 255),
-           scale8(strips.v, level) };
+void stillWashes(const uint8_t *dialed, Wash *out) {
+  const float hueStep = convert(CC_WASH_HUE_SPREAD, dialed[CC_WASH_HUE_SPREAD]);
+  for (uint8_t i = 0; i < WASHES; i++) out[i] = washAt(dialed, nullptr, hueStep * (float)i);
+}
+
+// Each lamp gathers the routes again at its own shift of the LFO, so all three
+// of its targets move on one clock.
+static void readWashes(const uint8_t *dialed, const Pushes &pushes, float beats, float lfo,
+                       float lfoBeats, Frame &out) {
+  auto at = [&](uint8_t cc) { return convert(cc, routed(dialed, &pushes, cc)); };
+  const float huePeriod = convert(CC_WASH_HUE_PERIOD, dialed[CC_WASH_HUE_PERIOD]);
+  uint8_t hueSlots[WASHES];
+  uint8_t lfoSlots[WASHES];
+  dealSlots(beats / huePeriod, at(CC_WASH_HUE_SHUFFLE), WASH_HUE_SALT, hueSlots);
+  dealSlots(lfo, at(CC_WASH_LFO_SHUFFLE), WASH_LFO_SALT, lfoSlots);
+  const float hueStep = at(CC_WASH_HUE_SPREAD);
+  const float lfoStep = at(CC_WASH_LFO_SPREAD);
+
+  Pushes lamp;
+  for (uint8_t i = 0; i < WASHES; i++) {
+    out.washLfo[i] = lfo - lfoStep * (float)lfoSlots[i];
+    gatherRoutes(dialed, lfoBeats, out.washLfo[i], out.washLfo[i], lamp);
+    out.washes[i] = washAt(dialed, &lamp, hueStep * (float)hueSlots[i]);
+  }
 }
 
 // Hues run red to blue in index order, spaced widely enough to stay
@@ -1026,7 +1097,7 @@ void renderGenerator(const uint8_t *dialed, float quarterNotes, Motion &motion, 
   Pushes pushes;
   gatherRoutes(dialed, p.lfoBeats, lfo, lfo, pushes);
   readParams(dialed, &pushes, p);
-  out.wash = washFrom(dialed, &pushes);
+  readWashes(dialed, pushes, beats, lfo, p.lfoBeats, out);
   readFan(p, out.fan);
 
   const float cellLength = (float)PIXELS / (float)p.count;
@@ -1079,8 +1150,7 @@ void renderGenerator(const uint8_t *dialed, float quarterNotes, Motion &motion, 
     // One wave, three amounts, so where a strip stands, how fast it runs and
     // where it is in the swell are dialed apart — a wall of staggered bars
     // can strobe in unison, which one shared offset could never do. The
-    // washes take the unfanned phase whatever these say: a PAR is one
-    // position with no strip to be offset from.
+    // washes never take it: they have CC 31.
     const float stripLfo = lfo + p.fanLfo * wave;
     out.stripLfo[stripIndex] = stripLfo;
 

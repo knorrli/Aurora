@@ -178,13 +178,13 @@ Routes cost per route instead of per destination. Counted off
 |----|----|
 | CC numbers that exist, 0–127 | 128 |
 | Excluded, never to be assigned | −14 |
-| Every control that is not a route: 2, 12–29, 33–69, 71–79 | −65 |
-| **Free for routes and anything new** | **49** |
+| Every control that is not a route: 2–5, 12–31, 33–79 | −71 |
+| **Free for routes and anything new** | **43** |
 | Eight routes at five bytes, 80–119 | −40 |
-| **Left over** | **9** |
+| **Left over** | **3** |
 
-The nine are 3–6, 8 and 9 in transport, 30–31 in the washes and 70 in the
-generator. Bend took 68 and 69 the same day.
+The three are 6, 8 and 9. Bend took 68 and 69 and the scatter's Place took 70
+the same day, and the PARs' spread and shuffle took 3–5, 30 and 31.
 
 Five bytes did not fit the map as it stood: the numbers a route could use
 without leaving its own block came to 36. The regroup moved the washes to
@@ -225,16 +225,14 @@ would send it unbidden. It is in use rather than up for choice, so it is
 recorded here rather than acted on.
 
 **Raising the count is an array size** in the renderer and a loop bound
-in the editor. What is *not* freely raisable is the ceiling: 9 CCs left
+in the editor. What is *not* freely raisable is the ceiling: 3 CCs left
 over is the whole of it, and one more route costs five.
 
 **A source byte is not affordable at this count.** Adding wander, scatter or
-fan as route sources costs one more CC per route — eight, against the 9 left
-over, which would leave one for everything else the generator grows.
-The catch when it comes anyway: the wander and the scatter have a position,
-so pointing one at a global control needs a rule for where on the wall to
-sample it — the same unbuilt work `docs/generator.md` already records
-against sampling the color layer at the PARs.
+fan as route sources costs one more CC per route — eight, against the 3 left
+over. The catch when it comes anyway: the wander and the scatter have a
+position, so pointing one at a global control needs a rule for where on the
+wall to sample it.
 
 ## Two details that would be found on the wall
 
@@ -330,7 +328,7 @@ instant.
 
 This is what happened before routes, but by accident rather than by
 decision — the DMX output read the dialed colour straight, while the strips
-got their pushes added in `colorAt`. `washFrom` in
+got their pushes added in `colorAt`. `washAt` in
 `shared/render/generator.cpp` does it on purpose. It has to be written
 down, or someone
 building "a base plus a modulation sum" will quite reasonably make the
@@ -635,20 +633,6 @@ hold with a long tail is not reachable.
 
 **Every wave starts on the bar line**, and the route's phase byte is what
 moves it off. See "A route has a phase".
-
-## Still open
-
-1. **The PARs are one fixture, not four.** `washFrom` in
-   `shared/render/generator.cpp` computes one colour and one level, and
-   `brain/src/dmx_out.cpp` writes the same eight bytes to all four
-   addresses; the only per-fixture data is calibration trim. So
-   the PARs cannot strobe one after the other, and no route design changes
-   that — each would need a position the way a strip has one. Two pieces
-   are missing: the per-fixture computation, and any record of which PAR
-   stands leftmost, since `docs/wiring.md` settles the strips' order from
-   PC 11 painting each one flat, while the fixture table is only addresses
-   1, 9, 17 and 25 in chain order. Output-layer work that routes neither
-   need nor fix, recorded here because a wanted look ran into it.
 
 ## How it was built
 

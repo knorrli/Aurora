@@ -28,13 +28,13 @@ const inputs = [...inRender, 'shared/aurora_protocol.h', 'tools/render-api.cpp']
 const sources = inputs.filter(f => f.endsWith('.cpp')).map(f => join(ROOT, f));
 
 const EXPORTS = [
-  'aurora_controls', 'aurora_pixels', 'aurora_wash', 'aurora_fan', 'aurora_bend',
+  'aurora_controls', 'aurora_pixels', 'aurora_washes', 'aurora_fan', 'aurora_bend',
   'aurora_bend_points',
-  'aurora_strips', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
+  'aurora_strips', 'aurora_washes_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
   'aurora_motion_new', 'aurora_motion_copy', 'aurora_paths_new', 'aurora_paths_clear',
   'aurora_render', 'aurora_palette_count', 'aurora_palette_name', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats',
-  'aurora_strip_value', 'aurora_route_reach', 'aurora_route_refused',
+  'aurora_strip_value', 'aurora_wash_value', 'aurora_route_reach', 'aurora_route_refused',
   'aurora_wave_mean',
 ];
 

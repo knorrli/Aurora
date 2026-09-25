@@ -1,8 +1,8 @@
 // dmx_out — drives the wash fixtures.
 //
-// Every frame each configured fixture gets the wash the renderer worked out
-// (render::washFrom in shared/render/generator.cpp), written as 8 channels
-// with brightness on the fixture's own dimmer. The macro channel must stay
+// Every frame each configured fixture gets its own wash from the renderer
+// (shared/render/generator.cpp § "The washes"), in table order, written as 8
+// channels with brightness on the fixture's own dimmer. The macro channel must stay
 // below 50 or the fixture starts an auto sequence that overrides color
 // entirely.
 //
@@ -19,7 +19,8 @@
 namespace dmx_out {
 
 void begin();
-void tick(const render::Wash &wash);
+// One wash per fixture in the table, render::WASHES of them.
+void tick(const render::Wash *washes);
 
 // The eight channel values last written to the first fixture, for the
 // debug line.

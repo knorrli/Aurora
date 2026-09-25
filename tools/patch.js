@@ -200,6 +200,11 @@
     washLevel: v => ofByte(real('washLevel', v)),
     washHueOffset: v => '+' + real('washHueOffset', v) + ' of 255',
     washSaturation: v => ofByte(real('washSaturation', v)) + ' of theirs',
+    washHueSpread: v => signedInt(Math.round(real('washHueSpread', v))) + ' a lamp',
+    washLfoSpread: v => signed(real('washLfoSpread', v)) + ' of a cycle',
+    washHueShuffle: v => percent(real('washHueShuffle', v)) + ' chance',
+    washHuePeriod: v => 'every ' + PERIOD_NAMES[real('washHuePeriod', v)].split(' · ')[0],
+    washLfoShuffle: v => percent(real('washLfoShuffle', v)) + ' chance',
   };
 
   // Every route reads its fields the same way.
@@ -251,6 +256,8 @@
     litHue: 64, litWhite: 0, litDark: 0,
 
     washLevel: 127, washHueOffset: 0, washSaturation: 127,
+    washHueSpread: 64, washLfoSpread: 64, washHueShuffle: 0, washLfoShuffle: 0,
+    washHuePeriod: 42,
   };
   for (const n of ['slotA', 'slotB', 'slotC', 'slotD', 'slotE',
                    'slotF', 'slotG', 'slotH', 'slotI', 'slotJ']) NEUTRAL[n] = 0;
@@ -439,8 +446,13 @@
     controls: define([
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
       C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
-    
-      C('washLevel', 'Level', 'the PARs\u2019 master, independent of the strips'),]),
+      C('washLevel', 'Level', 'the PARs\u2019 master, independent of the strips'),
+      C('washHueSpread', 'Hue spread', 'each PAR further round the palette than the one before: halfway up is four colors evenly round, either end two alternating. The first PAR sits on Hue offset'),
+      C('washHueShuffle', 'Hue shuffle', 'the chance the four colors are dealt out to the PARs in a new order, once every period'),
+      C('washHuePeriod', 'Shuffle every', 'how often the hue shuffle rolls. Stepped, so it can sit on the bar'),
+      C('washLfoSpread', 'LFO spread', 'each PAR further into the LFO\u2019s cycle than the one before: 25% is a chase, either end alternating pairs'),
+      C('washLfoShuffle', 'LFO shuffle', 'the chance the four PARs swap places in the LFO spread, once every LFO cycle'),
+    ]),
   };
 
   global.AuroraPatch = {

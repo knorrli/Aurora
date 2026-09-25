@@ -83,9 +83,9 @@ void renderFrame()
 
   FastLED.show();
   renderTempo();
-  dmx_out::tick(currentPreset == PRESET_GENERATOR
-                    ? generatorWash()
-                    : render::washFrom(destinations::all(), nullptr));
+  static render::Wash still[render::WASHES];
+  if (currentPreset != PRESET_GENERATOR) render::stillWashes(destinations::all(), still);
+  dmx_out::tick(currentPreset == PRESET_GENERATOR ? generatorWashes() : still);
 }
 
 #ifdef AURORA_DEBUG

@@ -17,8 +17,9 @@ struct Fixture {
 };
 
 // Four BeamZ BCC145 of our own, chained alongside the strips, each in its
-// 8-channel mode — so the blocks are A001, A009, A017, A025. Channel
-// layout is in docs/wiring.md § "Fixture profile — BeamZ BCC145". Trims
+// 8-channel mode — so the blocks are A001, A009, A017, A025. A row's place is
+// the renderer's wash number, so the table runs in the order the four stand
+// on stage, first to fourth. Channel layout is in docs/wiring.md § "Fixture profile — BeamZ BCC145". Trims
 // and master are unity until calibrated against the strips. A fixture
 // that is not plugged in simply ignores its channels, so this table is
 // safe to run with fewer connected.
@@ -37,24 +38,24 @@ void begin() {
     dmx.begin();
 }
 
-void tick(const render::Wash &wash) {
+static_assert(sizeof(fixtures) / sizeof(fixtures[0]) == render::WASHES,
+              "one fixture per wash");
+
+void tick(const render::Wash *washes) {
     // Key 0 is an override, not a look, and it reads selectedPreset for the
-    // reason Aurora.ino's gate does. The wash still arrives computed; it is
-    // thrown away at the write below.
+    // reason Aurora.ino's gate does. The washes still arrive computed; they
+    // are thrown away at the write below.
     const bool blackout = (selectedPreset == PRESET_OFF);
-    const render::Rgb rgb = wash.color;
-    const uint8_t level = wash.level;
 
-    // Pull the common component out into the white channel: an RGBW
-    // fixture mixing white from its color emitters is dimmer than its
-    // white one and usually tinted.
-    const uint8_t common = min(rgb.r, min(rgb.g, rgb.b));
-
-    for (uint8_t i = 0; i < sizeof(fixtures) / sizeof(fixtures[0]); i++) {
+    for (uint8_t i = 0; i < render::WASHES; i++) {
         const Fixture &fixture = fixtures[i];
-        const uint8_t white = fixture.hasWhite ? common : 0;
+        const render::Rgb rgb = washes[i].color;
+        // Pull the common component out into the white channel: an RGBW
+        // fixture mixing white from its color emitters is dimmer than its
+        // white one and usually tinted.
+        const uint8_t white = fixture.hasWhite ? min(rgb.r, min(rgb.g, rgb.b)) : 0;
         uint8_t values[8] = {
-            scale8(level, fixture.master),
+            scale8(washes[i].level, fixture.master),
             0,
             scale8(rgb.r - white, fixture.trim[0]),
             scale8(rgb.g - white, fixture.trim[1]),

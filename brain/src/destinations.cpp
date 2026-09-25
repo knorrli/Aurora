@@ -18,6 +18,8 @@ struct Dial {
 static const Dial BOOT[] = {
   { CC_WASH_LEVEL,      127 },
   { CC_WASH_SATURATION, 127 },
+  { CC_WASH_HUE_SPREAD,  64 },
+  { CC_WASH_LFO_SPREAD,  64 },
   { CC_SATURATION,      127 },
   { CC_VALUE,           127 },
   { CC_COLOR_RULER,      64 },

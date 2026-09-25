@@ -55,7 +55,7 @@ extern void fireTrigger();
 extern void renderTrigger();
 
 // The parametric generator — see shared/render/generator.cpp. The washes
-// take its wash while it is the pattern being drawn.
+// take its washes while it is the pattern being drawn.
 extern void Generator();
-extern const render::Wash &generatorWash();
+extern const render::Wash *generatorWashes();
 extern void resetGenerator();

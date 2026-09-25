@@ -14,6 +14,6 @@ void Generator() {
   showRendered(frame.pixels);
 }
 
-const render::Wash &generatorWash() { return frame.wash; }
+const render::Wash *generatorWashes() { return frame.washes; }
 
 void resetGenerator() { render::clearPaths(paths); }

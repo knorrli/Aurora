@@ -85,7 +85,8 @@ static inline bool aurora_pc_is_preset(uint8_t pc) {
 // Layout. Regrouped 2026-09-25; the reasoning is in docs/cc-regroup.md.
 //
 //      0,  1 : AVOID — bank select MSB and modulation
-//      2 –   9 : transport / meta                        (7 = AVOID, volume)
+//            2 : transport / meta
+//      3 –   5 : washes, continued — the shuffle
 //     10,  11 : AVOID — pan and expression
 //     12 –  26 : the controller — what each control stands at
 //     27 –  31 : washes / DMX fixtures
@@ -98,7 +99,9 @@ static inline bool aurora_pc_is_preset(uint8_t pc) {
 //    120 – 127 : AVOID — channel mode messages
 //
 // Nothing between 2 and 119 is outside a block, and the routes take the one
-// run of 40 the map has. Spare: 3–6, 8, 9, 30 and 31.
+// run of 40 the map has. The washes are the one block split in two: 27–31
+// is five numbers and they need eight, and the only other room was here.
+// Spare: 6, 8 and 9.
 //
 // The four AVOIDed numbers in the middle are the ones a DAW writes without
 // being asked: volume, pan, expression and bank select, which travels with
@@ -192,7 +195,21 @@ enum AuroraCC : uint8_t {
     // own. Moved off 10, where it shared a number with pan.
     CC_TEMPO_DIVISION      = 2,  // [switch] note value one tempo pulse stands
                                  // for; value is an AuroraTempoDivision index
-    // 3–9 reserved (transport / meta), skipping 7. 10 and 11 excluded
+
+    // 3–5 — the washes' shuffle, split from 27–31 for want of room. Each
+    // spread at 30–31 has a chance of dealing its four slots out to the lamps
+    // in a new order, rolled once a cycle: 0 keeps the lamps in order, full
+    // deals afresh every cycle. A deal reorders and never redraws, so four
+    // colors stay four and a flash stays on the spread's grid. See DESIGN.md
+    // § "Four lamps in order, not four points on the wall".
+    CC_WASH_HUE_SHUFFLE    = 3,  // [patch][plain] chance the colors are dealt
+                                 // anew, once each CC 4 period
+    // Its own clock rather than the LFO's, so the colors can move every bar
+    // while the lamps flash every beat. Stepped through the LFO's periods.
+    CC_WASH_HUE_PERIOD     = 4,  // [patch] beats between hue shuffles
+    CC_WASH_LFO_SHUFFLE    = 5,  // [patch][plain] chance the LFO slots are
+                                 // dealt anew, once each LFO cycle
+    // 6, 8 and 9 spare, skipping 7. 10 and 11 excluded
 
     // 12–26 — the controller
     //
@@ -247,9 +264,9 @@ enum AuroraCC : uint8_t {
     // pair would say the key's identity a second time, and the model names
     // one destination at a time. See DESIGN.md § "Changing patch".
     CC_KEY_HELD            = 26, // [gesture] 127 while the key is held
-    // 27–31 — washes / DMX fixtures. All three are [patch]: DESIGN.md
-    // § "What a patch holds for them" names level, hue offset and saturation
-    // as the whole of what a patch keeps for the PARs.
+    // 27–31 — washes / DMX fixtures, with their shuffle at 3–5. Four lamps
+    // known only by their order: a venue guarantees which is first, never
+    // where it stands. See DESIGN.md § "The PAR cans".
     CC_WASH_LEVEL          = 27, // [patch][plain] wash master, independent of
                                  // the
                                  // strips so the washes can be pulled down
@@ -269,7 +286,16 @@ enum AuroraCC : uint8_t {
     // every other wash control — see DESIGN.md § "The PAR cans". It is also
     // where a route's push on it measures from.
     CC_WASH_SATURATION     = 29, // [patch][plain] 
-    // 30–31 reserved (washes); 32 excluded
+    // The two spreads are per neighbor, not across the four, which is what
+    // reaches alternating pairs. Bipolar: the two ends run across the lamps
+    // opposite ways.
+    CC_WASH_HUE_SPREAD     = 30, // [patch][plain] each lamp further round the
+                                 // palette than the last, up to half a turn;
+                                 // lamp one sits on CC 28
+    CC_WASH_LFO_SPREAD     = 31, // [patch][plain] each lamp further into the
+                                 // LFO's cycle than the last, up to half a
+                                 // cycle, stepped to 32nds
+    // 32 excluded
 
     // 33–53 — color. One block, where it used to be split across 20–29 and
     // 90–99 because twenty controls do not fit in ten.
@@ -387,10 +413,8 @@ enum AuroraCC : uint8_t {
     CC_GEN_FAN_RATE        = 65, // [patch][rate][plain] how far apart their
                                  // speeds stand, either side of Speed
     CC_GEN_FAN_LFO         = 66, // [patch][plain] how far apart they stand in
-                                 // the LFO's cycle. The washes take the
-                                 // unfanned phase whatever this says: a PAR
-                                 // is one position with no strip to be
-                                 // offset from.
+                                 // the LFO's cycle. Never the washes', which
+                                 // have CC 31.
 
     // One LFO for the whole rig, and nothing beside it: where a route aims
     // and how hard belongs to the route. Every route reads it, so no route

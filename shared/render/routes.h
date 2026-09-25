@@ -32,8 +32,10 @@ uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
 // nearest its swung value, anything else as routed().
 uint8_t routedForDisplay(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
 
-// The LFO's own rate, because every route reads it, and tempo division,
-// because it is an index; CC 0 means a route aimed nowhere.
+// The LFO's own rate, because every route reads it; tempo division, because
+// it is an index; and the washes' hue shuffle period, because a push would
+// change which cycle it is and deal the colors anew on every wobble. CC 0
+// means a route aimed nowhere.
 bool routeRefused(uint8_t cc);
 
 // Whether any route with an amount is aimed at a control.

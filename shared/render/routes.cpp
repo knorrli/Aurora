@@ -51,6 +51,7 @@ static bool refused(uint8_t cc) {
   switch (cc) {
     case CC_TEMPO_DIVISION:
     case CC_GEN_LFO_RATE:
+    case CC_WASH_HUE_PERIOD:
       return true;
     default:
       return false;
@@ -91,12 +92,16 @@ static bool circular(uint8_t cc) {
 // route aimed at one while reading that would need its own phase to compute
 // what sets its own phase. Count sets the cell geometry and is read before the
 // strip loop opens, and so is the bend. The washes have no strip to be offset
-// from.
+// from; each lamp's own shift arrives as the plain phase of its own gather.
 static bool plainLfo(uint8_t cc) {
   switch (cc) {
+    case CC_WASH_HUE_SHUFFLE:
+    case CC_WASH_LFO_SHUFFLE:
     case CC_WASH_LEVEL:
     case CC_WASH_HUE_OFFSET:
     case CC_WASH_SATURATION:
+    case CC_WASH_HUE_SPREAD:
+    case CC_WASH_LFO_SPREAD:
     case CC_GEN_COUNT:
     case CC_GEN_BEND:
     case CC_GEN_BEND_AT:

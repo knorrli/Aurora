@@ -28,11 +28,12 @@
 
   function connect(m) {
     const STRIPS = m._aurora_strips();
+    const WASHES = m._aurora_washes_count();
     const PIXELS = m._aurora_pixels_per_strip();
     const CURVE_POINTS = m._aurora_fan_curve_points();
     const controls = m._aurora_controls();
     const pixels = m.HEAPU8.subarray(m._aurora_pixels(), m._aurora_pixels() + STRIPS * PIXELS * 3);
-    const wash = m._aurora_wash();
+    const washes = m._aurora_washes();
     const fan = m.HEAPF32.subarray(m._aurora_fan() >> 2,
                                    (m._aurora_fan() >> 2) + STRIPS + CURVE_POINTS + 6);
     const bend = m.HEAPF32.subarray(m._aurora_bend() >> 2,
@@ -40,9 +41,11 @@
 
     // The fixture dims in its own hardware, so this is how the eye sees the
     // dimmer rather than anything the brain computes.
-    function seenWash() {
-      const level = m.HEAPU8[wash + 3];
-      return [0, 1, 2].map(i => Math.round(m.HEAPU8[wash + i] * level / 255));
+    function seenWashes() {
+      return Array.from({ length: WASHES }, (_, lamp) => {
+        const at = washes + lamp * 4;
+        return [0, 1, 2].map(i => Math.round(m.HEAPU8[at + i] * m.HEAPU8[at + 3] / 255));
+      });
     }
 
     function readFan() {
@@ -64,7 +67,7 @@
 
     // A frame is a view into the module's memory, good until the next render.
     Object.assign(api, {
-      STRIPS, PIXELS,
+      STRIPS, PIXELS, WASHES,
       makeMotion: () => m._aurora_motion_new(),
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
       makePaths: () => m._aurora_paths_new(),
@@ -80,6 +83,7 @@
 
       // Both read the last render, so call them before the next one.
       stripValues: cc => Array.from({ length: STRIPS }, (_, i) => m._aurora_strip_value(cc, i)),
+      washValues: cc => Array.from({ length: WASHES }, (_, i) => m._aurora_wash_value(cc, i)),
       routeRefused: cc => !!m._aurora_route_refused(cc),
       routeReach(cc) {
         const at = m._aurora_route_reach(cc);
@@ -89,7 +93,7 @@
       render(bytes, quarterNotes, motion, paths) {
         m.HEAPU8.set(bytes, controls);
         m._aurora_render(motion, paths, quarterNotes);
-        return { pixels, par: seenWash(), fan: readFan(), bend: Array.from(bend) };
+        return { pixels, pars: seenWashes(), fan: readFan(), bend: Array.from(bend) };
       },
       draw,
     });
@@ -124,10 +128,10 @@
       }
     }
 
-    const par = frame.par;
     const parY = H - PAR_BAND / 2;
-    for (let i = 0; i < 4; i++) {
-      const x = W * (i + 0.5) / 4;
+    for (let i = 0; i < frame.pars.length; i++) {
+      const par = frame.pars[i];
+      const x = W * (i + 0.5) / frame.pars.length;
       const grad = gctx.createRadialGradient(x, parY, 2, x, parY, PAR_BAND * 0.52);
       grad.addColorStop(0, `rgba(${par[0]},${par[1]},${par[2]},0.95)`);
       grad.addColorStop(1, `rgba(${par[0]},${par[1]},${par[2]},0)`);

@@ -50,6 +50,10 @@ Everything lives on **`main`**. The last v1 commit is tagged
   and whiteness. Ported from `tools/preview.js`, where it was designed, and
   checked sample for sample against it. Flashed but **not yet seen on the
   wall**. See `docs/generator.md` § "The scatter".
+- **The PARs as four lamps**, 2026-09-25. A hue spread and an LFO spread
+  across their order, each with a shuffle that deals the four out anew, on
+  CCs 3–5, 30 and 31. Seen only in the editor. See `DESIGN.md` § "Four lamps
+  in order, not four points on the wall".
 - **A strip-order rigging aid** on PC 11 — each strip a flat color in
   data-chain order.
 - **One renderer**, 2026-09-24. `shared/render/` is the generator, the
@@ -161,7 +165,8 @@ with the state — all wait on the same thing.
       spaced** values. See `docs/bench-facts.md`.
 - [ ] **Set the per-fixture master scale by eye** at soundcheck. See
       `docs/visual-design.md` § "The washes".
-- [ ] **Aim each PAR at the wall between two strips**, not at a strip.
+- [ ] **Aim each PAR at the wall between two strips**, not at a strip,
+      addressed `A001` to `A025` in the order they stand, left to right.
       See `DESIGN.md` § "The PAR cans".
 - [ ] **Look at whether a pool bridges a gap.** One slow sweep and one
       fast one, narrow window. See `DESIGN.md` § "The PAR cans".
@@ -189,6 +194,18 @@ driven live from the editor.
       looks better than a seam on the wall, as it did on screen; and what the
       PARs' hue offset lands on inside a three-color palette. See
       `docs/generator.md` § "Palettes".
+
+- [ ] **Play the PARs on their own**, strips dark. Four looks: hue spread
+      halfway with a stepped route on the hue offset, so the colors step
+      from lamp to lamp; LFO spread at 25% with a stab on their level, a
+      chase; the same with LFO shuffle full, which should stay one lamp a
+      beat in an unpredictable order; and the lamps held steady with hue
+      shuffle full every bar. Then an LFO spread under a swell with the
+      shuffle up, to see whether a new deal jumping the brightness reads as
+      a fault. Needs all four fixtures addressed. Old saved patches read 0
+      at CCs 30 and 31, which is both spreads at full the other way: reset
+      the PAR card on anything saved before 2026-09-25. See `DESIGN.md` §
+      "Four lamps in order, not four points on the wall".
 
 - [ ] **Turn a region inside out**, across the strips at count 1: the middle
       strip on the fader color, the outer four departing. Then the dark case
@@ -286,12 +303,6 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
 
-- [ ] **Reach the PARs with more than a hue offset.** The PARs following
-      a gradient with the strips, which needs the color layer sampled at
-      each PAR's position — today all four are one color. The white flash
-      between strip strobes, the other half of this, became reachable on
-      2026-09-22 when the LFO gained their saturation. See `DESIGN.md`
-      § "The PAR cans".
 - [ ] **Dial the placed field's approximation of the sprinkle.** Region,
       strip ruler, count around 12, width and edge low, dark pushed up,
       over a full-width wall with V around half. Thirty seconds in

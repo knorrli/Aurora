@@ -12,6 +12,7 @@
 namespace render {
 
 static const uint8_t STRIPS = 5;
+static const uint8_t WASHES = 4;
 static const uint8_t PIXELS = 45;
 static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
@@ -102,16 +103,17 @@ struct FanReading {
 
 struct Frame {
   Rgb pixels[STRIPS * PIXELS];  // strip by strip, pixel 0 first
-  Wash wash;
+  Wash washes[WASHES];          // in the order they are plugged in
   FanReading fan;
   // How fast travel runs at each pixel boundary along the strip, pixel 0
   // first, as a multiple of the dialed speed: what the bend is doing, for the
   // editor's overlay.
   float bend[BEND_POINTS];
-  // The LFO as the routes read it this frame: plainly, and as each strip
-  // reads it shifted by the fan.
+  // The LFO as the routes read it this frame: plainly, as each strip reads
+  // it shifted by the fan, and as each wash reads it shifted by its spread.
   float lfo;
   float stripLfo[STRIPS];
+  float washLfo[WASHES];
 };
 
 // Quarter notes are the song's position as the clock counts it. Tempo division
@@ -136,8 +138,8 @@ void renderStripOrder(Rgb *pixels);
 // The three faders as the strips take them.
 Hsv colorFrom(const uint8_t *dialed, const Pushes *pushes);
 
-// Null pushes is the washes with nothing modulating them, which is what every
-// pattern but the generator gives them.
-Wash washFrom(const uint8_t *dialed, const Pushes *pushes);
+// The washes with nothing modulating them and nothing shuffled, which is what
+// every pattern but the generator gives them.
+void stillWashes(const uint8_t *dialed, Wash *out);
 
 }  // namespace render

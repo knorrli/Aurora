@@ -8,6 +8,9 @@
 
   const CC = {
     tempoDivision:  2,
+    washHueShuffle: 3,
+    washHuePeriod:  4,
+    washLfoShuffle: 5,
     faderColor:     12,
     faderExtent:    13,
     faderMotion:    14,
@@ -26,6 +29,8 @@
     washLevel:      27,
     washHueOffset:  28,
     washSaturation: 29,
+    washHueSpread:  30,
+    washLfoSpread:  31,
     hue:            33,
     saturation:     34,
     value:          35,
@@ -98,7 +103,7 @@
   // step through these.
   const LFO_PERIODS = [16, 12, 8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25];
 
-  const TAGS = {"tempoDivision":["switch"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"padX":["gesture"],"padY":["gesture"],"padPressure":["gesture"],"padEngage":["gesture"],"rockerPadA":["ambient"],"rockerPadB":["ambient"],"rockerPadC":["ambient"],"rockerPadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"keyHeld":["gesture"],"washLevel":["patch","plain"],"washHueOffset":["patch","circular","plain"],"washSaturation":["patch","plain"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"colorPrimitive":["switch"],"colorRuler":["switch"],"placedHue":["patch"],"placedWhite":["patch"],"placedDark":["patch"],"placedCount":["patch"],"placedWidth":["patch"],"placedEdge":["patch"],"placedSpeed":["patch","rate"],"wanderHue":["patch"],"wanderWhite":["patch"],"wanderDark":["patch"],"wanderRate":["patch","rate"],"wanderScale":["patch"],"litHue":["patch"],"litWhite":["patch"],"litDark":["patch"],"palette":["switch"],"genBounce":["switch"],"genWidth":["patch"],"genCount":["patch","plain"],"genEdge":["patch"],"genTail":["patch"],"genPosition":["patch","circular"],"genSpeed":["patch","rate"],"genFanFreq":["patch","plain"],"genFanPhase":["patch","circular","plain"],"genFanRandom":["patch","plain"],"genFan":["patch","plain"],"genFanRate":["patch","rate","plain"],"genFanLfo":["patch","plain"],"genLfoRate":["patch"],"genBend":["patch","plain"],"genBendAt":["patch","plain"],"scatterPlace":["patch"],"scatterRate":["patch","rate"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterStagger":["patch"],"scatterDrift":["patch"],"scatterLight":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"]};
+  const TAGS = {"tempoDivision":["switch"],"washHueShuffle":["patch","plain"],"washHuePeriod":["patch"],"washLfoShuffle":["patch","plain"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"padX":["gesture"],"padY":["gesture"],"padPressure":["gesture"],"padEngage":["gesture"],"rockerPadA":["ambient"],"rockerPadB":["ambient"],"rockerPadC":["ambient"],"rockerPadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"keyHeld":["gesture"],"washLevel":["patch","plain"],"washHueOffset":["patch","circular","plain"],"washSaturation":["patch","plain"],"washHueSpread":["patch","plain"],"washLfoSpread":["patch","plain"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"colorPrimitive":["switch"],"colorRuler":["switch"],"placedHue":["patch"],"placedWhite":["patch"],"placedDark":["patch"],"placedCount":["patch"],"placedWidth":["patch"],"placedEdge":["patch"],"placedSpeed":["patch","rate"],"wanderHue":["patch"],"wanderWhite":["patch"],"wanderDark":["patch"],"wanderRate":["patch","rate"],"wanderScale":["patch"],"litHue":["patch"],"litWhite":["patch"],"litDark":["patch"],"palette":["switch"],"genBounce":["switch"],"genWidth":["patch"],"genCount":["patch","plain"],"genEdge":["patch"],"genTail":["patch"],"genPosition":["patch","circular"],"genSpeed":["patch","rate"],"genFanFreq":["patch","plain"],"genFanPhase":["patch","circular","plain"],"genFanRandom":["patch","plain"],"genFan":["patch","plain"],"genFanRate":["patch","rate","plain"],"genFanLfo":["patch","plain"],"genLfoRate":["patch"],"genBend":["patch","plain"],"genBendAt":["patch","plain"],"scatterPlace":["patch"],"scatterRate":["patch","rate"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterStagger":["patch"],"scatterDrift":["patch"],"scatterLight":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"]};
   const tagged = tag => Object.keys(TAGS).filter(n => TAGS[tag ? n : n].includes(tag));
 
   const NAME_BY_CC = {};

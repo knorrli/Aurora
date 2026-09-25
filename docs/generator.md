@@ -192,7 +192,7 @@ it, and tempo division, an index into six note values with no halfway.
 **Which reading of the LFO a destination takes is the destination's own
 property**, not the route's, and is tagged `[plain]`. A destination on a strip
 reads that strip's fanned reading, so a push rolls across the wall. The washes
-read the plain one, a PAR being one position with no strip to be offset from.
+read the plain one shifted by their own LFO spread, never the fan's.
 So do the fan's three amounts — a route aimed at one while reading the fanned
 LFO would need its own phase to compute what sets its own phase — and so
 does the shape count, which sets the cell geometry the strip loop is built on
@@ -1022,9 +1022,10 @@ What the preview confirms, measured rather than argued:
 darken. That is the same trap the white and dark controls already set for a
 performer who keeps the V fader at the top, and it is what makes look 3 free.
 
-Two things it does not do. It does not reach the PARs: a PAR is one position and
-the scatter's value is per cell, so sampling it there is the same unbuilt work
-as sampling the color layer there. And moving Stagger re-keys every cell, so
+Two things it does not do. It does not reach the PARs, which are known only by
+their order and have no cell to sit in; their shuffle is the random voice they
+get instead — `DESIGN.md` § "Four lamps in order, not four points on the
+wall". And moving Stagger re-keys every cell, so
 everything in flight jumps — the price of holding no state, confined to one
 control.
 

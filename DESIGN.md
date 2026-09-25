@@ -614,53 +614,83 @@ lit — only one has ever been connected at once.**
 
 ### Where they stand, which decides everything else
 
-Four BeamZ BCC145 on the stage floor, pointing at the back wall to light
-the stage frame. **They will never be rigged or ceiling-mounted**: there
-is no time and no crew for it at the gigs this band plays, so this is a
-constraint rather than a starting point.
+Four BeamZ BCC145 on the stage floor, pointing up at a wall. **They will
+never be rigged or ceiling-mounted**: there is no time and no crew for it at
+the gigs this band plays, so this is a constraint rather than a starting
+point. They can only ever make a **low, soft pool on a vertical surface**.
+No beams, nothing in the air, nothing above head height.
 
-- They already have a **horizontal position** across the stage, so they
-  can be addressed by position alongside the strips without arranging
-  anything.
-- They can only ever make a **low, soft pool on a vertical surface**. No
-  beams, nothing in the air, nothing above head height.
+**What a venue guarantees is their order, and nothing else.** They can be
+plugged in first to fourth, but not spaced evenly, and not placed in any
+fixed relation to the strips: between the strips on the back wall is the
+plan, and the strips in the middle with two PARs either side, one on the
+back wall and one on the side wall, is just as likely. So nothing may
+depend on where a PAR stands. Anything may depend on which of the four it
+is.
 
-**Aim each one at the wall between two strips, not at a strip.** That is
-what "aim them off the strips" becomes for a floor fixture — the strips
-stay against dark wall, so nothing collapses the contrast of the
-graphic, and the pool lands in a gap that is meters wide.
+**Aim each one at a gap, not at a strip.** The strips stay against dark
+wall, so nothing collapses the contrast of the graphic.
 
-### A PAR is a position, not a second machine
+### Four lamps in order, not four points on the wall — settled 2026-09-25
 
-The generator is already a function of where you are on the wall. A strip
-is a line of positions; a PAR is one position with no length. So the same
-machine renders both, and every noun above covers them for free — a patch
-holds them, a morph carries them, the numpad selects them. There is no wash page and no second saved thing.
+The four were once to be sampled off the color layer at their positions on
+the wall. That died with the placement: a position the rig cannot guarantee
+is not something a patch can be built on. What they get instead is a small
+voice of their own, worked out across **their order**, so that with the
+strips dark they are still worth watching.
 
-That splits along the two layers the generator already has:
+**One spread, the fan's idea over four lamps.** A lamp's slot is 0 to 3, and
+two amounts spread the four by slot:
 
-- **Most of the color layer is what a one-pixel fixture can render.**
-  Sampled at each PAR's position, so the four of them differ from each
-  other and from the strips instead of being four copies of one hue. The
-  wander and a gradient measured across the strips both reach a PAR; a ruler
-  measured within a shape does not, since a PAR has no shape to be inside.
-  `dmx_out::tick()` reads one flat `presetColor` for all four today.
+- **Hue spread** turns each slot further round the palette from the one
+  before. A quarter turn is four colors evenly round the loop, half a turn is
+  two colors alternating, the two directions are the two ways across the
+  four. Lamp one sits on the hue offset, so a route on the hue offset rotates
+  the whole spread: a stepped wave steps the colors from lamp to lamp on the
+  beat, a smooth one sweeps them.
+- **LFO spread** delays each slot further into the LFO's cycle. A quarter
+  cycle is a chase, half a cycle is alternating pairs, and the two directions
+  are the two ways across. Stepped to 32nds of a cycle so both land exactly.
+  All three of a lamp's LFO targets — level, hue offset, saturation — shift
+  together, because a lamp has one clock.
 
-  Two looks already asked for need more than the hue offset they have: a
-  white flash between strip strobes, and the PARs following a red-to-green
-  gradient with the strips. **The white flash is reachable as of
-  2026-09-22** — the LFO pushes their saturation toward white, on its own
-  wave, so it can flash between the strips' strobes rather than with them.
-  The gradient still needs the color layer sampled at each PAR's position,
-  which is not built.
-- **The shape layer cannot reach them, except the LFO**, which is
-  brightness over time and needs no length. So a PAR follows a swell, a
-  strobe and a breathe, and ignores a sweep. Slow and broad on the PARs,
-  fast and fine on the strips, by construction rather than by discipline.
-  **Built 2026-09-22**: level, hue offset and saturation each take the
-  LFO with an amount and a wave of their own, so the washes can breathe
-  under a strip strobe. All four move together — they take the unfanned
-  phase, since a PAR is one position with no strip to be offset from.
+Spacing is per neighbor rather than across the whole four, because that is
+what reaches alternating pairs: a total spread shared out over four lamps
+never puts lamps one and three together.
+
+**A shuffle deals the slots out again.** Each spread has a chance that the
+four slots are handed to the lamps in a new order, rolled once a cycle: 0
+never reshuffles, full reshuffles every cycle. A deal is a reordering, never
+a fresh draw per lamp, so the four colors always stay four different ones and
+a flash always lands on the spread's grid — a shuffled chase is still one
+lamp a beat, in time, in an order nobody can predict. A draw per lamp was
+rejected because at a partial amount it puts flashes a little off the beat,
+which from the audience reads as a mistake.
+
+- **The LFO shuffle** rolls on the LFO's own cycle, which is the bar line
+  for the lamp in slot 0. With a flashing wave the other three are dark
+  there, so the new order lands unseen. A swell spread across the four is lit
+  everywhere, and a new deal jumps its brightness: a known cost, judged on
+  the wall rather than designed out.
+- **The hue shuffle** rolls on a clock of its own, stepped through the LFO's
+  periods, so the colors can change every bar while the lamps flash every
+  beat. With the lamps held steady it is a wash that recolors itself every
+  few bars, which the LFO could only do by slowing the strips' LFO too. A new
+  deal on a lit lamp is a hard cut.
+
+The deal is stateless: each cycle rolls its chance from a hash of the cycle's
+number, and a cycle that does not reshuffle walks back to the last one that
+did. The brain and the editor therefore agree on it without sharing anything.
+
+**Strip hue and PAR hue both key off the base.** The strips' pushes never
+reach the PARs and the PARs' never reach the strips, so each drifts from the
+faders on its own. `washAt()` in `shared/render/generator.cpp` keeps that
+rule.
+
+**The shape layer reaches them only through the LFO**, which is brightness
+over time and needs no length. So a PAR follows a swell, a strobe and a
+breathe, and ignores a sweep: slow and broad on the PARs, fast and fine on
+the strips, by construction rather than by discipline.
 
 **The LFO drives the dimmer channel, never the fixture's strobe
 channel.** That channel is a free-running internal rate with nothing to
@@ -668,13 +698,24 @@ lock it to the beat, so it cannot play in time; `docs/wiring.md` calls it
 what a tempo-synced fixture effect would need, and that is wrong. It
 stays available as an unsynced shimmer.
 
+**Not built: new colors from the hue shuffle.** It only reorders the four the
+spreads pick. Shifting the whole set a random distance round the palette on
+each shuffle was offered and declined: a stepped route on the hue offset gets
+close enough.
+
+**Not built: a palette of their own.** Four lamps spread round a shared
+palette already land on four of its colors, and a stepped route jumps
+between them without the blend in between, so a stepped palette buys
+nothing. What one would buy is a color family the strips' palette lacks —
+strips in Space, PARs in amber. One more CC when the wall asks for it.
+
 ### What a patch holds for them
 
 Level, hue offset from the strips' hue, saturation as a scale down from
-the strips' own, and how much of the LFO reaches them — the last of
-these three times over, once for each of level, hue and saturation. All of
-it relative to what the strips are doing — a relationship, not a second
-look.
+the strips' own, the two spreads, the two shuffles and the hue shuffle's
+clock. Routes reach level, hue offset and saturation like any control. All
+of it measured from the faders the strips measure from — a relationship,
+not a second look.
 
 **Saturation is a scale rather than a setting**, on CC 29 since
 2026-09-22, and that is what makes it a relationship: full is whatever the
@@ -702,6 +743,9 @@ provisional.
 
 The four PARs fill exactly the four gaps between five strips, so the
 window's X axis runs over nine alternating positions rather than five.
+**This whole section assumes that layout**, which § "Where they stand" no
+longer guarantees; with two PARs either side of the strips it has no
+meaning. Nothing here is built.
 
 - **Width re-reads on the 3-way rocker** as one position, three, or all
   nine. The middle setting becomes one strip plus the two PARs flanking
