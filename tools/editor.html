@@ -57,6 +57,11 @@
   .top .spacer { flex: 1; }
   .top .group { display: flex; gap: 7px; align-items: center; }
   .top .group + .group { border-left: 1px solid var(--line); padding-left: 14px; }
+  .beats { display: flex; gap: 5px; align-items: center; margin-left: 4px; }
+  .beats i { width: 9px; height: 9px; border-radius: 50%; background: var(--rail); }
+  .beats i:first-child { width: 11px; height: 11px; }
+  .beats i.on { background: #6b5237; }
+  .beats i.hit { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
   .shell {
     display: grid;
@@ -234,7 +239,8 @@
   .mod[data-tone=lfo] .mod-name { color: var(--lfo); }
   .mod[data-tone=scatter] .mod-name { color: var(--scatter); }
   .mod[data-tone=color] .mod-name { color: var(--color); }
-  .mod-head .tiny { margin-left: auto; }
+  .mod-state { margin-right: auto; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  .mod.bypassed .mod-body, .mod.silent .mod-body { opacity: .38; }
   .mod-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
 
   .routepanel {
@@ -298,6 +304,7 @@
     <button id="clockToggle">clock</button>
     <input type="number" id="bpm" value="120" min="40" max="220" step="1" style="width:66px">
     <span class="cc">BPM</span>
+    <span class="beats" id="beats" title="The preview's beat: one dot per quarter note, the first on the bar line"><i></i><i></i><i></i><i></i></span>
   </div>
   <div class="group">
     <button id="sendPatch" title="Send every parameter this patch holds">send to the wall</button>

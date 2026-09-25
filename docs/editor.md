@@ -44,6 +44,28 @@ From the top, below the patch head and the audition:
 The placed field's primitive and ruler sit inside its card, so they do not look
 as though they govern the other sources.
 
+## The order of controls
+
+One rule for every panel, so a control sits where you would reach for it:
+switches first, what kind of thing it is; then how many and how big, Count,
+Width, Edge; then time, Speed or Rate; then finesse, Randomize, Position,
+Slide, Bend, Tail; amounts last, Hue, White, Dark. The fan is the one
+exception: its three amounts come first, since nothing happens until one of
+them is up. The PARs follow the strips' Hue, Saturation, Brightness.
+
+## Bypass and "no effect"
+
+Every source card — the LFO, Field, Flow, Light, Scatter — has a **bypass**
+for comparing a look with and without it at the desk. It is never saved: a
+bypassed card is sent and drawn with its amounts at rest, a bypassed LFO frees
+every route, the patch keeps its values, and choosing another patch clears it.
+The shape lane has none.
+
+A card whose amounts are all at rest, or an LFO with no route pushing, is
+dimmed and says **no effect**. That is a fact about the settings and never
+flips the bypass: a performer turning an amount up on a card that bypassed
+itself would not know whether it had come back.
+
 ## A far end is an override, not a copy
 
 A patch is five parameter sets on the wire. In the editor it is one set plus
@@ -67,6 +89,13 @@ deliberately push. What you get on screen:
   what "reset" means on a far end — on the base it still means no push
 - a far end dialed back onto the base value stops being an override, so the
   count never lies
+
+**Taking the base's changes.** A look dialed on the base that belongs on a far
+end is moved there with *take the base's changes* on that far end's tab:
+whatever the base changed since the patch was last saved — or since it was
+created, if it never was — becomes the far end's overrides, and the base goes
+back. Switches stay on the base, since they belong to the whole patch, and
+the log says which.
 
 ## Edits go into a draft
 

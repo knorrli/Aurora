@@ -280,6 +280,7 @@
 
   function paint() {
     const live = liveNamed();
+    paintCards(live);
     const base = L.namedFromSet(baseSet());
     const moved = overrides();
     const farEnd = isFarEnd();
@@ -367,7 +368,7 @@
 
     const groups = el('div', 'groups');
     for (const g of P.SHAPE.groups) {
-      groups.appendChild(buildGroup(g.title, [...(g.controls || []), ...(g.switches || [])]));
+      groups.appendChild(buildGroup(g.title, [...(g.switches || []), ...(g.controls || [])]));
     }
     host.appendChild(groups);
   }
@@ -377,7 +378,16 @@
     card.dataset.tone = mod.tone;
 
     const head = el('div', 'mod-head');
-    head.append(el('span', 'mod-name', mod.name));
+    const state = el('span', 'mod-state');
+    head.append(el('span', 'mod-name', mod.name), state);
+    const bypass = el('button', 'tiny', 'bypass');
+    bypass.title = 'Hear the patch without this card while you listen. Never saved.';
+    bypass.addEventListener('click', () => {
+      if (!bypassedCards.delete(mod)) bypassedCards.add(mod);
+      paint(); sendLive();
+    });
+    head.appendChild(bypass);
+    cards.push({ mod, card, state, bypass });
     const reset = el('button', 'tiny', 'reset');
     reset.addEventListener('click', () => resetNames([
       ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
@@ -480,13 +490,41 @@
   const routePanel = { root: null, blocks: [], add: null, free: null, target: null };
 
   // Bypass is for listening at the desk and is never saved: a bypassed route
-  // reaches the wall and the brain as a free slot, and the patch keeps it.
+  // reaches the wall and the brain as a free slot, and the patch keeps it. A
+  // bypassed card is sent with its amounts at rest, and a bypassed LFO frees
+  // every route.
   const bypassed = new Set();
+  const bypassedCards = new Set();
   function sounding(named) {
-    if (!bypassed.size) return named;
+    if (!bypassed.size && !bypassedCards.size) return named;
     const out = { ...named };
     for (const route of bypassed) out[route.destination] = 0;
+    for (const mod of bypassedCards) {
+      if (mod === P.LFO) for (const route of P.ROUTES) out[route.destination] = 0;
+      for (const name of mod.amounts || []) out[name] = P.NEUTRAL[name];
+    }
     return out;
+  }
+
+  // A card with every amount at rest, or an LFO with no route pushing, changes
+  // nothing on the wall however its source is set.
+  function cardSilent(mod, live) {
+    if (mod === P.LFO) {
+      return !P.ROUTES.some(r => live[r.destination] !== 0 && live[r.amount] !== P.NEUTRAL[r.amount]);
+    }
+    return (mod.amounts || []).every(name => live[name] === P.NEUTRAL[name]);
+  }
+
+  const cards = [];
+  function paintCards(live) {
+    for (const { mod, card, state, bypass } of cards) {
+      const off = bypassedCards.has(mod);
+      const silent = cardSilent(mod, live);
+      card.classList.toggle('bypassed', off);
+      card.classList.toggle('silent', silent && !off);
+      bypass.classList.toggle('on', off);
+      state.textContent = off ? 'bypassed' : silent ? 'no effect' : '';
+    }
   }
 
   function buildRoutePanel() {
@@ -908,11 +946,32 @@
       wrap.appendChild(sel);
       return wrap;
     };
+    const take = el('button', 'tiny', 'take the base\u2019s changes');
+    take.title = 'Everything changed on the base since this edit began becomes this far end, and the base goes back. Switches stay on the base.';
+    take.addEventListener('click', takeBaseChanges);
     move.append(
+      take,
       picker('copy from\u2026', from => L.copyOverrides(editing(), from, setIndex)),
       picker('move onto\u2026', to => L.moveOverrides(editing(), setIndex, to, false)),
       picker('swap with\u2026', to => L.moveOverrides(editing(), setIndex, to, true)));
     return move;
+  }
+
+  // The reference is the patch as saved, or as it was created if it never was.
+  function takeBaseChanges() {
+    const saved = slot !== null ? lib.slots[slot] : null;
+    const reference = saved ? saved.base : L.newPatch().base;
+    const { moved, kept } = L.takeBaseChanges(editing(), reference, setIndex);
+    const label = name => (P.CONTROLS[name] ? P.CONTROLS[name].label : name);
+    if (!moved.length && !kept.length) {
+      say('the base has no changes to take', 'bad');
+      return;
+    }
+    save(); buildAudition(); buildSurfaces(); paint(); sendLive();
+    const took = `${P.SET_NAMES[setIndex]} took ${moved.length} change${moved.length === 1 ? '' : 's'} from the base`;
+    say(kept.length
+      ? `${took}; ${kept.map(label).join(', ')} stay${kept.length === 1 ? 's' : ''} on the base — switches belong to the whole patch`
+      : took, kept.length ? 'warn' : 'ok');
   }
 
   // ---- the patch head ----------------------------------------------------
@@ -1022,6 +1081,7 @@
     slot = s;
     draft = newDraft || null;
     bypassed.clear();
+    bypassedCards.clear();
     stopRun();
     audition.pos = 1;
     audition.held = false;
@@ -1371,8 +1431,22 @@
   // gives up is that a far end differing only in a rate looks identical in the
   // still: you see that difference by running the audition, which is what it
   // is for.
+  const beatDots = [...document.querySelectorAll('#beats i')];
+  const BEAT_FLASH = 0.15;
+
+  function paintBeats(quarterNotes) {
+    const beat = Math.floor(quarterNotes);
+    const hit = quarterNotes - beat < BEAT_FLASH;
+    beatDots.forEach((dot, i) => {
+      const on = i === beat % beatDots.length;
+      dot.classList.toggle('on', on);
+      dot.classList.toggle('hit', on && hit);
+    });
+  }
+
   function frame() {
     const quarterNotes = ((performance.now() - startedAt) / 60000) * bpm();
+    paintBeats(quarterNotes);
     drawOne(walls.main, liveNamed(), quarterNotes);
     paintTracks();
     if (isFarEnd()) {

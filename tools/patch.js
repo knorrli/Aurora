@@ -295,8 +295,8 @@
       {
         key: 'travel', title: 'Travel',
         controls: define([
-          C('genPosition', 'Position', 'where a still pattern stands in its cell'),
           C('genSpeed', 'Speed', 'center is still; either side travels'),
+          C('genPosition', 'Position', 'where a still pattern stands in its cell'),
           C('genBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
           C('genBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape\u2019s own cell'),
         ]),
@@ -308,13 +308,13 @@
       {
         key: 'genFan', title: 'Fan',
         controls: define([
-          C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
-          C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
-          C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),
           C('genFan', 'Spread', 'how far apart the five strips stand in their cells'),
           C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
           C('genFanLfo', 'LFO', 'how far apart they stand in the LFO\u2019s cycle'),
-        ]),
+        
+          C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
+          C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
+          C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),]),
       },
     ],
   };
@@ -367,14 +367,14 @@
     {
       key: 'scatter', name: 'Scatter', tone: 'scatter',
       source: define([
-        C('scatterRate', 'Rate', 'how often a cell relights'),
         C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
         C('scatterWidth', 'Width', 'the spot\u2019s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
         C('scatterEdge', 'Edge', 'hard through to a fade \u2014 in space and in time alike'),
+        C('scatterRate', 'Rate', 'how often a cell relights'),
         C('scatterStagger', 'Randomize', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
-        C('scatterDrift', 'Slide', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),
         C('scatterPlace', 'Position', 'where a spot lands each time its cell relights: 0 is the middle of the cell, full anywhere in it'),
-      ]),
+      
+        C('scatterDrift', 'Slide', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),]),
       amounts: define([
         C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
         C('scatterWhite', 'White', 'how far a spot whitens'),
@@ -405,9 +405,9 @@
     {
       key: 'wander', name: 'Flow', tone: 'color',
       source: define([
-        C('wanderRate', 'Speed', 'frozen, through a slow ocean swell, to a nervous flicker'),
         C('wanderScale', 'Density', 'the whole wall moving as one, down to individual pixels'),
-      ]),
+      
+        C('wanderRate', 'Speed', 'frozen, through a slow ocean swell, to a nervous flicker'),]),
       amounts: define([
         C('wanderHue', 'Hue', 'how far the hue wanders either side of the base'),
         C('wanderWhite', 'White', 'how far it whitens where it swings high'),
@@ -437,10 +437,10 @@
 
   const PARS = {
     controls: define([
-      C('washLevel', 'Level', 'the PARs\u2019 master, independent of the strips'),
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
       C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
-    ]),
+    
+      C('washLevel', 'Level', 'the PARs\u2019 master, independent of the strips'),]),
   };
 
   global.AuroraPatch = {

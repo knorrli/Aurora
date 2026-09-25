@@ -217,6 +217,24 @@
     patch.overrides[to] = Object.assign({}, patch.overrides[from] || {});
   };
 
+  // For a look dialed on the base that belongs on a far end: whatever the base
+  // changed since `reference` becomes far end `to`, and the base goes back.
+  // Switches belong to the whole patch, so they stay where they are.
+  function takeBaseChanges(patch, reference, to) {
+    const over = patch.overrides[to] || (patch.overrides[to] = {});
+    const moved = [], kept = [];
+    for (const name of P.NAMES) {
+      const cc = P.CC[name];
+      const now = patch.base[cc] | 0, then = reference[cc] | 0;
+      if (now === then) continue;
+      if (P.SWITCHES.includes(name)) { kept.push(name); continue; }
+      over[name] = now;
+      patch.base[cc] = then;
+      moved.push(name);
+    }
+    return { moved, kept };
+  }
+
   // ---- the file ----------------------------------------------------------
   //
   // Hand-laid out rather than JSON.stringify'd so that one parameter set is
@@ -472,7 +490,7 @@
     T, STATUS, LIB_STATE, HEAD_LEN,
     emptySet, setFromNamed, namedFromSet, readCC, writeCC,
     newPatch, clonePatch, newLibrary, emptySlots, filledSlots, materialize, overriddenIn,
-    mix, moveOverrides, copyOverrides,
+    mix, moveOverrides, copyOverrides, takeBaseChanges,
     toWire, fromWire, libToWire, libFromWire, blend,
     serialize, validate, headBytes, nameOf, slotMapBytes, slotsInMap, Link,
   };
