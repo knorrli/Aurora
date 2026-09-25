@@ -27,7 +27,7 @@ static const Dial BOOT[] = {
   { CC_GEN_SPEED,        64 },
   { CC_GEN_FAN,          64 },
   { CC_GEN_FAN_RATE,     64 },
-  { CC_GEN_FAN_PULSE,    64 },
+  { CC_GEN_FAN_LFO,    64 },
   { CC_GEN_FAN_FREQ,     32 },
   { CC_PLACED_HUE,       64 },
   { CC_PLACED_WHITE,     64 },

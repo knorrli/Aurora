@@ -342,70 +342,71 @@
 
   // ---- the surface -------------------------------------------------------
 
-  function buildLanes() {
-    for (const lane of P.LANES) {
-      const host = $(lane.key === 'shape' ? 'laneShape' : 'laneColor');
-      host.innerHTML = '';
-      const head = el('div', 'lane-head');
-      head.append(el('span', 'lane-name', lane.name));
-      host.appendChild(head);
+  function buildGroup(title, names) {
+    const box = el('div');
+    const h = el('h3', null, title);
+    const reset = el('button', 'reset tiny', 'reset');
+    reset.style.marginLeft = 'auto';
+    reset.addEventListener('click', () => resetNames(names));
+    h.appendChild(reset);
+    box.appendChild(h);
+    const body = el('div');
+    buildRows(body, names);
+    box.appendChild(body);
+    return box;
+  }
 
-      const groups = el('div', 'groups');
-      for (const g of lane.groups) {
-        const box = el('div');
-        const h = el('h3', null, g.title);
-        const reset = el('button', 'reset tiny', 'reset');
-        reset.style.marginLeft = 'auto';
-        reset.addEventListener('click', () =>
-          resetNames([...(g.controls || []), ...(g.switches || [])]));
-        h.appendChild(reset);
-        box.appendChild(h);
-        const body = el('div');
-        buildRows(body, g.controls || []);
-        if (g.switches) buildRows(body, g.switches);
-        box.appendChild(body);
-        groups.appendChild(box);
-      }
-      host.appendChild(groups);
+  function buildShape() {
+    const host = $('laneShape');
+    host.innerHTML = '';
+    const head = el('div', 'lane-head');
+    head.append(el('span', 'lane-name', P.SHAPE.name));
+    host.appendChild(head);
+
+    const groups = el('div', 'groups');
+    for (const g of P.SHAPE.groups) {
+      groups.appendChild(buildGroup(g.title, [...(g.controls || []), ...(g.switches || [])]));
     }
+    host.appendChild(groups);
+  }
+
+  function modCard(mod) {
+    const card = el('article', 'mod');
+    card.dataset.tone = mod.tone;
+
+    const head = el('div', 'mod-head');
+    head.append(el('span', 'mod-name', mod.name));
+    const reset = el('button', 'tiny', 'reset');
+    reset.addEventListener('click', () => resetNames([
+      ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
+    ]));
+    head.appendChild(reset);
+    card.appendChild(head);
+
+    const body = el('div', 'mod-body');
+
+    const sources = [...(mod.switches || []), ...(mod.source || [])];
+    if (sources.length) {
+      const sourceBox = el('div');
+      sourceBox.appendChild(el('h4', null, 'Source'));
+      buildRows(sourceBox, sources);
+      body.appendChild(sourceBox);
+    }
+
+    if (mod.amounts) {
+      const amountBox = el('div');
+      amountBox.appendChild(el('h4', null, 'Amounts'));
+      buildRows(amountBox, mod.amounts);
+      body.appendChild(amountBox);
+    }
+    if (body.children.length < 2) body.style.gridTemplateColumns = '1fr';
+    card.appendChild(body);
+    return card;
   }
 
   function buildModulators() {
-    const host = $('mods');
-    host.innerHTML = '';
-    for (const mod of P.MODULATORS) {
-      const card = el('article', 'mod');
-      card.dataset.tone = mod.tone;
-
-      const head = el('div', 'mod-head');
-      head.append(el('span', 'mod-name', mod.name));
-      const reset = el('button', 'tiny', 'reset');
-      reset.addEventListener('click', () => resetNames([
-        ...(mod.source || []), ...(mod.amounts || []), ...(mod.switches || []),
-      ]));
-      head.appendChild(reset);
-      card.appendChild(head);
-
-      const body = el('div', 'mod-body');
-
-      const sources = [...(mod.switches || []), ...(mod.source || [])];
-      if (sources.length) {
-        const sourceBox = el('div');
-        sourceBox.appendChild(el('h4', null, 'Source'));
-        buildRows(sourceBox, sources);
-        body.appendChild(sourceBox);
-      }
-
-      if (mod.amounts) {
-        const amountBox = el('div');
-        amountBox.appendChild(el('h4', null, 'Amounts'));
-        buildRows(amountBox, mod.amounts);
-        body.appendChild(amountBox);
-      }
-      if (body.children.length < 2) body.style.gridTemplateColumns = '1fr';
-      card.appendChild(body);
-      host.appendChild(card);
-    }
+    $('lfo').replaceChildren(modCard(P.LFO));
+    $('mods').replaceChildren(...P.MODULATORS.map(modCard));
   }
 
   // A starting point writes into whichever set is on screen, which is what
@@ -428,9 +429,9 @@
   }
 
   function buildOutputs() {
-    const host = $('parControls');
-    host.innerHTML = '';
-    buildRows(host, P.PARS.controls);
+    $('outputs').replaceChildren(
+      buildGroup('5 strips', P.STRIPS.controls),
+      buildGroup('4 PARs', P.PARS.controls));
 
     $('timingGroup').innerHTML = '';
     buildRows($('timingGroup'), P.TIMING.controls);
@@ -447,7 +448,7 @@
     const ratio = A.routeRatio(live[route.ratio]);
     const wave = live[route.wave];
     const swings = (A.TAGS[A.NAME_BY_CC[live[route.destination]]] || []).includes('rate');
-    const at = V.pulseWave(phase * ratio - live[route.phase] / 128, wave);
+    const at = V.lfoWave(phase * ratio - live[route.phase] / 128, wave);
     return P.bip(live[route.amount]) * (swings ? at - V.waveMean(wave) : at);
   }
 
@@ -963,7 +964,7 @@
 
     for (const [id, field] of [['pRampJourney', 'rampJourney'], ['pRampAccent', 'rampAccent']]) {
       const sel = $(id);
-      P.PULSE_PERIOD_NAMES.forEach((text, step) => {
+      P.LFO_PERIOD_NAMES.forEach((text, step) => {
         const o = el('option', null, text); o.value = P.periodByte(step); sel.appendChild(o);
       });
       sel.title = 'Stepped to values that come back to the grid, so holding through a completed journey arrives on a beat.';
@@ -1050,9 +1051,6 @@
       });
       host.appendChild(b);
     }
-    const zero = el('button', 'key zero');
-    zero.append(el('span', 'n', '0'), el('span', 'who', 'blackout — an override, not a patch'));
-    host.appendChild(zero);
   }
 
   const leaveDraft = () => !draft
@@ -1281,7 +1279,7 @@
   //
   // The band is as far as the routes can reach a control, and each mark is
   // where one strip has it this frame. The marks sit on top of one another
-  // unless the fan spreads the strips' clocks.
+  // unless the fan spreads the strips' LFO phases.
   const HANDLE_RADIUS = 8;
 
   function along(input, v) {
@@ -1334,7 +1332,7 @@
       return [64];
     }
     if (name === 'genBendAt') return [64];
-    if (name === 'genPulseRate' || name === 'genFanFreq') {
+    if (name === 'genLfoRate' || name === 'genFanFreq') {
       return stepPoints(v => V.convert(P.CC[name], v));
     }
     const cc = P.CC[name];
@@ -1368,7 +1366,7 @@
     if (swing) {
       for (const [low, high] of swing.spans) {
         const from = reaching(input, low), to = reaching(input, high);
-        layers.push(stops(['transparent', '0%', from], ['var(--pulse)', from, to],
+        layers.push(stops(['transparent', '0%', from], ['var(--lfo)', from, to],
                           ['transparent', to, '100%']));
       }
     }
@@ -1466,7 +1464,7 @@
   // ---- go ----------------------------------------------------------------
 
   V.ready.then(() => {
-    buildLanes();
+    buildShape();
     buildModulators();
     buildRoutePanel();
     buildStarts();

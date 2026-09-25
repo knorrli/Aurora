@@ -105,15 +105,15 @@
   const hueReach = (name, suffix) => v => signedInt(Math.round(real(name, v))) + suffix;
   const swing = name => v => '±' + percent(Math.abs(real(name, v)));
 
-  const PULSE_PERIODS = A.PULSE_PERIODS;
+  const LFO_PERIODS = A.LFO_PERIODS;
   const PERIOD_NAMES = {
     16: '16 beats · four bars', 12: '12 beats · three bars', 8: '8 beats · two bars',
     6: '6 beats', 4: '4 beats · one bar', 3: '3 beats', 2: '2 beats · half a bar',
     1.5: '1½ beats', 1: '1 beat', 0.75: '¾ beat', 0.5: '½ beat', 0.375: '⅜ beat', 0.25: '¼ beat',
   };
-  const PULSE_PERIOD_NAMES = PULSE_PERIODS.map(beats => PERIOD_NAMES[beats]);
-  const periodStep = v => PULSE_PERIODS.indexOf(V().pulsePeriodBeats(v));
-  const periodByte = step => Math.round(step * 127 / (PULSE_PERIODS.length - 1));
+  const LFO_PERIOD_NAMES = LFO_PERIODS.map(beats => PERIOD_NAMES[beats]);
+  const periodStep = v => LFO_PERIODS.indexOf(V().lfoPeriodBeats(v));
+  const periodByte = step => Math.round(step * 127 / (LFO_PERIODS.length - 1));
 
   // AuroraTempoDivision. The value is the enum index, not a 0-127 scale, which
   // is why this control is a list and not a fader.
@@ -140,7 +140,7 @@
                       return at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top'
                            : Math.round(at * 100) + '% up'; },
     genFan: fanAmount('genFan', 'of a cell apart'),
-    genFanPulse: fanAmount('genFanPulse', 'of a swell apart'),
+    genFanLfo: fanAmount('genFanLfo', 'of a swell apart'),
     genFanRate: v => '±' + Math.abs(real('genFanRate', v)).toFixed(1)
                      + ' px/beat either side of Speed',
     genFanFreq: fanTurns,
@@ -151,9 +151,9 @@
     saturation: v => ofByte(real('saturation', v)),
     value: v => ofByte(real('value', v)),
 
-    genPulseRate: v => PERIOD_NAMES[real('genPulseRate', v)].split(' · ')[0],
+    genLfoRate: v => PERIOD_NAMES[real('genLfoRate', v)].split(' · ')[0],
     routeAmount: v => signed(bip(v)),
-    routeRatio: v => '×' + A.routeRatio(v) + ' the clock',
+    routeRatio: v => '×' + A.routeRatio(v) + ' the LFO',
     routePhase: v => Math.round(v / 128 * 360) + '° into its cycle',
     // One axis from a build to a stab; the named shapes are notched on the
     // track. See docs/modulation.md § "The fork, settled".
@@ -227,12 +227,12 @@
   const NEUTRAL = {
     tempoDivision: 0,
     genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
-    genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
+    genFan: 64, genFanLfo: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
     genBounce: OFF,
 
     hue: 20, saturation: 100, value: 110,
 
-    genPulseRate: 64,
+    genLfoRate: 64,
 
     scatterRate: 60, scatterCount: 80, scatterWidth: 34, scatterEdge: 40,
     scatterStagger: 110, scatterDrift: 64,
@@ -251,7 +251,7 @@
   for (const n of ['slotA', 'slotB', 'slotC', 'slotD', 'slotE',
                    'slotF', 'slotG', 'slotH', 'slotI', 'slotJ']) NEUTRAL[n] = 0;
 
-  // Aimed nowhere, pushing nothing, at the clock's own rate, on the swell,
+  // Aimed nowhere, pushing nothing, at the LFO's own rate, on the swell,
   // starting on the bar line.
   for (let r = 0; r < A.ROUTES; r++) {
     NEUTRAL[routeName(r, 'destination')] = 0;
@@ -270,65 +270,50 @@
 
   // ---- the surface -------------------------------------------------------
   //
-  // Carrier, modulators, outputs. The two lanes hold only what the wall shows
-  // with nothing pushing on it; everything that pushes is a source with its
-  // amounts beside it, and every source is drawn the same way whatever it
-  // reaches — the placed field, the wander and the light level all land on the
-  // same three qualities and add.
+  // Carrier, modulators, outputs. The shape lane and the outputs hold only
+  // what the wall shows with nothing pushing on it; everything that pushes is
+  // a source with its amounts beside it, and every source is drawn the same
+  // way whatever it reaches — the placed field, the wander and the light level
+  // all land on the same three qualities and add.
 
-  const LANES = [
-    {
-      key: 'shape', name: 'Shape',
-      groups: [
-        {
-          key: 'form', title: 'Form',
-          controls: define([
-            C('genCount', 'Count', 'how many shapes along the strip, 1\u201320'),
-            C('genWidth', 'Width', 'the solid core, as a proportion of one cell'),
-            C('genEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
-            C('genTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
-          ]),
-        },
-        {
-          key: 'travel', title: 'Travel',
-          controls: define([
-            C('genPosition', 'Position', 'where a still pattern stands in its cell'),
-            C('genSpeed', 'Speed', 'center is still; either side travels'),
-            C('genBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
-            C('genBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape\u2019s own cell'),
-          ]),
-          switches: define([
-            C('genBounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
-              { kind: 'two', options: [[OFF, 'wrap'], [ON, 'genBounce']] }),
-          ]),
-        },
-        {
-          key: 'genFan', title: 'Fan',
-          controls: define([
-            C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
-            C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
-            C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),
-            C('genFan', 'Position', 'how far apart the five strips stand in their cells'),
-            C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
-            C('genFanPulse', 'Pulse', 'how far apart they stand in the swell'),
-          ]),
-        },
-      ],
-    },
-    {
-      key: 'color', name: 'Color',
-      groups: [
-        {
-          key: 'base', title: 'The three faders',
-          controls: define([
-            C('hue', 'Hue', 'the center hue everything else is measured from'),
-            C('saturation', 'Saturation', 'full is a pure hue, zero is white'),
-            C('value', 'Brightness', 'the ceiling everything below scales against'),
-          ]),
-        },
-      ],
-    },
-  ];
+  const SHAPE = {
+    name: 'Shape',
+    groups: [
+      {
+        key: 'form', title: 'Form',
+        controls: define([
+          C('genCount', 'Count', 'how many shapes along the strip, 1\u201320'),
+          C('genWidth', 'Width', 'the solid core, as a proportion of one cell'),
+          C('genEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
+          C('genTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
+        ]),
+      },
+      {
+        key: 'travel', title: 'Travel',
+        controls: define([
+          C('genPosition', 'Position', 'where a still pattern stands in its cell'),
+          C('genSpeed', 'Speed', 'center is still; either side travels'),
+          C('genBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
+          C('genBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape\u2019s own cell'),
+        ]),
+        switches: define([
+          C('genBounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
+            { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
+        ]),
+      },
+      {
+        key: 'genFan', title: 'Fan',
+        controls: define([
+          C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
+          C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
+          C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),
+          C('genFan', 'Position', 'how far apart the five strips stand in their cells'),
+          C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
+          C('genFanLfo', 'LFO', 'how far apart they stand in the LFO\u2019s cycle'),
+        ]),
+      },
+    ],
+  };
 
   // ---- the modulators ----------------------------------------------------
   //
@@ -352,7 +337,7 @@
   for (const route of ROUTES) {
     define([
       C(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom. On a rate, how wide the swing either side, and which half comes first'),
-      C(route.ratio, 'Ratio', 'whole multiples of the clock'),
+      C(route.ratio, 'Ratio', 'whole multiples of the LFO'),
       C(route.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
       C(route.phase, 'Phase', 'how far into its own cycle the wave starts after the bar line'),
     ]);
@@ -367,13 +352,14 @@
     inertWhy: 'a gradient spans its ruler once, so there is nothing here to repeat, size or move',
   };
 
+  const LFO = {
+    key: 'lfo', name: 'LFO', tone: 'lfo',
+    source: define([
+      C('genLfoRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
+    ]),
+  };
+
   const MODULATORS = [
-    {
-      key: 'pulse', name: 'The clock', tone: 'pulse',
-      source: define([
-        C('genPulseRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
-      ]),
-    },
     {
       key: 'scatter', name: 'The scatter', tone: 'scatter',
       source: define([
@@ -435,6 +421,14 @@
     },
   ];
 
+  const STRIPS = {
+    controls: define([
+      C('hue', 'Hue', 'the center hue everything else is measured from'),
+      C('saturation', 'Saturation', 'full is a pure hue, zero is white'),
+      C('value', 'Brightness', 'the ceiling everything below scales against'),
+    ]),
+  };
+
   const PARS = {
     controls: define([
       C('washLevel', 'Level', 'the PARs\u2019 master, independent of the strips'),
@@ -460,22 +454,22 @@
   // Wave, Chase and Stutter below spend their amount on the swell.
   const SHAPE_FLAT = {
     genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
-    genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
+    genFan: 64, genFanLfo: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
     genBounce: OFF,
   };
 
   const ANCHORS = {
-    Fill:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    Sweep:      { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    Rain:       { genWidth: 40, genCount: 0, genEdge: 18, genTail: 96, genSpeed: 80, genFan: 100, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    CrossSweep: { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 64, genFan: 64, genFanRate: 80, genFanFreq: 127, genFanPhase: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    Bars:       { genWidth: 25, genCount: 0, genEdge: 15, genTail: 0, genSpeed: 88, genFan: 64, genBounce: ON, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    Breathe:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 100, genPulseRate: 30, pulseWave: 32 },
-    Wave:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 104, pulseDepth: 100, genPulseRate: 30, pulseWave: 32 },
-    Chase:      { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 114, pulseDepth: 127, genPulseRate: 55, pulseWave: 88 },
-    Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 119, genSpeed: 80, genFan: 114, pulseDepth: 0, genPulseRate: 55, pulseWave: 32 },
-    Strobe:     { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
-    Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 88, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
+    Fill:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
+    Sweep:      { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
+    Rain:       { genWidth: 40, genCount: 0, genEdge: 18, genTail: 96, genSpeed: 80, genFan: 100, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
+    CrossSweep: { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 64, genFan: 64, genFanRate: 80, genFanFreq: 127, genFanPhase: 64, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
+    Bars:       { genWidth: 25, genCount: 0, genEdge: 15, genTail: 0, genSpeed: 88, genFan: 64, genBounce: ON, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
+    Breathe:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 100, genLfoRate: 30, pulseWave: 32 },
+    Wave:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanLfo: 104, pulseDepth: 100, genLfoRate: 30, pulseWave: 32 },
+    Chase:      { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanLfo: 114, pulseDepth: 127, genLfoRate: 55, pulseWave: 88 },
+    Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 119, genSpeed: 80, genFan: 114, pulseDepth: 0, genLfoRate: 55, pulseWave: 32 },
+    Strobe:     { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 127, genLfoRate: 100, pulseWave: 96 },
+    Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanLfo: 88, pulseDepth: 127, genLfoRate: 100, pulseWave: 96 },
     'Falling, bent': { genWidth: 30, genCount: 39, genEdge: 8, genTail: 32, genSpeed: 40, genBend: 127, genBendAt: 127 },
     'Bouncing, bent': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 92, genBounce: ON, genBend: 127, genBendAt: 64 },
   };
@@ -489,7 +483,7 @@
   // strips still in Hypno together while the center runs.
   const FAN_LOOKS = {
     'Bars, unison strobe': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 100,
-                             pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
+                             pulseDepth: 127, genLfoRate: 100, pulseWave: 96 },
     'Diagonal bars':  { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 0 },
     'Chevron \u2227':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 32 },
     'Chevron \u2228':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 14, genFanPhase: 32 },
@@ -504,16 +498,16 @@
 
   // For judging a tail under a swung speed: it should stay behind the shape
   // through the reversal, shrink as the shape slows and be gone while it
-  // stands. One comet per strip, a one-bar clock and a sine on Speed, with the
-  // fan's pulse spread at full so the five strips stand at five points of the
+  // stands. One comet per strip, a one-bar LFO and a sine on Speed, with the
+  // fan's LFO spread at full so the five strips stand at five points of the
   // swing and forward and backward show side by side. The first stands still
   // and swings ±20 px/beat; the second runs forward at 20 and swings ±10, so
   // it slows and never reverses; the third is the first under bounce. Every other route is freed, since a look that left
   // one running would be judged against it.
   const route0 = field => routeName(0, field);
   const SWING = {
-    genWidth: 10, genCount: 0, genEdge: 6, genTail: 56, genSpeed: 64, genPulseRate: 38,
-    genFanPulse: 127,
+    genWidth: 10, genCount: 0, genEdge: 6, genTail: 56, genSpeed: 64, genLfoRate: 38,
+    genFanLfo: 127,
     [route0('destination')]: A.CC.genSpeed, [route0('amount')]: 100,
     [route0('ratio')]: 0, [route0('wave')]: A.GEN_WAVE_SWELL, [route0('phase')]: 32,
   };
@@ -571,9 +565,9 @@
     SET_BASE, SET_COLOR, SET_EXTENT, SET_MOTION, SET_ACCENT, SET_NAMES, SET_BLURB,
     CC, NAMES, SWITCHES, CONTINUOUS, CONTROLS, DERIVED, NEUTRAL, DEFAULT,
     OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
-    unit, bip, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
+    unit, bip, LFO_PERIODS, LFO_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
-    LANES, MODULATORS, ROUTES, PARS, TIMING,
+    SHAPE, LFO, MODULATORS, ROUTES, STRIPS, PARS, TIMING,
     ANCHORS, FAN_LOOKS, SWING_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

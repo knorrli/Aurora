@@ -56,12 +56,12 @@ That is the whole thing. Everything below is a parameter of it.
 | 68 | Bend | Travel slowed and sped by where a shape is. See "Bend: speed set by where a shape is on the strip" | bipolar, up to 39:1 |
 | 69 | Bend at | Where the bend peaks along the strip, or each cell while bouncing | bottom → top |
 | 64 | Fan · Position | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
-| 66 | Fan · Pulse | How far apart they stand in the swell | bipolar, ±100 % of a swell |
+| 66 | Fan · LFO | How far apart they stand in the LFO's cycle | bipolar, ±100 % of a cycle |
 | 65 | Fan · Rate | How far apart their speeds stand, either side of Speed | bipolar, ±60 px/beat |
 | 61 | Fan · Frequency | All five alike → every strip opposite its neighbors | 0 – ½ cycle per strip |
 | 62 | Fan · Phase | Where the wave sits on the strips | one turn |
 | 63 | Fan · Randomize | The wave → a fixed draw per strip | 0–100 % |
-| 67 | Pulse rate | How long one cycle of the clock takes. Stepped | 16 → 0.25 beats |
+| 67 | LFO rate | How long one cycle of the LFO takes. Stepped | 16 → 0.25 beats |
 | 59 | Position | Where a still pattern stands in its cell. Bipolar — center is the middle | ±half a cell |
 | 80–119 | Routes | Eight of five bytes: destination, amount, ratio, wave, phase | see "Routes" |
 
@@ -123,7 +123,7 @@ center of each strip, which is the thing that could not be dialed before.
 stands still, the running total walks to the nearest whole cell over about two
 beats. A whole cell is invisible, so home is never more than half a cell away,
 and bringing Speed to a stop settles rather than jumps. It is the same fix as
-the pulse's anchoring, one section down, against the same cause.
+the LFO's anchoring, one section down, against the same cause.
 
 **Under bounce Position does nothing.** The swing is anchored to the cell's
 walls — that is what keeps the turn where Width puts it — so there is no
@@ -150,8 +150,8 @@ as wide as the strip.
 
 ### Routes, built 2026-09-24
 
-One clock, and eight routes off it. A route is five bytes — which control it
-pushes, how far, at what whole multiple of the clock, what wave does the
+One LFO, and eight routes off it. A route is five bytes — which control it
+pushes, how far, at what whole multiple of the LFO, what wave does the
 pushing, and how far into its own cycle the wave starts — so where modulation lands is part of the patch rather than fixed in
 the firmware. The layout is `shared/aurora_protocol.h` § "Modulation routes";
 `docs/modulation.md` is the record of why each of these is what it is.
@@ -183,15 +183,15 @@ route aimed at one swings it above and below its dialed value with the wave's
 average taken off, so it adds nothing over a cycle and the wall comes back
 into line once a route cycle. `docs/modulation.md` § "A rate swings both ways".
 
-**Two controls are refused.** The clock's own rate, because every route reads
+**Two controls are refused.** The LFO's own rate, because every route reads
 it, and tempo division, an index into six note values with no halfway.
 
-**Which reading of the clock a destination takes is the destination's own
+**Which reading of the LFO a destination takes is the destination's own
 property**, not the route's, and is tagged `[plain]`. A destination on a strip
 reads that strip's fanned reading, so a push rolls across the wall. The washes
 read the plain one, a PAR being one position with no strip to be offset from.
 So do the fan's three amounts — a route aimed at one while reading the fanned
-clock would need its own phase to compute what sets its own phase — and so
+LFO would need its own phase to compute what sets its own phase — and so
 does the shape count, which sets the cell geometry the strip loop is built on
 before that loop opens.
 
@@ -230,7 +230,7 @@ order leaves a crossfade between two shapes that blends into neither.
 A sine can never produce an on/off edge no matter how deep it goes, which is
 why the hard end of this sweep exists.
 
-### The pulse lands on the bar, built 2026-09-22
+### The LFO lands on the bar, built 2026-09-22
 
 Two halves, and neither works without the other.
 
@@ -238,7 +238,7 @@ Two halves, and neither works without the other.
 teleporting — see `docs/bench-facts.md` § "A phase derived from absolute
 time teleports" — is also what left the cycle's zero wherever the rate was
 last touched. A whole cycle of offset is invisible, so only the fraction
-has to go: it is eased out over about two cycles, which walks the pulse
+has to go: it is eased out over about two cycles, which walks the LFO
 back onto the grid without ever jumping. Measured in the preview: a rate
 moved mid-flight pushes the phase to at most about 1.4× its settled speed
 for a moment, and a morph sweeping the whole rate fader never steps more
@@ -271,17 +271,17 @@ Thirteen of the roster, approximately, from nine knobs and two switches:
 | Rain | the same with the fan's position amount up and some tail |
 | CrossSweep | Sweep with the odd strips reversed by the fan's rate spread |
 | Bars | Sweep on bounce instead of wrap |
-| Breathe | width full, not moving, pulse deep and slow, sine |
-| Wave | the same with the fan's pulse amount up |
-| Chase | width full, pulse at maximum, the fan's pulse amount at maximum |
+| Breathe | width full, not moving, LFO deep and slow, sine |
+| Wave | the same with the fan's LFO amount up |
+| Chase | width full, LFO at maximum, the fan's LFO amount at maximum |
 | Comet | a narrow shape with a long tail, traveling, strips fanned |
 | Starfield | tiny shapes, high count, jitter up |
-| Strobe | width full, pulse at maximum, fast, square |
-| Stutter | Strobe with some fan on the pulse |
+| Strobe | width full, LFO at maximum, fast, square |
+| Stutter | Strobe with some fan on the LFO |
 | Glitch | tiny, high count, jitter at maximum |
 
 **Fan was doing three jobs at once** — it was the Sweep→Rain axis, the
-Breathe→Wave axis, *and* the thing that turns a pulse into a chase across
+Breathe→Wave axis, *and* the thing that turns the LFO into a chase across
 the strips. The first two were already known to be one number, and that
 the third fell out of the same parameter read as evidence the
 decomposition was real rather than fitted after the fact.
@@ -423,10 +423,10 @@ marched.
 Color read off how lit a pixel already is, so a comet's tail cools
 instead of only dimming. Anchored at the dim end: the faders are what a
 fade runs out to, and the core is the departure. It reads the shape's own
-profile, before jitter and the pulse.
+profile, before jitter and the LFO.
 
 **It is not made redundant by the shape ruler**, and the reason is worth
-keeping. The pulse swells brightness with no spatial component at all, and
+keeping. The LFO swells brightness with no spatial component at all, and
 jitter scatters it at random; neither has a position for a ruler to
 measure. Only this source reaches them. Point it at a flashing wall and
 the wall goes hot as it flashes.
@@ -480,7 +480,7 @@ divide the time controls, and the split is not cosmetic: **Speed is travel
 through space and is bipolar**, because which way a thing moves is a look
 you can see, while **Rate is recurrence in time and is unipolar**, because
 a cycle has no direction to reverse. Travel and the placed field take the
-first; the pulse and the wander take the second.
+first; the LFO and the wander take the second.
 
 Settled 2026-09-23, retiring the two controls that were named as questions
 rather than for what they set. "How fast" is the wander's **Rate**. "How
@@ -498,7 +498,7 @@ Two things follow from drawing it that way, and both are in
   level and hue offset are a relationship to the strips rather than a
   second look. See `DESIGN.md` § "The PAR cans". The shape ruler is the
   exception and does not reach them at all.
-- **The pulse is the exception that crosses.** It sits in the shape
+- **The LFO is the exception that crosses.** It sits in the shape
   branch, but it is the one shape-side thing a PAR can show, so it is
   drawn as a send rather than as part of the branch.
 
@@ -539,7 +539,7 @@ aimed at.
 
 **Fan's name was wrong.** It read as "vertical offset between strips" and
 was really a per-strip phase offset applied to everything cyclic, travel
-and pulse alike — the part nobody guessed from the word. Settled by
+and the LFO alike — the part nobody guessed from the word. Settled by
 § "The fan is a wave": the three quantities it reaches now have an amount
 each, and the controls are named for the place they reach.
 
@@ -718,7 +718,7 @@ across the flip.
 
 ### Modulation, settled 2026-09-21
 
-The pulse is a modulator, and the wander is a second one: a source, a set
+The LFO is a modulator, and the wander is a second one: a source, a set
 of destinations, and an **amount** for each. That is the
 synth pattern, and naming it makes a fourth word the two branches share,
 alongside Form, Travel and Shape.
@@ -740,7 +740,7 @@ aimed at it.
 
 **Patchable routing, rejected 2026-09-21 and built 2026-09-24.** The
 objection was that a connection is either made or not, so there is no halfway
-between "pulse to hue" and "pulse to count", and a morph across two patches
+between "LFO to hue" and "LFO to count", and a morph across two patches
 with different routing would have to snap the graph — the abrupt jump this
 whole instrument exists to remove.
 
@@ -806,7 +806,7 @@ squashing below a pixel at the slow end. At 1 the slowest point stops and a
 shape arriving there never leaves.
 
 **It is not a rate**, so a route may push it like any other control, and it
-reads the plain clock, since where each pixel falls is worked out before the
+reads the plain LFO, since where each pixel falls is worked out before the
 strip loop opens. The editor's overlay draws the speed at each height up the
 wall's right-hand margin, with the dialed speed as the dashed line.
 
@@ -867,7 +867,7 @@ visible on the wall:
   named for.
 
 **What it should be is a third source, and the first one with a
-position.** The pulse is a value over time with no place on the wall, and
+position.** The LFO is a value over time with no place on the wall, and
 the wander is the same for color. This is a value over time *and* over
 the strip; where it then goes is a routing choice under the rules
 § Modulation already sets.
@@ -887,7 +887,7 @@ is right.
 
 Designed in `tools/preview.js` and ported to the firmware the same day. The name
 is the third one in the family rather than a description of one of its looks:
-the pulse is regular in time and has no place on the wall, the wander is smooth
+the LFO is regular in time and has no place on the wall, the wander is smooth
 over both, **the scatter is random over both**. "Sparkle" was the other
 candidate and was dropped for naming the cheerful end of a range whose other
 end is a thunderstorm and rain running down a strip.
@@ -952,14 +952,14 @@ wall — nobody has seen a spot on a strip yet.
 
 Started from a patch that could not be built: several bars a strip, the
 five strips standing apart, strobing in unison. Fan could not do it,
-because one offset was added to the travel *and* to the pulse, so
+because one offset was added to the travel *and* to the LFO, so
 staggering the bars staggered the flash with them. Full width was the only
 escape hatch — it hides the position offset, which is the whole reason
 Chase works — and there is no matching trick on the other side.
 
 **One wave across the strips, three amounts.** The offset a strip takes is
 `amount × wave(phase + frequency × strip)`, and there are three amounts:
-position, rate and pulse. The wave is a triangle rather than a sine, since
+position, rate and LFO. The wave is a triangle rather than a sine, since
 a triangle is what stands five strips at evenly spaced offsets.
 
 **Frequency is what puts alternating direction on a fader.** What was built
@@ -1015,12 +1015,12 @@ seed is a wall question, not a bench one.
 
 **What the roster gave up, and what it gained.** The old single fan number
 split in two, and the split fell along a line already in the table: Rain
-and Comet spend it on position, Wave, Chase and Stutter on the pulse. All
+and Comet spend it on position, Wave, Chase and Stutter on the LFO. All
 five are full-width or narrow-traveling, never both, which is why one
 number could carry them.
 
 **What it cost.** Five CCs where there was one. The generator's own 70–79
-is full and 116–119 held four of the five, so the pulse amount sits alone
+is full and 116–119 held four of the five, so the LFO amount sits alone
 at 99 — inside the color layer's range, which breaks the map's own rule
 about staying in your category. It is a stated debt rather than a
 precedent: it came home to CC 73 in the regroup (numbers from before the
@@ -1030,7 +1030,7 @@ precedent: it came home to CC 73 in the regroup (numbers from before the
 back into alignment, drift the other way" needs the rate amount swinging
 through zero, which a bipolar push would do and which would not drift,
 because the offsets integrate back to nothing once a cycle. It is a sixth
-pulse destination and three more CCs, and there are none.
+LFO destination and three more CCs, and there are none.
 
 ### The fork this answered
 
@@ -1115,7 +1115,7 @@ nearly free and the question shrinks to what 4 and 5 need.
    construction and the morph needs no special case. Per-parameter timing,
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
-4. **Where the pulse shape fader's midpoint should sit.** The sweep is
+4. **Where the LFO shape fader's midpoint should sit.** The sweep is
    linear, because the visible swelling tracks softness in proportion:
    measured as the fraction of a cycle the swell spends moving rather than
    pinned, half the visible travel lands at 93 of 127. Spread geometrically
@@ -1238,7 +1238,7 @@ nearly free and the question shrinks to what 4 and 5 need.
   boot, the page's from load. Speed, spacing and the relationship between
   strips compare; where a traveling shape *is* does not.
 
-  The **pulse's** phase does compare, which is the point of anchoring it.
+  The **LFO's** phase does compare, which is the point of anchoring it.
   Both sides ease their offset back onto the grid, and the panel's clock
   button sends a transport start and restarts the page's beat zero
   together, so the bar a swell lands on is the same bar in both.

@@ -26,13 +26,13 @@ Everything lives on **`main`**. The last v1 commit is tagged
   PC 1–9. See `docs/visual-design.md`.
 - **The parametric generator** on PC 10, with the redesigned color layer
   in the firmware as of 2026-09-21. See `docs/generator.md`.
-- **The pulse's destinations**, 2026-09-22. One oscillator with one rate
+- **The LFO's destinations**, 2026-09-22. One oscillator with one rate
   with eight routes off it, each naming the control it pushes, how far, at
-  what multiple of the clock and with what wave. Its phase is anchored to the
+  what multiple of the LFO and with what wave. Its phase is anchored to the
   bar and its rate is stepped to the periods a bar can hold. **Not yet seen
   on the wall.** See `docs/generator.md` § "Routes".
 - **The washes' own saturation**, 2026-09-22, on CC 29. A scale down from
-  the strips' saturation, and the origin the pulse's push toward white
+  the strips' saturation, and the origin the LFO's push toward white
   measures from. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
   cans".
 - **Position**, 2026-09-22. Where a still pattern stands in its cell, on
@@ -213,7 +213,7 @@ live from the editor.
 - [ ] **Wind the placed field's region count up**, on the strip ruler with
       a hard edge. It should wash out smoothly rather than strobe. See
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
-- [ ] **Pull CC 29 down, then open the pulse's PAR saturation.** Full
+- [ ] **Pull CC 29 down, then open the LFO's PAR saturation.** Full
       should look like the strips as before; pulled down, the flash toward
       white should start from pale. See `DESIGN.md` § "The PAR cans".
 - [ ] **Sweep the V fader under a scattered look.** The white pixels
@@ -232,7 +232,7 @@ live from the editor.
 - [ ] **Swing a rate.** Two looks, each a patch. The fan's rate spread at
       zero with a sine route on it: the strips should drift apart and come
       back into line on the bar. And the hypno look: speed dialed still, a
-      four-beat clock, a sine at a quarter-turn phase on speed and a second
+      four-beat LFO, a sine at a quarter-turn phase on speed and a second
       on the fan's rate spread — the wall should rise, stop on beat 2, fall,
       and stop again, all five together. A tail follows the swing, so a
       shape swung backwards leaves its glow behind it rather than running
@@ -245,7 +245,7 @@ live from the editor.
       editor: the second should come up without a streak from the first.
       See `docs/generator.md` § "The tail is an afterglow".
 
-The pulse's destinations, the anchor against a click and the stepped rate
+The LFO's destinations, the anchor against a click and the stepped rate
 are unjudged too, and are listed below.
 
 ## Generator, next
@@ -264,7 +264,7 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       a gradient with the strips, which needs the color layer sampled at
       each PAR's position — today all four are one color. The white flash
       between strip strobes, the other half of this, became reachable on
-      2026-09-22 when the pulse gained their saturation. See `DESIGN.md`
+      2026-09-22 when the LFO gained their saturation. See `DESIGN.md`
       § "The PAR cans".
 - [ ] **Dial the placed field's approximation of the sprinkle.** Region,
       strip ruler, count around 12, width and edge low, dark pushed up,
@@ -279,7 +279,7 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       controls. The scatter's block has nine spare for exactly this. Judge
       it once the scatter is on the wall, not before. See
       `docs/generator.md` § "The fork this answered".
-- [ ] **Judge the pulse's destinations on the wall.** Everything else about
+- [ ] **Judge the LFO's destinations on the wall.** Everything else about
       them is guesswork until this happens. Three looks are what it was
       built for, and each is one patch: the washes swelling under still
       strips, a white flash on the washes between strip strobes, and the
@@ -440,7 +440,7 @@ it becomes a build item.
 - [ ] **Jump the pattern to Position on the beat.** A reset that fires on
       the grid rather than a place to sit: bars swiping up from the center,
       snapping back to the center on the beat and swiping again. It is the
-      same family as the pulse's anchoring — something landing on the
+      same family as the LFO's anchoring — something landing on the
       musical grid rather than wherever it drifted to — and it needed
       Position first, because a jump needs somewhere to jump to. Open
       questions: what fires it (every beat, a division, a switch), and

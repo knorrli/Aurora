@@ -24,21 +24,21 @@ Three complaints from using the editor, in the performer's words:
 
 ## What is settled
 
-**One clock, not several oscillators.** Everything else about a
-connection — how much, how fast relative to the clock, what wave —
+**One LFO, not several.** Everything else about a
+connection — how much, how fast relative to the LFO, what wave —
 belongs to the connection. The existing design already put amount, shape
 and skew on the destination and shared only the rate; this finishes that
 thought and makes the rate a per-route ratio. What is left in the middle
-is not an oscillator any more, it is a clock, which is the same shape as
-tempo division and `AURORA_PULSE_PERIODS` one level down.
+is one LFO with every route a whole multiple of it, the same shape as
+tempo division and `AURORA_LFO_PERIODS` one level down.
 
 **Ratios multiply, never divide**, so the base rate is the slowest thing
-in a patch. Fast strips and slow washes is the clock at the slow swell
+in a patch. Fast strips and slow washes is the LFO at the slow swell
 and the strips multiplied up. This is not a preference — see "Division
 breaks the anchor" below.
 
 **No free-running modulator.** The wander already is one: two sine terms
-at the golden ratio, built so they never come back into step. The pulse
+at the golden ratio, built so they never come back into step. The LFO
 is anchored to the bar on purpose, its rate is stepped so it stays on the
 grid, and there is a routine whose whole job is walking it back there. A
 free-running oscillator throws that away and reads as a fault from the
@@ -54,7 +54,7 @@ control may be a destination can be written next to it, where the
 interpolated when a patch morphs. The format already has this concept —
 `tools/patch.js` keeps `SWITCHES` out of far-end interpolation entirely.
 
-**Retire the pulse's eighteen; keep the fifteen singles.** See "Every
+**Retire the LFO's eighteen; keep the fifteen singles.** See "Every
 amount is a soldered route" below.
 
 **The panel goes to the slider**, with a mark on any slider a route
@@ -74,13 +74,13 @@ and the PARs' are CC 27–29. See "How a push lands".
 
 **Which destinations a route may aim at is marked on the enum** — `[rate]`
 swings both ways around its dialed value, `[circular]` takes a rotation,
-everything else takes the ordinary push. Only tempo division and the clock's
+everything else takes the ordinary push. Only tempo division and the LFO's
 own rate are refused. See "Which destinations a route may aim at" and "A
 rate swings both ways".
 
-**Which clock a route reads is decided by its destination**, not by the
+**Which reading of the LFO a route takes is decided by its destination**, not by the
 route — a destination on a strip reads that strip's fanned reading, a
-global one reads the plain clock. See "Which clock a route reads".
+global one reads the plain one. See "Which reading of the LFO a route takes".
 
 **The editor aligns route slots across a patch's five sets**, so a fader
 morph never changes a destination mid-journey. Between patches, a route
@@ -98,18 +98,18 @@ The rig already has a modulation matrix. It is hardwired.
 
 | Source | Connections | CCs |
 |----|----|----|
-| The fan | position, rate, pulse | 3 |
+| The fan | position, rate, LFO | 3 |
 | The placed field | hue, white, dark | 3 |
 | The wander | hue, white, dark | 3 |
 | The light level | hue, white, dark | 3 |
 | The scatter | light, hue, white | 3 |
-| The pulse | six destinations, each with shape and skew | 18 |
+| The LFO | six destinations, each with shape and skew | 18 |
 
 Twenty-one connections over 33 CCs, every one of them "how much does this
 source reach that destination", with the destination frozen at design
 time.
 
-The pulse's eighteen are the ones to retire. They cost **three** CCs
+The LFO's eighteen are the ones to retire. They cost **three** CCs
 apiece because each carries its own shape and skew, and a route replaces
 them with something strictly more capable — any destination, its own
 ratio, and the shared-rate defect gone.
@@ -158,7 +158,7 @@ every axis but one.
 - **Computation.** Modulation is evaluated once per parameter per strip
   per frame: at worst 43 × 5 = 215 evaluations, against the 900 shape
   evaluations already recorded as "nothing on this part". Nothing lands in
-  the per-pixel loop, because no destination is per-pixel — the pulse is
+  the per-pixel loop, because no destination is per-pixel — the LFO is
   already computed per strip.
 - **RAM.** A parameter table of 43 floats plus accumulators is about 350
   bytes, against 411 KB free for locals. Flash is 93 KB of 2 MB.
@@ -167,7 +167,7 @@ every axis but one.
   the same size, and the SysEx format does not move.
 
 **The one real constraint is the CC map**, and the current design is the
-expensive one. The pulse spends 18 CCs to reach six destinations; the same
+expensive one. The LFO spends 18 CCs to reach six destinations; the same
 triple for all 43 reachable controls would be 129 CCs against the 128 that
 exist. That arithmetic is why the fixed list exists.
 
@@ -239,14 +239,14 @@ against sampling the color layer at the PARs.
 ## Two details that would be found on the wall
 
 **A ratio scales the distance from the peak, not the phase.** The anchor
-puts the clock's peak on the bar line. A route reading `wave(phase × 2)`
+puts the LFO's peak on the bar line. A route reading `wave(phase × 2)`
 sits in its trough there and peaks a quarter of a base period later.
 Written as `0.5 + (phase − 0.5) × ratio`, every route peaks on the bar
 together whatever its ratio.
 
 **Division breaks the anchor; multiplication does not.** The anchor fixes
 only the *fraction* of the tracker's offset, because a whole cycle of
-offset is invisible — true for the clock and for any whole multiple of it.
+offset is invisible — true for the LFO and for any whole multiple of it.
 A route at half rate takes two base cycles, and which of the two it peaks
 on depends on the offset's integer part, which nothing controls. Nudging
 the rate can shift that integer by one, which flips a halved route to the
@@ -282,7 +282,7 @@ control is parked.
 **The exception: circular controls.** Hue is a wheel. 0 and 127 are the
 same red, sitting next to each other, so there is no limit to travel
 toward and the rule above has nothing to compute. For these the amount is
-a rotation instead — how far around, and which way. The pulse's hue send
+a rotation instead — how far around, and which way. The LFO's hue send
 uses half the wheel at full amount (`GEN_PULSE_MAX_HUE`); whether that
 span suits every circular control is not settled.
 
@@ -321,7 +321,7 @@ carrying one amount, and the DMX output capped where the generator did not.
 `routed()` caps it.
 
 **A push lands on one fixture family.** CC 33, 34 and 35 are the strips'
-hue, saturation and brightness — the editor already draws the pulse as one
+hue, saturation and brightness — the editor already draws the LFO as one
 of the sources pushing them — and a push on them does not reach the PARs.
 The PARs have their own three, CC 27, 28 and 29, expressed as a
 relationship to the strips' *dialed* colour: an offset is measured from
@@ -346,19 +346,19 @@ value like everything else, and a swell that pulls the wall down is a
 negative amount. Both behaviors were already in the generator — the scatter
 pushed brightness the new way — so this picked the one used more.
 
-## Which clock a route reads
+## Which reading of the LFO a route takes
 
-One clock ticks for the whole rig, and anything that pulses reads it to
+One LFO runs for the whole rig, and anything that moves with it reads it to
 know where it is in the cycle. It can be read two ways. **Plain**, where
 everything reads the same time and the wall flashes as one. **Fanned**,
-where each strip reads that same clock shifted a little, so the flash
-rolls across the wall instead of landing at once. `CC_GEN_FAN_PULSE` sets
+where each strip reads that same LFO shifted a little, so the flash
+rolls across the wall instead of landing at once. `CC_GEN_FAN_LFO` sets
 how far apart those five readings stand, and at its center they are
-identical — so this is one clock read two ways, not two clocks.
+identical — so this is one LFO read two ways, not two LFOs.
 
 **The route does not choose. Its destination does.** A destination that
 lives on a strip reads that strip's shifted reading; a global one reads
-the plain clock. This costs nothing, costs a route no byte, and
+the plain one. This costs nothing, costs a route no byte, and
 reproduces exactly what happened before routes, where the choice was made
 only by which line of the frame each send happened to sit on.
 
@@ -435,7 +435,7 @@ Forty-three controls carry `[patch]`, and they divide five ways. The marks
 live on the enum in `shared/aurora_protocol.h` beside the numbers they
 describe, not in a table here, so the two cannot drift apart.
 
-**Refused: CC 67, the clock's own rate.** Every route reads the clock, so a
+**Refused: CC 67, the LFO's own rate.** Every route reads the LFO, so a
 route aimed at its rate would modulate its own source. It is also stepped to
 periods a bar holds and anchored to the bar line, and a push would pull it off
 both.
@@ -465,10 +465,10 @@ as the pattern jumping is a wall question, not one to settle here.
 is a position offset taken from a cell's age (`scatterAt` in
 `shared/render/generator.cpp`), not an integrated speed.
 
-**Seven of those read the plain clock** although they live on a strip: the
+**Seven of those read the plain LFO** although they live on a strip: the
 shape count, 56, and the fan's six, 61–66. The fan is what shifts each
-strip's reading of the clock, so a route aimed at one of its controls while
-reading the fanned clock would need its own phase in order to compute what
+strip's reading of the LFO, so a route aimed at one of its controls while
+reading the fanned LFO would need its own phase in order to compute what
 sets its own phase. You cannot sample the fan to modulate the fan. The count
 sets the cells' geometry, which is laid out before the strip loop opens.
 
@@ -514,9 +514,9 @@ hue:
   frame to frame to drift. Every rate still runs through its own tracker at
   the dialed value, and the swing is added on top.
 
-**Which clock it reads** follows the rule every destination already follows:
+**Which reading of the LFO it takes** follows the rule every destination already follows:
 the pattern's speed, the placed field's and the wander's and the scatter's
-rates are on a strip and read that strip's fanned clock, and the fan's rate
+rates are on a strip and read that strip's fanned LFO, and the fan's rate
 spread reads the plain one like the rest of the fan.
 
 **What it reaches.** Bars drifting apart and back into line is a route on the
@@ -532,7 +532,7 @@ so a swing that reverses travel leaves the glow behind the shape both ways and
 shrinks it as the shape slows — `docs/generator.md` § "The tail is an
 afterglow".
 
-**And easing is still not this.** A route is locked to the clock; fast at the
+**And easing is still not this.** A route is locked to the LFO; fast at the
 top of the strip and slow at the bottom has to follow where a shape is. Built
 as Bend and Bend at, on CC 68 and 69 — `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
 
@@ -568,7 +568,7 @@ turn to 1/8 goes the long way round.
 
 ### What is wrong today
 
-`pulseWave(phase, shape, skew)` sweeps a sine toward a square by gain and
+`lfoWave(phase, shape, skew)` sweeps a sine toward a square by gain and
 clamp, and warps the phase to approximate a ramp.
 
 **Skew cannot narrow a square, and never could.** The wave is above half

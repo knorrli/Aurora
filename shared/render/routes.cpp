@@ -15,7 +15,7 @@ static inline float raisedCosine(float x) {
 
 // Saw down has to come before square, or the two blend into something that is
 // neither. In this order it is one decay getting shorter and harder.
-float pulseWave(float phase, uint8_t wave) {
+float lfoWave(float phase, uint8_t wave) {
   float attack, decay, hard;
   if (wave <= GEN_WAVE_SAW_DOWN) {
     decay = (float)wave / (float)GEN_WAVE_SAW_DOWN;
@@ -28,7 +28,7 @@ float pulseWave(float phase, uint8_t wave) {
     hard = (toSquare > 1.0f) ? 1.0f : toSquare;
     decay = (wave <= GEN_WAVE_SQUARE)
         ? 1.0f - 0.5f * toSquare
-        : 0.5f * powf(GEN_PULSE_MIN_WIDTH / 0.5f,
+        : 0.5f * powf(GEN_LFO_MIN_WIDTH / 0.5f,
                       (float)(wave - GEN_WAVE_SQUARE)
                           / (float)(127 - GEN_WAVE_SQUARE));
   }
@@ -50,7 +50,7 @@ float pulseWave(float phase, uint8_t wave) {
 static bool refused(uint8_t cc) {
   switch (cc) {
     case CC_TEMPO_DIVISION:
-    case CC_GEN_PULSE_RATE:
+    case CC_GEN_LFO_RATE:
       return true;
     default:
       return false;
@@ -87,12 +87,12 @@ static bool circular(uint8_t cc) {
   }
 }
 
-// The fan's own controls shape the strips' shifted reading of the clock, so a
+// The fan's own controls shape the strips' shifted reading of the LFO, so a
 // route aimed at one while reading that would need its own phase to compute
 // what sets its own phase. Count sets the cell geometry and is read before the
 // strip loop opens, and so is the bend. The washes have no strip to be offset
 // from.
-static bool plainClock(uint8_t cc) {
+static bool plainLfo(uint8_t cc) {
   switch (cc) {
     case CC_WASH_LEVEL:
     case CC_WASH_HUE_OFFSET:
@@ -105,7 +105,7 @@ static bool plainClock(uint8_t cc) {
     case CC_GEN_FAN_PHASE:
     case CC_GEN_FAN_RANDOM:
     case CC_GEN_FAN_RATE:
-    case CC_GEN_FAN_PULSE:
+    case CC_GEN_FAN_LFO:
       return true;
     default:
       return false;
@@ -122,7 +122,7 @@ static const uint8_t INTEGRAL_STEPS = 128;
 float waveMean(uint8_t wave) {
   float sum = 0.0f;
   for (uint8_t i = 0; i < INTEGRAL_STEPS; i++) {
-    sum += pulseWave(((float)i + 0.5f) / (float)INTEGRAL_STEPS, wave);
+    sum += lfoWave(((float)i + 0.5f) / (float)INTEGRAL_STEPS, wave);
   }
   return sum / (float)INTEGRAL_STEPS;
 }
@@ -149,7 +149,7 @@ static const WaveIntegral &integralOf(uint8_t route, uint8_t wave) {
   in.total[0] = 0.0f;
   float area = 0.0f;
   for (uint8_t i = 0; i < INTEGRAL_STEPS; i++) {
-    const float sample = pulseWave(((float)i + 0.5f) / (float)INTEGRAL_STEPS, wave);
+    const float sample = lfoWave(((float)i + 0.5f) / (float)INTEGRAL_STEPS, wave);
     in.total[i + 1] = in.total[i] + (sample - in.mean) / (float)INTEGRAL_STEPS;
     area += 0.5f * (in.total[i] + in.total[i + 1]);
   }
@@ -196,17 +196,17 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
     const uint8_t ratio = aurora_route_ratio(dialed[aurora_route_cc(r, ROUTE_RATIO)]);
     const uint8_t wave = dialed[aurora_route_cc(r, ROUTE_WAVE)];
     const float delay = (float)dialed[aurora_route_cc(r, ROUTE_PHASE)] / 128.0f;
-    const float clock = plainClock(dest) ? plainPhase : stripPhase;
-    const float phase = clock * (float)ratio - delay;
+    const float lfo = plainLfo(dest) ? plainPhase : stripPhase;
+    const float phase = lfo * (float)ratio - delay;
 
     if (!swings(dest)) {
-      out.amount[dest] += amount * pulseWave(phase, wave);
+      out.amount[dest] += amount * lfoWave(phase, wave);
       continue;
     }
 
     const WaveIntegral &in = integralOf(r, wave);
     const float reach = swingReach(dest, amount);
-    out.swing[dest] += reach * (pulseWave(phase, wave) - in.mean);
+    out.swing[dest] += reach * (lfoWave(phase, wave) - in.mean);
     out.shift[dest] += reach * totalAt(in, phase) * beatsPerCycle / (float)ratio;
   }
 }

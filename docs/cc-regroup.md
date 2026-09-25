@@ -133,7 +133,7 @@ channel is free for the taking but nothing is built to tell them apart.
 | 12–26 | 15 | The controller | 15 | 0 |
 | 27–31 | 5 | Washes / DMX | 3 | 2 |
 | 33–52 | 20 | Color | 20 | 0 |
-| 53–70 | 18 | Generator — shape, fan, the one clock, the bend | 17 | 1 |
+| 53–70 | 18 | Generator — shape, fan, the LFO, the bend | 17 | 1 |
 | 71–79 | 9 | Scatter / texture | 9 | 0 |
 | 80–119 | 40 | Modulation routes | 40 | 0 |
 
@@ -218,7 +218,7 @@ Spare: 30, 31.
 
 No spare.
 
-### 53–70 · Generator — shape, fan, the one clock
+### 53–70 · Generator — shape, fan, the LFO
 
 | CC | | | |
 |---|---|---|---|
@@ -235,8 +235,8 @@ No spare.
 | **63** | `GEN_FAN_RANDOM` | [patch][plain] | the wave, through to a fixed draw per strip |
 | **64** | `GEN_FAN` | [patch][plain] | bipolar; how far apart the strips stand in their cells |
 | **65** | `GEN_FAN_RATE` | [patch][rate][plain] | bipolar; how far apart their speeds stand |
-| **66** | `GEN_FAN_PULSE` | [patch][plain] | bipolar; how far apart they stand in the swell |
-| **67** | `GEN_PULSE_RATE` | [patch] | stepped; beats per swell. The one clock, and no route may aim at it |
+| **66** | `GEN_FAN_LFO` | [patch][plain] | bipolar; how far apart they stand in the LFO's cycle |
+| **67** | `GEN_LFO_RATE` | [patch] | stepped; beats per LFO cycle. No route may aim at it |
 | **68** | `GEN_BEND` | [patch][plain] | bipolar; travel slowed and sped by where a shape is |
 | **69** | `GEN_BEND_AT` | [patch][plain] | where the bend peaks, bottom to top |
 

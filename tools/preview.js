@@ -57,7 +57,7 @@
         spent: [
           ['position', fan[after + 2]],
           ['rate', fan[after + 3]],
-          ['pulse', fan[after + 4]],
+          ['LFO', fan[after + 4]],
         ].filter(([, amount]) => Math.abs(amount) > 0.005),
         scrambled: fan[after + 5],
       };
@@ -70,10 +70,10 @@
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
       makePaths: () => m._aurora_paths_new(),
       clearPaths: paths => m._aurora_paths_clear(paths),
-      pulseWave: (phase, wave) => m._aurora_pulse_wave(phase, wave),
+      lfoWave: (phase, wave) => m._aurora_lfo_wave(phase, wave),
       waveMean: wave => m._aurora_wave_mean(wave),
       convert: (cc, value) => m._aurora_convert(cc, value),
-      pulsePeriodBeats: value => m._aurora_pulse_period_beats(value),
+      lfoPeriodBeats: value => m._aurora_lfo_period_beats(value),
 
       // Both read the last render, so call them before the next one.
       stripValues: cc => Array.from({ length: STRIPS }, (_, i) => m._aurora_strip_value(cc, i)),

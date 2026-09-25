@@ -120,7 +120,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //           32 : AVOID — bank select LSB
 //     33 –  52 : color — the three faders, the placed field, the wander,
 //                 the lit reach, and the two color switches
-//     53 –  70 : the generator — shape, the fan, and the one clock
+//     53 –  70 : the generator — shape, the fan, and the LFO
 //     71 –  79 : the scatter — a texture source and its three amounts
 //     80 – 119 : modulation routes, eight of five bytes
 //    120 – 127 : AVOID — channel mode messages
@@ -400,7 +400,7 @@ enum AuroraCC : uint8_t {
                                  // draw
                                  // per strip
     // The three amounts. Bipolar, and 100 % spreads the five strips over
-    // exactly one cell or one swell — both ends of a range are the same wall
+    // exactly one cell or one LFO cycle — both ends of a range are the same wall
     // with the wave turned over. The rate is an absolute speed added to
     // CC 60's, on CC 60's own squared curve, so mirroring one fader about its
     // center against the other cancels exactly: that is what stands one strip
@@ -410,17 +410,17 @@ enum AuroraCC : uint8_t {
                                  // stand in their cells
     CC_GEN_FAN_RATE        = 65, // [patch][rate][plain] how far apart their
                                  // speeds stand, either side of Speed
-    CC_GEN_FAN_PULSE       = 66, // [patch][plain] how far apart they stand in
-                                 // the
-                                 // swell. The washes take the unfanned phase
-                                 // whatever this says: a PAR is one position
-                                 // with no strip to be offset from.
+    CC_GEN_FAN_LFO         = 66, // [patch][plain] how far apart they stand in
+                                 // the LFO's cycle. The washes take the
+                                 // unfanned phase whatever this says: a PAR
+                                 // is one position with no strip to be
+                                 // offset from.
 
-    // One clock for the whole rig, and nothing beside it: where a route aims
+    // One LFO for the whole rig, and nothing beside it: where a route aims
     // and how hard belongs to the route. Every route reads it, so no route
     // may aim at it.
-    CC_GEN_PULSE_RATE      = 67, // [patch] beats per swell; stepped, see
-                                 // AURORA_PULSE_PERIODS
+    CC_GEN_LFO_RATE        = 67, // [patch] beats per LFO cycle; stepped, see
+                                 // AURORA_LFO_PERIODS
 
     // Travel slowed and sped by which pixel a shape is on, across the strip,
     // or across each cell while bouncing, so a shape stretches where it is
@@ -434,7 +434,7 @@ enum AuroraCC : uint8_t {
 
     // 70 reserved (the generator)
 
-    // 71–79 — the scatter. The third source in the family: the pulse is
+    // 71–79 — the scatter. The third source in the family: the LFO is
     // regular in time and has no place on the wall, the wander is smooth over
     // both, the scatter is random over both. Six controls shape it and three
     // amounts aim it. See docs/generator.md § "The scatter".
@@ -471,7 +471,7 @@ enum AuroraCC : uint8_t {
 // ---------------------------------------------------------------------------
 //
 // A route is five bytes: which control it pushes, how far, how fast against
-// the one clock, what wave does the pushing, and how far into its cycle the
+// the LFO, what wave does the pushing, and how far into its cycle the
 // wave is delayed. Eight of them, aimed at any control the map does not
 // refuse. See docs/modulation.md.
 //
@@ -487,7 +487,7 @@ enum AuroraCC : uint8_t {
 // The shortest stab the rig can draw, as a fraction of a cycle: about one
 // 7-8 ms frame at 120 bpm, and below it a stab lands between frames and
 // flickers instead of shortening. See docs/bench-facts.md § "Frame timing".
-#define GEN_PULSE_MIN_WIDTH 0.06f
+#define GEN_LFO_MIN_WIDTH 0.06f
 
 static const uint8_t AURORA_ROUTES = 8;
 
@@ -501,7 +501,7 @@ enum AuroraRouteField : uint8_t {
     // journey pushing one control with a number dialed for another.
     ROUTE_DESTINATION = 0,
     ROUTE_AMOUNT      = 1,  // [patch] bipolar; a fraction of the distance left
-    ROUTE_RATIO       = 2,  // [patch] whole multiples of the clock, never
+    ROUTE_RATIO       = 2,  // [patch] whole multiples of the LFO, never
                             // divisions — a halved route peaks on whichever of
                             // two cycles the offset's integer part lands on,
                             // and nothing controls that
@@ -518,7 +518,7 @@ static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
 
 // Whole multiples only, 1 through 8. Dividing would break the anchor: the
 // anchor fixes only the fraction of the tracker's offset, because a whole
-// cycle of offset is invisible — true for the clock and for any whole
+// cycle of offset is invisible — true for the LFO and for any whole
 // multiple of it. A route at half rate takes two base cycles, and which of
 // the two it peaks on depends on the offset's integer part, which nothing
 // controls. Nudging the rate can flip it to the opposite phase.
@@ -561,10 +561,10 @@ enum AuroraTempoDivision : uint8_t {
 static const uint16_t AURORA_TICKS_PER_BEAT = 24;
 
 // ---------------------------------------------------------------------------
-// The pulse's periods (carried on CC_GEN_PULSE_RATE)
+// The LFO's periods (carried on CC_GEN_LFO_RATE)
 // ---------------------------------------------------------------------------
 //
-// Stepped rather than continuous, because the pulse's phase is anchored to
+// Stepped rather than continuous, because the LFO's phase is anchored to
 // the musical grid and only a period a bar holds a whole number of can land
 // on a downbeat. A period of 2.64 beats is in time and never on time: it
 // walks through the bar for ever and no anchoring can stop it.
@@ -577,16 +577,16 @@ static const uint16_t AURORA_TICKS_PER_BEAT = 24;
 //
 // ---------------------------------------------------------------------------
 
-static const float AURORA_PULSE_PERIODS[] = {
+static const float AURORA_LFO_PERIODS[] = {
     16.0f, 12.0f, 8.0f, 6.0f, 4.0f, 3.0f, 2.0f, 1.5f, 1.0f, 0.75f, 0.5f, 0.375f, 0.25f,
 };
-static const uint8_t AURORA_PULSE_PERIOD_COUNT =
-    sizeof(AURORA_PULSE_PERIODS) / sizeof(AURORA_PULSE_PERIODS[0]);
+static const uint8_t AURORA_LFO_PERIOD_COUNT =
+    sizeof(AURORA_LFO_PERIODS) / sizeof(AURORA_LFO_PERIODS[0]);
 
-static inline float aurora_pulse_period(uint8_t value) {
-    const uint8_t last = AURORA_PULSE_PERIOD_COUNT - 1;
+static inline float aurora_lfo_period(uint8_t value) {
+    const uint8_t last = AURORA_LFO_PERIOD_COUNT - 1;
     const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
-    return AURORA_PULSE_PERIODS[step > last ? last : step];
+    return AURORA_LFO_PERIODS[step > last ? last : step];
 }
 
 static inline uint16_t aurora_ticks_per_gate(uint8_t division) {

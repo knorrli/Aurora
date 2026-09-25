@@ -37,12 +37,12 @@ struct Tracker {
 // read it at the other's.
 struct Motion {
   Tracker travel[STRIPS] = {};
-  Tracker pulse = {};
+  Tracker lfo = {};
   Tracker wander = {};
   Tracker placed = {};
   Tracker scatter = {};
   float lastCoreCells[STRIPS] = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
-  float lastPulseBeats = 0.0f;
+  float lastLfoBeats = 0.0f;
   float lastTravelBeats = 0.0f;
   bool lastBouncing = false;
 };
@@ -94,7 +94,7 @@ struct FanReading {
   // How much of the wave each of the three amounts spends, -1..1.
   float position;
   float rate;
-  float pulse;
+  float lfo;
   float scrambled;
 };
 
@@ -106,10 +106,10 @@ struct Frame {
   // first, as a multiple of the dialed speed: what the bend is doing, for the
   // editor's overlay.
   float bend[BEND_POINTS];
-  // The clock as the routes read it this frame: plainly, and as each strip
+  // The LFO as the routes read it this frame: plainly, and as each strip
   // reads it shifted by the fan.
-  float clock;
-  float stripClock[STRIPS];
+  float lfo;
+  float stripLfo[STRIPS];
 };
 
 void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &paths,

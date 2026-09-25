@@ -5,7 +5,7 @@
 #include "aurora_protocol.h"
 
 // Eight modulation routes, five CCs each: a destination named by its own CC
-// number, an amount, a whole-number ratio against the one clock, a wave, and
+// number, an amount, a whole-number ratio against the LFO, a wave, and
 // how far into its cycle the wave is delayed. See docs/modulation.md.
 namespace render {
 
@@ -32,7 +32,7 @@ uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
 // nearest its swung value, anything else as routed().
 uint8_t routedForDisplay(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
 
-// The clock's own rate, because every route reads it, and tempo division,
+// The LFO's own rate, because every route reads it, and tempo division,
 // because it is an index; CC 0 means a route aimed nowhere.
 bool routeRefused(uint8_t cc);
 
@@ -44,7 +44,7 @@ bool routeAims(const uint8_t *dialed, uint8_t cc);
 // False if no route reaches it.
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high);
 
-float pulseWave(float phase, uint8_t wave);
+float lfoWave(float phase, uint8_t wave);
 
 // A wave's average over one cycle: what a rate's swing takes off so it adds
 // nothing over a cycle.

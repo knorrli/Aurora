@@ -9,7 +9,7 @@
     --bg: #14151a; --panel: #1c1e26; --sunk: #101118; --line: #2c2f3a; --rail: #3a3e4d;
     --text: #e6e7ec; --dim: #8b8fa3; --faint: #5f6475;
     --accent: #d98c3f; --ok: #4a9e6a; --bad: #cf5c5c;
-    --shape: #d98c3f; --color: #6fa8dc; --pulse: #cf7d93; --scatter: #7bc4a4;
+    --shape: #d98c3f; --color: #6fa8dc; --lfo: #cf7d93; --scatter: #7bc4a4;
     --out: #8f7fd4;
     --topbar: 56px;
   }
@@ -103,8 +103,6 @@
     overflow: hidden; overflow-wrap: anywhere;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   }
-  .keypad .zero { grid-column: 1 / -1; opacity: .55; cursor: default; }
-  .keypad .zero:hover { border-color: var(--line); }
 
   .stack { display: flex; flex-direction: column; gap: 7px; }
   .rowline { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
@@ -152,11 +150,9 @@
 
   .lane { border-left: 3px solid var(--line); border-radius: 6px; }
   .lane[data-lane=shape] { border-left-color: var(--shape); }
-  .lane[data-lane=color] { border-left-color: var(--color); }
   .lane-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }
   .lane-name { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
   .lane[data-lane=shape] .lane-name { color: var(--shape); }
-  .lane[data-lane=color] .lane-name { color: var(--color); }
 
   .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px 22px; }
 
@@ -201,8 +197,8 @@
     width: 24px; height: 20px; padding: 0; font-size: 13px; line-height: 1;
     color: var(--faint); background: none; border: 1px solid var(--line);
   }
-  .routesbtn.aimed { color: var(--pulse); border-color: var(--pulse); }
-  .routesbtn.open { color: var(--bg); background: var(--pulse); border-color: var(--pulse); }
+  .routesbtn.aimed { color: var(--lfo); border-color: var(--lfo); }
+  .routesbtn.open { color: var(--bg); background: var(--lfo); border-color: var(--lfo); }
 
   .row > output, .audition .readout, .showing { font-variant-numeric: tabular-nums; }
   .row > output { text-align: right; line-height: 1.25; }
@@ -213,7 +209,10 @@
 
   .picks { display: flex; gap: 5px; flex-wrap: wrap; }
   .picks button { padding: 3px 8px; font-size: 11px; }
-  .swrow { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; align-items: center; padding-left: 7px; }
+  .swrow {
+    display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; align-items: center;
+    padding-left: 7px; border-left: 2px solid transparent; margin-left: -9px;
+  }
   .swrow + .swrow, .row + .swrow, .swrow + .row { margin-top: 6px; }
   .swrow.locked .picks button { opacity: .5; cursor: default; }
   .swrow.locked .picks button:hover { border-color: var(--line); color: var(--text); }
@@ -227,24 +226,24 @@
 
   .mods { display: flex; flex-direction: column; gap: 14px; }
   .mod { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 13px; border-left: 3px solid var(--rail); }
-  .mod[data-tone=pulse] { border-left-color: var(--pulse); }
+  .mod[data-tone=lfo] { border-left-color: var(--lfo); }
   .mod[data-tone=scatter] { border-left-color: var(--scatter); }
   .mod[data-tone=color] { border-left-color: var(--color); }
   .mod-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 11px; }
   .mod-name { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-  .mod[data-tone=pulse] .mod-name { color: var(--pulse); }
+  .mod[data-tone=lfo] .mod-name { color: var(--lfo); }
   .mod[data-tone=scatter] .mod-name { color: var(--scatter); }
   .mod[data-tone=color] .mod-name { color: var(--color); }
   .mod-head .tiny { margin-left: auto; }
   .mod-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
 
   .routepanel {
-    position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--pulse);
+    position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--lfo);
     border-radius: 6px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.55);
   }
   .routeblock { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
   .dest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
-  .dest-name { color: var(--pulse); }
+  .dest-name { color: var(--lfo); }
   .dest-buttons { display: flex; gap: 5px; }
   .routeblock.bypassed > :not(.dest-head) { opacity: .38; }
   .destwave { width: 100%; height: 46px; display: block; margin-top: 8px; }
@@ -397,23 +396,16 @@
       </details>
     </section>
 
-    <section class="panel lane" data-lane="shape" id="laneShape"></section>
-    <section class="panel lane" data-lane="color" id="laneColor"></section>
-
-    <div class="mods" id="mods"></div>
-
     <section class="panel outs">
       <h2>Outputs</h2>
-      <div class="outgrid">
-        <div>
-          <h3>5 strips</h3>
-        </div>
-        <div>
-          <h3>4 PARs</h3>
-          <div id="parControls"></div>
-        </div>
-      </div>
+      <div class="outgrid" id="outputs"></div>
     </section>
+
+    <div class="mods" id="lfo"></div>
+
+    <section class="panel lane" data-lane="shape" id="laneShape"></section>
+
+    <div class="mods" id="mods"></div>
 
     <section class="panel">
       <details class="slots">

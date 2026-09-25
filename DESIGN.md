@@ -378,7 +378,7 @@ with it, and that is fine. A fader that does little is safe; a fader that
 does something unexpected is not.
 
 **Motion needs a real toolkit or it collapses into the other two.** Speed,
-pulse rate and pulse shape are the obvious material, and fan spread is
+LFO rate and LFO shape are the obvious material, and fan spread is
 already in the generator, and so, since 2026-09-25, is a travel easing —
 Bend, slowing and speeding a shape by where it is on the strip. See
 `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
@@ -531,7 +531,7 @@ the keypad does is instant in the sense of happening between beats.
 one for the journey and one for the accent. A section change wants to be
 slow and a stab wants to be fast, and one number cannot be both. Both are
 **stepped to values that come back to the grid** — halves and their dotted
-forms, the treatment `AURORA_PULSE_PERIODS` already gets in
+forms, the treatment `AURORA_LFO_PERIODS` already gets in
 `shared/aurora_protocol.h` — so that holding through a completed journey
 arrives on a beat rather than at an arbitrary fraction of one.
 
@@ -552,7 +552,7 @@ everything the rig controls goes to black; released, nothing is latched,
 and the next key press brings the wall back.
 
 It is **one gate at the end of the frame**, and that placement is the whole
-design. Everything above it — the pattern, the color layer, the pulse, a
+design. Everything above it — the pattern, the color layer, the LFO, a
 morph in flight, a fader anywhere, a DAW pushing CCs — runs exactly as it
 always does and is then thrown away. There is no branch to get wrong,
 because nothing upstream is consulted. In `brain/src/Aurora.ino` it is the
@@ -653,20 +653,20 @@ That splits along the two layers the generator already has:
   Two looks already asked for need more than the hue offset they have: a
   white flash between strip strobes, and the PARs following a red-to-green
   gradient with the strips. **The white flash is reachable as of
-  2026-09-22** — the pulse pushes their saturation toward white, on its own
+  2026-09-22** — the LFO pushes their saturation toward white, on its own
   wave, so it can flash between the strips' strobes rather than with them.
   The gradient still needs the color layer sampled at each PAR's position,
   which is not built.
-- **The shape layer cannot reach them, except the pulse**, which is
+- **The shape layer cannot reach them, except the LFO**, which is
   brightness over time and needs no length. So a PAR follows a swell, a
   strobe and a breathe, and ignores a sweep. Slow and broad on the PARs,
   fast and fine on the strips, by construction rather than by discipline.
   **Built 2026-09-22**: level, hue offset and saturation each take the
-  pulse with an amount and a wave of their own, so the washes can breathe
+  LFO with an amount and a wave of their own, so the washes can breathe
   under a strip strobe. All four move together — they take the unfanned
   phase, since a PAR is one position with no strip to be offset from.
 
-**The pulse drives the dimmer channel, never the fixture's strobe
+**The LFO drives the dimmer channel, never the fixture's strobe
 channel.** That channel is a free-running internal rate with nothing to
 lock it to the beat, so it cannot play in time; `docs/wiring.md` calls it
 what a tempo-synced fixture effect would need, and that is wrong. It
@@ -675,7 +675,7 @@ stays available as an unsynced shimmer.
 ### What a patch holds for them
 
 Level, hue offset from the strips' hue, saturation as a scale down from
-the strips' own, and how much of the pulse reaches them — the last of
+the strips' own, and how much of the LFO reaches them — the last of
 these three times over, once for each of level, hue and saturation. All of
 it relative to what the strips are doing — a relationship, not a second
 look.
@@ -683,7 +683,7 @@ look.
 **Saturation is a scale rather than a setting**, on CC 29 since
 2026-09-22, and that is what makes it a relationship: full is whatever the
 strips are, zero is white, and nothing in between names a color of its
-own. It is also where the pulse's push toward white measures from. Without
+own. It is also where the LFO's push toward white measures from. Without
 it that push had no origin but the strips' own S fader, so pulling the
 washes pale and flashing them paler were the same control.
 

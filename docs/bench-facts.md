@@ -213,7 +213,7 @@ The two earlier instances of the same family:
 **What the fix cost, and how it was paid, 2026-09-22.** Once the phase is
 carried across rate changes, the cycle's zero sits wherever the rate was
 last touched — which is never a bar line. The period was right and the
-landing arbitrary, so the pulse was in time but not on time, and a deep
+landing arbitrary, so the LFO was in time but not on time, and a deep
 slow swell peaked wherever it happened to.
 
 Two halves, and neither works alone:
@@ -300,7 +300,7 @@ Steepening the same field toward a hard boundary, with no change to its
 depth at all, made it "extremely pronounced". Vision detects edges; a
 ramp with no edge in it has nothing to detect.
 
-This is the same finding as the pulse needing a shape control, one level
+This is the same finding as the LFO needing a shape control, one level
 up: no amount of depth on a sine produces a boundary.
 
 **Hue depth at full destroys the base color.** A swing of +-128 is the

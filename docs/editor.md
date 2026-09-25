@@ -19,35 +19,30 @@ made twice by hand.
 
 ## The shape: carrier, modulators, outputs
 
-The old page drew three branches — shape, color, pulse — and put the color
-layer's three sources inside the color branch as three unrelated boxes of
-sliders. They are not unrelated. Every one of them lands on the same three
-qualities and the pushes add, which is a modulation matrix drawn as scenery.
+The color layer's sources are not unrelated boxes of sliders. Every one of them
+lands on the same three qualities and the pushes add, which is a modulation
+matrix, so the page is drawn as one.
 
-So the page is in three parts instead.
+From the top, below the starting points:
 
-**The carrier** is what the wall shows with nothing pushing on it: the shape
-lane's Form and Travel, and the color lane's three faders. Nothing else.
-
-**The modulators** are five cards with one anatomy — a source on the left, its
-amounts on the right — whatever each one reaches:
+- **The outputs**: the five strips on the left, carrying the three color
+  faders, and the four PARs on the right, with the controls that relate them to
+  the strips.
+- **The LFO**, the one modulator every route runs off.
+- **The shape lane**: Form, Travel and Fan — with the strips' three faders,
+  what the wall shows with nothing pushing on it.
+- **The other modulators**, four cards with one anatomy — a source on the
+  left, its amounts on the right — whatever each one reaches:
 
 | Source | In time | On the wall | Reaches |
 |----|----|----|----|
-| The pulse | regular, anchored to the bar | nowhere — it has no position | brightness, width, hue, and all three PAR controls |
 | The scatter | random, per cell | random, per cell | brightness, hue, whiteness |
 | The placed field | still, or drifting | aimed — a ruler you pick | hue, whiteness, darkness |
 | The wander | smooth, never repeating | smooth, everywhere | hue, whiteness, darkness |
 | The light level | — | read off the shape lane | hue, whiteness, darkness |
 
-**The outputs** are the five strips and the four PARs, and the PARs are the only
-one with controls of its own because they are a relationship to the strips.
-
-Drawing it this way also settled an open question. The placed field's
-primitive and ruler stop looking like they govern the whole
-color lane, because they are inside its card and nothing else is. That was
-`TODO.md` § "The color panel does not say what its switches govern", and the
-grouping was the whole of it — no control moved, and none was added.
+The placed field's primitive and ruler sit inside its card, so they do not look
+as though they govern the other sources.
 
 ## A far end is an override, not a copy
 
@@ -131,7 +126,7 @@ case that already worked. Two far ends that move different controls — the usua
 case, since each moves about four — do not interact at all. Where two move the
 same control they pull against each other and the sum is what you get.
 
-Adding is the reading the rest of Aurora already uses: the color lane's sources
+Adding is the reading the rest of Aurora already uses: the color layer's sources
 push on the same three qualities and their pushes add. The alternatives are a
 weighted average, which makes one fader weaker as another comes up, and a
 per-parameter winner, which needs a rule about who wins that nothing else in
@@ -165,7 +160,7 @@ picture it will rarely show. Pick the patch it will actually follow.
 Every control a route may reach has a **~** at the end of its row, and it opens
 that control's routes in one panel floating under the row, so the row stays in
 view while a route is dialed and the page below does not move. One panel is
-open at a time. It lists the routes aimed here with their amount, clock
+open at a time. It lists the routes aimed here with their amount, LFO
 multiple and wave, adds one from the eight shared slots, and frees one. A
 destination has no middle, so like every switch it belongs to the patch:
 routes are added and freed on the base, and a far end overrides only how far
@@ -176,14 +171,14 @@ the route. Choosing another patch clears it. The rates have no **~**, since the 
 A slider a route is aimed at carries a band from the dialed value to the
 furthest the routes can push it, and five marks, one per strip, where each
 strip has it this frame. The marks move together unless the fan spreads the
-strips' clocks, and then they move the way the strips do. Both are read off
+strips' LFO phases, and then they move the way the strips do. Both are read off
 the renderer, not worked out in the page. They are painted into the slider's
 own track so the handle stays on top: the handle is the value that is saved,
 and nothing modulation does may cover it.
 
 The same tracks carry notches: the center of every control that departs both
 ways from 64, found by asking the renderer where its value changes sign; the
-swell, snap and hard half-bar on a route's wave; and the steps of the clock's
+swell, snap and hard half-bar on a route's wave; and the steps of the LFO's
 rate, the fan's frequency and a route's ratio, each in the middle of its run
 of bytes.
 
@@ -212,7 +207,7 @@ not own.** Arriving at a patch writes the `[patch]` and `[switch]` CCs through
 the brain's own handlers, so a byte no handler claims is never read. The editor
 owns all 72 of them, which is the 63 that existed plus the scatter's nine.
 
-**Ramp times are stepped through `AURORA_PULSE_PERIODS`.** One table for every
+**Ramp times are stepped through `AURORA_LFO_PERIODS`.** One table for every
 musical duration in the rig rather than a second convention.
 
 ## What went away

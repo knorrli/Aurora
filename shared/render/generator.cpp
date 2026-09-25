@@ -55,10 +55,10 @@ static const float GEN_FAN_MAX_CYCLES_PER_STRIP = 0.5f;
 // another pattern.
 static const uint8_t GEN_FAN_HASH_SALT = 118;
 
-// How long the pulse takes to walk back onto the musical grid after its rate
+// How long the LFO takes to walk back onto the musical grid after its rate
 // has been moved, measured in its own cycles so the correction is always the
 // same fraction of a swell and never a visible lurch.
-static const float GEN_PULSE_ANCHOR_CYCLES = 2.0f;
+static const float GEN_LFO_ANCHOR_CYCLES = 2.0f;
 
 // How long a stopped pattern takes to walk home to Position, in beats. Long
 // enough that bringing Speed to a stop reads as settling rather than as a
@@ -157,14 +157,14 @@ struct Params {
   float positionCells;
   float speedPixels;
   float fanPosition;
-  float fanPulse;
+  float fanLfo;
   float fanRate;
   float fanFreq;
   float fanPhase;
   float fanRandom;
   float bend;
   float bendAt;
-  float pulseBeats;
+  float lfoBeats;
   bool bounce;
 
   PlacedField placed;
@@ -213,30 +213,30 @@ static float trackedPhase(Tracker &tracker, float beats, float rate) {
 // also what leaves the cycle's zero wherever the rate was last touched —
 // never a bar line, so a deep slow swell peaks wherever it happens to. A
 // whole cycle of offset is invisible, so only the fraction has to go: easing
-// it out over the next couple of cycles walks the pulse back onto the grid
+// it out over the next couple of cycles walks the LFO back onto the grid
 // without ever jumping.
 //
 // This is why the rate is stepped rather than continuous. Anchoring puts the
 // cycle's zero on the music's zero; only a period a bar holds a whole number
-// of keeps it there, which is what AURORA_PULSE_PERIODS is.
-static float anchoredPulsePhase(Motion &motion, float beats, float rate) {
-  const float elapsed = beats - motion.lastPulseBeats;
-  motion.lastPulseBeats = beats;
+// of keeps it there, which is what AURORA_LFO_PERIODS is.
+static float anchoredLfoPhase(Motion &motion, float beats, float rate) {
+  const float elapsed = beats - motion.lastLfoBeats;
+  motion.lastLfoBeats = beats;
 
   // The transport restarted, and beat zero is a bar line by definition.
   if (elapsed < 0.0f) {
-    motion.pulse.offset = 0.0f;
-    motion.pulse.rate = rate;
+    motion.lfo.offset = 0.0f;
+    motion.lfo.rate = rate;
     return beats * rate;
   }
 
-  const float phase = trackedPhase(motion.pulse, beats, rate);
-  const float drift = motion.pulse.offset - roundf(motion.pulse.offset);
+  const float phase = trackedPhase(motion.lfo, beats, rate);
+  const float drift = motion.lfo.offset - roundf(motion.lfo.offset);
   if (fabsf(drift) < 0.0001f) return phase;
 
-  float pull = elapsed * rate / GEN_PULSE_ANCHOR_CYCLES;
+  float pull = elapsed * rate / GEN_LFO_ANCHOR_CYCLES;
   if (pull > 1.0f) pull = 1.0f;
-  motion.pulse.offset -= drift * pull;
+  motion.lfo.offset -= drift * pull;
   return phase - drift * pull;
 }
 
@@ -514,7 +514,7 @@ static float rulerAt(const PlacedField &field, uint8_t stripIndex,
   return alongPixels / (float)(PIXELS - 1);
 }
 
-// The one source with a position of its own. The pulse is a value over time
+// The one source with a position of its own. The LFO is a value over time
 // with nowhere on the wall; the wander is smooth over both. This one is random
 // over both — a grid of cells, each with its own clock, each lighting a spot
 // that appears, holds, fades, and may slide across its own cell while it does.
@@ -821,7 +821,7 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_GEN_BEND_AT:     return 0.5f + 0.5f * ccBipolar(value);
     case CC_GEN_POSITION:
     case CC_GEN_FAN:
-    case CC_GEN_FAN_PULSE:   return ccBipolar(value) * 0.5f;
+    case CC_GEN_FAN_LFO:   return ccBipolar(value) * 0.5f;
     case CC_GEN_SPEED:
       return stillBelowThreshold(squaredRate(value, GEN_MAX_SPEED_PIXELS_PER_BEAT));
     // The same squared curve Speed runs on, so that mirroring one fader about
@@ -831,7 +831,7 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_GEN_FAN_RATE:    return squaredRate(value, GEN_MAX_SPEED_PIXELS_PER_BEAT);
     case CC_GEN_FAN_FREQ:    return fanFreqFrom(value);
     case CC_GEN_FAN_PHASE:   return (float)value / 128.0f;
-    case CC_GEN_PULSE_RATE:  return aurora_pulse_period(value);
+    case CC_GEN_LFO_RATE:  return aurora_lfo_period(value);
 
     case CC_PLACED_HUE:      return ccBipolar(value) * PLACED_MAX_HUE;
     case CC_PLACED_SPEED:    return squaredRate(value, PLACED_MAX_CELLS_PER_BEAT);
@@ -880,14 +880,14 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
   p.positionCells = at(CC_GEN_POSITION);
   p.speedPixels = at(CC_GEN_SPEED);
   p.fanPosition = at(CC_GEN_FAN);
-  p.fanPulse = at(CC_GEN_FAN_PULSE);
+  p.fanLfo = at(CC_GEN_FAN_LFO);
   p.fanRate = at(CC_GEN_FAN_RATE);
   p.fanFreq = at(CC_GEN_FAN_FREQ);
   p.fanPhase = at(CC_GEN_FAN_PHASE);
   p.fanRandom = at(CC_GEN_FAN_RANDOM);
   p.bend = at(CC_GEN_BEND);
   p.bendAt = at(CC_GEN_BEND_AT);
-  p.pulseBeats = at(CC_GEN_PULSE_RATE);
+  p.lfoBeats = at(CC_GEN_LFO_RATE);
 
   // A switch has no middle for a push to land in, so it is read as dialed.
   p.bounce = aurora_cc_is_on(dialed[CC_GEN_BOUNCE]);
@@ -938,7 +938,7 @@ static void readFan(const Params &p, FanReading &fan) {
   fan.stillAt = (fabsf(p.fanRate) > 0.0001f) ? -p.speedPixels / p.fanRate : 2.0f;
   fan.position = p.fanPosition * 2.0f;
   fan.rate = p.fanRate / GEN_MAX_SPEED_PIXELS_PER_BEAT;
-  fan.pulse = p.fanPulse * 2.0f;
+  fan.lfo = p.fanLfo * 2.0f;
   fan.scrambled = p.fanRandom;
 }
 
@@ -981,18 +981,18 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &
                      Frame &out) {
   for (uint16_t i = 0; i < STRIPS * PIXELS; i++) out.pixels[i] = { 0, 0, 0 };
 
-  // Read three times. The first has no pushes in it, which is what the clock's
+  // Read three times. The first has no pushes in it, which is what the LFO's
   // own rate needs, since it is a destination routes refuse. The second
-  // takes the plain reading of the clock, and everything the strip loop is
+  // takes the plain reading of the LFO, and everything the strip loop is
   // built on comes from it. The third is each strip's own reading, so a push
   // rolls across the wall instead of landing on all five at once.
   Params p;
   readParams(dialed, nullptr, p);
-  const float pulse = anchoredPulsePhase(motion, beats, 1.0f / p.pulseBeats);
-  out.clock = pulse;
+  const float lfo = anchoredLfoPhase(motion, beats, 1.0f / p.lfoBeats);
+  out.lfo = lfo;
 
   Pushes pushes;
-  gatherRoutes(dialed, p.pulseBeats, pulse, pulse, pushes);
+  gatherRoutes(dialed, p.lfoBeats, lfo, lfo, pushes);
   readParams(dialed, &pushes, p);
   out.wash = washFrom(dialed, &pushes);
   readFan(p, out.fan);
@@ -1034,7 +1034,7 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &
   Glow glow;
 
   // Every color rate goes through the tracker for the same reason travel and
-  // the pulse do: beats only grows, so a small change of rate multiplied by a
+  // the LFO do: beats only grows, so a small change of rate multiplied by a
   // large beat count is a large jump. A route's swing is added per strip.
   const float wanderDialed = trackedPhase(motion.wander, beats, p.wanderCycles);
   const float placedDialed = trackedPhase(motion.placed, beats, p.placed.cellsPerBeat);
@@ -1049,11 +1049,11 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &
     // can strobe in unison, which one shared offset could never do. The
     // washes take the unfanned phase whatever these say: a PAR is one
     // position with no strip to be offset from.
-    const float stripPulse = pulse + p.fanPulse * wave;
-    out.stripClock[stripIndex] = stripPulse;
+    const float stripLfo = lfo + p.fanLfo * wave;
+    out.stripLfo[stripIndex] = stripLfo;
 
     Params s;
-    gatherRoutes(dialed, p.pulseBeats, pulse, stripPulse, pushes);
+    gatherRoutes(dialed, p.lfoBeats, lfo, stripLfo, pushes);
     readParams(dialed, &pushes, s);
 
     const float wanderT = wanderDialed + pushes.shift[CC_WANDER_RATE];

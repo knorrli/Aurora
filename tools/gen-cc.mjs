@@ -8,7 +8,7 @@
 //   node tools/gen-cc.mjs --check    fail if it is out of date
 //
 // A control's key is its enum name with CC_ stripped and the rest camelCased,
-// so CC_GEN_FAN_PULSE is genFanPulse. That rule is the whole mapping: there is
+// so CC_GEN_FAN_LFO is genFanLfo. That rule is the whole mapping: there is
 // no rename table for it to drift against.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -64,8 +64,8 @@ const maxRatio = num(/AURORA_ROUTE_MAX_RATIO\s*=\s*(\d+);/, 'AURORA_ROUTE_MAX_RA
 const waveSwell = num(/#define GEN_WAVE_SWELL\s+(\d+)/, 'GEN_WAVE_SWELL');
 const waveSawDown = num(/#define GEN_WAVE_SAW_DOWN\s+(\d+)/, 'GEN_WAVE_SAW_DOWN');
 const waveSquare = num(/#define GEN_WAVE_SQUARE\s+(\d+)/, 'GEN_WAVE_SQUARE');
-const minWidth = one(/#define GEN_PULSE_MIN_WIDTH\s+([0-9.]+)f/, 'GEN_PULSE_MIN_WIDTH');
-const pulsePeriods = one(/AURORA_PULSE_PERIODS\[\]\s*=\s*\{([^}]*)\}/s, 'AURORA_PULSE_PERIODS')
+const minWidth = one(/#define GEN_LFO_MIN_WIDTH\s+([0-9.]+)f/, 'GEN_LFO_MIN_WIDTH');
+const lfoPeriods = one(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/s, 'AURORA_LFO_PERIODS')
   .split(',').map(s => s.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
 const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
@@ -99,11 +99,11 @@ ${body}
   const GEN_WAVE_SWELL = ${waveSwell};
   const GEN_WAVE_SAW_DOWN = ${waveSawDown};
   const GEN_WAVE_SQUARE = ${waveSquare};
-  const GEN_PULSE_MIN_WIDTH = ${minWidth};
+  const GEN_LFO_MIN_WIDTH = ${minWidth};
 
-  // Longest first, in animation beats: the pulse's rate and both ramp times
+  // Longest first, in animation beats: the LFO's rate and both ramp times
   // step through these.
-  const PULSE_PERIODS = [${pulsePeriods.join(', ')}];
+  const LFO_PERIODS = [${lfoPeriods.join(', ')}];
 
   const TAGS = ${JSON.stringify(tags)};
   const tagged = tag => Object.keys(TAGS).filter(n => TAGS[tag ? n : n].includes(tag));
@@ -114,8 +114,8 @@ ${body}
   global.AuroraCC = {
     CC, TAGS, tagged, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
     routeCC, routeRatio,
-    GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_PULSE_MIN_WIDTH,
-    PULSE_PERIODS,
+    GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_LFO_MIN_WIDTH,
+    LFO_PERIODS,
   };
 })(typeof window === 'undefined' ? globalThis : window);
 `;
@@ -131,10 +131,10 @@ function checkRenderer() {
     return new Set([...body.matchAll(/case (CC_[A-Z0-9_]+):/g)].map(m => camel(m[1])));
   };
   const want = {
-    refused: new Set(['tempoDivision', 'genPulseRate']),
+    refused: new Set(['tempoDivision', 'genLfoRate']),
     swings: new Set(tagged('rate')),
     circular: new Set(tagged('circular')),
-    plainClock: new Set(tagged('plain')),
+    plainLfo: new Set(tagged('plain')),
   };
   const problems = [];
   for (const [fn, expected] of Object.entries(want)) {

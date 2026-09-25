@@ -58,8 +58,8 @@
     genFanRandom:   63,
     genFan:         64,
     genFanRate:     65,
-    genFanPulse:    66,
-    genPulseRate:   67,
+    genFanLfo:      66,
+    genLfoRate:     67,
     genBend:        68,
     genBendAt:      69,
     scatterRate:    71,
@@ -88,13 +88,13 @@
   const GEN_WAVE_SWELL = 32;
   const GEN_WAVE_SAW_DOWN = 64;
   const GEN_WAVE_SQUARE = 96;
-  const GEN_PULSE_MIN_WIDTH = 0.06;
+  const GEN_LFO_MIN_WIDTH = 0.06;
 
-  // Longest first, in animation beats: the pulse's rate and both ramp times
+  // Longest first, in animation beats: the LFO's rate and both ramp times
   // step through these.
-  const PULSE_PERIODS = [16, 12, 8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25];
+  const LFO_PERIODS = [16, 12, 8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25];
 
-  const TAGS = {"tempoDivision":["patch"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"padX":["gesture"],"padY":["gesture"],"padPressure":["gesture"],"padEngage":["gesture"],"rockerPadA":["ambient"],"rockerPadB":["ambient"],"rockerPadC":["ambient"],"rockerPadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"keyHeld":["gesture"],"washLevel":["patch","plain"],"washHueOffset":["patch","circular","plain"],"washSaturation":["patch","plain"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"colorRegion":["switch"],"colorRuler":["switch"],"placedHue":["patch"],"placedWhite":["patch"],"placedDark":["patch"],"placedCount":["patch"],"placedWidth":["patch"],"placedEdge":["patch"],"placedSpeed":["patch","rate"],"wanderHue":["patch"],"wanderWhite":["patch"],"wanderDark":["patch"],"wanderRate":["patch","rate"],"wanderScale":["patch"],"litHue":["patch"],"litWhite":["patch"],"litDark":["patch"],"genBounce":["switch"],"genWidth":["patch"],"genCount":["patch","plain"],"genEdge":["patch"],"genTail":["patch"],"genPosition":["patch","circular"],"genSpeed":["patch","rate"],"genFanFreq":["patch","plain"],"genFanPhase":["patch","circular","plain"],"genFanRandom":["patch","plain"],"genFan":["patch","plain"],"genFanRate":["patch","rate","plain"],"genFanPulse":["patch","plain"],"genPulseRate":["patch"],"genBend":["patch","plain"],"genBendAt":["patch","plain"],"scatterRate":["patch","rate"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterStagger":["patch"],"scatterDrift":["patch"],"scatterLight":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"]};
+  const TAGS = {"tempoDivision":["patch"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"padX":["gesture"],"padY":["gesture"],"padPressure":["gesture"],"padEngage":["gesture"],"rockerPadA":["ambient"],"rockerPadB":["ambient"],"rockerPadC":["ambient"],"rockerPadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"keyHeld":["gesture"],"washLevel":["patch","plain"],"washHueOffset":["patch","circular","plain"],"washSaturation":["patch","plain"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"colorRegion":["switch"],"colorRuler":["switch"],"placedHue":["patch"],"placedWhite":["patch"],"placedDark":["patch"],"placedCount":["patch"],"placedWidth":["patch"],"placedEdge":["patch"],"placedSpeed":["patch","rate"],"wanderHue":["patch"],"wanderWhite":["patch"],"wanderDark":["patch"],"wanderRate":["patch","rate"],"wanderScale":["patch"],"litHue":["patch"],"litWhite":["patch"],"litDark":["patch"],"genBounce":["switch"],"genWidth":["patch"],"genCount":["patch","plain"],"genEdge":["patch"],"genTail":["patch"],"genPosition":["patch","circular"],"genSpeed":["patch","rate"],"genFanFreq":["patch","plain"],"genFanPhase":["patch","circular","plain"],"genFanRandom":["patch","plain"],"genFan":["patch","plain"],"genFanRate":["patch","rate","plain"],"genFanLfo":["patch","plain"],"genLfoRate":["patch"],"genBend":["patch","plain"],"genBendAt":["patch","plain"],"scatterRate":["patch","rate"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterStagger":["patch"],"scatterDrift":["patch"],"scatterLight":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"]};
   const tagged = tag => Object.keys(TAGS).filter(n => TAGS[tag ? n : n].includes(tag));
 
   const NAME_BY_CC = {};
@@ -103,7 +103,7 @@
   global.AuroraCC = {
     CC, TAGS, tagged, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
     routeCC, routeRatio,
-    GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_PULSE_MIN_WIDTH,
-    PULSE_PERIODS,
+    GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_LFO_MIN_WIDTH,
+    LFO_PERIODS,
   };
 })(typeof window === 'undefined' ? globalThis : window);
