@@ -174,8 +174,33 @@ with the state — all wait on the same thing.
 
 ## On the wall, next session
 
-Built 2026-09-22 and seen by nothing but the preview. One look each, driven
-live from the editor.
+Built 2026-09-22 onward and seen by nothing but the preview. One look each,
+driven live from the editor.
+
+- [ ] **Flash the brain first, and check the channel.** The brain now answers
+      MIDI channel 1 only, Program Change 0, 10 and 11 only, and the old
+      controller's keys 1–9 do nothing. If the wall ignores the DAW or the
+      controller, the channel is the first suspect.
+
+- [ ] **Play the palettes.** The eight on the Palette row, on a patch you
+      know. Four things to judge: whether the dark ends of Cyberpunk, Space,
+      Nature and TV read as a gap or as part of the look; whether Art's pastel
+      holds up behind the diffuser at S full; whether Sky 35 mirrored still
+      looks better than a seam on the wall, as it did on screen; and what the
+      PARs' hue offset lands on inside a three-color palette. See
+      `docs/generator.md` § "Palettes".
+
+- [ ] **Turn a region inside out**, across the strips at count 1: the middle
+      strip on the fader color, the outer four departing. Then the dark case
+      with V at the top: the outer strips dark and the PARs still at full.
+      See `docs/generator.md` § "What you place".
+
+- [ ] **Swipe Position.** Speed centered, count 1, Position near the bottom,
+      a route on Position with the build wave and an amount under full. The
+      bar should climb, snap back to the bottom on the bar line and climb
+      again, and with a tail up the tail should drop at the snap rather than
+      paint the strip. Try Bend on it too. See `docs/generator.md` § "The
+      tail is an afterglow".
 
 - [ ] **Try to defeat the blackout gate.** Built 2026-09-23, never seen on
       hardware, and it is the one control that has to work when nothing
