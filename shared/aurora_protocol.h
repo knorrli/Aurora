@@ -349,8 +349,7 @@ enum AuroraCC : uint8_t {
     CC_LIT_DARK            = 52, // [patch] bipolar: 64 = none, down takes the
                                  // core toward dark and up toward full
     // 53–70 — the generator. Only read while PRESET_GENERATOR is active.
-    CC_GEN_ALTERNATE       = 53, // [switch] odd strips run the journey
-                                 // backwards
+    // 53 reserved (the generator)
     CC_GEN_BOUNCE          = 54, // [switch] turn at the cell's edge instead
                                  // of wrapping
     CC_GEN_WIDTH           = 55, // [patch] how much of one cell the shape's
@@ -359,7 +358,8 @@ enum AuroraCC : uint8_t {
                                  // strip,
                                  // 1–20, geometric so a morph doubles
     CC_GEN_EDGE            = 57, // [patch] symmetric softness at both ends
-    CC_GEN_TAIL            = 58, // [patch] asymmetric fade behind the shape
+    CC_GEN_TAIL            = 58, // [patch] beats a passed pixel glows, 0 =
+                                 // none, squared up to 8
     // Bipolar: 64 is the middle of the cell, and half a cell each way covers
     // every place a shape can stand, because the pattern repeats once per
     // cell. Read only while the pattern is still; travel sets its own place.

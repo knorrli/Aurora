@@ -38,8 +38,12 @@ EMSCRIPTEN_KEEPALIVE void aurora_motion_copy(render::Motion *to, const render::M
   *to = *from;
 }
 
-EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, float beats) {
-  render::renderGenerator(controls, beats, *motion, frame);
+EMSCRIPTEN_KEEPALIVE render::Paths *aurora_paths_new() { return new render::Paths(); }
+
+EMSCRIPTEN_KEEPALIVE void aurora_paths_clear(render::Paths *paths) { render::clearPaths(*paths); }
+
+EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Paths *paths, float beats) {
+  render::renderGenerator(controls, beats, *motion, *paths, frame);
 }
 
 EMSCRIPTEN_KEEPALIVE void aurora_render_strip_order() {

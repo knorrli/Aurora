@@ -232,9 +232,9 @@ live from the editor.
       back into line on the bar. And the hypno look: speed dialed still, a
       four-beat clock, a sine at a quarter-turn phase on speed and a second
       on the fan's rate spread — the wall should rise, stop on beat 2, fall,
-      and stop again, all five together. Watch for the known wart: a tail
-      stays on the side the dialed speed puts it, so a shape swung backwards
-      runs tail-first. See `docs/modulation.md` § "A rate swings both ways".
+      and stop again, all five together. A tail follows the swing, so a
+      shape swung backwards leaves its glow behind it rather than running
+      tail-first. See `docs/modulation.md` § "A rate swings both ways".
 
 The pulse's destinations, the anchor against a click and the stepped rate
 are unjudged too, and are listed below.
@@ -526,38 +526,50 @@ it becomes a build item.
       every instant — so the switch survives. `DESIGN.md` § "Alternate
       keeps its jump" said it would not; that is corrected there.
 
-- [ ] **Tail has three meanings, on a 3-way switch.** Raised 2026-09-25,
-      when a route that swings speed through zero showed that today's tail
-      stays on the dialed speed's side and runs a reversed shape tail-first.
-      Settled: a switch on the tail, banded in thirds like the ruler, on a
-      spare generator CC.
+- [x] **The tail is an afterglow of where the shape has been.** Raised
+      2026-09-25, when a route that swings speed through zero ran a reversed
+      shape tail-first; settled and built the same day. A tail exists only
+      behind something that moves. See `docs/generator.md` § "The tail is an
+      afterglow".
 
-      - **Shape**, today's: the tail is part of the shape's outline, a fixed
-        length with no memory, so a still bar with a tail is a lopsided shape.
-      - **Trail**: a record per pixel of how far the comet has traveled since
-        it last covered it. The comet walks back out through its own trail
-        when it reverses, and a stopped comet keeps its tail. What bounce
-        draws today, for any motion.
-      - **Afterglow**: the same record, kept in time instead of distance. The
-        tail shrinks as the comet slows, is gone while it stands, and grows
-        again with speed, so Tail becomes a time — beats is the proposal, so
-        it follows tempo.
+      - **Afterglow only, no switch.** A shape-outline tail would give a
+        still bar a lopsided fade, which is not wanted, and a trail measured
+        in distance would keep a tail on a stopped shape. CC 70 stays free.
+      - **Tail is a time**: off to 8 beats until a passed pixel is dark,
+        squared so the short end gets the travel, on the fade curve the
+        tail already had.
+        Beats, because Speed is in pixels a beat, so a tail's length in
+        pixels does not change with tempo.
+      - **The shape remembers its path, not the wall its pixels.** Each strip
+        keeps where its shape has been over the last 8 beats and the glow is
+        drawn along that path. A pixel that goes dark because the shape
+        narrowed or strobed does not glow.
+      - **Edge stays symmetric.** Behind a moving shape the glow covers the
+        back half of the edge fade; standing still, the edge is all there is.
+      - **The in-the-shape ruler reads the glow's age** along the tail, so
+        color along a tail follows the glow.
+      - **A patch change starts empty**, and so does a jump in the beat
+        count. The renderer cannot tell a patch change from fast fader
+        moves, so whoever changes the patch says so. The editor does on
+        choosing a slot or a starting point; the brain has no patch recall
+        yet, and will need to when it does.
 
-      The last two share one mechanism and differ only in the counter. A jump
-      — a patch change, a scrub, a morph moving Position — streaks across
-      rather than restarting empty, to be judged on the wall; which it does is
-      one condition to flip. Judge the three with the *Swing* starting points
-      in the editor.
+- [ ] **Judge the afterglow on the wall.** The *Swing* starting points: a
+      tail should stay behind its shape through the swing, shrink as it
+      slows and be gone while it stands. Also whether 8 beats is the right
+      top and whether half a beat sits at a useful place on the fader, and
+      what the brain's frame time does with the walk.
 
-- [ ] **Is Alternate still worth its switch?** Raised 2026-09-25. The fan's
-      rate spread was expected to supersede it, and does under wrap. It was
-      kept for bounce, and measured 2026-09-25 that reason no longer holds: a
-      moving pattern with its odd strips reversed by the fan matches
-      Alternate pixel for pixel, bounce and tails included. What only the
-      switch does is mirror a *still* pattern — Position at the other end, a
-      still bar's tail pointing the other way. See `DESIGN.md` § "Alternate
-      keeps its jump". Compare the three *Alternate* fan looks in the editor,
-      then decide whether mirroring a still shape earns a switch.
+- [ ] **Clear the tails when the brain changes patch.** `render::clearPaths`
+      exists and the editor calls it; the brain has no patch recall to call
+      it from yet. Until it does, a patch sent as CCs streaks from the old
+      shapes to the new.
+
+- [x] **Is Alternate still worth its switch?** No, cut 2026-09-25. The
+      fan's rate spread draws the same wall on anything moving, bounce and
+      tails included; what only the switch did was turn a still shape round,
+      which mattered only for a still shape with a tail, and there is no such
+      thing any more. CC 53 is free. See `DESIGN.md` § "Alternate is cut".
 
 - [x] **The bars drifting apart and back together has no way in.** Answered
       2026-09-25 by letting routes aim at rates, where a route swings both

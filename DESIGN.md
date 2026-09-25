@@ -752,8 +752,8 @@ which is faster than a sweep any song has wanted so far. See
 > **A switch is part of what a patch is. Only arriving at a patch moves
 > one.**
 
-Four things have no middle: alternate, bounce, gradient-or-region, and which
-ruler the placed field is measured against. An amount can fade in and a
+Three things have no middle: bounce, gradient-or-region, and which ruler
+the placed field is measured against. An amount can fade in and a
 switch cannot, so a morph has never been able to interpolate one. What was
 never settled is *when* it should change instead, and "at the halfway
 point of the slider" was an arbitrary answer nobody had argued for.
@@ -763,7 +763,7 @@ how far *that strip* has traveled toward the destination — so there is no
 single position to compare against a halfway mark. A switch keyed on
 morph position would flip strip by strip as the window slid across, which
 is the stepping the window exists to remove, and it would need per-strip
-bounce and alternate in the renderer, which do not exist. So a switch
+bounce in the renderer, which does not exist. So a switch
 cannot be a function of morph position at all.
 
 What each surface does follows:
@@ -816,7 +816,7 @@ Two things follow. A switch is part of what a patch is, so a far end
 having no switches of its own is not a restriction — it is what being a
 far end means. And a morph cannot arrive for some strips and not others:
 the touchpad gives each strip its own share, and a per-strip arrival would
-need per-strip bounce and alternate in the renderer, which do not exist.
+need per-strip bounce in the renderer, which does not exist.
 Arrival is a whole-wall event, which is why the pad can drive a journey
 the whole way and still never arrive on its own.
 
@@ -830,20 +830,17 @@ the constraint is an authoring rule rather than a runtime one: **a patch
 and its own morph target share switches**. For the touchpad, whose
 destination is
 another patch, the loss is real but small — across the whole roster only
-Bars uses bounce and only CrossSweep and Stutter use alternate, so leaning
-toward most destinations loses nothing.
+Bars uses bounce, so leaning toward most destinations loses nothing.
 
 **It does not weaken morphing as expression.** The three faders are three
 routes to *more*; expression is about degree, and a switch has no degree.
 Half of "turns around at the end" is not a weaker turn, it is nothing.
 
-**Rejected: dissolving the switches instead.** Alternate could be made
-continuous — odd strips running at anything from full speed with the
-others through to full speed against them — and that is worth having as a
-*look*, recorded in `docs/generator.md` § Open, item 1. It does not
+**Rejected: dissolving the switches instead.** Alternate was dissolved,
+into the fan's rate spread — see § "Alternate is cut" — but that does not
 answer this question. Bounce cannot be dissolved at all, because wrap
-against bounce is a topology rather than a rate, so the rule would still
-be needed for it alone.
+against bounce is a topology rather than a rate, so the rule is still
+needed for it alone.
 
 **Bounce turns on without moving the shape, 2026-09-22.** Position is
 read out of the travel phase differently in each mode — a fraction of a
@@ -870,39 +867,22 @@ across the five at fan 90. Every strip carries its own travel phase now
 and is solved for separately, so a fanned wall keeps its stagger across
 the flip.
 
-**Alternate keeps its jump, deliberately.** The two things wanted of it
-cannot both be had. If turning it on leaves the odd strips where they
-stand, then where they sit relative to the even ones is whatever the
-moment of the flip made it, and the same patch entered twice is two
-different walls; keeping that relationship fixed is exactly what makes the
-flip a jump. Under bounce it is worse — the swing is symmetric inside its
-cell, so a shape running it backwards stands in the same place at every
-instant as one running it forwards, and reversing the odd strips where
-they stand would leave them sitting exactly on top of the even ones, with
-alternate visible on nothing but a tail.
+**Alternate is cut, 2026-09-25.** It was a switch that ran the odd strips'
+journey backwards, and it jumped when flipped: keeping the odd strips'
+place relative to the even ones fixed is exactly what makes a flip a jump.
+The fan's rate spread replaced it. Odd strips reversed by the fan — Speed
+still, rate spread up, frequency at the top, phase a quarter turn — were
+measured drawing the same wall as the switch pixel for pixel over twenty
+beats, under wrap and under bounce, tails included, and a continuous
+control has nothing to flip.
 
-So it is not worth repairing. The fan's rate amount now reaches
-alternating direction as one setting of a continuous control — frequency
-at the top of its range, where every strip sits opposite its neighbors —
-and a continuous control has nothing to flip. See `docs/generator.md`
-§ "The fan is a wave".
-
-**On a moving pattern it does replace the switch.** Measured 2026-09-25:
-odd strips reversed by the fan's rate — Speed still, rate spread up,
-frequency at the top, phase a quarter turn — draw the same wall as
-Alternate pixel for pixel over twenty beats, under wrap and under bounce,
-tails included, whether bounce was on from the start or switched on
-mid-run. What once made bounce the exception is gone: entering bounce puts
-each strip on the half of its swing it is heading along, so a strip
-running backwards swings opposite its neighbors. One gap is left inside
-bounce: flipping a rate's sign while already bouncing reverses nothing,
-since the swing runs at the speed's size and only a switch re-solves it.
-
-**What only the switch does is mirror a still pattern.** With Speed at
-center there is no rate to reverse, and Alternate still flips the odd
-strips end for end: Position lands at the other end, and a lopsided shape —
-a tail on a still bar — points the other way. No fan setting turns a
-shape round. Whether that is worth a switch is `TODO.md`'s to decide.
+What only the switch did was turn a still shape round, and that showed on
+nothing but a still shape with a tail. There is no such thing any more:
+a tail is an afterglow of where a shape has been, so only a moving shape
+has one — `docs/generator.md` § "The tail is an afterglow". The one gap
+the fan leaves is inside bounce: flipping a rate's sign while already
+bouncing reverses nothing, since the swing runs at the speed's size and
+only a switch re-solves it.
 
 ## Open
 

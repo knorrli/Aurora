@@ -103,13 +103,14 @@ That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ## The budget
 
-Aurora needs **105 numbers**: 65 controls and eight routes of five bytes.
-There are 114 safe ones, so the map spends them all but nine.
+Aurora needs **104 numbers**: 64 controls and eight routes of five bytes.
+There are 114 safe ones, so the map spends them all but ten.
 
-**The nine are 3–6, 8, 9, 30, 31 and 70.** Only the generator's one is in a
-block anything is waiting to grow into, and the tail's three-way switch in
-`TODO.md` is the claim on it. After that, the next generator control means a
-regroup.
+**The ten are 3–6, 8, 9, 30, 31, 53 and 70.** Only the generator's two are
+in a block anything is waiting to grow into, and nothing claims either: 53
+was Alternate, cut 2026-09-25, and 70 was held for a tail switch that
+became a single afterglow instead. After those, the next generator control
+means a regroup.
 
 **The scatter's lifetime fork no longer fits.** Spots with a birth and a
 death, which is what raindrops and shooting stars need, is priced in
@@ -221,12 +222,12 @@ No spare.
 
 | CC | | | |
 |---|---|---|---|
-| **53** | `GEN_ALTERNATE` | [switch] | odd strips run the journey backwards |
+| 53 | — | | free |
 | **54** | `GEN_BOUNCE` | [switch] | turn at the cell's edge instead of wrapping |
 | **55** | `GEN_WIDTH` | [patch] | the solid core, as a proportion of one cell |
 | **56** | `GEN_COUNT` | [patch][plain] | shapes along the strip, 1-20 |
 | **57** | `GEN_EDGE` | [patch] | glow into the gap, both sides |
-| **58** | `GEN_TAIL` | [patch] | trail behind, into the gap |
+| **58** | `GEN_TAIL` | [patch] | beats a passed pixel glows, 0–8, squared |
 | **59** | `GEN_POSITION` | [patch][circular] | bipolar; where a still pattern stands in its cell |
 | **60** | `GEN_SPEED` | [patch][rate] | bipolar; center is still |
 | **61** | `GEN_FAN_FREQ` | [patch][plain] | stepped; 0 to two turns across the wall |

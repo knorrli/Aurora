@@ -47,12 +47,11 @@ That is the whole thing. Everything below is a parameter of it.
 
 | CC | Control | Meaning | Range |
 |----|---------|---------|-------|
-| 53 | Alternate | Odd strips run against the even ones | switch |
 | 54 | Bounce | Reverse at the strip end instead of wrapping | switch |
 | 55 | Width | The solid core, as a proportion of one cell | 0–100 % |
 | 56 | Count | How many shapes along the strip | 1–20 |
 | 57 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
-| 58 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
+| 58 | Tail | How long a pixel glows after a moving shape leaves it | 0–8 beats, squared |
 | 60 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
 | 68 | Bend | Travel slowed and sped by where a shape is. See "Bend: speed set by where a shape is on the strip" | bipolar, up to 39:1 |
 | 69 | Bend at | Where the bend peaks along the strip, or each cell while bouncing | bottom → top |
@@ -69,14 +68,14 @@ That is the whole thing. Everything below is a parameter of it.
 Color is hue, whiteness and darkness, and sits downstream of all of this —
 this branch decides whether a pixel is lit, never what color it is.
 
-**The two flags are switches rather than knobs because neither has a
-middle.** Half of "runs opposite" is not a state, and neither is half of
-"turns around at the end". Everything else is continuous.
+**Bounce is a switch rather than a knob because it has no middle.** Half
+of "turns around at the end" is not a state. Everything else is
+continuous.
 
 ### The units rule, which cost three attempts to find
 
-> **Speed is an absolute distance. Width, edge and tail are proportions
-> of the shape. Count changes the cell, and nothing else should notice.**
+> **Speed is an absolute distance. Width and edge are proportions of the
+> shape. Count changes the cell, and nothing else should notice.**
 
 Getting this wrong produced three separate symptoms on the bench, all with
 the same cause — measuring something in cells when cells shrink as the
@@ -88,7 +87,8 @@ count rises:
   stepping; edge as a proportion of the shape's own width meant most of
   the fader did nothing at high counts. It has to be a proportion of the
   **gap**, which is what the fade actually has room to occupy.
-- Tail had the same problem for the same reason.
+- Tail had the same problem for the same reason, until it became a time
+  — see "The tail is an afterglow".
 
 ### Fades reach outward, never inward
 
@@ -269,7 +269,7 @@ Thirteen of the roster, approximately, from nine knobs and two switches:
 | Fill | width full, not moving |
 | Sweep | a third width, hard edge, traveling, fan zero |
 | Rain | the same with the fan's position amount up and some tail |
-| CrossSweep | Sweep with alternate direction |
+| CrossSweep | Sweep with the odd strips reversed by the fan's rate spread |
 | Bars | Sweep on bounce instead of wrap |
 | Breathe | width full, not moving, pulse deep and slow, sine |
 | Wave | the same with the fan's pulse amount up |
@@ -277,7 +277,7 @@ Thirteen of the roster, approximately, from nine knobs and two switches:
 | Comet | a narrow shape with a long tail, traveling, strips fanned |
 | Starfield | tiny shapes, high count, jitter up |
 | Strobe | width full, pulse at maximum, fast, square |
-| Stutter | Strobe with alternate direction and some fan on the pulse |
+| Stutter | Strobe with some fan on the pulse |
 | Glitch | tiny, high count, jitter at maximum |
 
 **Fan was doing three jobs at once** — it was the Sweep→Rain axis, the
@@ -392,7 +392,8 @@ and the table has no duplicate rows.
 
 A tail reaches far further than an edge fade, so the shape ruler
 normalizes its two sides separately: 0 at the leading tip, **0.5 at the
-core's center**, 1 at the end of the tail.
+core's center**, 1 at the end of the tail. Along the tail a pixel's place
+is how long ago the core passed it — see "The tail is an afterglow".
 
 Normalizing the whole span at once put the ruler's middle halfway between
 the two tips, which with a long tail is well behind the core. A region
@@ -580,6 +581,9 @@ wide shape at count 1.
 
 ### The tail is history, not geometry, 2026-09-22
 
+Superseded by "The tail is an afterglow", 2026-09-25, which keeps the fold
+at a turn and drops the still shape's tail. Kept for the measurements.
+
 A tail is where the core has **been**, not a shape hung off it. While travel
 runs one way the two are the same number — how far behind the core a point
 lies, and how long ago the core was there — which is why a single signed
@@ -624,6 +628,68 @@ two measures agree, so a static lopsided shape is still reachable.
 speed rather than the speed it was laid down at, so sweeping speed stretches
 and squashes the trail already lying there instead of leaving history where it
 fell. Invisible unless speed is swept hard.
+
+### The tail is an afterglow, 2026-09-25
+
+> **A tail exists only behind something that moves.**
+
+Found by a route swinging speed through zero: the tail sat on the side the
+dialed speed pointed away from, so a shape swung backwards ran tail-first.
+Three meanings were weighed — part of the shape's outline, a trail measured
+in distance, an afterglow measured in time — and only the last keeps the
+rule. An outline gives a still bar a lopsided fade, and a distance stops
+growing when a shape stands, so a stopped shape would keep its tail for
+ever.
+
+**Tail is a time**: how long a pixel glows after the core's body leaves it,
+0 to 8 beats, squared like the rates so the short end gets most of the
+travel, fading as `(1 − age / tail)²` to dark. Beats, because Speed is in
+pixels a beat, so a tail's length in pixels at a given speed does not
+change with tempo. Count and width no longer touch it: a shape moving
+20 px/beat under half a beat of tail trails 10 px, at any count.
+
+**The path is remembered, not the pixels.** Each strip records where its
+core stood 64 times a beat over the last 8 beats (`Paths` in
+`shared/render/render.h`, 10 KB for the five), and each frame walks it back
+from now, stamping every point of a cell's journey with the moment the body
+last left it. Against remembering what each pixel was lit with:
+
+- A pixel that goes dark because the shape narrowed or strobed never glows.
+  Only travel leaves a tail.
+- A turn folds the tail back on itself, as bounce's closed form used to, and
+  now a swing through zero under wrap does too. One walk replaces the two
+  tail calculations wrap and bounce had.
+- A still shape is its core and edge, the same on both sides. Edge stays
+  symmetric: behind a moving shape the glow is brighter than the back half
+  of the edge fade and covers it.
+
+Moving Position or the fan leaves a tail, because the shape travels.
+Changing count or flipping bounce does not jump: shapes keep their place in
+a cell as it resizes, and bounce is solved to stand the core where it was.
+
+**A patch change starts the path empty**, and so does a frame more than half
+a beat after the last — the transport jumped, or the editor's tab sat in
+the background. The renderer cannot tell a patch change from fast faders,
+so the caller clears it with `clearPaths`: the editor does on choosing a
+slot or a starting point. The brain has no patch recall yet.
+
+**The editor copies Motion between walls, never Paths.** The small walls
+take the big wall's phases each frame so all three show one instant; a
+copied path would draw the big wall's tail behind a small wall's shape.
+
+**The shape ruler reads the glow's age.** Along the glow a pixel's place is
+how long ago the core passed, as the distance the core covered since, so a
+slowing shape squeezes its color with its tail and the two measures meet at
+the core's back edge. Which side is behind comes from which way the path
+last moved, not from Speed's sign.
+
+**Measured in the preview.** Under a sine on Speed through zero with bounce
+on, sampled every frame for twelve beats, the side just behind the core was brighter
+than the side ahead in 399 moving frames and dimmer in 15, all just after a
+turn, where the older glow ahead is still the brighter. The previous tail
+split 207 to 207. A strobe on width leaves nothing lit outside the narrow
+shape. A frame renders in about 0.02 ms as WebAssembly; the brain's cost is
+unmeasured.
 
 ### Turning bounce on leaves the shape where it stands, built 2026-09-22
 
@@ -897,9 +963,8 @@ before was `fan × strip / 5`, a straight ramp; what was planned to replace
 it was `amount × |strip − center|`, a V. Neither changes sign more than
 once across the wall, so strips running opposite their neighbors were out
 of reach at every setting of either. A periodic wave reaches them at one
-cycle per two strips. It does not retire the Alternate switch, which does
-something under bounce that no rate can — see `DESIGN.md` § "Alternate
-keeps its jump".
+cycle per two strips. It retired the Alternate switch — see `DESIGN.md`
+§ "Alternate is cut".
 
 Five strips cannot sample anything faster than that, so the fader stops
 there. Two warts at that end, both real and both cheaper than the control

@@ -15,14 +15,14 @@
 // narrow shapes scattered, Strobe is full width pulsed to zero.
 //
 // Everything is recomputed each frame from the musical position, so the only
-// state is what Motion carries, and a tempo change is a change of rate, not a
-// jump.
+// state is what Motion carries and the path each tail is drawn from, and a
+// tempo change is a change of rate, not a jump.
 /////////////////////////////////
 
 namespace render {
 
 // Speed is an absolute distance per beat, because it is motion through real
-// space and should not change when the count does. Width, edge and tail are
+// space and should not change when the count does. Width and edge are
 // proportions of the shape instead — measured in pixels, their useful range
 // collapses as the shapes get narrower, and most of each slider's travel
 // stops doing anything.
@@ -31,9 +31,8 @@ static const float GEN_MAX_SPEED_PIXELS_PER_BEAT = 60.0f;
 
 // The fan's wave runs across the strips, and five of them cannot sample
 // anything faster than half a cycle each: at that setting every strip lands
-// on the opposite point of the wave from its neighbors, which is alternate,
-// and above it the wave folds back onto slower ones. So the fader stops
-// there.
+// on the opposite point of the wave from its neighbors, and above it the wave
+// folds back onto slower ones. So the fader stops there.
 //
 // Stepped to eighths of a turn across the wall, with the phase on 128ths of
 // one, because the two together have to be able to read *exactly* zero on a
@@ -65,6 +64,16 @@ static const float GEN_PULSE_ANCHOR_CYCLES = 2.0f;
 // enough that bringing Speed to a stop reads as settling rather than as a
 // second move of its own.
 static const float GEN_POSITION_SETTLE_BEATS = 2.0f;
+
+// A frame this much later than the last is not the next frame: the transport
+// jumped, or the editor's tab sat in the background. The path across the gap
+// is not known, and joining its two ends would draw a streak.
+static const float GEN_PATH_GAP_BEATS = 0.5f;
+
+// How finely a cell's journey is divided to remember when the core last
+// covered each point of it. At one shape a strip this is a bin every fifth of
+// a pixel, finer than the four samples a pixel is read at.
+static const uint16_t GEN_GLOW_BINS = 256;
 
 // Below this a travel is a pixel a minute — slower than anything the roster
 // wants and slow enough to read as a standstill that quietly drifts.
@@ -144,7 +153,7 @@ struct Params {
   float width;
   uint8_t count;
   float edge;
-  float tail;
+  float glowBeats;
   float positionCells;
   float speedPixels;
   float fanPosition;
@@ -156,7 +165,6 @@ struct Params {
   float bend;
   float bendAt;
   float pulseBeats;
-  bool alternate;
   bool bounce;
 
   PlacedField placed;
@@ -186,7 +194,7 @@ struct Params {
 
 static inline float fract(float x) { return x - floorf(x); }
 
-static float shapeAt(float offset, float width, float edge, float tail);
+static float coreAt(float offset, float width, float edge);
 
 // A phase derived as `beats * rate` teleports whenever the rate changes,
 // because beats is large and only grows: a small change of rate is a large
@@ -444,7 +452,7 @@ static float wanderAt(const Params &p, uint8_t stripIndex, float along01, float 
 static float placedAt(const PlacedField &field, float u, float drift) {
   if (!field.isRegion) return (u - 0.5f) * 2.0f;
   const float cell = u * (float)field.count + drift;
-  return shapeAt(fract(cell) - 0.5f, field.width, field.edge, 0.0f);
+  return coreAt(fract(cell) - 0.5f, field.width, field.edge);
 }
 
 float lightLeft(float dark) { return powf(DARK_FLOOR, -dark); }
@@ -469,19 +477,18 @@ static Hsv applyPushes(Hsv base, float hue, float white, float dark) {
   return { (uint8_t)(base.h + (int16_t)hue), (uint8_t)saturation, (uint8_t)value };
 }
 
-// `offset` is the signed distance from the core's center, in cells, positive
-// on the trailing side. Which shape a pixel is measured against is the
-// caller's business, because that is a question about the strip's ends
-// rather than about the shape.
+// `offset` is the signed distance from the core's center, in cells. Which
+// shape a pixel is measured against is the caller's business, because that is
+// a question about the strip's ends rather than about the shape.
 //
-// `width` is the solid core. `edge` and `tail` both reach outward from it
-// into the gap rather than eating into it, so softening a shape never makes
-// it smaller. Both are scaled by the gap that is actually available, which
-// means edge at full always closes the gaps to the neighboring shapes — the
-// two fades meet at zero and never have to be summed.
+// `width` is the solid core. `edge` reaches outward from it into the gap
+// rather than eating into it, so softening a shape never makes it smaller.
+// It is scaled by the gap that is actually available, which means edge at
+// full always closes the gaps to the neighboring shapes — the two fades meet
+// at zero and never have to be summed.
 //
 // The core and its edge fade are geometry: they sit around the core wherever
-// it stands, the same on both sides.
+// it stands, the same on both sides. A tail is not — see walkPath.
 static float coreAt(float offset, float width, float edge) {
   const float halfCore = width * 0.5f;
   const float distance = fabsf(offset);
@@ -494,62 +501,6 @@ static float coreAt(float offset, float width, float edge) {
     return k * k * (3.0f - 2.0f * k);
   }
   return 0.0f;
-}
-
-// The tail is not geometry. It is how far the core has traveled since it was
-// last at this point, so `behind` is a path length and never a straight line.
-static float tailAt(float behind, float width, float tail) {
-  if (tail <= 0.0001f) return 0.0f;
-  const float beyond = behind - width * 0.5f;
-  if (beyond <= 0.0f) return 0.0f;
-
-  const float tailLength = tail * (1.0f - width);
-  if (tailLength <= 0.0001f || beyond >= tailLength) return 0.0f;
-  const float k = 1.0f - (beyond / tailLength);
-  return k * k;
-}
-
-// While travel runs one way, how far behind the core a point lies and how long
-// ago the core was there are the same number, which is why a straight offset
-// serves for both. They come apart only where the core turns.
-static float shapeAt(float offset, float width, float edge, float tail) {
-  float brightness = coreAt(offset, width, edge);
-  if (offset > 0.0f) {
-    const float trailing = tailAt(offset, width, tail);
-    if (trailing > brightness) brightness = trailing;
-  }
-  return brightness;
-}
-
-// Every cell runs the same journey, and an odd strip runs it backwards, so a
-// position on the strip becomes a position in that journey before the trail
-// can be measured against it.
-static inline float journeyIn(float posCells, bool mirrored) {
-  const float withinCell = posCells - floorf(posCells);
-  return mirrored ? (1.0f - withinCell) : withinCell;
-}
-
-// Under bounce the core's position is a triangle, so "when was the core last
-// here" has an answer in closed form: every point on the swing is crossed
-// exactly twice a cycle, going up and coming down, and the more recent of the
-// two is the one whose trail is still lying there. Distance is the path the
-// core walked in that time, which is what folds the trail back on itself at a
-// turn instead of moving it.
-//
-// Points inside half a core width of the cell's ends are never reached by the
-// center, only swept by the body at the turn, so they measure from the turn
-// and add the straight remainder.
-static float trailBehind(float journey, float phase, float halfCore, float swingSpan) {
-  if (swingSpan <= 0.0001f) return fabsf(journey - 0.5f);
-
-  const float far = 1.0f - halfCore;
-  const float reachable = (journey < halfCore) ? halfCore
-                        : ((journey > far) ? far : journey);
-  const float rising = 0.5f * ((reachable - halfCore) / swingSpan);
-  const float up = fract(phase - rising);
-  const float down = fract(phase - (1.0f - rising));
-  const float elapsed = (up < down) ? up : down;
-  return elapsed * 2.0f * swingSpan + fabsf(journey - reachable);
 }
 
 // 0 at one end of the ruler, 1 at the other. `alongPixels` is fractional
@@ -628,6 +579,121 @@ static bool nearestOffset(float posCells, float coreCenter, float stripDirection
     }
   }
   return lit;
+}
+
+void clearPaths(Paths &paths) { paths.empty = true; }
+
+static inline uint16_t pathSlot(int32_t step) {
+  const int32_t slot = step % (int32_t)PATH_STEPS;
+  return (uint16_t)(slot < 0 ? slot + PATH_STEPS : slot);
+}
+
+// A step that fell between two frames takes the place on the straight line
+// between where the core stood at each.
+static void recordPath(Path &path, const Paths &paths, bool fresh, int32_t step,
+                       float beats, float cells) {
+  if (fresh) {
+    path.firstStep = step + 1;
+    path.lastCells = cells;
+    return;
+  }
+  const float elapsed = beats - paths.lastBeats;
+  for (int32_t at = paths.lastStep + 1; at <= step; at++) {
+    const float k = (elapsed > 0.0f)
+        ? ((float)at / (float)PATH_STEPS_PER_BEAT - paths.lastBeats) / elapsed : 1.0f;
+    path.cells[pathSlot(at)] = path.lastCells + k * (cells - path.lastCells);
+  }
+  path.lastCells = cells;
+}
+
+// How long ago, in beats, the core's body last covered each point of one
+// cell's journey; -1 where it has not within the glow. Every shape on a strip
+// is an image of one core, so one journey serves them all.
+struct Glow {
+  float age[GEN_GLOW_BINS];
+  // How far the core traveled while the glow lasts, which is how long the tail
+  // stands on the wall.
+  float tailCells;
+  // Which way the core last moved, in cells, or 0 if it has not.
+  float direction;
+};
+
+// Stamps the points in (from, to] the moment the body's edge reached them, on
+// a stretch the core's center walked from `newer` to `older`: the edge stands
+// `reach` beyond the center.
+static void stampReached(Glow &glow, float from, float to, float reach,
+                         float newerCells, float newerAge, float olderCells, float olderAge) {
+  const float walked = olderCells - newerCells;
+  const int32_t first = (int32_t)ceilf(from * (float)GEN_GLOW_BINS - 0.5f);
+  for (int32_t bin = first;; bin++) {
+    const float point = ((float)bin + 0.5f) / (float)GEN_GLOW_BINS;
+    if (point > to) break;
+    if (point <= from) continue;
+    int32_t slot = bin % (int32_t)GEN_GLOW_BINS;
+    if (slot < 0) slot += GEN_GLOW_BINS;
+    if (glow.age[slot] >= 0.0f) continue;
+    float k = (fabsf(walked) > 0.000001f) ? (point - reach - newerCells) / walked : 1.0f;
+    if (k < 0.0f) k = 0.0f;
+    else if (k > 1.0f) k = 1.0f;
+    glow.age[slot] = newerAge + k * (olderAge - newerAge);
+  }
+}
+
+// The tail is an afterglow of where the core has been, so only a moving shape
+// has one: a pixel that goes dark because the shape narrowed or strobed was
+// never left behind. Walking the path back from now, the span the body has
+// covered only ever grows, so each point is stamped once, at the moment the
+// body last left it — which is what folds a tail back on itself where the core
+// turns, and lets a slowing core shorten its own tail.
+static void walkPath(const Path &path, int32_t newestStep, float beats, float nowCells,
+                     float halfWidth, float glowBeats, Glow &glow) {
+  for (uint16_t i = 0; i < GEN_GLOW_BINS; i++) glow.age[i] = -1.0f;
+  glow.tailCells = 0.0f;
+  glow.direction = 0.0f;
+
+  float low = nowCells - halfWidth;
+  float high = nowCells + halfWidth;
+  stampReached(glow, low - 0.000001f, high, 0.0f, nowCells, 0.0f, nowCells, 0.0f);
+
+  float newerCells = nowCells;
+  float newerAge = 0.0f;
+  const int32_t oldest = newestStep - (int32_t)PATH_STEPS + 1;
+  for (int32_t step = newestStep; step >= path.firstStep && step >= oldest; step--) {
+    if (newerAge >= glowBeats) break;
+    const float olderCells = path.cells[pathSlot(step)];
+    const float olderAge = beats - (float)step / (float)PATH_STEPS_PER_BEAT;
+    const float walked = newerCells - olderCells;
+
+    if (glow.direction == 0.0f && fabsf(walked) > 0.00001f) {
+      glow.direction = (walked > 0.0f) ? 1.0f : -1.0f;
+    }
+    const float within = (olderAge <= glowBeats || olderAge <= newerAge)
+        ? 1.0f : (glowBeats - newerAge) / (olderAge - newerAge);
+    glow.tailCells += fabsf(walked) * within;
+
+    if (high - low < 1.0f) {
+      if (olderCells + halfWidth > high) {
+        const float reached = fminf(olderCells + halfWidth, low + 1.0f);
+        stampReached(glow, high, reached, halfWidth,
+                     newerCells, newerAge, olderCells, olderAge);
+        high = reached;
+      }
+      if (olderCells - halfWidth < low) {
+        const float reached = fmaxf(olderCells - halfWidth, high - 1.0f);
+        stampReached(glow, reached, low, -halfWidth,
+                     newerCells, newerAge, olderCells, olderAge);
+        low = reached;
+      }
+    }
+    newerCells = olderCells;
+    newerAge = olderAge;
+  }
+}
+
+static inline float ageAt(const Glow &glow, float posCells) {
+  uint16_t bin = (uint16_t)(fract(posCells) * (float)GEN_GLOW_BINS);
+  if (bin >= GEN_GLOW_BINS) bin = GEN_GLOW_BINS - 1;
+  return glow.age[bin];
 }
 
 // Bend sets the speed by which pixel a shape is on: a cosine peaking at `at`
@@ -788,9 +854,10 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_SCATTER_LIGHT:
     case CC_SCATTER_WHITE:   return ccBipolar(value);
 
+    case CC_GEN_TAIL:        return squaredUnit(value, (float)PATH_BEATS);
+
     case CC_GEN_WIDTH:
     case CC_GEN_EDGE:
-    case CC_GEN_TAIL:
     case CC_GEN_FAN_RANDOM:
     case CC_PLACED_WIDTH:
     case CC_PLACED_EDGE:
@@ -808,7 +875,7 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
 
   p.width = at(CC_GEN_WIDTH);
   p.edge = at(CC_GEN_EDGE);
-  p.tail = at(CC_GEN_TAIL);
+  p.glowBeats = at(CC_GEN_TAIL);
   p.count = (uint8_t)at(CC_GEN_COUNT);
   p.positionCells = at(CC_GEN_POSITION);
   p.speedPixels = at(CC_GEN_SPEED);
@@ -823,7 +890,6 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
   p.pulseBeats = at(CC_GEN_PULSE_RATE);
 
   // A switch has no middle for a push to land in, so it is read as dialed.
-  p.alternate = aurora_cc_is_on(dialed[CC_GEN_ALTERNATE]);
   p.bounce = aurora_cc_is_on(dialed[CC_GEN_BOUNCE]);
   p.placed.isRegion = aurora_cc_is_on(dialed[CC_COLOR_REGION]);
   const uint8_t ruler = aurora_cc_band3(dialed[CC_COLOR_RULER]);
@@ -911,7 +977,8 @@ void renderStripOrder(Rgb *pixels) {
   }
 }
 
-void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &out) {
+void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &paths,
+                     Frame &out) {
   for (uint16_t i = 0; i < STRIPS * PIXELS; i++) out.pixels[i] = { 0, 0, 0 };
 
   // Read three times. The first has no pushes in it, which is what the clock's
@@ -961,6 +1028,11 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
   const float travelElapsed = beats - motion.lastTravelBeats;
   motion.lastTravelBeats = beats;
 
+  const int32_t step = (int32_t)floorf(beats * (float)PATH_STEPS_PER_BEAT);
+  const bool freshPaths = paths.empty || beats < paths.lastBeats
+                       || beats - paths.lastBeats > GEN_PATH_GAP_BEATS;
+  Glow glow;
+
   // Every color rate goes through the tracker for the same reason travel and
   // the pulse do: beats only grows, so a small change of rate multiplied by a
   // large beat count is a large jump. A route's swing is added per strip.
@@ -971,8 +1043,6 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
   for (uint8_t stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
     const float wave = fanWave(p, stripIndex);
     const float stripOffset = p.fanPosition * wave;
-
-    const bool mirrored = p.alternate && (stripIndex & 1);
 
     // One wave, three amounts, so where a strip stands, how fast it runs and
     // where it is in the swell are dialed apart — a wall of staggered bars
@@ -1035,41 +1105,46 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
         ? (halfCore + triangleSwing(fract(travelCycles)) * swingSpan)
         : fract(centerCells);
 
-    const float width = s.width;
-
-    // The two sides of a shape are not the same length — a tail reaches much
-    // further than an edge fade — so they are normalized separately. Halfway
-    // between the two tips is not the core, and a region asked to sit at the
-    // middle of a shape means the core every time.
-    const float shapeGap = 1.0f - width;
-    const float shapeLead = width * 0.5f + s.edge * shapeGap * 0.5f;
-    const float shapeTrail = width * 0.5f + fmaxf(s.edge * shapeGap * 0.5f, s.tail * shapeGap);
-
-    // Odd strips run the journey backwards, rather than only mirroring the
-    // shape where it stands. Travel is one value every strip shares, so
-    // flipping the direction alone left the shape moving the same way and
-    // showed up on nothing but the side a tail fell on.
-    //
     // Under bounce the position amount offsets where a strip stands in its
     // own swing, so the five turn at different moments. It cannot offset the
     // core's position instead: an image standing past the strip's end is
     // clipped away by nearestOffset, so displacing it there shortens a strip
     // rather than staggering it.
-    float coreCenter;
-    float stripDirection;
-    float triangle = 0.0f;
+    float pathCells;
     if (bouncing) {
-      triangle = fract(travelCycles + stripOffset);
-      const bool rising = triangle < 0.5f;
-      const float place = halfCore + triangleSwing(triangle) * swingSpan;
-      coreCenter = mirrored ? (1.0f - place) : place;
-      stripDirection = rising ? 1.0f : -1.0f;
-      if (mirrored) stripDirection = -stripDirection;
+      pathCells = halfCore + triangleSwing(fract(travelCycles + stripOffset)) * swingSpan;
     } else {
-      const float centerHere = mirrored ? (countCells - centerCells) : centerCells;
-      coreCenter = fract(centerHere + stripOffset);
-      stripDirection = mirrored ? -direction : direction;
+      pathCells = centerCells + stripOffset;
     }
+    const float coreCenter = fract(pathCells);
+
+    Path &path = paths.strips[stripIndex];
+    if (freshPaths) path.lift = 0.0f;
+    else if (bouncing != motion.lastBouncing) {
+      path.lift += roundf(path.lastCells - (pathCells + path.lift));
+    }
+    pathCells += path.lift;
+    recordPath(path, paths, freshPaths, step, beats, pathCells);
+
+    const float width = s.width;
+    const float halfWidth = width * 0.5f;
+    const float glowBeats = s.glowBeats;
+    const bool glowing = glowBeats > 0.0001f;
+    if (glowing) walkPath(path, step, beats, pathCells, halfWidth, glowBeats, glow);
+
+    // Which side is behind is the side the core came from, not the side the
+    // dialed speed points away from: a route swinging speed through zero
+    // turns the shape round without touching the dial.
+    const float stripDirection = (glowing && glow.direction != 0.0f) ? glow.direction : direction;
+
+    // The two sides of a shape are not the same length — a tail reaches much
+    // further than an edge fade — so they are normalized separately. Halfway
+    // between the two tips is not the core, and a region asked to sit at the
+    // middle of a shape means the core every time.
+    const float edgeSpread = s.edge * (1.0f - width) * 0.5f;
+    const float tailCells = glowing ? glow.tailCells : 0.0f;
+    const float shapeLead = halfWidth + edgeSpread;
+    const float shapeTrail = halfWidth + fmaxf(edgeSpread, tailCells);
 
     for (uint8_t pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
       // The placed field is read at the same samples the shape is, and for
@@ -1087,36 +1162,28 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
             ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES - 0.5f;
         const float posCells =
             bentCells(bend, p.bounce, (float)pixelIndex + 0.5f + acrossPixel, cellLength, p.count);
+
+        float nearest = 0.0f;
+        const bool onShape =
+            nearestOffset(posCells, coreCenter, stripDirection, p.bounce, countCells, nearest);
+        const float level = onShape ? coreAt(nearest, width, s.edge) : 0.0f;
+        const float age = glowing ? ageAt(glow, posCells) : -1.0f;
+        float afterglow = 0.0f;
+        if (age >= 0.0f && age < glowBeats) {
+          const float left = 1.0f - age / glowBeats;
+          afterglow = left * left;
+        }
+        accumulated += fmaxf(level, afterglow);
+
+        // Along the glow the ruler reads how long ago the core passed, as the
+        // distance it would have covered at the pace it kept, so it meets the
+        // core's own measure at the core's back edge.
         float shapeU = 0.5f;
-
-        if (bouncing) {
-          // The core stays inside its cell, so its trail does too: at a turn
-          // the core walks back out through what it laid down rather than the
-          // trail changing sides.
-          const float journey = journeyIn(posCells, mirrored);
-          float level = 0.0f;
-          float nearest = 0.0f;
-          const bool onShape =
-              nearestOffset(posCells, coreCenter, stripDirection, true, countCells, nearest);
-          if (onShape) level = coreAt(nearest, width, s.edge);
-          const float behind = trailBehind(journey, triangle, halfCore, swingSpan);
-          const float trailing = tailAt(behind, width, s.tail);
-          accumulated += (trailing > level) ? trailing : level;
-
-          // The ruler's trailing half has to be the same measure the tail is
-          // drawn from, or color along a tail paints where the tail is not.
-          if (behind < shapeTrail && shapeTrail > 0.0001f) {
-            shapeU = 0.5f + 0.5f * behind / shapeTrail;
-          } else if (onShape && shapeLead > 0.0001f) {
-            shapeU = 0.5f - 0.5f * fabsf(nearest) / shapeLead;
-          }
-        } else {
-          float nearest = 0.0f;
-          if (nearestOffset(posCells, coreCenter, stripDirection, p.bounce, countCells, nearest)) {
-            accumulated += shapeAt(nearest, width, s.edge, s.tail);
-            const float reach = (nearest < 0.0f) ? shapeLead : shapeTrail;
-            if (reach > 0.0001f) shapeU = 0.5f + 0.5f * nearest / reach;
-          }
+        if (afterglow > level && shapeTrail > 0.0001f) {
+          shapeU = 0.5f + 0.5f * (halfWidth + (age / glowBeats) * tailCells) / shapeTrail;
+        } else if (onShape) {
+          const float reach = (nearest < 0.0f) ? shapeLead : shapeTrail;
+          if (reach > 0.0001f) shapeU = 0.5f + 0.5f * nearest / reach;
         }
 
         if (placedOn) {
@@ -1164,6 +1231,9 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
     }
   }
   motion.lastBouncing = bouncing;
+  paths.lastBeats = beats;
+  paths.lastStep = step;
+  paths.empty = false;
 }
 
 }  // namespace render

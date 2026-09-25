@@ -129,7 +129,8 @@
 
     genWidth: v => percent(real('genWidth', v)),
     genEdge: v => percent(real('genEdge', v)) + ' into the gap',
-    genTail: v => percent(real('genTail', v)) + ' of the gap',
+    genTail: v => { const beats = real('genTail', v);
+                    return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats of afterglow'; },
     genCount: v => real('genCount', v) + ' shapes',
     genPosition: v => signed(real('genPosition', v)) + ' of a cell off center',
     genSpeed: v => { const s = real('genSpeed', v);
@@ -227,7 +228,7 @@
     tempoDivision: 0,
     genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
     genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
-    genAlternate: OFF, genBounce: OFF,
+    genBounce: OFF,
 
     hue: 20, saturation: 100, value: 110,
 
@@ -285,7 +286,7 @@
             C('genCount', 'Count', 'how many shapes along the strip, 1\u201320'),
             C('genWidth', 'Width', 'the solid core, as a proportion of one cell'),
             C('genEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
-            C('genTail', 'Tail', 'how far the trail reaches behind, into the gap'),
+            C('genTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
           ]),
         },
         {
@@ -297,8 +298,6 @@
             C('genBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape\u2019s own cell'),
           ]),
           switches: define([
-            C('genAlternate', 'Alternate', 'the odd strips run the journey backwards',
-              { kind: 'two', options: [[OFF, 'together'], [ON, 'genAlternate']] }),
             C('genBounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
               { kind: 'two', options: [[OFF, 'wrap'], [ON, 'genBounce']] }),
           ]),
@@ -462,22 +461,22 @@
   const SHAPE_FLAT = {
     genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
     genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
-    genAlternate: OFF, genBounce: OFF,
+    genBounce: OFF,
   };
 
   const ANCHORS = {
     Fill:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
     Sweep:      { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    Rain:       { genWidth: 40, genCount: 0, genEdge: 18, genTail: 74, genSpeed: 80, genFan: 100, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
-    CrossSweep: { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, genAlternate: ON, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    Rain:       { genWidth: 40, genCount: 0, genEdge: 18, genTail: 96, genSpeed: 80, genFan: 100, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
+    CrossSweep: { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 64, genFan: 64, genFanRate: 80, genFanFreq: 127, genFanPhase: 64, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
     Bars:       { genWidth: 25, genCount: 0, genEdge: 15, genTail: 0, genSpeed: 88, genFan: 64, genBounce: ON, pulseDepth: 0, genPulseRate: 64, pulseWave: 32 },
     Breathe:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 100, genPulseRate: 30, pulseWave: 32 },
     Wave:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 104, pulseDepth: 100, genPulseRate: 30, pulseWave: 32 },
     Chase:      { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 114, pulseDepth: 127, genPulseRate: 55, pulseWave: 88 },
-    Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 99, genSpeed: 80, genFan: 114, pulseDepth: 0, genPulseRate: 55, pulseWave: 32 },
+    Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 119, genSpeed: 80, genFan: 114, pulseDepth: 0, genPulseRate: 55, pulseWave: 32 },
     Strobe:     { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
-    Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 88, genAlternate: ON, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
-    'Falling, bent': { genWidth: 30, genCount: 39, genEdge: 8, genTail: 50, genSpeed: 40, genBend: 127, genBendAt: 127 },
+    Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 88, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
+    'Falling, bent': { genWidth: 30, genCount: 39, genEdge: 8, genTail: 32, genSpeed: 40, genBend: 127, genBendAt: 127 },
     'Bouncing, bent': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 92, genBounce: ON, genBend: 127, genBendAt: 64 },
   };
 
@@ -494,32 +493,22 @@
     'Diagonal bars':  { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 0 },
     'Chevron \u2227':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 32 },
     'Chevron \u2228':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 14, genFanPhase: 32 },
-    'Comets':         { genWidth: 12, genCount: 0, genEdge: 8, genTail: 99, genSpeed: 48, genFan: 127, genFanRandom: 127 },
-    'Shooting stars': { genWidth: 10, genCount: 0, genEdge: 0, genTail: 90, genSpeed: 40, genFanRate: 105, genFanRandom: 127 },
+    'Comets':         { genWidth: 12, genCount: 0, genEdge: 8, genTail: 127, genSpeed: 48, genFan: 127, genFanRandom: 127 },
+    'Shooting stars': { genWidth: 10, genCount: 0, genEdge: 0, genTail: 83, genSpeed: 40, genFanRate: 105, genFanRandom: 127 },
     'Hypno outer':    { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 0 },
     'Hypno together': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 20, genFanRate: 108, genFanPhase: 32 },
     'Hypno center':   { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 32 },
     'Alternate by rate': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108,
                            genFanFreq: 127, genFanPhase: 64 },
-    // Whether the Alternate switch still earns its place. The first two draw
-    // the same wall, one with the switch and one with the fan; the third is
-    // what only the switch can do, a still shape turned round.
-    'Alternate: switch, bounce': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 60, genSpeed: 88,
-                                   genBounce: ON, genAlternate: ON },
-    'Alternate: fan, bounce': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 60, genSpeed: 64,
-                                genFanRate: 88, genFanFreq: 127, genFanPhase: 64, genBounce: ON },
-    'Alternate: still shape': { genWidth: 25, genCount: 0, genEdge: 0, genTail: 90, genSpeed: 64,
-                                genPosition: 40, genAlternate: ON },
   };
 
-  // For judging a tail under a swung speed: it stays on the side the dialed
-  // speed puts it, so a swing that reverses the shape runs it tail-first. One
-  // comet per strip, a one-bar clock and a sine on Speed, with the fan's pulse
-  // spread at full so the five strips stand at five points of the swing and
-  // forward and backward show side by side. The first stands still and swings
-  // ±20 px/beat; the second runs forward at 20 and swings ±10, so it slows and
-  // never reverses, which is the same tail with nothing wrong; the third is
-  // the first under bounce. Every other route is freed, since a look that left
+  // For judging a tail under a swung speed: it should stay behind the shape
+  // through the reversal, shrink as the shape slows and be gone while it
+  // stands. One comet per strip, a one-bar clock and a sine on Speed, with the
+  // fan's pulse spread at full so the five strips stand at five points of the
+  // swing and forward and backward show side by side. The first stands still
+  // and swings ±20 px/beat; the second runs forward at 20 and swings ±10, so
+  // it slows and never reverses; the third is the first under bounce. Every other route is freed, since a look that left
   // one running would be judged against it.
   const route0 = field => routeName(0, field);
   const SWING = {

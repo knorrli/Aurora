@@ -17,6 +17,12 @@ static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
 static const uint8_t BEND_POINTS = PIXELS + 1;
 
+// The longest tail, in beats, and how finely the path it is drawn from is
+// recorded.
+static const uint8_t PATH_BEATS = 8;
+static const uint8_t PATH_STEPS_PER_BEAT = 64;
+static const uint16_t PATH_STEPS = PATH_BEATS * PATH_STEPS_PER_BEAT;
+
 struct Hsv {
   uint8_t h, s, v;
 };
@@ -40,6 +46,34 @@ struct Motion {
   float lastTravelBeats = 0.0f;
   bool lastBouncing = false;
 };
+
+// Where each strip's shape has been over the last PATH_BEATS, which is what a
+// tail is drawn from. It belongs to one wall's picture: copying it between
+// walls, the way the editor copies Motion, would draw one wall's tail behind
+// another wall's shape.
+struct Path {
+  // Where the core stood at each step, in cells and never wrapped, so a tail
+  // crossing a cell boundary is still one stroke.
+  float cells[PATH_STEPS];
+  float lastCells;
+  int32_t firstStep;
+  // Keeps the record continuous where the core's position is read off a
+  // different quantity: a flip of bounce stands the core where it was, but in
+  // another cell's count.
+  float lift;
+};
+
+struct Paths {
+  Path strips[STRIPS];
+  float lastBeats;
+  int32_t lastStep;
+  bool empty = true;
+};
+
+// A patch change moves the shapes somewhere new, and a path left running
+// would draw a streak across to them. The renderer cannot tell a patch change
+// from a fast fader, so whoever changes the patch calls this.
+void clearPaths(Paths &paths);
 
 // The color at full value, with the light carried apart for the fixture's own
 // dimmer.
@@ -78,7 +112,8 @@ struct Frame {
   float stripClock[STRIPS];
 };
 
-void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &out);
+void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &paths,
+                     Frame &out);
 
 // A control's byte as the renderer uses it: pixels a beat, shapes, beats a
 // cycle, a signed reach. Every conversion the renderer makes goes through

@@ -68,6 +68,8 @@
       STRIPS, PIXELS,
       makeMotion: () => m._aurora_motion_new(),
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
+      makePaths: () => m._aurora_paths_new(),
+      clearPaths: paths => m._aurora_paths_clear(paths),
       pulseWave: (phase, wave) => m._aurora_pulse_wave(phase, wave),
       waveMean: wave => m._aurora_wave_mean(wave),
       convert: (cc, value) => m._aurora_convert(cc, value),
@@ -81,9 +83,9 @@
         return at ? [m.HEAPF32[at >> 2], m.HEAPF32[(at >> 2) + 1]] : null;
       },
 
-      render(bytes, beats, motion) {
+      render(bytes, beats, motion, paths) {
         m.HEAPU8.set(bytes, controls);
-        m._aurora_render(motion, beats);
+        m._aurora_render(motion, paths, beats);
         return { pixels, par: seenWash(), fan: readFan(), bend: Array.from(bend) };
       },
       renderStripOrder() {

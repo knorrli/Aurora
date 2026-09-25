@@ -410,7 +410,7 @@
       host.innerHTML = '';
       for (const [name, values] of Object.entries(table)) {
         const b = el('button', null, name);
-        b.addEventListener('click', () => { snap(); applyNamed(values); });
+        b.addEventListener('click', () => { snap(); applyNamed(values); clearTails(); });
         host.appendChild(b);
       }
     };
@@ -1069,6 +1069,7 @@
     paintList();
     link.sendPC(patch().pattern);
     sendLive(true);
+    clearTails();
   }
 
   function selectPatch(s) {
@@ -1248,7 +1249,13 @@
     ctx.scale(dpr, dpr);
     const glow = document.createElement('canvas');
     glow.width = w; glow.height = h;
-    return { canvas, ctx, glow, w, h, motion: V.makeMotion() };
+    return { canvas, ctx, glow, w, h, motion: V.makeMotion(), paths: V.makePaths() };
+  }
+
+  // A new patch puts its shapes somewhere else, and a tail left running would
+  // streak across to them. The renderer cannot tell that from a fast fader.
+  function clearTails() {
+    for (const wall of Object.values(walls)) V.clearPaths(wall.paths);
   }
 
   let flipped = false;
@@ -1383,7 +1390,7 @@
   function drawOne(wall, named, beats, pattern) {
     const frame = pattern === 11 ? V.renderStripOrder()
       : pattern === 0 ? V.blank()
-      : V.render(L.setFromNamed(sounding(named)), beats, wall.motion);
+      : V.render(L.setFromNamed(sounding(named)), beats, wall.motion, wall.paths);
     V.draw(wall.ctx, wall.glow, frame, order(), flipped, wall.w, wall.h,
            showFan && wall === walls.main);
   }

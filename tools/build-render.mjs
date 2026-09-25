@@ -31,7 +31,7 @@ const EXPORTS = [
   'aurora_controls', 'aurora_pixels', 'aurora_wash', 'aurora_fan', 'aurora_bend',
   'aurora_bend_points',
   'aurora_strips', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
-  'aurora_motion_new', 'aurora_motion_copy',
+  'aurora_motion_new', 'aurora_motion_copy', 'aurora_paths_new', 'aurora_paths_clear',
   'aurora_render', 'aurora_render_strip_order', 'aurora_pulse_wave',
   'aurora_convert', 'aurora_pulse_period_beats',
   'aurora_strip_value', 'aurora_route_reach', 'aurora_route_refused',

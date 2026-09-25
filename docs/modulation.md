@@ -527,10 +527,10 @@ swing to ±X/2, all five still together — takes two routes with the same ratio
 wave and phase, one on speed and one on the fan's rate spread, because the
 fan adds its share to speed rather than scaling it.
 
-**What it does not do yet.** A tail sits on the side the dialed speed puts it,
-so a swing that reverses travel runs the shape tail-first until it turns back.
-Putting the tail on the side the shape is actually moving away from needs the
-tail to follow the swing, which is drawing work, not modulation.
+**A tail follows the swing.** It is an afterglow of where the shape has been,
+so a swing that reverses travel leaves the glow behind the shape both ways and
+shrinks it as the shape slows — `docs/generator.md` § "The tail is an
+afterglow".
 
 **And easing is still not this.** A route is locked to the clock; fast at the
 top of the strip and slow at the bottom has to follow where a shape is. Built
