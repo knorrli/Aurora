@@ -349,7 +349,7 @@ color flat, then open a push and watch it depart from something you chose.
 
 **The editor's names, renamed 2026-09-25.** What these docs and the code call
 the placed field, the wander, the light level and the scatter, the editor
-labels **Field**, **Wander**, **Light** and **Scatter**. The field's primitive
+labels **Field**, **Flow**, **Light** and **Scatter**. The field's primitive
 is its **Form** (gradient, region, all but region) and its ruler its
 **Direction** (horizontal, vertical, shape — across the strips, along a strip,
 within a shape). The wander's and the scatter's Rate are **Speed**; Rate is

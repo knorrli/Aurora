@@ -397,7 +397,7 @@
       ]),
     },
     {
-      key: 'wander', name: 'Wander', tone: 'color',
+      key: 'wander', name: 'Flow', tone: 'color',
       source: define([
         C('wanderRate', 'Speed', 'frozen, through a slow ocean swell, to a nervous flicker'),
         C('wanderScale', 'Density', 'the whole wall moving as one, down to individual pixels'),
