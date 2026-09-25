@@ -1062,7 +1062,7 @@ cannot do it at all. Then let a spot move *within* its cell: worthless at
 count 20 where a cell is 2.2 pixels, but at count 5 it is nine, and
 appear, hold, slide nine pixels, fade is a raindrop at stage distance.
 Cells drifting permanently apart is the objection recorded against
-per-strip rate in item 1, and it does not apply to a texture — nothing
+per-strip rate in § Open, "The fan is built and unseen", and it does not apply to a texture — nothing
 reads a texture as a pattern that ought to come back into step.
 
 **Before any of it, the placed field already nearly does look 1.** Region
@@ -1080,8 +1080,8 @@ nearly free and the question shrinks to what 4 and 5 need.
 
 1. **The fan is built and unseen.** § "The fan is a wave" answers the
    staircase, the random arrangement and the rate offset together, and
-   renders all of it in `tools/preview.js` and the firmware. Nine looks
-   are dialed in the bench page's *Fan looks* row and none has been on the
+   renders all of it in `tools/preview.js` and the firmware. Ten looks
+   are dialed in the editor's *Fan looks* row and none has been on the
    wall. Until they have, four things are guesses:
 
    - **Whether the chevron gets Rain back.** `docs/visual-design.md`
@@ -1108,49 +1108,28 @@ nearly free and the question shrinks to what 4 and 5 need.
    reappears at the other. Whether that wants clipping, a boundary fade —
    which costs the ends of every pattern that ought to reach them — or
    nothing at all is a judgment for the wall.
-3. **Jitter is the wrong mechanism, not the wrong scale.** Answered
-   2026-09-23 by § "The scatter", which names it, settles its controls and
-   renders it in `tools/preview.js`. All five looks come out of the preview,
-   including the two the plain grid could not reach. **The firmware does not
-   have it**, and until it does the wall has no texture at all — jitter was
-   removed with the regroup rather than kept alive beside its replacement.
 
-   The two wall findings that started it stand, both 2026-09-21. Solid
-   blocks, whole and full on, appearing in random places were asked for,
-   and the noise is keyed on the pixel — `hash8(strip, pixel, bucket)` —
-   so the grain can only ever be dirt. And Starfield cannot twinkle,
-   because jitter re-rolls once per swell: at its anchor the swell is
-   `16 × 0.5^(20/127 × 6)` ≈ 8.3 beats, so the wall jumps between random
-   arrangements about twice a bar. Winding the rate up cannot fix it,
-   since that is the same knob driving the brightness flash.
-
-   Together with the random fan shape in item 1 this is the "chaotic
-   strobe" that could not be built out of fan, speed and pulse. Both are
-   randomness at a scale the machine does not have, which is the argument
-   for doing them in one go — though the jitter half is now a larger
-   piece of work than changing which index goes into the hash, so whether
-   they still travel together is itself open.
-4. **Morph moves every parameter in lockstep and linearly.** That is the
+3. **Morph moves every parameter in lockstep and linearly.** That is the
    crudest possible path. The count half of it is answered: count's own
    fader is geometric now, so interpolating its CC linearly doubles by
    construction and the morph needs no special case. Per-parameter timing,
    the synth equivalent of giving each one its own envelope, is the bigger
    version and is not yet known to be needed.
-5. **Where the pulse shape fader's midpoint should sit.** The sweep is
+4. **Where the pulse shape fader's midpoint should sit.** The sweep is
    linear, because the visible swelling tracks softness in proportion:
    measured as the fraction of a cycle the swell spends moving rather than
    pinned, half the visible travel lands at 93 of 127. Spread geometrically
    over the same range it landed at 117, with the whole middle of the
    fader reading as one flat square. Whether 93 is where it should sit is
    still a feel judgment nobody has made with music playing.
-6. **Where the color layer's controls should stop.** Combinations that
+5. **Where the color layer's controls should stop.** Combinations that
    look bad are easy to reach — a hard edge with deep darkening and a wide
    hue swing is three strong things at once. Whether that wants narrower
    ranges or just practice is a judgment nobody has made with music
    playing. The test is a set, not a bench.
-7. **Whether the roster survives at all**, or becomes a set of named
+6. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
-8. **A region can only push inward, so one asked-for look is inverted.**
+7. **A region can only push inward, so one asked-for look is inverted.**
    "Base color on the center strip, the outer ones departing" needs a
    bump turned inside out — base within the core, the departure outside
    it. What comes out instead is the complement: the center strip
@@ -1161,27 +1140,19 @@ nearly free and the question shrinks to what 4 and 5 need.
    descriptions. Not added, because the design conversation was careful
    about controls arriving without a look behind them, and this one has
    not been looked at on the wall yet.
-9. **Nothing can make a chevron across the five strips.** Two properties
-   of a per-strip offset are easy to confuse: where its zero sits, and
-   what shape it makes. The color layer's wander has its zero on the
-   center strip; the shape branch's fan has its zero on strip 1. Both are
-   straight lines, and moving the zero of a straight line only slides it.
-   A chevron needs a fold, which is what item 1 above is asking for, and
-   neither branch has one.
-10. **A second placed field was designed for and not built.** Both rulers
+
+8. **A second placed field was designed for and not built.** Both rulers
    at once — a strip painted with a gradient *and* shapes crossing it
    carrying their own — was agreed as the thing to leave until wanted,
    on the argument that the first one would be written so the second cost
-   almost nothing.
-
-   It was not, and as of 2026-09-22 it is. Everything one field is —
+   almost nothing, and it does. Everything one field is —
    which primitive, which ruler, its three reaches, its count, width,
    edge, drift rate and the phase tracker that drift runs on — travels
    together as one `PlacedField`, and every function that reads a field
    takes it as an argument. A second field is a second instance and a
    second block of CCs; what is still unanswered is what the two sum to,
    since two fields pushing the same three qualities can cancel.
-11. **Five of the six white and dark controls read the fader as bipolar,
+9. **Five of the six white and dark controls read the fader as bipolar,
    and the sign buys something different in each of the three sources.**
    Placed, wander and light level each push whiteness and darkness, two
    controls apiece. Only Lit White is read as a plain 0–1 amount; the

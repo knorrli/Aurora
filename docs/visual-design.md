@@ -1,6 +1,6 @@
 # Aurora — visual design
 
-What the lights actually do: the pattern roster, the palette system, the
+What the lights actually do: the pattern roster, the color looks, the
 energy axis, and how the washes relate to the strips.
 
 This survives the interaction-model reset intact. It describes the
@@ -96,35 +96,29 @@ harder rather than easier: the two ends differ in tail length (45 px vs
 no midpoint, so one of them would have to be used at both ends. Comet
 earns its slot on looks alone — whether the *pair* survives is open.
 
-## Palettes are shapes, not colors
+## Color looks are shapes, not hues
 
-> **None of this is built as a palette**, and most of it no longer needs
-> to be. The color layer in `docs/generator.md` decides color from where
-> a pixel is *and* from how lit it is, which is the split these nine were
-> divided along — Ember, Deep and Two-pole are brightness-driven, Haze and
-> Banded positional. Both are now reachable, and reachable together. What
-> is still missing is the naming: these are settings of that layer, not a
-> roster it has to grow. Read the nine as looks to dial rather than as
-> code to write.
-
+> **These nine are color looks: settings of the color layer** in
+> `docs/generator.md`, which decides color from where a pixel is *and*
+> from how lit it is. That is the split they were divided along — Ember,
+> Deep and Two-pole are brightness-driven, Haze and Banded positional —
+> and both are reachable, together. Read them as looks to dial, not as a
+> roster the layer has to grow. *Palette* is a different thing: the
+> patch-head switch in `DESIGN.md` § "Switches belong to the patch",
+> whose meaning is still open.
 
 A library of "a blue one, a green one, an orange one" would be nine ways
-of duplicating the hue control we already have. What a palette carries
+of duplicating the hue control we already have. What a color look carries
 is everything hue cannot: how wide the spread is, what shape it travels,
 whether brightness and saturation move along with the hue, and whether
 it is a smooth gradient or hard steps.
-
-They are stored as **offsets from a center** — hue offset, saturation and
-value per entry — rather than as absolute colors, so rotating one costs
-nothing at sample time. A plain `CRGBPalette16` is therefore the wrong
-container.
 
 Names describe behavior, not scenery. Calling one "Lava" would be a lie
 the moment it is rotated to blue.
 
 | # | Name | What it does |
 |---|------|--------------|
-| 1 | **Flat** | No variation at all. Monochrome, as a palette something can commit to |
+| 1 | **Flat** | No variation at all. Monochrome, as a look something can commit to |
 | 2 | **Narrow** | About ±15° around the center, full saturation, even brightness. One color with depth. The everyday one |
 | 3 | **Wide** | About ±60°. A real gradient, still one family — blue through purple into magenta, wherever it is placed |
 | 4 | **Two-pole** | The center hue and its opposite, transitioning fast rather than blending through the muddy middle |
@@ -195,7 +189,7 @@ between hand, foot and ear is unknown.
 Three cheap tricks, none individually noticeable, together making "just
 let it run" feel breathing rather than looping:
 
-1. **Palette animation** — very slow hue drift on the whole palette.
+1. **Hue drift** — very slow drift of the whole wall's hue.
    Replaces the current hue-oscillation alt-mode, which is too strong to
    leave on.
 2. **Per-strip micro-offsets** — each strip carries a small hue offset,
@@ -280,8 +274,8 @@ Each of these needs looking at, not arguing about.
 4. **Glitch's white share.** Reviewed 2026-09-09 on a clean data link
    and it holds up — 12 pixels per frame reads as a dense fast shimmer
    rather than countable dots, and it works across the whole color
-   wheel, best between cyan and magenta. But the 30 % white share cannot
-   be judged until the V-fader defect in `docs/bench-facts.md` is fixed.
+   wheel, best between cyan and magenta. The 30 % white share has not
+   been judged.
 5. **Whether a per-strip variation axis reads as an effect or a fault**
    on Chase → Comet.
 6. **What the washes do per pattern** — follow, antiphase, step across

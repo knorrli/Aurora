@@ -82,7 +82,9 @@ Measurements in `docs/bench-facts.md`.
 - **The brain enclosure.** Blocked on the perfboard — the box should be
   cut around the finished board, not before it.
 - **The controller.** Still the old Nano box. The second Teensy is
-  untouched and its pin map has never been drawn.
+  untouched and its pin map has never been drawn. The three faders have CCs
+  of their own at 12–14, but `controller/src/controls.cpp` still sends the
+  sticks to the color.
 - **The foot pedal.**
 
 ## Parts
@@ -225,7 +227,7 @@ live from the editor.
       saturation at nearly double the light. It is the one color control
       whose neutral is the bottom of the travel rather than the middle, so
       check what it sits at in the patches actually in use. See
-      `docs/generator.md` § "Open" item 11.
+      `docs/generator.md` § Open, "Five of the six white and dark controls".
 
 - [ ] **Swing a rate.** Two looks, each a patch. The fan's rate spread at
       zero with a sine route on it: the strips should drift apart and come
@@ -255,55 +257,15 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
 
-**The color layer has been seen on a wall and holds up**, and the
-preview it was designed in matches the strips closely enough to keep
-designing there. See `docs/bench-facts.md`.
-
-- [x] **Judge the color layer on the wall.** Done 2026-09-21. Flat is
-      flat, and the preview matches the strips almost exactly — a touch
-      paler on the wall, which is the diffuser. See `docs/bench-facts.md`
-      § "The color layer's flat state is flat" and § "The screen and the
-      wall agree".
-- [x] **Average the placed field across each pixel.** Done 2026-09-22.
-      Both branches are read at the same four samples now. Measured in the
-      preview; not yet seen on the wall. See `docs/bench-facts.md` §
-      "Point-sampling a pattern aliases".
 - [ ] **Turn a region inside out.** One boolean, and it is what "base
       color on the center strip, outer ones departing" needs. See
-      `docs/generator.md` § Open, item 8.
-- [x] **Thread the placed field's parameters as an argument.** Done
-      2026-09-22. A second field is now a second `PlacedField` rather than
-      a second set of file statics. What the two would sum to is still
-      open. See `docs/generator.md` § Open, item 10.
-- [ ] **Randomness in color** — a starfield in hue rather than in
-      brightness. The only randomness the color layer has no way to make.
-      Absorbed 2026-09-22 into the scatter, where it is one destination
-      rather than a project of its own, and the scatter's hue amount is
-      already designed. See `docs/generator.md` § "The scatter".
-- [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 29.
-      A scale down from the strips' saturation: full matches them, zero is
-      white. The pulse's push toward white measures from it, and the
-      "the pulse reaches this" marker now has somewhere to sit for every
-      destination. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
-      cans".
+      `docs/generator.md` § Open, "A region can only push inward".
 - [ ] **Reach the PARs with more than a hue offset.** The PARs following
       a gradient with the strips, which needs the color layer sampled at
       each PAR's position — today all four are one color. The white flash
       between strip strobes, the other half of this, became reachable on
       2026-09-22 when the pulse gained their saturation. See `DESIGN.md`
       § "The PAR cans".
-- [x] **Fan gains a shape and a center.** Done 2026-09-23, as a wave with
-      a frequency and a phase rather than a curve with a center — a V
-      changes sign at most once across the wall, so it could not reach
-      strips running opposite their neighbors. See `docs/generator.md`
-      § "The fan is a wave".
-
-- [ ] **Put the nine fan looks on the wall.** Dialed in the bench page's
-      *Fan looks* row and rendered in `tools/preview.js` and the firmware,
-      judged on neither. Four things it would settle are listed in
-      `docs/generator.md` § Open, item 1 — the one that matters most is
-      whether a quarter turn of phase gets Rain back, since Rain arriving
-      as Comet is what started this.
 - [ ] **Dial the placed field's approximation of the sprinkle.** Region,
       strip ruler, count around 12, width and edge low, dark pushed up,
       over a full-width wall with V around half. Thirty seconds in
@@ -338,22 +300,14 @@ designing there. See `docs/bench-facts.md`.
       downbeat every three bars rather than every one, which is a musical
       relationship and may still read as adrift. Cutting them would leave
       seven positions, all powers of two.
-- [x] **Travel easing.** Built 2026-09-25 as Bend and Bend at, on CC 68 and
-      69: speed is set by which pixel a shape is on, on a cosine whose peak
-      Bend at places. See `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
 - [ ] **Judge Bend on the wall.** The *Falling, bent* and *Bouncing, bent*
       starting points. Liked in the preview on sight; what the preview cannot
       show is whether shapes squashed at the slow end shimmer at full bend.
-- [x] **Preserve position when bounce flips.** Done 2026-09-22; the phase
-      is solved for rather than carried across. Alternate keeps its jump
-      deliberately — it cannot be fixed without making it invisible under
-      bounce, and a per-strip rate offset is going to replace it. See
-      `DESIGN.md` § "Switches belong to the patch".
 - [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
       for bounce, open for wrap. See `docs/generator.md` § Open, "Is a
       strip a loop or a line?".
 - [ ] **Decide the color layer's usable ranges.** The test is a set, not
-      a bench. See `docs/generator.md` § Open, item 6.
+      a bench. See `docs/generator.md` § Open, "Where the color layer's controls should stop".
 - [ ] **Test the touchpad window from the laptop, before any rewire.**
       See `DESIGN.md` § "Which strips — a window, not a selection".
 
@@ -383,7 +337,9 @@ written for it — `brain/src/patch_store.cpp`, `brain/src/patch_sync.cpp`,
       through the same handlers a live CC goes through, which is what makes
       the raw bytes worth storing. Needs the keypad-to-patch lookup at the
       same time — the controller still sends `PC = key number` in
-      `scan_numpad()`, which only works while key N means preset N.
+      `scan_numpad()`, which only works while key N means preset N. Recall
+      has to call `resetGenerator`, the way the generator's program change
+      does, or a patch lands with the last one's tails streaking.
 
 - [ ] **A default set compiled into the firmware**, so an empty brain
       still lights the wall. See `DESIGN.md` § "Patch storage". It must
@@ -397,18 +353,6 @@ written for it — `brain/src/patch_store.cpp`, `brain/src/patch_sync.cpp`,
 
 Raised in conversation and not yet settled. Each needs a decision before
 it becomes a build item.
-
-- [x] **Modulation routing — one clock, and routes to anything.** Raised
-      2026-09-23, built 2026-09-24. Eight routes of four bytes, a one-byte
-      wave, a push that is a fraction of the distance left, and the six
-      soldered pulse sends retired. `docs/generator.md` § "Routes" is what it
-      is; `docs/modulation.md` is why. Not yet seen on the wall, and the
-      editor has not been opened in a browser since.
-
-- [x] **One renderer for the brain and the editor.** Decided and built
-      2026-09-24. See `docs/architecture.md` § "One renderer, compiled
-      twice". Not flashed yet: the brain builds against it and the editor
-      draws with it, and neither has met the wall since.
 
 - [ ] **Patch variants — one patch, a few overrides.** Raised 2026-09-22.
       Tempo division and palette are both per-patch, so the same look at
@@ -443,197 +387,6 @@ it becomes a build item.
       every switch lands — on a patch change, or on release at the end of a
       journey or an accent. See `DESIGN.md` § "Switches belong to the patch".
 
-      One wording job comes with it. `docs/visual-design.md` § "Palettes are
-      shapes, not colors" uses the word for what is now a patch or a shape,
-      and that section needs rewriting before anything here is built.
-
-- [x] **Editor layout.** Answered 2026-09-23 by `tools/editor.html`, which is
-      carrier, modulators and outputs rather than three branches — see
-      `docs/editor.md`. The two boxes that earned no space are gone, and the
-      join that said "the two multiply" went with them: it was not true of the
-      pulse and is not true of the scatter, and what replaced it is a
-      destination table that says where every source actually lands.
-
-      What was asked, against the old page: `tools/index.html` grew the preview
-      and the color controls without a regroup, and it is cramped. Two boxes earn no
-      space: the one holding only the "send 120 BPM clock" button, never
-      used, and "Strips", which is empty. The question is what the
-      groupings should be, not where today's boxes go.
-      The pulse left the shape branch on 2026-09-22 and became a third
-      branch of its own, because it reaches the color layer and the washes
-      as well and could no longer sit inside one of the two things it
-      pushes on. Whether the join beneath still reads — it says "the two
-      multiply", which is true of shape and color and says nothing about
-      the third box now above it — is part of this question.
-- [x] **The color panel does not say what its switches govern, and four
-      controls are dead in the default state.** Answered 2026-09-23, and the
-      first half turned out to be grouping alone: in `tools/editor.html` the
-      placed field is a modulator card and its primitive, ruler and four shape
-      controls are inside it with nothing else, so there is no longer anything
-      for them to look as though they govern. No control moved and none was
-      added.
-
-      The second half was **ruled without the performer**, which is the half to
-      reopen if it is wrong: the four dim under a gradient and say why. Giving
-      Edge a meaning there — bending the ramp from straight to eased — is a
-      firmware change and stays available. The subsection names went with the
-      regroup, and the ruler buttons keep the strips' words rather than the
-      wall's, because "within a shape" is not a direction and the swap would
-      have stopped the three being one vocabulary.
-
-      What was found, and still stands as the reason:  Gradient / region and the
-      three rulers drive the placed field and nothing else —
-      `placedIsRegion` and `placedRuler` are read nowhere outside that
-      path in `brain/src/P_Generator.cpp` — but they sit above three
-      subsections and read as though they govern all three.
-      Worse, `placedAt` returns on its first line under gradient, so Count,
-      Width, Edge and Speed — four of the seven controls under "What you
-      place" — do nothing at all whenever that switch is on gradient, which
-      is where it starts. The preview agrees, so they really are inert
-      rather than merely subtle. Found by playing the panel and wondering
-      why the faders did nothing.
-      Two ways out, and the panel rework has to pick one. Indicate it —
-      dim the four while gradient is selected, the way a bypassed branch
-      already dims, so a control that cannot do anything stops looking
-      like it should. Or give them a meaning there, which only one of the
-      four can take: Count has nothing to repeat and Width nothing to
-      size, since a gradient spans the ruler once by definition, and Speed
-      cannot move it without wrapping a monotone ramp and putting a hard
-      jump where the two ends meet. Edge is the one that could — bending
-      the ramp from straight to eased is the same idea as pulse shape and
-      travel easing, which would make it a fourth use of one word rather
-      than a new control.
-      Two more open parts. The subsection names "What you place", "What
-      lives" and "From the light level" are the design's own words and are
-      longer than the controls under them. And the ruler buttons name the
-      strips where they could name the wall: "across the strips" is
-      horizontal and "along a strip" is vertical, since the five stand
-      spaced across the stage against the back wall. Whether that swap is
-      an improvement is not obvious — "within a shape" is not a direction
-      at all, so the three would stop being one vocabulary.
-- [x] **Easing — the looks are named, the mechanism is not.** Settled and
-      built 2026-09-25. The looks: raindrops falling fast at the top and slow
-      at the bottom, and bars bouncing fast through the middle and slow at
-      the edges. Bending the clock, bending only each shape's center and
-      stretching the strip itself were drawn side by side; stretching the
-      strip won, on looks and on cost. See `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
-
-- [x] **Gate length on the pulse.** Built 2026-09-24 as the top of a
-      route's wave byte rather than the bottom of a Shape fader: past the
-      square at 96 the flash shortens to a stab at 127, down to
-      `GEN_PULSE_MIN_WIDTH`, about one frame at 120 BPM and the fastest
-      rate. What was not built is a floor taken from the frame time, so the
-      shortest stab is a fixed share of the cycle and still lands between
-      frames at fast rates. See `docs/modulation.md` § "The waves".
-
-- [x] **Fan's full shape, and a rate offset beside it.** Done 2026-09-23,
-      the two together as one wave with three amounts. The claim that a
-      rate of the opposite sign reproduces alternate holds under wrap and
-      not under bounce, where a reversed strip stands in the same place at
-      every instant — so the switch survives. `DESIGN.md` § "Alternate
-      keeps its jump" said it would not; that is corrected there.
-
-- [x] **The tail is an afterglow of where the shape has been.** Raised
-      2026-09-25, when a route that swings speed through zero ran a reversed
-      shape tail-first; settled and built the same day. A tail exists only
-      behind something that moves. See `docs/generator.md` § "The tail is an
-      afterglow".
-
-      - **Afterglow only, no switch.** A shape-outline tail would give a
-        still bar a lopsided fade, which is not wanted, and a trail measured
-        in distance would keep a tail on a stopped shape. CC 70 stays free.
-      - **Tail is a time**: off to 8 beats until a passed pixel is dark,
-        squared so the short end gets the travel, on the fade curve the
-        tail already had.
-        Beats, because Speed is in pixels a beat, so a tail's length in
-        pixels does not change with tempo.
-      - **The shape remembers its path, not the wall its pixels.** Each strip
-        keeps where its shape has been over the last 8 beats and the glow is
-        drawn along that path. A pixel that goes dark because the shape
-        narrowed or strobed does not glow.
-      - **Edge stays symmetric.** Behind a moving shape the glow covers the
-        back half of the edge fade; standing still, the edge is all there is.
-      - **The in-the-shape ruler reads the glow's age** along the tail, so
-        color along a tail follows the glow.
-      - **A patch change starts empty**, and so does a jump in the beat
-        count. The renderer cannot tell a patch change from fast fader
-        moves, so whoever changes the patch says so: the editor on choosing
-        a slot or a starting point, the brain on the generator's program
-        change.
-
-- [x] **Clear the tails when the brain changes patch.** Done 2026-09-25 on
-      the generator's program change, which the editor now sends after a
-      patch's controls rather than before, so it marks the patch as landed.
-      When the brain gets patch recall of its own, recall calls
-      `resetGenerator` the same way.
-
-- [x] **Is Alternate still worth its switch?** No, cut 2026-09-25. The
-      fan's rate spread draws the same wall on anything moving, bounce and
-      tails included; what only the switch did was turn a still shape round,
-      which mattered only for a still shape with a tail, and there is no such
-      thing any more. CC 53 is free. See `DESIGN.md` § "Alternate is cut".
-
-- [x] **The bars drifting apart and back together has no way in.** Answered
-      2026-09-25 by letting routes aim at rates, where a route swings both
-      ways and averages to nothing: a route on the fan's rate spread with its
-      center at zero is this look. See `docs/modulation.md` § "A rate swings
-      both ways".
-
-- [x] **Apply the regrouped CC map.** Done 2026-09-23, and
-      `docs/cc-regroup.md` is the map. Every number assigned, every
-      consumer checked against the header — both firmwares by symbol,
-      `tools/patch.js` and `tools/index.html` number by number. It added
-      seven CCs that never existed: the three fader routes at 12-14, the
-      fader-mode rocker at 23, the keypad's held gate at 26, and two for
-      the audio section at 24-25 if the peak follower ever lands on a pin.
-      CC 40's packed bitmap, the ten per-preset slots and jitter all
-      retired. The editor's stored library was cleared rather than
-      migrated, and no library had ever reached the brain.
-
-      **The map is not out of numbers and never was** — what it had run
-      out of was room in the right categories, which is the rule at the
-      top of `shared/aurora_protocol.h`. It now stands at 81 assigned and
-      33 spare, with room for one more pulse destination and nine more in
-      the scatter.
-
-- [x] **Decide what happens to the parked CCs.** Done 2026-09-23 with the
-      regroup. The four v1 mode switches kept their slots and lost their
-      meanings — they are `CC_ROCKER_PAD_A` through `_D` now, reporting
-      where a rocker stands and saying nothing about what that does. The
-      four touchpad gestures became `CC_PAD_X`, `_Y`, `_PRESSURE` and
-      `_ENGAGE`, which is the right shape under every answer to what the
-      pad is for, so numbering did not have to wait on that question.
-      Nothing was reclaimed to settle a design question.
-
-- [x] **Classify every CC as patch state, gesture or ambient.** Done
-      2026-09-22. All 72 assigned CCs carry a tag in
-      `shared/aurora_protocol.h`, which also states what each tag means:
-      59 `[patch]`, 4 `[switch]`, 4 `[ambient]`, 4 `[gesture]`, and CC 40
-      `[legacy]`. Two
-      things the pass turned up. `[gesture]` and `[ambient]` answer all
-      three storage questions identically — not saved, not recalled, not
-      morphed — so they stay apart only on the fourth question, which is
-      a property of the box rather than of the CC and is not recorded
-      there. And which pattern runs arrives as a Program Change rather
-      than a CC, so a patch holds one thing this classification does not
-      reach.
-
-- [x] **Patch storage — the editor-to-brain protocol.** Built 2026-09-22
-      and **never run against hardware**. SysEx over USB, specified in
-      `shared/aurora_protocol.h` § "System Exclusive" and reasoned in
-      `DESIGN.md` § "How a library gets there". A sync replaces the whole
-      library, streams in strictly ordered, stages to a file and goes live
-      on one rename, so an interrupted sync leaves the previous library
-      whole. `brain/src/patch_store.cpp` owns the flash,
-      `brain/src/patch_sync.cpp` owns the wire, and `tools/protocol.html`
-      pushes a library of generated bytes and reads it back to compare.
-
-      A patch is 660 bytes and the Teensy core will not receive a SysEx
-      message over 290 — `USB_MIDI_SYSEX_MAX` in `cores/teensy4/usb_midi.h`,
-      a bare `#define` no build flag reaches. Staying under it is worth
-      more than raising it: below that size the core hands over each
-      message whole in one callback and nothing is reassembled.
-
 - [ ] **Decide what three faders at once come to.** Found 2026-09-23 while
       building the editor's fader panel, and it is a gap rather than a
       question anyone had parked: `DESIGN.md` § "The three faders are three
@@ -654,15 +407,6 @@ it becomes a build item.
       Settle by looking, with the faders in hand. Whatever wins, the editor and
       the firmware have to say the same thing.
 
-- [x] **Render the scatter in the firmware.** Done 2026-09-23, the same day it
-      was settled. `scatterAt`, the two reaches in `colorAt` and the
-      `pushToward` on brightness that runs before an unlit pixel is culled.
-      Checked against `tools/preview.js` rather than argued: both `scatterAt`
-      implementations were driven over eight settings and 36 000 samples and
-      agree everywhere but one, a sample sitting 1.2e-15 inside the core
-      boundary at full width, where a float rounds onto the other side of the
-      comparison. The wall has texture again.
-
 - [ ] **The editor's modulation, next.** Built 2026-09-24: a route lives on
       the control it moves — a **~** on the row opens its routes in a panel
       under it, the slider carries the band the routes reach and one mark per
@@ -678,50 +422,6 @@ it becomes a build item.
       - **Another visual pass** on the panel, its width above all, deferred
         until it has been used for a while.
 
-- [x] **Bypass a route without freeing it.** Raised and done 2026-09-24,
-      in the editor only: see `docs/editor.md` § "A route shows on the
-      control it moves". A bypass stored in the patch would need the brain to
-      know about it, and a stored bypassed route is barely different from a
-      free slot.
-
-- [x] **Cut the page's prose down to what earns it.** Raised and done
-      2026-09-24. Every note on the page went, bar one line on the surfaces
-      panel saying the brain does not combine faders yet. Two rules moved
-      into hover text where they bite: why a far end cannot add a route, and
-      why an accent is heard from another patch. Descriptions come back one
-      at a time, when something is found missing.
-
-- [x] **Edit a draft, save it explicitly.** Raised, designed and built
-      2026-09-24: see `docs/editor.md` § "Edits go into a draft" and
-      `DESIGN.md` § "How a library gets there". The brain's side compiles and
-      was run on the desktop against the editor's own bytes — push, read back,
-      reboot, an empty slot, an out-of-order sync — and has **never run on
-      the Teensy**. What was decided:
-
-      - **One draft, for one patch.** The first change to a patch opens a
-        draft of it: base, far ends and patch-wide settings together. The
-        wall plays the draft. Choosing another patch with a draft open asks
-        to save or discard first.
-      - **128 fixed slots, any of them empty.** A slot number is the Program
-        Change that plays it and never changes: nothing renumbers, so a DAW's
-        automation and the keypad stay pointed at the right patch. The
-        up/down buttons and the renumbering warning go.
-      - **Save** writes the draft back into its own slot without asking.
-        **Save to a slot** picks any number and shows what is there; a taken
-        slot is replaced after asking which patch it holds. **Discard** drops
-        the draft. **New** starts a draft with no slot, which it takes only
-        when saved. **Delete** empties a slot after asking. No undo history.
-      - **A draft survives a reload**, held apart from the saved library
-        until it is saved or discarded, so a closed tab still loses nothing.
-      - **The library lists only filled slots**, by number, with names.
-
-      The wire changed with it: a sync was a count and then patches 0 to
-      count − 1 with no gaps, and now opens with a map of the filled slots
-      (`shared/aurora_protocol.h` § "A sync replaces the whole library"), with
-      the brain's storage following. Nothing had reached the brain, so
-      nothing needed migrating. A library stored by the editor before
-      slots existed loads with its patches numbered in order.
-
 - [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
       browser and has **never driven the rig**. The old page went anyway, since
       keeping it meant maintaining a second copy of the CC map through the
@@ -731,109 +431,6 @@ it becomes a build item.
       split reads as well with the wall in front of you as it does on screen.
       Pushing a library is deferred with the rest of the brain's side — see
       § "Deferred until the model is stable".
-
-- [x] **The editor has no patch in the DESIGN sense.** Answered 2026-09-23 by
-      a new editor rather than a rework: `tools/editor.html` with
-      `tools/patch.js`, `tools/library.js` and `tools/editor.js`. It builds a
-      whole patch — name, pattern, palette, both ramp times, the base and four
-      far ends — pushes a library over SysEx, pulls one back, and reads and
-      writes the JSON file. **Never run against hardware.** The model and the
-      rulings made without the performer are `docs/editor.md`.
-
-      Both gaps the reading found are closed. The CC map is 72 now, not 52:
-      `CC_TEMPO_DIVISION` and the per-pattern slots at 50–59 are controls, and
-      the scatter added nine. And the unowned bytes of a 128-byte set are
-      written zero, because arriving at a patch writes the tagged CCs through
-      the brain's own handlers and a byte no handler claims is never read.
-
-      In the editor a far end is the base plus what it overrides, not a second
-      copy of all 72 — see `docs/editor.md` § "A far end is an override".
-      `materialize()` is where five whole sets appear for the wire.
-
-      What the old page did, for the record:
-      It
-      saves a flat map of cooked parameter names to `localStorage`: one
-      parameter set, no fader far ends, no accent target, no ramp times,
-      and the pattern is not in it. Until that is reworked, nothing can
-      build a patch to push — `tools/protocol.html` generates its bytes
-      rather than dialing them. Coupled to the editor-layout question in
-      § "Open discussions" and to the accent-preview item below.
-      Two gaps found 2026-09-23 while reading it against the wire: the
-      editor's `CC` map is 52 parameters where a patch saves 63, missing
-      `CC_TEMPO_DIVISION` and the per-pattern slots at 50-59; and no
-      control owns the remaining bytes of a 128-byte set, so what goes in
-      them has to be ruled before a patch can be built.
-
-- [x] **Take the preset buttons out of the editor's MIDI surface.** Done
-      2026-09-23, and the two things reserved for the performer were ruled
-      rather than asked, both cheap to reverse. Strip order and blackout became
-      bench tools in the top bar that send a Program Change straight past the
-      patch and say so. And what tells the brain to run the generator is the
-      patch's own pattern byte: the editor sends `PC = pattern` when it puts a
-      patch on the wall, which is the same message the old page hard-coded to
-      10, sourced from the patch instead of from the page.
-
-      What the old page said:
-      **Take the preset buttons out of the editor's MIDI surface.**
-      Program Change means patch now, so "generator (PC 10)", "Plasma
-      (PC 3)", "blackout (PC 0)" and "strip order (PC 11)" in
-      `tools/index.html` send patch selects. The anchor chips stay — they
-      are local starting points — but `applyPatch` opens with
-      `setPreset(10)` and that line goes with the box. Two things fall
-      out and neither is mechanical: nothing then tells the brain to run
-      the generator, so the editor cannot drive the wall until patch
-      recall exists; and strip order is a rigging aid with nowhere left
-      to live. See `DESIGN.md` § "Patch storage".
-
-- [x] **Export the library to a file the repo can hold.** Done 2026-09-22,
-      untested. `tools/protocol.html` saves what the brain holds as JSON —
-      names, keypad assignment, every parameter set, one set per line so a
-      changed patch is a few changed lines in a diff — and pushes such a
-      file back. That is what stops the master library living on one
-      laptop, and it is the recovery path if that laptop is lost.
-
-- [x] **Keep the raw CC bytes in the brain.** Done 2026-09-22.
-      `midi_in::ccBytes()` in `brain/src/midi_in.h` hands back the last
-      byte received on each CC; `handleControlChange` records it beside
-      the cooked value. Nothing reads it yet. One thing it does not
-      solve: a CC nothing has sent reads 0, which is not what a bipolar
-      control is rendering, so a snapshot taken before the brain has
-      been driven records 0 rather than what is lit. Compiling a default
-      set into the firmware is what closes that.
-
-- [x] **The editor must preview an accent with the switches held back.** Done
-      2026-09-23. The accent tab carries an **as heard from** picker naming any
-      patch in the library, and the switches render from that patch for the
-      whole audition. A and B come from two named sets of one patch rather than
-      from "capture whatever is on screen", and within a patch a far end has no
-      switches of its own to take.
-
-      What the old page said:
-      **The editor must preview an accent with the switches held back.**
-      Falls out of switches landing on release, 2026-09-22: in
-      performance an accent plays with the *source* patch's switches,
-      not the destination's, so an accent dialed in `tools/index.html`
-      against the patch's own switches is judged on a picture it will
-      rarely show. See `DESIGN.md` § "Switches belong to the patch".
-      Most of the machinery is already there: `applyMorph` interpolates
-      everything except the four switches, which is exactly the rule. What
-      it lacks is A and B coming from two named sets of one patch rather
-      than from "capture whatever is on screen".
-
-- [x] **What a completed morph does.** Settled 2026-09-22. A completed
-      morph arrives only if it was going to a patch, so a fader never
-      arrives and the surfaces table in `DESIGN.md` § "Switches belong to
-      the patch" stands. Switches move when the key is released, which is
-      always on a beat because every keypad effect is — held back through
-      the accent deliberately, so that letting go drops the accent and
-      changes the topology on one beat. Four consequences were written
-      into `DESIGN.md`: a patch holds five parameter sets rather than
-      four, the accent target being its own; there are two ramp times per
-      patch, journey and accent, both stepped to values that come back to
-      the grid; a journey release re-times the remaining distance to land
-      on the next beat; and an accent release holds course to the next
-      beat and then drops in one step, because there the drop is the
-      gesture.
 
 - [ ] **Decide what a fader does when it disagrees with the state.**
       Jump on touch, pickup, or scaled takeover. Arrives with the first
@@ -849,35 +446,7 @@ it becomes a build item.
       questions: what fires it (every beat, a division, a switch), and
       whether the snap is instant or the settle it already has.
 
-## Known defects
-
-- [x] **Glitch's white pixels ignored the V fader.** Fixed 2026-09-22;
-      white is made from the fader's own brightness now. The 30 % white
-      share can be tuned, and has not been. See `docs/bench-facts.md`.
-
-- [ ] **Both receivers ignore the MIDI channel.** The convention at the top
-      of `shared/aurora_protocol.h` says all Aurora traffic is on
-      `AURORA_MIDI_CHANNEL`, "so a shared cable / merger can carry other
-      devices' traffic without confusion", and both senders honour it.
-      Neither receiver does: `brain/src/midi_in.cpp` and
-      `controller/src/midi_io.cpp` both take the channel byte and drop it
-      with `(void)channel`, the latter commenting that it is permissive
-      "for now". So the protection that comment describes has never
-      existed, and on a shared cable every CC, Program Change and Note On
-      in the rig reaches Aurora.
-
-      Two lines, one per receiver, and the constant already exists. It
-      does *not* protect against traffic on Aurora's own channel, which is
-      why the CC map dodges pan, volume, expression and bank select
-      anyway. It is also what makes a second channel available as 128 more
-      numbers when the map runs out — see `docs/cc-regroup.md`.
-
-- [x] **The three faders have no CC.** Fixed 2026-09-23 in the regroup:
-      CC 12, 13 and 14 carry their positions, `[ambient]`, so the brain can
-      morph toward the patch's Color, Extent and Motion sets. What a patch
-      holds is separate, at 33-35. The controller still sends the sticks to
-      the color, which is the next thing to change in
-      `controller/src/controls.cpp`.
+## Open on the controller
 
 - [ ] **Decide where the peak-follower switch goes.** `docs/controls.md`
       is the record of every control on the box. The one thing it leaves
@@ -888,25 +457,11 @@ it becomes a build item.
       needs no pin. The rest of that shortfall disappears with the second
       board.
 
-- [x] **Decide what the phone's cradle does.** Settled 2026-09-23: it
-      stays the blackout, now driven through the end-of-frame gate so it is
-      finally instant. There is a handset, but it was modded into a crude
-      microphone on a guitar jack and almost never sits on the cradle, so
-      the hook is held by a finger — `DESIGN.md` is corrected where it
-      argued the hook is a state you cannot leave wrong.
-
 - [ ] **The foot pedal has no assignment.** Four momentary switches, and
       nothing in the map needs to change for them: the controller reads
       them and emits messages that already exist, the way the tap tempo
       button does. What is open is which four jobs they get. The keypad's
       hold is no longer part of this — it became CC 26 in the regroup.
-
-## Housekeeping
-
-- [x] **Regroup the CC table.** Done 2026-09-23. `docs/cc-regroup.md` is
-      the map, the blocks are contiguous and sized from what each grew
-      into, and the two-block pulse and the stranded Position are both
-      gone.
 
 ## Key files
 

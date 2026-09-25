@@ -12,7 +12,7 @@ What was kept, and is not up for redesign here:
 
 - `docs/bench-facts.md` — what we measured and observed. Facts.
 - `docs/architecture.md` — how the system is built and why. Settled.
-- `docs/visual-design.md` — patterns, palettes, energy, washes. Settled.
+- `docs/visual-design.md` — patterns, color looks, energy, washes. Settled.
 - `docs/wiring.md` — pins and circuits.
 
 ---
@@ -90,8 +90,9 @@ thing that is actually *played*. Everything above is written at a desk.
 
 - **A transition.** Two patches and a position between them.
 - **A scene.** It was a patch.
-- **A palette.** Values inside a patch. The nine named ones become saved
-  points if they survive at all.
+- **The nine named palettes.** They are color looks now, settings of the
+  color layer inside a patch, and become saved points if they survive at
+  all. *Palette* names only the switch in § "Switches belong to the patch".
 - **A preset.** A patch.
 - **Shape, as distinct from color.** A pixel is hue, saturation and
   brightness; anything varying across the wall is one field over those
@@ -181,7 +182,7 @@ that would have been expensive to discover later.
 - **Morph already interpolates in CC space, and at least one control
   depends on it.** Count's fader is deliberately geometric so that
   interpolating its CC linearly doubles by construction — see
-  `docs/generator.md` § Open, item 4. Interpolate cooked values instead
+  `docs/generator.md` § Open, "Morph moves every parameter in lockstep". Interpolate cooked values instead
   and that property is gone, along with any other nobody has noticed.
 - **The CC map is becoming a public interface regardless.** A DAW
   automation lane is addressed by CC number, so an Ableton project breaks
@@ -932,9 +933,6 @@ only a switch re-solves it.
 - **What a control does when it disagrees with the state.** Raised by
   § "Patch storage", and it arrives with the first patch recall. Settle
   by looking, with a fader in hand.
-- **Patch storage is scoped but not built.** The format, the medium and
-  the library are settled in § "Patch storage"; what remains is the
-  editor-to-brain protocol over USB and the LittleFS layout.
 
 ### Dissolved rather than answered
 
