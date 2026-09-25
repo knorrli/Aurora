@@ -104,8 +104,8 @@ earns its slot on looks alone — whether the *pair* survives is open.
 > Deep and Two-pole are brightness-driven, Haze and Banded positional —
 > and both are reachable, together. Read them as looks to dial, not as a
 > roster the layer has to grow. *Palette* is a different thing: the
-> patch-head switch in `DESIGN.md` § "Switches belong to the patch",
-> whose meaning is still open.
+> switch on CC 53 that picks what the hue walks through — see
+> `docs/generator.md` § "Palettes".
 
 A library of "a blue one, a green one, an orange one" would be nine ways
 of duplicating the hue control we already have. What a color look carries

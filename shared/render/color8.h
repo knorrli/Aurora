@@ -28,7 +28,7 @@ inline Rgb scaleVideo(Rgb c, uint8_t scale) {
   return { scale8Video(c.r, scale), scale8Video(c.g, scale), scale8Video(c.b, scale) };
 }
 
-inline Rgb hsvRainbow(uint8_t hue, uint8_t sat, uint8_t val) {
+inline Rgb rainbowRgb(uint8_t hue) {
   const uint8_t offset8 = (uint8_t)((hue & 0x1f) << 3);
   const uint8_t third = scale8(offset8, 256 / 3);
   const uint8_t twothirds = scale8(offset8, (256 * 2) / 3);
@@ -51,7 +51,11 @@ inline Rgb hsvRainbow(uint8_t hue, uint8_t sat, uint8_t val) {
       else { r = 170 + third; g = 0; b = 85 - third; }
     }
   }
+  return { r, g, b };
+}
 
+inline Rgb withSatVal(Rgb c, uint8_t sat, uint8_t val) {
+  uint8_t r = c.r, g = c.g, b = c.b;
   if (sat != 255) {
     if (sat == 0) {
       r = 255; g = 255; b = 255;
@@ -76,6 +80,10 @@ inline Rgb hsvRainbow(uint8_t hue, uint8_t sat, uint8_t val) {
   }
 
   return { r, g, b };
+}
+
+inline Rgb hsvRainbow(uint8_t hue, uint8_t sat, uint8_t val) {
+  return withSatVal(rainbowRgb(hue), sat, val);
 }
 
 }  // namespace render

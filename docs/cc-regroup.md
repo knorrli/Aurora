@@ -103,14 +103,12 @@ That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ## The budget
 
-Aurora needs **104 numbers**: 64 controls and eight routes of five bytes.
-There are 114 safe ones, so the map spends them all but ten.
+Aurora needs **105 numbers**: 65 controls and eight routes of five bytes.
+There are 114 safe ones, so the map spends them all but nine.
 
-**The ten are 3–6, 8, 9, 30, 31, 53 and 70.** Only the generator's two are
-in a block anything is waiting to grow into, and nothing claims either: 53
-was Alternate, cut 2026-09-25, and 70 was held for a tail switch that
-became a single afterglow instead. After those, the next generator control
-means a regroup.
+**The nine are 3–6, 8, 9, 30, 31 and 70.** Only 70 is in a block anything is
+waiting to grow into: it was held for a tail switch that became a single
+afterglow instead. After it, the next generator control means a regroup.
 
 **The scatter's lifetime fork no longer fits.** Spots with a birth and a
 death, which is what raindrops and shooting stars need, is priced in
@@ -132,8 +130,8 @@ channel is free for the taking but nothing is built to tell them apart.
 | 2–9 | 7 | Transport / meta | 1 | 6 |
 | 12–26 | 15 | The controller | 15 | 0 |
 | 27–31 | 5 | Washes / DMX | 3 | 2 |
-| 33–52 | 20 | Color | 20 | 0 |
-| 53–70 | 18 | Generator — shape, fan, the LFO, the bend | 17 | 1 |
+| 33–53 | 21 | Color | 21 | 0 |
+| 54–70 | 17 | Generator — shape, fan, the LFO, the bend | 16 | 1 |
 | 71–79 | 9 | Scatter / texture | 9 | 0 |
 | 80–119 | 40 | Modulation routes | 40 | 0 |
 
@@ -191,7 +189,7 @@ No spare.
 
 Spare: 30, 31.
 
-### 33–52 · Color
+### 33–53 · Color
 
 | CC | | | |
 |---|---|---|---|
@@ -215,14 +213,14 @@ Spare: 30, 31.
 | **50** | `LIT_HUE` | [patch] | bipolar; hue at the core of a shape |
 | **51** | `LIT_WHITE` | [patch] | white at the core |
 | **52** | `LIT_DARK` | [patch] | bipolar; the core toward dark or toward full |
+| **53** | `PALETTE` | [switch] | index into `shared/render/palettes.cpp`; 0 is the rainbow |
 
 No spare.
 
-### 53–70 · Generator — shape, fan, the LFO
+### 54–70 · Generator — shape, fan, the LFO
 
 | CC | | | |
 |---|---|---|---|
-| 53 | — | | free |
 | **54** | `GEN_BOUNCE` | [switch] | turn at the cell's edge instead of wrapping |
 | **55** | `GEN_WIDTH` | [patch] | the solid core, as a proportion of one cell |
 | **56** | `GEN_COUNT` | [patch][plain] | shapes along the strip, 1-20 |

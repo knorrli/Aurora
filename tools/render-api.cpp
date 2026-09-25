@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include <emscripten/emscripten.h>
+#include <palettes.h>
 #include <render.h>
 
 // The editor's way into shared/render, compiled with it by
@@ -44,6 +45,12 @@ EMSCRIPTEN_KEEPALIVE void aurora_paths_clear(render::Paths *paths) { render::cle
 
 EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Paths *paths, float beats) {
   render::renderGenerator(controls, beats, *motion, *paths, frame);
+}
+
+EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount(); }
+
+EMSCRIPTEN_KEEPALIVE const char *aurora_palette_name(int index) {
+  return render::paletteName((uint8_t)index);
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave) {

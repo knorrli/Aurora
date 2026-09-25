@@ -32,7 +32,7 @@ const EXPORTS = [
   'aurora_bend_points',
   'aurora_strips', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
   'aurora_motion_new', 'aurora_motion_copy', 'aurora_paths_new', 'aurora_paths_clear',
-  'aurora_render', 'aurora_lfo_wave',
+  'aurora_render', 'aurora_palette_count', 'aurora_palette_name', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats',
   'aurora_strip_value', 'aurora_route_reach', 'aurora_route_refused',
   'aurora_wave_mean',

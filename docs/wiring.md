@@ -281,7 +281,7 @@ Mostly inherited from the current Aurora wiring. The only moves are:
 |  A4  | Touchpad YP (also I²C SDA)                 | analog    | 4-wire resistive, unchanged            |
 |  A5  | Touchpad XM (also I²C SCL)                 | analog    | 4-wire resistive, unchanged            |
 |  A6  | Touchpad strip mode switch                 | analog    | 3-way rocker (left / center / right)   |
-|  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; read as 2-state in firmware today        |
+|  A7  | A/B bank switch (preset vs. palette)       | analog    | Formerly fader-alt + preset-alt; unread in firmware since palettes became CC 53 |
 
 **There is exactly one rotary in the rig** — the 12-position tempo
 switch. Everything else is a rocker: D4, D5 and A7 are 2-way, A6 is
@@ -519,7 +519,7 @@ lower voltage needs lower resistance to hit MIDI's ~5 mA target current.
 ## DMX OUT — venue fixture color echo (brain only)
 
 Scope is color echo, nothing else: every frame the brain writes the
-active palette's center color × V to 1–2 hardcoded fixture addresses.
+washes' color to 1–2 hardcoded fixture addresses.
 See `docs/architecture.md` § "DMX is for the wash fixtures, never for
 the strips" for why the strips are not driven this way.
 
@@ -701,6 +701,6 @@ rather than squeezing new items into existing ranges.
 | Brain GPIO                |    3   |   7      | Pins 5/6/7/8/14/20/21 for OctoWS2811 strips 2–8 |
 | Controller GPIO (digital) |   14   |   0      | D0–D13 all allocated           |
 | Controller GPIO (analog)  |    8   |   0      | A3 now the foot-pedal ladder   |
-| Aurora Program Change     |   19   |  108     | 0–9 presets + 64–72 palettes   |
+| Aurora Program Change     |   19   |  108     | 0–11 presets                   |
 | Aurora Control Change     |   23   |  ~90     | In the ~70 reserved slots      |
 | Aurora Note On            |    6   |  ~50     | In the reserved trigger/preset-event slots |

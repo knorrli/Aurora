@@ -228,7 +228,8 @@
     const label = el('label', null, `<b>${def.label}</b><span class="cc">CC ${P.CC[name]}</span>`);
     label.title = def.hint;
     const picks = el('div', 'picks');
-    const buttons = def.options.map(([value, text]) => {
+    const options = typeof def.options === 'function' ? def.options() : def.options;
+    const buttons = options.map(([value, text]) => {
       const b = el('button', null, text);
       b.addEventListener('click', () => {
         if (root.classList.contains('locked')) return;
@@ -243,8 +244,8 @@
     picks.appendChild(from);
     host.appendChild(root);
 
-    const lit = def.kind === 'three'
-      ? (value, live) => P.band3(live) === P.band3(value)
+    const lit = def.kind === 'pick' ? (value, live) => live === value
+      : def.kind === 'three' ? (value, live) => P.band3(live) === P.band3(value)
       : (value, live) => P.isOn(live) === P.isOn(value);
     rows[name] = { root, buttons, from, def, kind: def.kind, lit };
   }
@@ -919,13 +920,6 @@
   // ---- the patch head ----------------------------------------------------
 
   function buildHead() {
-    const palette = $('pPalette');
-    for (let i = 0; i < 9; i++) {
-      const o = el('option', null, 'palette ' + i); o.value = i; palette.appendChild(o);
-    }
-    palette.title = 'Carried, stored, and read by nothing — what a palette is has not been settled.';
-    palette.addEventListener('change', () => { editing().palette = +palette.value; save(); });
-
     for (const [id, field] of [['pRampJourney', 'rampJourney'], ['pRampAccent', 'rampAccent']]) {
       const sel = $(id);
       P.LFO_PERIOD_NAMES.forEach((text, step) => {
@@ -944,7 +938,6 @@
   function paintHead() {
     const p = patch();
     if ($('pName').value !== p.name) $('pName').value = p.name;
-    $('pPalette').value = p.palette;
     $('pRampJourney').value = String(P.periodByte(P.periodStep(p.rampJourney)));
     $('pRampAccent').value = String(P.periodByte(P.periodStep(p.rampAccent)));
   }

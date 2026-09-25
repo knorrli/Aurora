@@ -141,7 +141,7 @@ half retired is the state most likely to be read as the design by whoever
 picks this up next. So the eighteen retire in the same change that wires
 the routes, and `shared/aurora_protocol.h` says so beside them.
 
-**And it is the same argument that parked palettes.** No patches exist
+**And it rests on a guess.** No patches exist
 yet, so how many simultaneous connections a real look needs is a guess.
 Retiring fifteen working, already-dialed, one-byte amounts on a guess is
 expensive in both implementations and in the editor, before a single

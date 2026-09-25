@@ -72,7 +72,6 @@
   function newPatch(name) {
     return {
       name: (name || 'untitled').slice(0, P.NAME_LEN),
-      palette: 0,
       rampJourney: P.periodByte(4),   // four beats, one bar
       rampAccent: P.periodByte(10),   // half a beat
       base: setFromNamed(P.DEFAULT),
@@ -81,7 +80,7 @@
   }
 
   const clonePatch = p => ({
-    name: p.name, palette: p.palette,
+    name: p.name,
     rampJourney: p.rampJourney, rampAccent: p.rampAccent,
     base: p.base.slice(),
     overrides: p.overrides.map(o => (o ? Object.assign({}, o) : null)),
@@ -104,7 +103,7 @@
 
   function toWire(patch) {
     return {
-      name: patch.name, palette: patch.palette,
+      name: patch.name,
       rampJourney: patch.rampJourney, rampAccent: patch.rampAccent,
       sets: Array.from({ length: P.SETS }, (_, i) => materialize(patch, i)),
     };
@@ -127,7 +126,7 @@
       overrides.push(o);
     }
     return {
-      name: w.name, palette: w.palette,
+      name: w.name,
       rampJourney: w.rampJourney, rampAccent: w.rampAccent, base, overrides,
     };
   }
@@ -234,7 +233,7 @@
     lib.patches.forEach((p, i) => {
       out.push('    {');
       out.push(`      "slot": ${p.slot}, "name": ${JSON.stringify(p.name)},`);
-      out.push(`      "palette": ${p.palette}, "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
+      out.push(`      "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
       out.push('      "sets": [');
       p.sets.forEach((set, n) => out.push(`        [${set.join(',')}]${n < P.SETS - 1 ? ',' : ''}`));
       out.push('      ]');
@@ -279,9 +278,11 @@
 
   // ---- the wire ----------------------------------------------------------
 
+  // The brain's side of the wire still carries a pattern and a palette byte.
+  // Every patch runs the generator, and its palette is CC_PALETTE in the sets.
   function headBytes(p) {
     const name = String(p.name || '').padEnd(P.NAME_LEN, ' ').slice(0, P.NAME_LEN);
-    const out = [A.PRESET_GENERATOR, p.palette & 0x7F,
+    const out = [A.PRESET_GENERATOR, 0,
                  p.rampJourney & 0x7F, p.rampAccent & 0x7F];
     for (let i = 0; i < P.NAME_LEN; i++) out.push(name.charCodeAt(i) & 0x7F);
     return out;
@@ -408,7 +409,7 @@
     }
     return {
       patch: {
-        name: nameOf(head), palette: head[1],
+        name: nameOf(head),
         rampJourney: head[2], rampAccent: head[3], sets,
       },
     };

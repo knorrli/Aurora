@@ -26,7 +26,7 @@ static uint8_t  s_last_hue              = 0xFF;
 static uint8_t  s_last_saturation       = 0xFF;
 static uint8_t  s_last_value            = 0xFF;
 
-static int8_t   s_last_preset_or_palette = -1;
+static int8_t   s_last_preset = -1;
 static uint32_t s_last_keypad_read_ms    = 0;
 
 static uint32_t s_last_tap_edge_ms       = 0;
@@ -106,15 +106,8 @@ static void scan_faders() {
 }
 
 // ---------------------------------------------------------------------------
-// Preset / palette numpad — behavior depends on A/B mode switch
+// Preset numpad
 // ---------------------------------------------------------------------------
-
-static bool is_palette_mode() {
-    // The hardware is still the multi-state analog rotary, so anything
-    // below the midpoint reads as A and anything above as B.
-    const uint16_t v = analogRead(PIN_MODE_AB);
-    return v > 512;
-}
 
 static void scan_numpad() {
     const uint32_t now = millis();
@@ -124,21 +117,9 @@ static void scan_numpad() {
     const int8_t key = scan_keypad();
     if (key < 0) return;  // nothing pressed or special combo we don't handle yet
 
-    const bool palette_mode = is_palette_mode();
-    uint8_t pc;
-    if (palette_mode) {
-        if (key == 0) {
-            pc = AURORA_PC_PALETTE_MONOCHROME;
-        } else {
-            pc = AURORA_PC_PALETTE_BASE + (key - 1);  // palettes 1..9 → PC 64..72
-        }
-    } else {
-        pc = (uint8_t)key;  // presets 0..9 map straight to PC 0..9
-    }
-
-    if ((int8_t)pc != s_last_preset_or_palette) {
-        midi_io::send_program_change(pc);
-        s_last_preset_or_palette = pc;
+    if (key != s_last_preset) {
+        midi_io::send_program_change((uint8_t)key);
+        s_last_preset = key;
     }
 }
 

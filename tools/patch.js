@@ -210,7 +210,8 @@
   // ---- what a control is -------------------------------------------------
   //
   // kind: 'fader' unless stated. 'pick' carries its own options and is for the
-  // handful of values that are an index rather than a position.
+  // handful of values that are an index rather than a position. Options can be
+  // a function, for a list only the renderer knows once it has loaded.
 
   const C = (name, label, hint, extra) =>
     Object.assign({ name, label, hint, kind: 'fader' }, extra || {});
@@ -230,7 +231,7 @@
     genFan: 64, genFanLfo: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
     genBounce: OFF,
 
-    hue: 20, saturation: 100, value: 110,
+    palette: 0, hue: 20, saturation: 100, value: 110,
 
     genLfoRate: 64,
 
@@ -423,7 +424,9 @@
 
   const STRIPS = {
     controls: define([
-      C('hue', 'Hue', 'the center hue everything else is measured from'),
+      C('palette', 'Palette', 'what the hue walks through: the rainbow, or a set of colors that loops',
+        { kind: 'pick', options: () => V().paletteNames().map((name, i) => [i, name]) }),
+      C('hue', 'Hue', 'the center hue everything else is measured from, around the palette\u2019s loop'),
       C('saturation', 'Saturation', 'full is a pure hue, zero is white'),
       C('value', 'Brightness', 'the ceiling everything below scales against'),
     ]),

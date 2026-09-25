@@ -444,6 +444,37 @@ gradient:
 | White head | light level → to white, full |
 | Color along the tail | gradient, within a shape, hue |
 
+### Palettes, built 2026-09-25
+
+A palette is what the hue walks through in place of the rainbow. The hue
+fader, the placed field's, the wander's and the scatter's hue pushes, a route
+on hue and the washes' hue offset all move along it, so one switch recolors
+every hue movement in the patch. It is how two colors far apart on the wheel
+become neighbors: yellow and blue without passing through green.
+
+- **CC 53, a switch.** An index into `shared/render/palettes.cpp`; 0 is the
+  rainbow, and so is anything past the end. Saved with the patch, shared by
+  its far ends, never interpolated.
+- **Stops around a loop.** A palette is color stops at positions 0–255,
+  blended linearly, and the last blends back into the first across the gap
+  to 256. A seam is only as hard as the stops make it.
+- **The hue fader covers the whole loop**, 0–255. It stopped at 250 so a
+  full push on the rainbow would not wrap pink back to red; how far a hue
+  moves is a route amount now.
+- **Saturation and brightness act on top**, the same way they act on the
+  rainbow. A palette can carry its own softness — Art is pastel at full S.
+- **Many published palettes are ramps, dark at one or both ends**, made to
+  map a heat or noise value to a color. On a hue loop the two ends meet, so
+  the fader's two ends sit either side of the dark seam. Mirroring a ramp —
+  there and back — makes it a loop with the dark part at one point.
+
+The cpt-city ones (Art, Cyberpunk, Space, Nature, TV) are sampled at sixteen
+even steps off screenshots of the site's category thumbnails, so thin bands
+fall between samples. Sky 35 is converted from the page's c3g download, which
+lists every stop, and that is the way to add one. A ramp whose ends differ goes
+in mirrored: judged on Sky 35, the published ramp's jump from navy back to
+yellow was too sharp, and the mirrored one looked better.
+
 ### Why the previous field was replaced
 
 Two things it could not do, both asked for on the wall, and both geometry:

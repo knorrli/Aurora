@@ -374,21 +374,6 @@ it becomes a build item.
       brain comes home as flat patches, since the parent structure never
       crosses the wire. Same as tags.
 
-- [ ] **What a palette is, and where it lives.** Raised 2026-09-22 and
-      deliberately not settled: a fixed set of palettes on the brain, with
-      each patch referencing one, so a patch's controls move inside a
-      constrained color space rather than the whole wheel. The patch record
-      already carries a `palette` byte with no meaning attached, so the
-      per-patch half costs nothing. What is genuinely open is where the
-      palettes themselves live — a second section in the synced library is
-      the obvious answer, and it is safe to defer because a format change
-      costs a re-sync rather than a migration.
-      **A palette is a switch**, settled 2026-09-22, which is why the byte
-      sits in the patch head rather than in each parameter set: a far end
-      cannot sit in a different palette from its patch. It lands the way
-      every switch lands — on a patch change, or on release at the end of a
-      journey or an accent. See `DESIGN.md` § "Switches belong to the patch".
-
 - [ ] **Decide what three faders at once come to.** Found 2026-09-23 while
       building the editor's fader panel, and it is a gap rather than a
       question anyone had parked: `DESIGN.md` § "The three faders are three

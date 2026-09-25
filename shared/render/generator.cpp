@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "aurora_protocol.h"
+#include "palettes.h"
 
 /////////////////////////////////
 // GENERATOR — one parametric pattern, driven entirely over CC.
@@ -806,7 +807,7 @@ static inline float squaredUnit(uint8_t value, float max) {
 
 float convert(uint8_t cc, uint8_t value) {
   switch (cc) {
-    case CC_HUE:             return ccToByte(value, 250);
+    case CC_HUE:             return ccToByte(value, 255);
     case CC_SATURATION:
     case CC_VALUE:
     case CC_WASH_LEVEL:
@@ -952,6 +953,10 @@ Hsv colorFrom(const uint8_t *dialed, const Pushes *pushes) {
 // take theirs. Color is converted at full value and the light is carried by
 // the fixture's own dimmer, so the emitters stay near full scale where they
 // have the most resolution.
+static Rgb hueToRgb(uint8_t palette, uint8_t hue, uint8_t sat, uint8_t val) {
+  return withSatVal(paletteRgb(palette, hue), sat, val);
+}
+
 Wash washFrom(const uint8_t *dialed, const Pushes *pushes) {
   auto at = [&](uint8_t cc) { return (uint8_t)convert(cc, routed(dialed, pushes, cc)); };
   const Hsv strips = colorFrom(dialed, nullptr);
@@ -961,7 +966,7 @@ Wash washFrom(const uint8_t *dialed, const Pushes *pushes) {
   // washes are a relationship to the strips.
   const uint8_t saturation = at(CC_WASH_SATURATION);
 
-  return { hsvRainbow((uint8_t)(strips.h + hueOffset), scale8(strips.s, saturation), 255),
+  return { hueToRgb(dialed[CC_PALETTE], (uint8_t)(strips.h + hueOffset), scale8(strips.s, saturation), 255),
            scale8(strips.v, level) };
 }
 
@@ -1227,7 +1232,7 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &
           : colorAt(s, placedAccumulated / (float)GEN_SUBSAMPLES, stripIndex,
                     pixelIndex, profile, wanderT, scatter, wanderOn);
       out.pixels[stripIndex * PIXELS + pixelIndex] =
-          scaleVideo(hsvRainbow(tint.h, tint.s, 255), (uint8_t)((float)tint.v * brightness));
+          scaleVideo(hueToRgb(dialed[CC_PALETTE], tint.h, tint.s, 255), (uint8_t)((float)tint.v * brightness));
     }
   }
   motion.lastBouncing = bouncing;

@@ -174,9 +174,8 @@ editor and nothing else.
 
 ### A patch is raw CC values
 
-A patch is one byte per CC, indexed by CC number, plus the two things
-that arrive as Program Change — preset and palette — and the ramp time in
-beats. Not cooked parameters. Three arguments, and the first is the one
+A patch is one byte per CC, indexed by CC number, plus its two ramp times
+in beats. Not cooked parameters. Three arguments, and the first is the one
 that would have been expensive to discover later.
 
 - **Morph already interpolates in CC space, and at least one control
@@ -292,11 +291,9 @@ message, constant RAM, no seeking. Anything out of order is refused
 outright, because once both have been written a missing patch cannot be
 told from a reordering.
 
-**A palette is a switch**, so it sits in the patch head and not in each
-parameter set: a fader's far end cannot be in a different palette from its
-patch, and nothing interpolates one on the way. What a palette *is* stays
-open — `TODO.md` § "Open discussions" — and the byte is carried, stored and
-read by nothing.
+**A palette is a switch**, CC 53: a fader's far end cannot be in a different
+palette from its patch, and nothing interpolates one on the way. See
+`docs/generator.md` § "Palettes".
 
 **A patch carries a name.** Sixteen bytes that the brain never reads. It
 exists for the export path: a library pulled back off the brain after the
@@ -313,8 +310,7 @@ the commit does not.
 
 **The format is not a long-lived commitment.** Nothing on the brain is the
 only copy of anything, so changing the layout costs a re-sync rather than a
-migration. That is what lets the palette question stay open without
-blocking this — see `TODO.md` § "Open discussions".
+migration.
 
 ### Open: what a physical control does when it disagrees
 

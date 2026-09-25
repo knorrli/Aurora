@@ -69,6 +69,10 @@
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
       makePaths: () => m._aurora_paths_new(),
       clearPaths: paths => m._aurora_paths_clear(paths),
+      paletteNames: () => Array.from({ length: m._aurora_palette_count() }, (_, i) => {
+        const at = m._aurora_palette_name(i);
+        return String.fromCharCode(...m.HEAPU8.subarray(at, m.HEAPU8.indexOf(0, at)));
+      }),
       lfoWave: (phase, wave) => m._aurora_lfo_wave(phase, wave),
       waveMean: wave => m._aurora_wave_mean(wave),
       convert: (cc, value) => m._aurora_convert(cc, value),

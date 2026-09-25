@@ -59,11 +59,7 @@ static const uint8_t AURORA_MIDI_CHANNEL = 1;
 //      0 –   9 : preset select (0 = off, 1–9 = preset slots)
 //           10 : the parametric generator (experiment; see shared/render/generator.cpp)
 //           11 : strip-order rigging aid
-//     11 –  63 : RESERVED for preset expansion (more slots, banks)
-//     64 –  72 : palette select (palettes 0–8)
-//     73 – 126 : RESERVED for palette expansion / future discrete states
-//          127 : RESERVED — interpreted by the brain as "no palette,
-//                monochrome" (pairs with numpad 0 in palette mode).
+//     12 – 127 : RESERVED
 //
 // ---------------------------------------------------------------------------
 
@@ -81,7 +77,7 @@ enum AuroraPreset : uint8_t {
     PRESET_STRIP_OR_COMET    = 7,
     PRESET_STROBE_OR_STUTTER = 8,
     PRESET_CHAOS_OR_GLITCH   = 9,
-    // One pattern whose shape comes entirely from CC 53–70 rather than
+    // One pattern whose shape comes entirely from CC 54–70 rather than
     // from a hand-written renderer. Under evaluation; it does not replace
     // any slot above.
     PRESET_GENERATOR         = 10,
@@ -91,20 +87,10 @@ enum AuroraPreset : uint8_t {
     // 12–63 reserved
 };
 
-static const uint8_t AURORA_PC_PALETTE_BASE      = 64;
-static const uint8_t AURORA_PC_PALETTE_COUNT     = 9;   // palettes 0–8
-static const uint8_t AURORA_PC_PALETTE_MONOCHROME = 127; // "no palette"
 
 // Helpers
 
 static inline bool aurora_pc_is_preset(uint8_t pc)  { return pc <= PRESET_STRIP_ORDER; }
-static inline bool aurora_pc_is_palette(uint8_t pc) {
-    return pc >= AURORA_PC_PALETTE_BASE
-        && pc <  AURORA_PC_PALETTE_BASE + AURORA_PC_PALETTE_COUNT;
-}
-static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
-    return pc - AURORA_PC_PALETTE_BASE;
-}
 
 // ---------------------------------------------------------------------------
 // Control Change — continuous parameters
@@ -118,9 +104,9 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //     12 –  26 : the controller — what each control stands at
 //     27 –  31 : washes / DMX fixtures
 //           32 : AVOID — bank select LSB
-//     33 –  52 : color — the three faders, the placed field, the wander,
-//                 the lit reach, and the two color switches
-//     53 –  70 : the generator — shape, the fan, and the LFO
+//     33 –  53 : color — the three faders, the placed field, the wander,
+//                 the lit reach, the two color switches and the palette
+//     54 –  70 : the generator — shape, the fan, and the LFO
 //     71 –  79 : the scatter — a texture source and its three amounts
 //     80 – 119 : modulation routes, eight of five bytes
 //    120 – 127 : AVOID — channel mode messages
@@ -130,9 +116,8 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //
 // The four AVOIDed numbers in the middle are the ones a DAW writes without
 // being asked: volume, pan, expression and bank select, which travels with
-// the Program Changes Mainstage sends. Aurora answers on every channel today
-// — see TODO.md § Known defects — so dodging them is the only protection
-// there is until both receivers filter.
+// the Program Changes Mainstage sends. Both receivers ignore other channels,
+// but a DAW writes these on Aurora's own channel too.
 //
 // 12–26 is the modwheel model and the reason this block exists: a control
 // reports the value it stands at and says nothing about what that does. The
@@ -300,7 +285,7 @@ enum AuroraCC : uint8_t {
     CC_WASH_SATURATION     = 29, // [patch][plain] 
     // 30–31 reserved (washes); 32 excluded
 
-    // 33–52 — color. One block, where it used to be split across 20–29 and
+    // 33–53 — color. One block, where it used to be split across 20–29 and
     // 90–99 because twenty controls do not fit in ten.
     //
     // 33–35 are what a patch holds; the three sticks that used to set them
@@ -319,9 +304,9 @@ enum AuroraCC : uint8_t {
     // switch lane in a DAW rather than a number to be looked up.
     //
     // Off below 64 and on from 64 up, except the ruler, which is banded into
-    // thirds. These two and the generator's at 53–54 are what DESIGN.md
-    // § "Switches belong to the patch" argues about: saved and recalled,
-    // never interpolated.
+    // thirds. These two, the palette at 53 and the generator's at 54 are what
+    // DESIGN.md § "Switches belong to the patch" argues about: saved and
+    // recalled, never interpolated.
     CC_COLOR_REGION        = 36, // [switch] 0 = one gradient across the
                                  // ruler, 127 = regions
     CC_COLOR_RULER         = 37, // [switch] 0 = across the five strips,
@@ -351,8 +336,12 @@ enum AuroraCC : uint8_t {
     CC_LIT_WHITE           = 51, // [patch] 0 = none, up = white at the core
     CC_LIT_DARK            = 52, // [patch] bipolar: 64 = none, down takes the
                                  // core toward dark and up toward full
-    // 53–70 — the generator. Only read while PRESET_GENERATOR is active.
-    // 53 reserved (the generator)
+    // Which of the renderer's palettes the hue walks through. The value is
+    // an index into shared/render/palettes.cpp, 0 being the rainbow; one past
+    // the end reads as the rainbow too.
+    CC_PALETTE             = 53, // [switch] palette index
+
+    // 54–70 — the generator. Only read while PRESET_GENERATOR is active.
     CC_GEN_BOUNCE          = 54, // [switch] turn at the cell's edge instead
                                  // of wrapping
     CC_GEN_WIDTH           = 55, // [patch] how much of one cell the shape's

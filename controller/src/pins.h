@@ -41,6 +41,5 @@ static const uint8_t PIN_RESERVED_A3      = A3;
 
 // --- Mode switches (analog rotary) ----------------------------------------
 static const uint8_t PIN_TOUCHPAD_STRIP_MODE = A6;
-static const uint8_t PIN_MODE_AB             = A7;  // preset vs palette select
 
 #endif // AURORA_CONTROLLER_PINS_H
