@@ -7,7 +7,7 @@
 #include "tempo.h"
 
 static void handleProgramChange(uint8_t channel, uint8_t program) {
-    (void)channel;
+    if (channel != AURORA_MIDI_CHANNEL) return;
     if (!aurora_pc_is_preset(program)) return;
 
     selectedPreset = program;
@@ -15,7 +15,7 @@ static void handleProgramChange(uint8_t channel, uint8_t program) {
 }
 
 static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value) {
-    (void)channel;
+    if (channel != AURORA_MIDI_CHANNEL) return;
 
     // Every control lands in the same store, whether or not anything reads it
     // yet. A renderer converts it when it draws, because a modulation route
@@ -28,7 +28,7 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
 }
 
 static void handleNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
-    (void)channel;
+    if (channel != AURORA_MIDI_CHANNEL) return;
     // Velocity 0 is a note-off in disguise; every MIDI source is entitled
     // to send one and it must not read as a trigger.
     if (note == NOTE_TRIGGER_FLASH && velocity > 0) fireTrigger();

@@ -37,21 +37,16 @@ static void on_stop() {
     midi_io::send_stop();
 }
 
-static void on_program_change(byte channel, byte pc) {
+static void on_program_change(byte, byte pc) {
     // Upstream PC (e.g. from a foot controller) — forward to brain.
-    // Later we might want to filter here (e.g. only forward on our
-    // channel), but for now be permissive.
-    (void)channel;
     midi_io::send_program_change(pc);
 }
 
-static void on_control_change(byte channel, byte cc, byte value) {
-    (void)channel;
+static void on_control_change(byte, byte cc, byte value) {
     midi_io::send_control_change(cc, value);
 }
 
-static void on_note_on(byte channel, byte note, byte velocity) {
-    (void)channel;
+static void on_note_on(byte, byte note, byte velocity) {
     midi_io::send_note_on(note, velocity);
 }
 
@@ -62,9 +57,10 @@ static void on_note_on(byte channel, byte note, byte velocity) {
 namespace midi_io {
 
 void begin() {
-    // MIDI_CHANNEL_OMNI so we see whatever flows in, regardless of channel.
-    // We still *send* on AURORA_MIDI_CHANNEL.
-    gMIDI.begin(MIDI_CHANNEL_OMNI);
+    // The library drops channel messages on any other channel before a
+    // handler sees them; clock and transport carry no channel and still
+    // arrive.
+    gMIDI.begin(AURORA_MIDI_CHANNEL);
 
     // We need real-time messages (clock, start/continue/stop) parsed even
     // when the parser is mid-message. MIDI library does this by default for
