@@ -195,6 +195,13 @@ driven live from the editor.
       PARs' hue offset lands on inside a three-color palette. See
       `docs/generator.md` § "Palettes".
 
+- [ ] **Time a frame at eight samples.** Add `-D AURORA_DEBUG` to
+      `brain/platformio.ini`, run a busy patch and read the frame time in
+      `pio device monitor`. It was 7–8 ms at four; well under 16 ms is
+      fine. If it has grown, set `GEN_SUBSAMPLES` in
+      `shared/render/generator.cpp` back to 4. See `docs/bench-facts.md` §
+      "Point-sampling a pattern aliases".
+
 - [ ] **Play the PARs on their own**, strips dark. Four looks: hue spread
       halfway with a stepped route on the hue offset, so the colors step
       from lamp to lamp; LFO spread at 25% with a stab on their level, a

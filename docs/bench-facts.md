@@ -247,8 +247,17 @@ the grid can carry.
 
 Averaging four samples across each pixel's own width fixed it completely.
 Detail finer than the strip can resolve now washes out smoothly into an
-even glow, which is the honest thing for it to do. The cost is four shape
-evaluations per pixel — 900 per frame — which is nothing on this part.
+even glow, which is the honest thing for it to do.
+
+**Eight samples since 2026-09-25.** A hard-edged shape thinner than a
+pixel still covered a varying number of samples as it slid, so it pulsed.
+Measured on two slow bars a third of a pixel wide: the strip's total
+brightness swung 50% at four samples and 34% at eight, and the worst
+one-frame jump on a pixel fell from 70 to 36 of 765. More samples only
+shrink the steps; Edge removes them — at four samples, Edge 10 held the
+same bars within half a percent. A busy patch cost 27 µs a frame at four
+and 41 µs at eight, on a Mac. **Not yet timed on the Teensy**, where a
+frame was 7–8 ms and almost all of it FastLED.
 
 **The color layer's placed field had the same fault, fixed 2026-09-22.**
 It was read once at each pixel's center while the shape around it was

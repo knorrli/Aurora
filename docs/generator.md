@@ -581,7 +581,7 @@ Two things follow from drawing it that way, and both are in
   drawn as a send rather than as part of the branch.
 
 What is shared runs deeper than the words. Both branches are now read at
-the same four samples across each pixel, because a region a pixel or two
+the same eight samples across each pixel, because a region a pixel or two
 wide aliases exactly as a shape that size does — see `docs/bench-facts.md`
 § "Point-sampling a pattern aliases". The wander and the light level want
 none of it: one is sines and the other reads a level the shape branch has

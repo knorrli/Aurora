@@ -85,7 +85,7 @@ static const float GEN_JUMP_CELLS = 0.25f;
 
 // How finely a cell's journey is divided to remember when the core last
 // covered each point of it. At one shape a strip this is a bin every fifth of
-// a pixel, finer than the four samples a pixel is read at.
+// a pixel, near the eighth of a pixel each sample is read at.
 static const uint16_t GEN_GLOW_BINS = 256;
 
 // Below this a travel is a pixel a minute — slower than anything the roster
@@ -97,7 +97,7 @@ static const float GEN_STILL_PIXELS_PER_BEAT = 0.05f;
 // shape strobes as it moves instead of fading out. Averaging makes detail
 // finer than the strip can resolve wash out smoothly, which is what it
 // should do.
-static const uint8_t GEN_SUBSAMPLES = 4;
+static const uint8_t GEN_SUBSAMPLES = 8;
 
 // How dark a full push pulls a pixel, as a fraction of what it would
 // otherwise be. It stops short of zero because a WS2812 has eight linear bits
