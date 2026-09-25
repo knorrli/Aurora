@@ -352,8 +352,10 @@ the placed field, the wander, the light level and the scatter, the editor
 labels **Field**, **Flow**, **Light** and **Scatter**. The field's primitive
 is its **Form** (gradient, region, all but region) and its ruler its
 **Direction** (horizontal, vertical, shape — across the strips, along a strip,
-within a shape). The wander's and the scatter's Rate are **Speed**; Rate is
-the LFO's alone.
+within a shape). The wander's Rate is **Speed**: Speed is for something that
+moves, Rate for how often an effect repeats, so the scatter and the LFO keep
+Rate. The scatter's Stagger is **Randomize**, like the fan's, and its Drift
+**Slide**; its Place (`CC_SCATTER_PLACE`) is labeled **Position**.
 
 Three things push, and what separates them is what each is anchored to.
 
@@ -493,7 +495,7 @@ yellow was too sharp, and the mirrored one looked better.
 
 ### White and dark push one way, built 2026-09-25
 
-Every To white and To dark amount in the color layer — the placed field's,
+Every White and Dark amount in the color layer — the placed field's,
 the wander's, the light level's and the scatter's — runs from 0, nothing,
 up to a full push toward white or toward dark, and never the other way.
 
@@ -992,6 +994,13 @@ shares a clock and the wall flashes as one; wound up, their phases and rates
 both spread out of the hash and they stop blinking together. So one fader runs
 from Blitzgewitter in sync through to a scattered twinkle, and the plain grid
 could do neither end.
+
+**Place re-rolls where a spot lands**, added 2026-09-25 on CC 70. Without
+it every spot sat at its cell's center, the only randomness was each cell's
+clock, rolled once, and the five strips shared one grid — so spots came back
+to the same pixels and lined up across the wall. Place rolls an offset from
+the strip, the cell and which life this is, so it moves only while the spot is
+dark; 0 is the center and full is anywhere the core still fits in its cell.
 
 **Drift is bipolar and is a displacement, not a rate** — how far, and which way,
 a spot slides across its own cell over its life. That is why it is not called

@@ -103,12 +103,11 @@ That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ## The budget
 
-Aurora needs **105 numbers**: 65 controls and eight routes of five bytes.
-There are 114 safe ones, so the map spends them all but nine.
+Aurora needs **106 numbers**: 66 controls and eight routes of five bytes.
+There are 114 safe ones, so the map spends them all but eight.
 
-**The nine are 3–6, 8, 9, 30, 31 and 70.** Only 70 is in a block anything is
-waiting to grow into: it was held for a tail switch that became a single
-afterglow instead. After it, the next generator control means a regroup.
+**The eight are 3–6, 8, 9, 30 and 31.** None is in the color, generator or
+scatter blocks, so the next control in any of them means a regroup.
 
 **The scatter's lifetime fork no longer fits.** Spots with a birth and a
 death, which is what raindrops and shooting stars need, is priced in
@@ -131,8 +130,8 @@ channel is free for the taking but nothing is built to tell them apart.
 | 12–26 | 15 | The controller | 15 | 0 |
 | 27–31 | 5 | Washes / DMX | 3 | 2 |
 | 33–53 | 21 | Color | 21 | 0 |
-| 54–70 | 17 | Generator — shape, fan, the LFO, the bend | 16 | 1 |
-| 71–79 | 9 | Scatter / texture | 9 | 0 |
+| 54–69 | 16 | Generator — shape, fan, the LFO, the bend | 16 | 0 |
+| 70–79 | 10 | Scatter / texture | 10 | 0 |
 | 80–119 | 40 | Modulation routes | 40 | 0 |
 
 0, 1, 7, 10, 11 and 32 are skipped, each for a reason above. Everything else
@@ -217,7 +216,7 @@ Spare: 30, 31.
 
 No spare.
 
-### 54–70 · Generator — shape, fan, the LFO
+### 54–69 · Generator — shape, fan, the LFO
 
 | CC | | | |
 |---|---|---|---|
@@ -238,12 +237,11 @@ No spare.
 | **68** | `GEN_BEND` | [patch][plain] | bipolar; travel slowed and sped by where a shape is |
 | **69** | `GEN_BEND_AT` | [patch][plain] | where the bend peaks, bottom to top |
 
-Spare: 70.
-
-### 71–79 · Scatter / texture
+### 70–79 · Scatter / texture
 
 | CC | | | |
 |---|---|---|---|
+| **70** | `SCATTER_PLACE` | [patch] | how far from its cell's center a spot lands, rolled each life |
 | **71** | `SCATTER_RATE` | [patch][rate] | how often a cell relights |
 | **72** | `SCATTER_COUNT` | [patch] | cells along a strip, 1-20 |
 | **73** | `SCATTER_WIDTH` | [patch] | the spot's core, in space and in time at once |

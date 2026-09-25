@@ -159,7 +159,7 @@
   /* ---- a control row ---------------------------------------------------- */
 
   .row {
-    display: grid; grid-template-columns: 108px minmax(64px, 1fr) 88px 24px;
+    display: grid; grid-template-columns: 108px minmax(64px, 1fr) 106px 24px;
     gap: 8px; align-items: center; padding: 1px 0 1px 7px;
     border-left: 2px solid transparent; margin-left: -9px;
   }
@@ -201,7 +201,7 @@
   .routesbtn.open { color: var(--bg); background: var(--lfo); border-color: var(--lfo); }
 
   .row > output, .audition .readout, .showing { font-variant-numeric: tabular-nums; }
-  .row > output { text-align: right; line-height: 1.25; }
+  .row > output { text-align: right; line-height: 1.25; white-space: nowrap; }
   .row > output .cc { display: block; }
   .row > output { display: grid; }
   .row > output > .now, .row > output > .room { grid-area: 1 / 1; }

@@ -92,13 +92,13 @@ static inline bool aurora_pc_is_preset(uint8_t pc) {
 //           32 : AVOID — bank select LSB
 //     33 –  53 : color — the three faders, the placed field, the wander,
 //                 the lit reach, the two color switches and the palette
-//     54 –  70 : the generator — shape, the fan, and the LFO
-//     71 –  79 : the scatter — a texture source and its three amounts
+//     54 –  69 : the generator — shape, the fan, and the LFO
+//     70 –  79 : the scatter — a texture source and its three amounts
 //     80 – 119 : modulation routes, eight of five bytes
 //    120 – 127 : AVOID — channel mode messages
 //
 // Nothing between 2 and 119 is outside a block, and the routes take the one
-// run of 40 the map has. Spare: 3–6, 8, 9, 30, 31 and 70.
+// run of 40 the map has. Spare: 3–6, 8, 9, 30 and 31.
 //
 // The four AVOIDed numbers in the middle are the ones a DAW writes without
 // being asked: volume, pan, expression and bank select, which travels with
@@ -408,12 +408,14 @@ enum AuroraCC : uint8_t {
     CC_GEN_BEND_AT         = 69, // [patch][plain] 0 = the bottom, 64 = the
                                  // middle, 127 = the top
 
-    // 70 reserved (the generator)
-
-    // 71–79 — the scatter. The third source in the family: the LFO is
+    // 70–79 — the scatter. The third source in the family: the LFO is
     // regular in time and has no place on the wall, the wander is smooth over
-    // both, the scatter is random over both. Six controls shape it and three
+    // both, the scatter is random over both. Seven controls shape it and three
     // amounts aim it. See docs/generator.md § "The scatter".
+    //
+    // How far from its cell's center a spot lands, rolled again each time the
+    // cell relights and apart for every cell on every strip. 0 is the center.
+    CC_SCATTER_PLACE       = 70, // [patch]
     CC_SCATTER_RATE        = 71, // [patch][rate] how often a cell relights
     CC_SCATTER_COUNT       = 72, // [patch] cells along a strip, 1–20; the
                                  // scatter's own grid, not the shape's

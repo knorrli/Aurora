@@ -92,17 +92,21 @@
   const sign = r => (r < 0 ? '−' : '+');
   const signed = r => sign(r) + percent(Math.abs(r));
   const signedInt = r => sign(r) + Math.abs(r);
-  const beatsPer = rate => (Math.abs(rate) < 0.004 ? '∞' : (1 / Math.abs(rate)).toFixed(1));
+  const beatsPer = rate => {
+    if (Math.abs(rate) < 0.004) return '∞';
+    const beats = 1 / Math.abs(rate);
+    return beats.toFixed(beats < 10 ? 1 : 0);
+  };
 
   function fanTurns(v) {
     const turns = real('genFanFreq', v) * (V().STRIPS - 1);
-    return turns.toFixed(2) + ' turns across the wall';
+    return turns.toFixed(2) + ' turns';
   }
 
   // Both ends of a fan amount are the same wall with the wave turned over,
   // so these say how far apart the strips stand and not which way.
   const fanAmount = (name, what) => v => percent(Math.abs(real(name, v)) * 2) + ' ' + what;
-  const hueReach = (name, suffix) => v => signedInt(Math.round(real(name, v))) + suffix;
+  const hueReach = name => v => signedInt(Math.round(real(name, v))) + ' of 255';
 
   const LFO_PERIODS = A.LFO_PERIODS;
   const PERIOD_NAMES = {
@@ -122,25 +126,25 @@
   ];
 
   // One pattern per control, with only the number moving: a readout that
-  // changes shape as the fader moves reflows the rows below it.
+  // changes shape as the fader moves reflows the rows below it. Each fits the
+  // readout column on one line; what a number means is in the control's hint.
   const DERIVED = {
 
     genWidth: v => percent(real('genWidth', v)),
-    genEdge: v => percent(real('genEdge', v)) + ' into the gap',
+    genEdge: v => percent(real('genEdge', v)) + ' of the gap',
     genTail: v => { const beats = real('genTail', v);
-                    return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats of afterglow'; },
+                    return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats'; },
     genCount: v => real('genCount', v) + ' shapes',
-    genPosition: v => signed(real('genPosition', v)) + ' of a cell off center',
+    genPosition: v => signed(real('genPosition', v)) + ' of a cell',
     genSpeed: v => { const s = real('genSpeed', v);
                      return sign(s) + Math.abs(s).toFixed(1) + ' px/beat'; },
     genBend: v => signed(real('genBend', v)) + ' bent',
     genBendAt: v => { const at = real('genBendAt', v);
                       return at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top'
                            : Math.round(at * 100) + '% up'; },
-    genFan: fanAmount('genFan', 'of a cell apart'),
-    genFanLfo: fanAmount('genFanLfo', 'of a swell apart'),
-    genFanRate: v => '±' + Math.abs(real('genFanRate', v)).toFixed(1)
-                     + ' px/beat either side of Speed',
+    genFan: fanAmount('genFan', 'of a cell'),
+    genFanLfo: fanAmount('genFanLfo', 'of a cycle'),
+    genFanRate: v => '±' + Math.abs(real('genFanRate', v)).toFixed(1) + ' px/beat',
     genFanFreq: fanTurns,
     genFanPhase: v => percent(real('genFanPhase', v)) + ' of a turn',
     genFanRandom: v => percent(real('genFanRandom', v)) + ' scrambled',
@@ -152,45 +156,46 @@
     genLfoRate: v => PERIOD_NAMES[real('genLfoRate', v)].split(' · ')[0],
     routeAmount: v => signed(bip(v)),
     routeRatio: v => '×' + A.routeRatio(v) + ' the LFO',
-    routePhase: v => Math.round(v / 128 * 360) + '° into its cycle',
+    routePhase: v => Math.round(v / 128 * 360) + '°',
     // One axis from a build to a stab; the named shapes are notched on the
     // track. See docs/modulation.md § "The fork, settled".
-    routeWave: v => v < 32 ? 'builds, ' + pct(v * 4) + ' decay'
-                  : v < 64 ? 'swell, ' + pct((v - 32) * 4) + ' toward a snap'
-                  : v < 96 ? 'snaps, ' + pct((v - 64) * 4) + ' toward square'
-                  : 'hard, ' + pct((v - 96) * 4) + ' shorter',
+    routeWave: v => v < 32 ? 'build ' + pct(v * 4) + '→swell'
+                  : v < 64 ? 'swell ' + pct((v - 32) * 4) + '→snap'
+                  : v < 96 ? 'snap ' + pct((v - 64) * 4) + '→square'
+                  : 'square ' + pct((v - 96) * 4) + '→stab',
 
     scatterRate: v => 'every ' + beatsPer(real('scatterRate', v)) + ' beats',
     scatterCount: v => { const n = real('scatterCount', v);
-                         return n + ' cells · ' + (V().PIXELS / n).toFixed(1) + ' px each'; },
-    scatterWidth: v => percent(real('scatterWidth', v)) + ' of its cell and its cycle',
+                         return n + ' × ' + (V().PIXELS / n).toFixed(1) + ' px'; },
+    scatterWidth: v => percent(real('scatterWidth', v)) + ' of a cell',
     scatterEdge: v => percent(real('scatterEdge', v)) + ' soft',
-    scatterStagger: v => percent(real('scatterStagger', v)) + ' apart',
-    scatterDrift: v => signed(real('scatterDrift', v)) + ' of its cell',
+    scatterStagger: v => percent(real('scatterStagger', v)) + ' scrambled',
+    scatterDrift: v => signed(real('scatterDrift', v)) + ' of a cell',
+    scatterPlace: v => percent(real('scatterPlace', v)) + ' random',
     scatterLight: v => signed(real('scatterLight', v)),
-    scatterHue: hueReach('scatterHue', ' of 255 at the peak'),
-    scatterWhite: v => percent(real('scatterWhite', v)) + ' toward white',
+    scatterHue: hueReach('scatterHue'),
+    scatterWhite: v => percent(real('scatterWhite', v)) + ' white',
 
-    placedHue: hueReach('placedHue', ' of 255 at one end'),
-    placedWhite: v => percent(real('placedWhite', v)) + ' toward white',
-    placedDark: v => percent(real('placedDark', v)) + ' toward dark',
+    placedHue: hueReach('placedHue'),
+    placedWhite: v => percent(real('placedWhite', v)) + ' white',
+    placedDark: v => percent(real('placedDark', v)) + ' dark',
     placedCount: v => real('placedCount', v) + ' regions',
     placedWidth: v => percent(real('placedWidth', v)) + ' of a cell',
     placedEdge: v => percent(real('placedEdge', v)) + ' soft',
     placedSpeed: v => { const r = real('placedSpeed', v);
-                        return sign(r) + beatsPer(r) + ' beats per cell'; },
+                        return sign(r) + beatsPer(r) + ' beats/cell'; },
 
     wanderHue: v => '±' + Math.abs(Math.round(real('wanderHue', v))) + ' of 255',
-    wanderWhite: v => percent(real('wanderWhite', v)) + ' toward white',
-    wanderDark: v => percent(real('wanderDark', v)) + ' toward dark',
+    wanderWhite: v => percent(real('wanderWhite', v)) + ' white',
+    wanderDark: v => percent(real('wanderDark', v)) + ' dark',
     wanderRate: v => { const r = real('wanderRate', v);
-                       return (r < 0.004 ? '∞' : (1 / r).toFixed(0)) + ' beats per cycle'; },
+                       return (r < 0.004 ? '∞' : (1 / r).toFixed(0)) + ' beats/cycle'; },
     wanderScale: v => { const c = real('wanderScale', v);
                         return (c <= 0 ? '∞' : (V().PIXELS / c).toFixed(0)) + ' px across'; },
 
-    litHue: hueReach('litHue', ' at the core'),
-    litWhite: v => percent(real('litWhite', v)) + ' white at the core',
-    litDark: v => percent(real('litDark', v)) + ' dark at the core',
+    litHue: hueReach('litHue'),
+    litWhite: v => percent(real('litWhite', v)) + ' white',
+    litDark: v => percent(real('litDark', v)) + ' dark',
 
     washLevel: v => ofByte(real('washLevel', v)),
     washHueOffset: v => '+' + real('washHueOffset', v) + ' of 255',
@@ -234,7 +239,7 @@
     genLfoRate: 64,
 
     scatterRate: 60, scatterCount: 80, scatterWidth: 34, scatterEdge: 40,
-    scatterStagger: 110, scatterDrift: 64,
+    scatterStagger: 110, scatterDrift: 64, scatterPlace: 0,
     scatterLight: 64, scatterHue: 64, scatterWhite: 0,
 
     colorPrimitive: GRADIENT, colorRuler: ON_STRIP,
@@ -362,17 +367,18 @@
     {
       key: 'scatter', name: 'Scatter', tone: 'scatter',
       source: define([
-        C('scatterRate', 'Speed', 'how often a cell relights'),
+        C('scatterRate', 'Rate', 'how often a cell relights'),
         C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
         C('scatterWidth', 'Width', 'the spot\u2019s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
         C('scatterEdge', 'Edge', 'hard through to a fade \u2014 in space and in time alike'),
-        C('scatterStagger', 'Stagger', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
-        C('scatterDrift', 'Drift', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),
+        C('scatterStagger', 'Randomize', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
+        C('scatterDrift', 'Slide', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),
+        C('scatterPlace', 'Position', 'where a spot lands each time its cell relights: 0 is the middle of the cell, full anywhere in it'),
       ]),
       amounts: define([
-        C('scatterLight', 'Brightness', 'plus is toward full light, minus toward dark'),
         C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
-        C('scatterWhite', 'To white', 'how far a spot whitens'),
+        C('scatterWhite', 'White', 'how far a spot whitens'),
+        C('scatterLight', 'Brightness', 'plus lights a spot up, minus darkens it: on a shape, in a gap or on its tail'),
       ]),
     },
     {
@@ -392,8 +398,8 @@
       ]),
       amounts: define([
         C('placedHue', 'Hue', 'how far the hue turns, opposite ways at the two ends of a gradient'),
-        C('placedWhite', 'To white', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
-        C('placedDark', 'To dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
+        C('placedWhite', 'White', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
+        C('placedDark', 'Dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
       ]),
     },
     {
@@ -404,8 +410,8 @@
       ]),
       amounts: define([
         C('wanderHue', 'Hue', 'how far the hue wanders either side of the base'),
-        C('wanderWhite', 'To white', 'how far it whitens where it swings high'),
-        C('wanderDark', 'To dark', 'how far it darkens where it swings high'),
+        C('wanderWhite', 'White', 'how far it whitens where it swings high'),
+        C('wanderDark', 'Dark', 'how far it darkens where it swings high'),
       ]),
     },
     {
@@ -413,8 +419,8 @@
       source: [],
       amounts: define([
         C('litHue', 'Hue', 'how far the brightest part rotates off the base hue'),
-        C('litWhite', 'To white', 'how pale the brightest part goes'),
-        C('litDark', 'To dark', 'how far the brightest part darkens'),
+        C('litWhite', 'White', 'how pale the brightest part goes'),
+        C('litDark', 'Dark', 'how far the brightest part darkens'),
       ]),
     },
   ];

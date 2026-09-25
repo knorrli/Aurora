@@ -194,6 +194,7 @@ struct Params {
   float scatterEdge;
   float scatterStagger;
   float scatterDrift;
+  float scatterPlace;
   float scatterLightReach;
   float scatterHueReach;
   float scatterWhiteReach;
@@ -349,7 +350,7 @@ static uint8_t ccCount(uint8_t value) {
 
 // Stable per-pixel noise: the same (strip, pixel, bucket) always hashes to
 // the same byte, so a draw holds still between re-rolls instead of boiling.
-static inline uint8_t hash8(uint8_t a, uint8_t b, uint8_t c) {
+static inline uint8_t hash8(uint32_t a, uint32_t b, uint32_t c) {
   uint32_t h = (uint32_t)a * 73856093u ^ (uint32_t)b * 19349663u ^ (uint32_t)c * 83492791u;
   h ^= h >> 13;
   h *= 0x5bd1e995u;
@@ -539,15 +540,23 @@ static float scatterAt(const Params &p, uint8_t stripIndex, float alongPixels, f
 
   const float rateSpread = (float)hash8(stripIndex, cell, 17) / 255.0f - 0.5f;
   const float phaseOffset = (float)hash8(stripIndex, cell, 43) / 255.0f;
-  const float age = fract(t * (1.0f + p.scatterStagger * rateSpread)
-                          + p.scatterStagger * phaseOffset);
+  const float clock = t * (1.0f + p.scatterStagger * rateSpread)
+                    + p.scatterStagger * phaseOffset;
+  const float age = fract(clock);
 
   // Centered on the middle of the cycle, so a cell runs dark, lights, holds and
   // fades rather than being cut off at the wrap.
   const float alive = coreAt(age - 0.5f, p.scatterWidth, p.scatterEdge);
   if (alive <= 0.0001f) return 0.0f;
 
-  const float center = 0.5f + p.scatterDrift * (age - 0.5f);
+  // Rolled from the life's own number, so the spot moves only while it is
+  // dark, and kept far enough in that the core never crosses its cell's edge.
+  const uint32_t life = (uint32_t)(int32_t)floorf(clock);
+  const float room = 0.5f - 0.5f * p.scatterWidth;
+  const float landing = (room > 0.0f)
+      ? p.scatterPlace * room * ((float)hash8(stripIndex, cell * 131u + life, 61) / 255.0f * 2.0f - 1.0f)
+      : 0.0f;
+  const float center = 0.5f + landing + p.scatterDrift * (age - 0.5f);
   return alive * coreAt(u - center, p.scatterWidth, p.scatterEdge);
 }
 
@@ -879,6 +888,7 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_SCATTER_WHITE:
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_EDGE:
+    case CC_SCATTER_PLACE:
     case CC_SCATTER_STAGGER: return ccUnit(value);
 
     default:                 return (float)value;
@@ -936,6 +946,7 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
   p.scatterEdge = at(CC_SCATTER_EDGE);
   p.scatterStagger = at(CC_SCATTER_STAGGER);
   p.scatterDrift = at(CC_SCATTER_DRIFT);
+  p.scatterPlace = at(CC_SCATTER_PLACE);
   p.scatterLightReach = at(CC_SCATTER_LIGHT);
   p.scatterHueReach = at(CC_SCATTER_HUE);
   p.scatterWhiteReach = at(CC_SCATTER_WHITE);

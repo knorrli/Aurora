@@ -246,7 +246,7 @@ driven live from the editor.
       count high, width and edge low, the light amount up. See
       `docs/bench-facts.md`.
 - [ ] **Push white and dark one way.** With S full and V at the top, each of
-      the seven To white and To dark amounts from 0 up: nothing at 0, and
+      the seven White and Dark amounts from 0 up: nothing at 0, and
       every step visible, where half of each travel used to do nothing. Then
       two at once, Placed and Wander White, which used to partly cancel. And
       Lit Dark, which still hollows a shape's core at V top: whether it earns
@@ -298,13 +298,11 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       `tools/preview.js`, and it decides how much of the texture source
       below has to be built. Nothing else on that topic moves until this
       has been looked at.
-- [ ] **Decide whether the scatter needs spots with a lifetime.** Four of
-      the five looks it was designed against land on the grid it already
-      has; the fifth — raindrops, a spot born somewhere that then travels
-      and outlives its cell — is the open fork, priced at eight to ten
-      controls. The scatter's block has nine spare for exactly this. Judge
-      it once the scatter is on the wall, not before. See
-      `docs/generator.md` § "The fork this answered".
+- [ ] **Decide whether the scatter needs spots that outlive their cell.** A
+      spot lands somewhere new in its cell each life since 2026-09-25 (Place,
+      CC 70). What is still out of reach is raindrops: a spot born somewhere
+      that travels past its cell's edge. Judge it once the scatter is on the
+      wall. See `docs/generator.md` § "The fork this answered".
 - [ ] **Judge the LFO's destinations on the wall.** Everything else about
       them is guesswork until this happens. Three looks are what it was
       built for, and each is one patch: the washes swelling under still
