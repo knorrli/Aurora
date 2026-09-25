@@ -13,14 +13,17 @@ static inline float raisedCosine(float x) {
   return 0.5f - 0.5f * cosf(0.5f * TURN * clampUnit(x));
 }
 
+float waveRise(uint8_t wave) {
+  return (wave <= WAVE_SNAP) ? 1.0f - (float)wave / (float)WAVE_SNAP : 0.0f;
+}
+
 float lfoWave(float phase, uint8_t wave) {
-  float attack, decay, hard;
+  const float attack = waveRise(wave);
+  float decay, hard;
   if (wave <= WAVE_SNAP) {
-    decay = (float)wave / (float)WAVE_SNAP;
-    attack = 1.0f - decay;
+    decay = 1.0f - attack;
     hard = 0.0f;
   } else {
-    attack = 0.0f;
     const float toSquare = (float)(wave - WAVE_SNAP)
                          / (float)(WAVE_SQUARE - WAVE_SNAP);
     hard = (toSquare > 1.0f) ? 1.0f : toSquare;
@@ -51,7 +54,9 @@ static bool refused(uint8_t cc) {
     case CC_FIELD_FORM:
     case CC_FIELD_DIRECTION:
     case CC_LFO_RATE:
-    case CC_PAR_HUE_SHUFFLE_EVERY:
+    case CC_PAR_HUE_SOURCE:
+    case CC_ARP_MODE:
+    case CC_ARP_REVERSE:
       return true;
     default:
       return false;
@@ -87,13 +92,10 @@ static bool circular(uint8_t cc) {
 
 static bool plainLfo(uint8_t cc) {
   switch (cc) {
-    case CC_PAR_HUE_SHUFFLE:
-    case CC_PAR_LFO_SHUFFLE:
     case CC_PAR_VALUE:
     case CC_PAR_HUE_OFFSET:
     case CC_PAR_SATURATION:
-    case CC_PAR_HUE_SPREAD:
-    case CC_PAR_LFO_SPREAD:
+    case CC_PAR_HUE_RANGE:
     case CC_SHAPE_COUNT:
     case CC_SHAPE_BEND:
     case CC_SHAPE_BEND_AT:
@@ -170,7 +172,9 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
   }
 
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    const uint8_t destination = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
+    const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
+    if (aurora_route_arp(aimedAt) != ARP_OFF) continue;
+    const uint8_t destination = aurora_route_target(aimedAt);
     if (routeRefused(destination)) continue;
 
     const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
@@ -218,9 +222,13 @@ uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
   return circular(cc) ? (uint8_t)((landed % 128 + 128) % 128) : (uint8_t)landed;
 }
 
+uint8_t routeTarget(const uint8_t *dialed, uint8_t route) {
+  return aurora_route_target(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]);
+}
+
 bool routeAims(const uint8_t *dialed, uint8_t cc) {
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    if (dialed[aurora_route_cc(route, ROUTE_DESTINATION)] != cc) continue;
+    if (routeTarget(dialed, route) != cc) continue;
     const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount < -0.001f || amount > 0.001f) return true;
   }
@@ -253,7 +261,7 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
   float down = 0.0f;
   bool aimed = false;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    if (dialed[aurora_route_cc(route, ROUTE_DESTINATION)] != cc) continue;
+    if (routeTarget(dialed, route) != cc) continue;
     const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     aimed = true;

@@ -9,7 +9,6 @@ static const float STILL_PIXELS_PER_BEAT = 0.05f;
 
 static const float FAN_FREQUENCY_STEPS = 16.0f;
 static const float FAN_MAX_CYCLES_PER_STRIP = 0.5f;
-static const float PAR_LFO_SPREAD_STEPS = 16.0f;
 
 static const float FIELD_MAX_HUE = 128.0f;
 static const float FLOW_MAX_HUE = 128.0f;
@@ -63,10 +62,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_PAR_VALUE:
     case CC_PAR_HUE_OFFSET:
     case CC_PAR_SATURATION: return byteOf(value);
-    case CC_PAR_HUE_SPREAD: return bipolarOf(value) * 128.0f;
-    case CC_PAR_LFO_SPREAD: return roundf(bipolarOf(value) * PAR_LFO_SPREAD_STEPS)
-                                   / (2.0f * PAR_LFO_SPREAD_STEPS);
-    case CC_PAR_HUE_SHUFFLE_EVERY: return aurora_lfo_period(value);
+    case CC_PAR_HUE_RANGE: return bipolarOf(value) * 128.0f;
 
     case CC_SHAPE_COUNT:
     case CC_FIELD_COUNT:
@@ -112,9 +108,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_EDGE:
     case CC_SCATTER_SPREAD:
-    case CC_SCATTER_RANDOMIZE:
-    case CC_PAR_HUE_SHUFFLE:
-    case CC_PAR_LFO_SHUFFLE: return unitOf(value);
+    case CC_SCATTER_RANDOMIZE: return unitOf(value);
 
     default: return (float)value;
   }

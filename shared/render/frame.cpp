@@ -278,7 +278,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   Pushes pushes;
   gatherRoutes(controls, context.plain.lfoBeats, context.lfo, context.lfo, pushes);
   readControls(controls, &pushes, context.plain);
-  readPars(controls, pushes, context.beats, context.lfo, context.plain.lfoBeats, out);
+  readPars(controls, pushes, context.lfo, out);
   readFan(context.plain, out.fan);
 
   const Shape &shape = context.plain.shape;

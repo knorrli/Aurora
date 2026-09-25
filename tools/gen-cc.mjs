@@ -105,7 +105,7 @@ const lfoPeriods = (header.match(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/) || 
   .split(',').map(text => text.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
 const STEPPED = /step = \(uint8_t\)\(\(\(uint16_t\)value \* last \+ 63\) \/ 127\);/;
-for (const name of ['aurora_route_ratio', 'aurora_lfo_period']) {
+for (const name of ['aurora_route_ratio', 'aurora_lfo_period', 'aurora_arp_mode']) {
   if (!STEPPED.test(functionBody(name))) {
     throw new Error(`${HEADER}: ${name}() no longer steps as steppedIndex() in tools/cc.js does`);
   }
@@ -117,6 +117,22 @@ if (threeWayStarts.length !== 3) fail('the three-way bands');
 const threeWayValues = threeWayStarts.map((start, position) =>
   position === 0 ? 0 : position === threeWayStarts.length - 1 ? 127
     : Math.round((start + threeWayStarts[position + 1] - 1) / 2));
+
+const arpControls = (header.match(/AURORA_ARP_CONTROLS\[\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_ARP_CONTROLS'))[1]
+  .split(',').map(text => text.trim()).filter(Boolean)
+  .map(text => camel((text.match(/^CC_([A-Z0-9_]+)$/) || fail(`a CC in AURORA_ARP_CONTROLS, not ${text}`))[1]));
+const ARP_PAIRING = [
+  ['aurora_route_arp', /ARP_TURNS \+ \(destination - AURORA_ARP_DESTINATION_BASE\) % 2/],
+  ['aurora_route_target', /\(destination - AURORA_ARP_DESTINATION_BASE\) \/ 2/],
+  ['aurora_route_destination', /AURORA_ARP_DESTINATION_BASE \+ index \* 2 \+ \(arp - ARP_TURNS\)/],
+];
+for (const [name, shape] of ARP_PAIRING) {
+  if (!shape.test(functionBody(name))) {
+    throw new Error(`${HEADER}: ${name}() no longer pairs destinations as routeArp() in tools/cc.js does`);
+  }
+}
+const arpModeEntries = enumEntries('AuroraArpMode');
+const arpModeCount = (arpModeEntries.find(([key]) => key === 'ARP_MODES') || fail('ARP_MODES'))[1];
 
 const programs = Object.fromEntries(enumEntries('AuroraProgram'));
 const patchParts = Object.fromEntries(enumEntries('AuroraPatchPart'));
@@ -132,6 +148,11 @@ const generated = {
   SWITCH_ON_AT: switchOnAt,
   THREE_WAY_STARTS: threeWayStarts,
   THREE_WAY_VALUES: threeWayValues,
+  ARP: enumByPrefix('AuroraArp', 'ARP_'),
+  ARP_MODE: enumByPrefix('AuroraArpMode', 'ARP_MODE_'),
+  ARP_MODE_COUNT: arpModeCount,
+  ARP_DESTINATION_BASE: constant('AURORA_ARP_DESTINATION_BASE'),
+  ARP_CONTROLS: arpControls,
   WAVE_SWELL: constant('WAVE_SWELL'),
   WAVE_SNAP: constant('WAVE_SNAP'),
   WAVE_SQUARE: constant('WAVE_SQUARE'),
@@ -166,7 +187,8 @@ const generated = {
 const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
 const width = Math.max(...pairs.map(([name]) => name.length));
 const ccBody = pairs.map(([name, number]) => `    ${name}:${' '.repeat(width - name.length)} ${number},`).join('\n');
-const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE', 'ROUTE_MAX_RATIO']);
+const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE', 'ROUTE_MAX_RATIO',
+  'ARP_DESTINATION_BASE', 'ARP_MODE_COUNT']);
 const constantLines = Object.entries(generated)
   .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');
 
@@ -194,6 +216,22 @@ ${constantLines}
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
   const routeRatio = value => 1 + steppedIndex(value, ROUTE_MAX_RATIO);
 
+  const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
+  const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
+
+  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.off
+    : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
+  const routeTarget = destination => {
+    if (destination < ARP_DESTINATION_BASE) return destination;
+    const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
+    return name ? CC[name] : 0;
+  };
+  const routeDestination = (target, arp) => {
+    const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
+    if (arp === ARP.off || index < 0) return target;
+    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.turns);
+  };
+
   const isOn = value => value >= SWITCH_ON_AT;
   const threeWayPosition = value =>
     THREE_WAY_STARTS.filter(start => value >= start).length - 1;
@@ -202,6 +240,7 @@ ${constantLines}
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
 ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
     steppedIndex, routeCC, routeRatio, isOn, threeWayPosition,
+    arpMode, arpModeValue, routeArp, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);
 `;
@@ -215,7 +254,7 @@ function checkRenderer() {
     return new Set([...body.matchAll(/case CC_([A-Z0-9_]+):/g)].map(match => camel(match[1])));
   };
   const expected = {
-    refused: new Set([...tagged('switch'), 'lfoRate', 'parHueShuffleEvery']),
+    refused: new Set([...tagged('switch'), 'lfoRate']),
     swings: new Set(tagged('rate')),
     circular: new Set(tagged('circular')),
     plainLfo: new Set(tagged('plain')),

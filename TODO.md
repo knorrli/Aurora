@@ -26,7 +26,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Flash the brain; if the wall ignores a sender, check it is on MIDI channel 1.
 - Time a frame at eight samples per pixel; if well past 7–8 ms, go back to four.
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
-- PARs alone, strips dark: stepped hue spread, 25% LFO spread chase, the same shuffled, steady lamps with hue shuffle every bar, a swell with the shuffle up. Cut the hue shuffle (frees CCs 28 and 29) if it reads as nothing.
+- PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a turns strobe over each of those, random per pulse on turns.
+- Arp modes on turns, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
 - Pull the PARs' Saturation down, then open the LFO on PAR saturation: the flash toward white should start from pale.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
@@ -48,6 +49,11 @@ Seen only in the preview so far. One look each, driven from the editor.
 - A wrapping strip: loop, clip, or boundary fade?
 - Play a set to find where the color layer's controls should stop.
 - Dial five or six endpoints by eye and save them; nothing about the morph is worth judging before.
+
+## Generator
+
+- Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
+- Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
 
 ## Patches on the brain
 

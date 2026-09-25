@@ -2,81 +2,80 @@
   'use strict';
 
   const CC = {
-    rockerTouchpadA:    2,
-    rockerTouchpadB:    3,
-    rockerTouchpadC:    4,
-    rockerTouchpadD:    5,
-    rockerFaders:       6,
-    audioFollower:      8,
-    audioThreshold:     9,
-    faderColor:         12,
-    faderExtent:        13,
-    faderMotion:        14,
-    touchpadX:          15,
-    touchpadY:          16,
-    touchpadPressure:   17,
-    touchpadEngage:     18,
-    keyHeld:            19,
-    palette:            20,
-    hue:                21,
-    saturation:         22,
-    value:              23,
-    parHueOffset:       24,
-    parSaturation:      25,
-    parValue:           26,
-    parHueSpread:       27,
-    parHueShuffle:      28,
-    parHueShuffleEvery: 29,
-    parLfoSpread:       30,
-    parLfoShuffle:      31,
-    tempoDivision:      33,
-    lfoRate:            34,
-    shapeCount:         35,
-    shapeWidth:         36,
-    shapeEdge:          37,
-    shapeTail:          38,
-    shapeBounce:        39,
-    shapeSpeed:         40,
-    shapePosition:      41,
-    shapeBend:          42,
-    shapeBendAt:        43,
-    fanSpread:          44,
-    fanSpeed:           45,
-    fanLfo:             46,
-    fanFrequency:       47,
-    fanPhase:           48,
-    fanRandomize:       49,
-    scatterCount:       50,
-    scatterWidth:       51,
-    scatterEdge:        52,
-    scatterRate:        53,
-    scatterRandomize:   54,
-    scatterSpread:      55,
-    scatterSlide:       56,
-    scatterHue:         57,
-    scatterWhite:       58,
-    scatterValue:       59,
-    fieldForm:          60,
-    fieldDirection:     61,
-    fieldCount:         62,
-    fieldWidth:         63,
-    fieldEdge:          65,
-    fieldSpeed:         66,
-    fieldHue:           67,
-    fieldWhite:         68,
-    fieldDark:          69,
-    flowDensity:        70,
-    flowRate:           71,
-    flowHue:            72,
-    flowWhite:          73,
-    flowDark:           74,
-    lightHue:           75,
-    lightWhite:         76,
-    lightDark:          77,
+    rockerTouchpadA:  2,
+    rockerTouchpadB:  3,
+    rockerTouchpadC:  4,
+    rockerTouchpadD:  5,
+    rockerFaders:     6,
+    audioFollower:    8,
+    audioThreshold:   9,
+    faderColor:       12,
+    faderExtent:      13,
+    faderMotion:      14,
+    touchpadX:        15,
+    touchpadY:        16,
+    touchpadPressure: 17,
+    touchpadEngage:   18,
+    keyHeld:          19,
+    palette:          20,
+    hue:              21,
+    saturation:       22,
+    value:            23,
+    parHueOffset:     24,
+    parSaturation:    25,
+    parValue:         26,
+    parHueRange:      27,
+    parHueSource:     28,
+    arpMode:          29,
+    arpReverse:       30,
+    tempoDivision:    33,
+    lfoRate:          34,
+    shapeCount:       35,
+    shapeWidth:       36,
+    shapeEdge:        37,
+    shapeTail:        38,
+    shapeBounce:      39,
+    shapeSpeed:       40,
+    shapePosition:    41,
+    shapeBend:        42,
+    shapeBendAt:      43,
+    fanSpread:        44,
+    fanSpeed:         45,
+    fanLfo:           46,
+    fanFrequency:     47,
+    fanPhase:         48,
+    fanRandomize:     49,
+    scatterCount:     50,
+    scatterWidth:     51,
+    scatterEdge:      52,
+    scatterRate:      53,
+    scatterRandomize: 54,
+    scatterSpread:    55,
+    scatterSlide:     56,
+    scatterHue:       57,
+    scatterWhite:     58,
+    scatterValue:     59,
+    fieldForm:        60,
+    fieldDirection:   61,
+    fieldCount:       62,
+    fieldWidth:       63,
+    fieldEdge:        65,
+    fieldSpeed:       66,
+    fieldHue:         67,
+    fieldWhite:       68,
+    fieldDark:        69,
+    flowDensity:      70,
+    flowRate:         71,
+    flowHue:          72,
+    flowWhite:        73,
+    flowDark:         74,
+    lightHue:         75,
+    lightWhite:       76,
+    lightDark:        77,
   };
 
-  const TAGS = {"rockerTouchpadA":["ambient"],"rockerTouchpadB":["ambient"],"rockerTouchpadC":["ambient"],"rockerTouchpadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"touchpadX":["gesture"],"touchpadY":["gesture"],"touchpadPressure":["gesture"],"touchpadEngage":["gesture"],"keyHeld":["gesture"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","plain"],"parSaturation":["patch","plain"],"parValue":["patch","plain"],"parHueSpread":["patch","plain"],"parHueShuffle":["patch","plain"],"parHueShuffleEvery":["patch"],"parLfoSpread":["patch","plain"],"parLfoShuffle":["patch","plain"],"tempoDivision":["switch"],"lfoRate":["patch"],"shapeCount":["patch","plain"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch","circular"],"shapeBend":["patch","plain"],"shapeBendAt":["patch","plain"],"fanSpread":["patch","plain"],"fanSpeed":["patch","rate","plain"],"fanLfo":["patch","plain"],"fanFrequency":["patch","plain"],"fanPhase":["patch","circular","plain"],"fanRandomize":["patch","plain"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterRandomize":["patch"],"scatterSpread":["patch"],"scatterSlide":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"lightHue":["patch"],"lightWhite":["patch"],"lightDark":["patch"]};
-  const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"value":127,"parSaturation":127,"parValue":127,"parHueSpread":64,"parHueShuffleEvery":42,"parLfoSpread":64,"lfoRate":64,"shapeWidth":40,"shapeEdge":18,"shapeSpeed":80,"shapePosition":64,"shapeBend":64,"shapeBendAt":64,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":60,"scatterRandomize":110,"scatterSlide":64,"scatterHue":64,"scatterValue":64,"fieldDirection":64,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"lightHue":64};
+  const TAGS = {"rockerTouchpadA":["ambient"],"rockerTouchpadB":["ambient"],"rockerTouchpadC":["ambient"],"rockerTouchpadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"touchpadX":["gesture"],"touchpadY":["gesture"],"touchpadPressure":["gesture"],"touchpadEngage":["gesture"],"keyHeld":["gesture"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","plain"],"parSaturation":["patch","plain"],"parValue":["patch","plain"],"parHueRange":["patch","plain"],"parHueSource":["switch"],"arpMode":["switch"],"arpReverse":["switch"],"tempoDivision":["switch"],"lfoRate":["patch"],"shapeCount":["patch","plain"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch","circular"],"shapeBend":["patch","plain"],"shapeBendAt":["patch","plain"],"fanSpread":["patch","plain"],"fanSpeed":["patch","rate","plain"],"fanLfo":["patch","plain"],"fanFrequency":["patch","plain"],"fanPhase":["patch","circular","plain"],"fanRandomize":["patch","plain"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterRandomize":["patch"],"scatterSpread":["patch"],"scatterSlide":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"lightHue":["patch"],"lightWhite":["patch"],"lightDark":["patch"]};
+  const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"value":127,"parSaturation":127,"parValue":127,"parHueRange":64,"lfoRate":64,"shapeWidth":40,"shapeEdge":18,"shapeSpeed":80,"shapePosition":64,"shapeBend":64,"shapeBendAt":64,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":60,"scatterRandomize":110,"scatterSlide":64,"scatterHue":64,"scatterValue":64,"fieldDirection":64,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"lightHue":64};
 
   const MIDI_CHANNEL = 1;
   const PROGRAM_BLACKOUT = 0;
@@ -88,6 +87,11 @@
   const SWITCH_ON_AT = 64;
   const THREE_WAY_STARTS = [0,43,86];
   const THREE_WAY_VALUES = [0,64,127];
+  const ARP = {"off":0,"turns":1,"ripple":2};
+  const ARP_MODE = {"together":0,"sequence":1,"bounce":2,"evensOdds":3,"pairs":4,"mirror":5,"random":6};
+  const ARP_MODE_COUNT = 7;
+  const ARP_DESTINATION_BASE = 120;
+  const ARP_CONTROLS = ["parHueOffset","parSaturation","parValue"];
   const WAVE_SWELL = 32;
   const WAVE_SNAP = 64;
   const WAVE_SQUARE = 96;
@@ -130,6 +134,22 @@
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
   const routeRatio = value => 1 + steppedIndex(value, ROUTE_MAX_RATIO);
 
+  const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
+  const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
+
+  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.off
+    : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
+  const routeTarget = destination => {
+    if (destination < ARP_DESTINATION_BASE) return destination;
+    const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
+    return name ? CC[name] : 0;
+  };
+  const routeDestination = (target, arp) => {
+    const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
+    if (arp === ARP.off || index < 0) return target;
+    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.turns);
+  };
+
   const isOn = value => value >= SWITCH_ON_AT;
   const threeWayPosition = value =>
     THREE_WAY_STARTS.filter(start => value >= start).length - 1;
@@ -144,6 +164,9 @@
     FIELD_FORM,
     FIELD_DIRECTION,
     THREE_WAY_VALUES,
+    ARP,
+    ARP_MODE,
+    ARP_CONTROLS,
     WAVE_SWELL,
     WAVE_SNAP,
     WAVE_SQUARE,
@@ -172,5 +195,6 @@
     SYSEX_STATUS,
     LIBRARY_STATE,
     steppedIndex, routeCC, routeRatio, isOn, threeWayPosition,
+    arpMode, arpModeValue, routeArp, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

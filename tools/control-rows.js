@@ -92,9 +92,9 @@
     root.append(label, picks);
     host.appendChild(root);
 
-    const lit = control.kind === 'three'
-      ? (value, live) => Protocol.threeWayPosition(live) === Protocol.threeWayPosition(value)
-      : (value, live) => Protocol.isOn(live) === Protocol.isOn(value);
+    const positionOf = control.kind === 'three' ? Protocol.threeWayPosition
+      : control.kind === 'steps' ? control.step : Protocol.isOn;
+    const lit = (value, live) => positionOf(live) === positionOf(value);
     rows[name] = { kind: control.kind, control, root, select, buttons, from, lit };
   }
 

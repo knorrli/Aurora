@@ -17,7 +17,7 @@
 
   function departureAt(route, phase, live) {
     const wave = live[route.wave];
-    const destination = Protocol.NAME_BY_CC[live[route.destination]];
+    const destination = Protocol.NAME_BY_CC[Protocol.routeTarget(live[route.destination])];
     const at = Preview.lfoWave(phase * Protocol.routeRatio(live[route.ratio]) - live[route.phase] / 128, wave);
     return Patch.bipolar(live[route.amount]) * (Patch.swings(destination) ? at - Preview.waveMean(wave) : at);
   }
@@ -84,6 +84,31 @@
     return bypassed;
   }
 
+  function arpRow(route) {
+    const root = element('div', 'switch-row');
+    root.append(dom.labeled('label', 'Arp', `CC ${Patch.CC[route.destination]}`));
+    const picks = element('div', 'picks');
+    const buttons = Object.entries(Protocol.ARP).map(([name, arp]) => {
+      const button = element('button', null, name);
+      button.addEventListener('click', () => {
+        if (root.classList.contains('locked')) return;
+        Editor.transition.snap();
+        session.setRouteArp(route, arp);
+      });
+      picks.appendChild(button);
+      return [arp, button];
+    });
+    root.appendChild(picks);
+    return { root, buttons };
+  }
+
+  function paintArpRow(row, route, live) {
+    row.root.hidden = !Patch.arpCapable(panel.target);
+    row.root.classList.toggle('locked', session.isTarget());
+    const arp = Protocol.routeArp(live[route.destination]);
+    for (const [option, button] of row.buttons) button.classList.toggle('on', option === arp);
+  }
+
   function free(route) {
     Editor.transition.snap();
     session.freeRoute(route);
@@ -98,12 +123,14 @@
       const head = element('div', 'route-head');
       const buttons = routeButtons(route);
       head.append(element('span', 'route-name', route.name), buttons.root);
+      const arp = arpRow(route);
       const body = element('div');
+      body.appendChild(arp.root);
       Editor.rows.buildRows(body, route.controls);
       const canvas = element('canvas', 'route-wave');
       block.append(head, body, canvas);
       root.appendChild(block);
-      panel.blocks.push({ route, block, canvas, buttons });
+      panel.blocks.push({ route, block, canvas, buttons, arp });
     }
     const foot = element('div', 'route-foot');
     const add = element('button', 'tiny', '+ add a route');
@@ -138,7 +165,7 @@
       const target = element('button', 'route-line-target');
       target.title = 'open this route under the control it moves';
       target.addEventListener('click', () => {
-        const name = Protocol.NAME_BY_CC[session.liveNamed()[route.destination]];
+        const name = Protocol.NAME_BY_CC[Protocol.routeTarget(session.liveNamed()[route.destination])];
         const row = Editor.rows.rows[name];
         if (!row) return;
         row.root.scrollIntoView({ block: 'center' });
@@ -156,9 +183,11 @@
   }
 
   function destinationText(destination) {
-    const name = Protocol.NAME_BY_CC[destination];
+    const name = Protocol.NAME_BY_CC[Protocol.routeTarget(destination)];
     const control = Patch.CONTROLS[name];
-    return control ? `${Patch.PLACES[name]} · ${control.label}` : `CC ${destination}`;
+    if (!control) return `CC ${destination}`;
+    const arp = Object.keys(Protocol.ARP).find(key => Protocol.ARP[key] === Protocol.routeArp(destination));
+    return `${Patch.PLACES[name]} · ${control.label}` + (arp === 'off' ? '' : ` · ${arp}`);
   }
 
   function paintList(live) {
@@ -195,9 +224,10 @@
     if (!panel.target) return;
     const held = session.heldAt();
     const destination = Patch.CC[panel.target];
-    for (const { route, block, canvas, buttons } of panel.blocks) {
-      block.hidden = live[route.destination] !== destination;
+    for (const { route, block, canvas, buttons, arp } of panel.blocks) {
+      block.hidden = Protocol.routeTarget(live[route.destination]) !== destination;
       block.classList.toggle('bypassed', paintButtons(buttons, route));
+      paintArpRow(arp, route, live);
       if (!block.hidden) drawWave(canvas, route, live);
     }
     const free = session.freeRouteSlots(live).length;

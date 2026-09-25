@@ -167,11 +167,10 @@
     parValue: value => ofByte(real('parValue', value)),
     parHueOffset: value => '+' + real('parHueOffset', value) + ' of 255',
     parSaturation: value => ofByte(real('parSaturation', value)) + ' of theirs',
-    parHueSpread: value => signedInteger(Math.round(real('parHueSpread', value))) + ' a lamp',
-    parLfoSpread: value => signed(real('parLfoSpread', value)) + ' of a cycle',
-    parHueShuffle: value => percent(real('parHueShuffle', value)) + ' chance',
-    parHueShuffleEvery: value => 'every ' + shortPeriodName(real('parHueShuffleEvery', value)),
-    parLfoShuffle: value => percent(real('parLfoShuffle', value)) + ' chance',
+    parHueRange: value => {
+      const reach = Math.round(real('parHueRange', value));
+      return reach === 0 ? 'one hue' : `±${Math.abs(reach)}, first ${reach < 0 ? 'high' : 'low'}`;
+    },
   };
 
   for (const route of ROUTES) {
@@ -325,22 +324,31 @@
     ]]],
   };
 
+  const ARP_MODE_NAMES = {
+    together: 'together', sequence: 'sequence', bounce: 'bounce', evensOdds: 'evens / odds',
+    pairs: 'pairs', mirror: 'mirror', random: 'random',
+  };
+
   const PARS = {
     title: '4 PARs',
     sections: [
       ['Color', [
-        control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue. Zero matches them'),
+        control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue, as routes move it. Zero matches them'),
         control('parSaturation', 'Saturation', 'scales the PARs down from the strips’ saturation. Full matches them, zero is white'),
         control('parValue', 'Value', 'the PARs’ master, independent of the strips'),
       ]],
       ['Hue across them', [
-        control('parHueSpread', 'Hue spread', 'each PAR further around the palette than the one before: halfway up is four colors evenly around, either end two alternating. The first PAR sits on Hue offset'),
-        control('parHueShuffle', 'Hue shuffle', 'the chance the four colors are dealt out to the PARs in a new order, once every period'),
-        control('parHueShuffleEvery', 'Shuffle every', 'how often the hue shuffle rolls. Stepped, so it can sit on the bar'),
+        control('parHueRange', 'Hue range', 'a band of hue either side of Hue offset. Plus puts the first group at the low end, minus at the high end'),
+        control('parHueSource', 'Hue source', 'each group at its place in the band, or a new hue from anywhere in it every time a PAR’s turn comes',
+          { kind: 'two', options: [[OFF, 'gradient'], [ON, 'random per pulse']] }),
       ]],
-      ['LFO across them', [
-        control('parLfoSpread', 'LFO spread', 'each PAR further into the LFO’s cycle than the one before: 25% is a chase, either end alternating pairs'),
-        control('parLfoShuffle', 'LFO shuffle', 'the chance the four PARs swap places in the LFO spread, once every LFO cycle'),
+      ['Arpeggiator', [
+        control('arpMode', 'Mode', 'how the PARs are grouped, and the order the groups take their turns in',
+          { kind: 'steps', step: Protocol.arpMode,
+            options: Object.entries(Protocol.ARP_MODE)
+              .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]) }),
+        control('arpReverse', 'Reverse', 'runs the groups last to first. Never changes their colors',
+          { kind: 'two', options: [[OFF, 'forward'], [ON, 'reverse']] }),
       ]],
     ],
   };
@@ -368,8 +376,11 @@
     }
     return routableNames.has(name);
   };
-  const routableDestination = number =>
-    number === 0 || routable(Protocol.NAME_BY_CC[number]);
+  const routableDestination = number => {
+    const target = Protocol.routeTarget(number);
+    return number === 0 || (target !== 0 && routable(Protocol.NAME_BY_CC[target]));
+  };
+  const arpCapable = name => Protocol.ARP_CONTROLS.includes(name);
   const isCircular = name => Protocol.hasTag(name, 'circular');
   const swings = name => Protocol.hasTag(name, 'rate');
 
@@ -394,8 +405,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt') return [64];
-    if (name === 'parLfoSpread') return steps(at).filter(value => at(value) % 0.25 === 0);
-    if (name === 'lfoRate' || name === 'fanFrequency' || name === 'parHueShuffleEvery') return steps(at);
+    if (name === 'lfoRate' || name === 'fanFrequency') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
   }
@@ -406,6 +416,6 @@
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
     SHAPE, LFO, MODULATORS, OUTPUTS, ROUTES, PLACES, cardNames,
-    routable, routableDestination, isCircular, swings, pointsFor,
+    routable, routableDestination, arpCapable, isCircular, swings, pointsFor,
   };
 })(window);

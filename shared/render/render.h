@@ -89,7 +89,6 @@ struct Frame {
   float bend[BEND_POINTS];
   float lfo;
   float stripLfo[STRIPS];
-  float parLfo[PARS];
 };
 
 void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,

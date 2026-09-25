@@ -39,11 +39,11 @@ enum AuroraCC : uint8_t {
     CC_PAR_HUE_OFFSET        = 24, // [patch][circular][plain]
     CC_PAR_SATURATION        = 25, // [patch][plain]
     CC_PAR_VALUE             = 26, // [patch][plain]
-    CC_PAR_HUE_SPREAD        = 27, // [patch][plain]
-    CC_PAR_HUE_SHUFFLE       = 28, // [patch][plain]
-    CC_PAR_HUE_SHUFFLE_EVERY = 29, // [patch]
-    CC_PAR_LFO_SPREAD        = 30, // [patch][plain]
-    CC_PAR_LFO_SHUFFLE       = 31, // [patch][plain]
+    CC_PAR_HUE_RANGE         = 27, // [patch][plain]
+    CC_PAR_HUE_SOURCE        = 28, // [switch]
+
+    CC_ARP_MODE              = 29, // [switch]
+    CC_ARP_REVERSE           = 30, // [switch]
 
     CC_TEMPO_DIVISION        = 33, // [switch]
     CC_LFO_RATE              = 34, // [patch]
@@ -109,9 +109,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_VALUE,                  127 },
     { CC_PAR_SATURATION,         127 },
     { CC_PAR_VALUE,              127 },
-    { CC_PAR_HUE_SPREAD,          64 },
-    { CC_PAR_HUE_SHUFFLE_EVERY,   42 },
-    { CC_PAR_LFO_SPREAD,          64 },
+    { CC_PAR_HUE_RANGE,           64 },
     { CC_LFO_RATE,                64 },
     { CC_SHAPE_WIDTH,             40 },
     { CC_SHAPE_EDGE,              18 },
@@ -175,6 +173,57 @@ static inline uint8_t aurora_route_ratio(uint8_t value) {
     const uint8_t last = AURORA_ROUTE_MAX_RATIO - 1;
     const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
     return (uint8_t)(1 + (step > last ? last : step));
+}
+
+enum AuroraArp : uint8_t {
+    ARP_OFF    = 0,
+    ARP_TURNS  = 1,
+    ARP_RIPPLE = 2,
+};
+
+static const uint8_t AURORA_ARP_DESTINATION_BASE = 120;
+
+static const uint8_t AURORA_ARP_CONTROLS[] = {
+    CC_PAR_HUE_OFFSET, CC_PAR_SATURATION, CC_PAR_VALUE,
+};
+static const uint8_t AURORA_ARP_CONTROL_COUNT =
+    sizeof(AURORA_ARP_CONTROLS) / sizeof(AURORA_ARP_CONTROLS[0]);
+
+static inline uint8_t aurora_route_arp(uint8_t destination) {
+    if (destination < AURORA_ARP_DESTINATION_BASE) return ARP_OFF;
+    return (uint8_t)(ARP_TURNS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
+}
+
+static inline uint8_t aurora_route_target(uint8_t destination) {
+    if (destination < AURORA_ARP_DESTINATION_BASE) return destination;
+    const uint8_t index = (uint8_t)((destination - AURORA_ARP_DESTINATION_BASE) / 2);
+    return index < AURORA_ARP_CONTROL_COUNT ? AURORA_ARP_CONTROLS[index] : 0;
+}
+
+static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp) {
+    if (arp == ARP_OFF) return target;
+    for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
+        if (AURORA_ARP_CONTROLS[index] != target) continue;
+        return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_TURNS));
+    }
+    return target;
+}
+
+enum AuroraArpMode : uint8_t {
+    ARP_MODE_TOGETHER   = 0,
+    ARP_MODE_SEQUENCE   = 1,
+    ARP_MODE_BOUNCE     = 2,
+    ARP_MODE_EVENS_ODDS = 3,
+    ARP_MODE_PAIRS      = 4,
+    ARP_MODE_MIRROR     = 5,
+    ARP_MODE_RANDOM     = 6,
+    ARP_MODES           = 7,
+};
+
+static inline uint8_t aurora_arp_mode(uint8_t value) {
+    const uint8_t last = ARP_MODES - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return step > last ? last : step;
 }
 
 enum AuroraTempoDivision : uint8_t {
@@ -299,6 +348,6 @@ static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_PARTS * AURORA_PATCH_CC_COUNT;
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 12
+#define AURORA_PROTOCOL_VERSION_MINOR 13
 
 #endif

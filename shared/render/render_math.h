@@ -17,6 +17,20 @@ inline uint8_t hash8(uint32_t a, uint32_t b, uint32_t c) {
   return (uint8_t)h;
 }
 
+inline uint32_t hash32(uint32_t a, uint32_t b, uint32_t c) {
+  uint32_t h = a * 0x9E3779B1u + b * 0x85EBCA77u + c * 0xC2B2AE3Du;
+  h ^= h >> 16;
+  h *= 0x85EBCA6Bu;
+  h ^= h >> 13;
+  h *= 0xC2B2AE35u;
+  h ^= h >> 16;
+  return h;
+}
+
+inline float unitHash(uint32_t a, uint32_t b, uint32_t c) {
+  return ((float)(hash32(a, b, c) >> 8) + 0.5f) / 16777216.0f;
+}
+
 inline float clampUnit(float x) { return (x < 0.0f) ? 0.0f : (x > 1.0f ? 1.0f : x); }
 
 inline float bumpAt(float offset, float width, float edge) {

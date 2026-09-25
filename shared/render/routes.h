@@ -20,9 +20,13 @@ uint8_t routedForDisplay(const uint8_t *dialed, const Pushes *pushes, uint8_t cc
 
 bool routeRefused(uint8_t cc);
 
+uint8_t routeTarget(const uint8_t *dialed, uint8_t route);
+
 bool routeAims(const uint8_t *dialed, uint8_t cc);
 
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high);
+
+float waveRise(uint8_t wave);
 
 float lfoWave(float phase, uint8_t wave);
 

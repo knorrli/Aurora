@@ -191,7 +191,12 @@
   }
 
   const routesOn = (name, live) =>
-    Patch.ROUTES.filter(route => live[route.destination] === Patch.CC[name]);
+    Patch.ROUTES.filter(route => Protocol.routeTarget(live[route.destination]) === Patch.CC[name]);
+
+  function setRouteArp(route, arp) {
+    const target = Protocol.routeTarget(editing().base[Patch.CC[route.destination]] | 0);
+    setValue(route.destination, Protocol.routeDestination(target, arp));
+  }
   const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
 
   function freeRoute(route) {
@@ -247,7 +252,7 @@
     restPosition, mixing, transitionDestination, transitioning, previewing,
     liveNamed, targetNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    freeRoute, addRoute, select, selectPart, resetPreview, forgetMissingPatches,
+    freeRoute, addRoute, setRouteArp, select, selectPart, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });
