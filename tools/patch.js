@@ -307,7 +307,7 @@
           C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
           C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
           C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),
-          C('genFan', 'Position', 'how far apart the five strips stand in their cells'),
+          C('genFan', 'Spread', 'how far apart the five strips stand in their cells'),
           C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
           C('genFanLfo', 'LFO', 'how far apart they stand in the LFO\u2019s cycle'),
         ]),

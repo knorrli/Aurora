@@ -61,6 +61,8 @@ struct Path {
   // different quantity: a flip of bounce stands the core where it was, but in
   // another cell's count.
   float lift;
+  // Where Position and the fan last placed the core, to tell a jump from travel.
+  float lastPlacement;
 };
 
 struct Paths {

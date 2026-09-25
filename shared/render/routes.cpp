@@ -218,9 +218,11 @@ static int16_t landing(uint8_t cc, uint8_t base, float amount) {
   else if (amount < -1.0f) amount = -1.0f;
 
   if (circular(cc)) {
-    // Half the wheel at a full amount. Whether that span suits every circular
-    // control is not settled.
-    return (int16_t)base + (int16_t)lroundf(amount * 64.0f);
+    // Half the wheel at a full amount, which on hue is the opposite color.
+    // Position gets the whole cell, so a swipe from near the bottom can reach
+    // the top before it snaps back.
+    const float span = (cc == CC_GEN_POSITION) ? 128.0f : 64.0f;
+    return (int16_t)base + (int16_t)lroundf(amount * span);
   }
 
   const float limit = (amount >= 0.0f) ? 127.0f : 0.0f;

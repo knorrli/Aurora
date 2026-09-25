@@ -56,7 +56,7 @@ That is the whole thing. Everything below is a parameter of it.
 | 60 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
 | 68 | Bend | Travel slowed and sped by where a shape is. See "Bend: speed set by where a shape is on the strip" | bipolar, up to 39:1 |
 | 69 | Bend at | Where the bend peaks along the strip, or each cell while bouncing | bottom → top |
-| 64 | Fan · Position | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
+| 64 | Fan · Spread | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
 | 66 | Fan · LFO | How far apart they stand in the LFO's cycle | bipolar, ±100 % of a cycle |
 | 65 | Fan · Rate | How far apart their speeds stand, either side of Speed | bipolar, ±60 px/beat |
 | 61 | Fan · Frequency | All five alike → every strip opposite its neighbors | 0 – ½ cycle per strip |
@@ -173,7 +173,9 @@ stab over a big swell would flatten the swell.
 
 **Controls that wrap take a rotation instead**, because a wheel has no limit
 to travel toward — hue, the wash hue offset, the pattern's standing position
-and the fan's phase, all tagged `[circular]`. Half the wheel at a full amount.
+and the fan's phase, all tagged `[circular]`. Half the wheel at a full amount,
+except Position, which takes a whole cell: a build wave on it swipes a shape
+up from near the bottom and snaps it back on the beat.
 The hue *amounts* are not among them: their two ends are opposite extremes,
 not the same color.
 
@@ -712,6 +714,13 @@ slot, and the brain on the generator's program change,
 which a patch sends after its controls — see the note on Program Change in
 `shared/aurora_protocol.h`.
 
+**A jump leaves no glow.** Travel builds up from rates and cannot jump; where
+Position and the fan place the core can, under a fader or a route with a hard
+edge. Moving that placement more than a quarter cell in one frame starts the
+tail again from where the core landed, and a whole-cell change is a circular
+control wrapping to the same place, carried across. Found on a build wave on
+Position, whose snap back painted the whole strip for a beat.
+
 **The editor copies Motion between walls, never Paths.** The small walls
 take the big wall's phases each frame so all three show one instant; a
 copied path would draw the big wall's tail behind a small wall's shape.
@@ -1164,9 +1173,7 @@ nearly free and the question shrinks to what 4 and 5 need.
    hue swing is three strong things at once. Whether that wants narrower
    ranges or just practice is a judgment nobody has made with music
    playing. The test is a set, not a bench.
-6. **Whether the roster survives at all**, or becomes a set of named
-   points in this space. Nothing forces the choice yet.
-7. **A second placed field was designed for and not built.** Both rulers
+6. **A second placed field was designed for and not built.** Both rulers
    at once — a strip painted with a gradient *and* shapes crossing it
    carrying their own — was agreed as the thing to leave until wanted,
    on the argument that the first one would be written so the second cost
@@ -1177,7 +1184,7 @@ nearly free and the question shrinks to what 4 and 5 need.
    takes it as an argument. A second field is a second instance and a
    second block of CCs; what is still unanswered is what the two sum to,
    since two fields pushing the same three qualities can cancel.
-8. **Five of the six white and dark controls read the fader as bipolar,
+7. **Five of the six white and dark controls read the fader as bipolar,
    and the sign buys something different in each of the three sources.**
    Placed, wander and light level each push whiteness and darkness, two
    controls apiece. Only Lit White is read as a plain 0–1 amount; the

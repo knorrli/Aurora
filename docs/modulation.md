@@ -282,9 +282,9 @@ control is parked.
 **The exception: circular controls.** Hue is a wheel. 0 and 127 are the
 same red, sitting next to each other, so there is no limit to travel
 toward and the rule above has nothing to compute. For these the amount is
-a rotation instead — how far around, and which way. The LFO's hue send
-uses half the wheel at full amount (`GEN_PULSE_MAX_HUE`); whether that
-span suits every circular control is not settled.
+a rotation instead — how far around, and which way. A full amount is half
+the wheel, which on hue is the opposite color, except on Position, where it
+is a whole cell so a swipe can cross the strip.
 
 **Which controls are circular is a per-control fact**, and it belongs next
 to the CC where the `[patch]` and `[switch]` tags already live, never in a

@@ -71,6 +71,14 @@ static const float GEN_POSITION_SETTLE_BEATS = 2.0f;
 // is not known, and joining its two ends would draw a streak.
 static const float GEN_PATH_GAP_BEATS = 0.5f;
 
+// Travel accumulates from rates and cannot jump; what can is where Position
+// and the fan place the core, moved by a fader or a route with a hard edge.
+// Faster than this in one frame is a jump rather than a movement, and a jump
+// leaves no glow across the span it skipped: the tail starts again from where
+// the core landed. A whole cell is not a jump at all but a circular control
+// wrapping, the same place, and the record is lifted across it.
+static const float GEN_JUMP_CELLS = 0.25f;
+
 // How finely a cell's journey is divided to remember when the core last
 // covered each point of it. At one shape a strip this is a bin every fifth of
 // a pixel, finer than the four samples a pixel is read at.
@@ -1131,8 +1139,17 @@ void renderGenerator(const uint8_t *dialed, float quarterNotes, Motion &motion, 
     else if (bouncing != motion.lastBouncing) {
       path.lift += roundf(path.lastCells - (pathCells + path.lift));
     }
+    const float placement = (bouncing ? 0.0f : s.positionCells) + stripOffset;
+    bool jumped = false;
+    if (!freshPaths) {
+      const float moved = placement - path.lastPlacement;
+      const float wraps = bouncing ? 0.0f : roundf(moved);
+      path.lift -= wraps;
+      jumped = fabsf(moved - wraps) > GEN_JUMP_CELLS;
+    }
+    path.lastPlacement = placement;
     pathCells += path.lift;
-    recordPath(path, paths, freshPaths, step, beats, pathCells);
+    recordPath(path, paths, freshPaths || jumped, step, beats, pathCells);
 
     const float width = s.width;
     const float halfWidth = width * 0.5f;
