@@ -1351,8 +1351,8 @@
 
   // The overlay goes on the big wall only. On a small one the five dots land
   // within a few pixels of each other and report nothing.
-  function drawOne(wall, named, beats) {
-    const frame = V.render(L.setFromNamed(sounding(named)), beats, wall.motion, wall.paths);
+  function drawOne(wall, named, quarterNotes) {
+    const frame = V.render(L.setFromNamed(sounding(named)), quarterNotes, wall.motion, wall.paths);
     V.draw(wall.ctx, wall.glow, frame, order(), flipped, wall.w, wall.h,
            showFan && wall === walls.main);
   }
@@ -1372,15 +1372,15 @@
   // still: you see that difference by running the audition, which is what it
   // is for.
   function frame() {
-    const beats = ((performance.now() - startedAt) / 60000) * bpm();
-    drawOne(walls.main, liveNamed(), beats);
+    const quarterNotes = ((performance.now() - startedAt) / 60000) * bpm();
+    drawOne(walls.main, liveNamed(), quarterNotes);
     paintTracks();
     if (isFarEnd()) {
       V.copyMotion(walls.base.motion, walls.main.motion);
       V.copyMotion(walls.far.motion, walls.main.motion);
-      drawOne(walls.base, L.namedFromSet(baseSet()), beats);
+      drawOne(walls.base, L.namedFromSet(baseSet()), quarterNotes);
       drawOne(walls.far, L.blend(baseSet(), L.materialize(patch(), setIndex), 1, switchSource()),
-              beats);
+              quarterNotes);
     }
     requestAnimationFrame(frame);
   }

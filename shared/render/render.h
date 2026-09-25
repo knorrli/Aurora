@@ -112,7 +112,10 @@ struct Frame {
   float stripLfo[STRIPS];
 };
 
-void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &paths,
+// Quarter notes are the song's position as the clock counts it. Tempo division
+// (CC 2) is applied here rather than by the caller, so the brain and the
+// editor's preview cannot disagree about what a beat is.
+void renderGenerator(const uint8_t *dialed, float quarterNotes, Motion &motion, Paths &paths,
                      Frame &out);
 
 // A control's byte as the renderer uses it: pixels a beat, shapes, beats a

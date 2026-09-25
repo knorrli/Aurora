@@ -25,18 +25,14 @@ void begin();
 // frame sees the same position.
 void tick();
 
-// Monotonic musical position in animation beats, fractional.
-float beats();
-
-// Where we are within a repeating cycle of `lengthInBeats`, 0..1.
-float cyclePosition(float lengthInBeats);
+// Monotonic musical position in quarter notes, fractional, whatever the
+// tempo division.
+float quarterNotes();
 
 // True for the one frame on which a new animation beat began.
 bool pulsed();
 
 float bpm();
-uint32_t beatLengthMs();
-uint16_t ticksPerAnimationBeat();
 bool running();
 
 // --- Notifications from midi_in ---------------------------------------------

@@ -9,9 +9,8 @@ static render::Motion motion;
 static render::Paths paths;
 static render::Frame frame;
 
-void Generator(CHSV color) {
-  (void)color;
-  render::renderGenerator(destinations::all(), tempo::beats(), motion, paths, frame);
+void Generator() {
+  render::renderGenerator(destinations::all(), tempo::quarterNotes(), motion, paths, frame);
   showRendered(frame.pixels);
 }
 

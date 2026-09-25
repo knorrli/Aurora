@@ -116,7 +116,7 @@ Why, over a true MIDI THRU merge:
 - One clock source arriving at the brain, always, which makes debugging
   tractable.
 
-## Tempo division: the clock stays honest, the brain divides
+## Tempo division: the clock stays honest, the renderer divides
 
 The controller carries a rotary for subdivisions — half time, triplets,
 sixteenths. The tempting implementation is to emit clock at the divided
@@ -126,7 +126,17 @@ the lie.
 
 So the controller always emits true 24 PPQN and reports the rotary
 position separately on `CC_TEMPO_DIVISION`. The brain counts ticks and
-fires its pulse every N of them.
+hands the generator its position in quarter notes; the shared renderer
+applies the division itself, so the editor's preview, which counts
+quarter notes from its own BPM, shows exactly what the wall does. The
+brain's own tempo pulse — the onboard LED, and the beat a Program Change
+waits for — still divides in `brain/src/tempo.cpp`.
+
+A division change recomputes the position rather than carrying it
+forward, so every shape jumps at the moment it changes. On a cut to
+another patch that is lost in the cut; at the end of a morph between
+patches of different divisions it would show. It keeps the LFO on the
+bar.
 
 `TEMPO_DIV_QUARTER` is numbered 0 deliberately, so a controller that has
 not sent the CC yet lands on ordinary one-pulse-per-beat rather than
@@ -257,13 +267,10 @@ code either way. The live rig uses DIN.
 
 Raised 2026-09-24, recorded rather than acted on.
 
-`P_Fills.cpp`, `P_Movements.cpp`, `P_Strobes.cpp` and `IR_Preset.cpp` are
-the nine-preset roster, `PRESET_*` 0–9. The generator is
-`PRESET_GENERATOR = 10` — one preset among eleven, standing beside the
-thing it is meant to replace. The setter-per-CC pattern, where a control
-is converted to internal units the moment its CC arrives, fits "a knob
-changes a variable", which is what v1 was. `presetColor` as a global read
-by both the strips and the washes is the same inheritance.
+The nine hand-written patterns were removed 2026-09-25, and with them
+`presetColor` and the fader alt-mode. What is left of v1's shape is the
+preset switch in `brain/src/IR_Preset.cpp` choosing between blackout, the
+generator and strip order, and the globals in `brain/src/Aurora.h`.
 
 None of that is wrong, and none of it was chosen for what Aurora is
 becoming. The rule this records is only that the current shape is not an

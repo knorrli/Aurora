@@ -1,9 +1,5 @@
 #include "Aurora.h"
 
-CHSV randomColor() {
-  return CHSV(random8(), 255, 255);
-}
-
 void renderTempo() {
   digitalWrite(PIN_TEMPO_LED, (currentMillis - lastGateMillis) < TEMPO_LED_PULSE_MS);
 }
@@ -22,10 +18,6 @@ void showBootIndicatorReady() {
     delay(200);
   }
   FastLED.clear(true);
-}
-
-uint8_t mirroredStrip(uint8_t stripIndex) {
-  return (NUMBER_OF_STRIPS - 1) - stripIndex;
 }
 
 void showRendered(const render::Rgb *rendered) {

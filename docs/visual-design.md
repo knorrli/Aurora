@@ -10,13 +10,13 @@ settled part.
 
 ---
 
-> **The roster may not stay the unit of choice.** An experiment on
-> 2026-09-18 reached most of these looks, and everything between them,
-> from one parametric generator — see `docs/generator.md`. Nothing is
-> decided, and every pattern below still exists and still runs. But the
-> nine slots are no longer the only way to get at this material, and the
-> pattern pairs below turned out to be evidence for the generator rather
-> than a fact about how patterns have to be organized.
+> **The roster is a brief, not code.** The parametric generator reaches
+> most of these looks and everything between them — see
+> `docs/generator.md` — and the nine hand-written patterns were removed
+> from the brain on 2026-09-25, recoverable at
+> `git show 820cf19:brain/src/`. What follows is what the looks were and
+> what was learned from them, kept as the target the generator's patches
+> are dialed against.
 
 ## The pattern roster
 

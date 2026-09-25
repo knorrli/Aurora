@@ -983,8 +983,10 @@ void renderStripOrder(Rgb *pixels) {
   }
 }
 
-void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Paths &paths,
+void renderGenerator(const uint8_t *dialed, float quarterNotes, Motion &motion, Paths &paths,
                      Frame &out) {
+  const float beats = quarterNotes * (float)AURORA_TICKS_PER_BEAT
+                    / (float)aurora_ticks_per_gate(dialed[CC_TEMPO_DIVISION]);
   for (uint16_t i = 0; i < STRIPS * PIXELS; i++) out.pixels[i] = { 0, 0, 0 };
 
   // Read three times. The first has no pushes in it, which is what the LFO's

@@ -10,15 +10,10 @@
 bool tempoGate = LOW;
 unsigned long currentMillis = 0;
 unsigned long lastGateMillis = 0;
-unsigned long currentTempo = 500;
 unsigned long elapsedLoopTime = 0;
 
 // STATE
-uint8_t brightness = MAX_BRIGHTNESS;
 uint8_t currentPreset = 0;
-CHSV presetColor = CHSV(0, 0, 0);
-bool faderAltModeEnabled = false;
-bool presetAltModeEnabled = false;
 
 // LED FRAMEBUFFER
 CRGBArray<NUM_PIXELS_TOTAL> pixels;
@@ -37,7 +32,7 @@ void setup()
     strip[stripIndex] = pixels + (stripIndex * PIXELS_PER_STRIP);
   }
 
-  FastLED.setBrightness(brightness);
+  FastLED.setBrightness(MAX_BRIGHTNESS);
   FastLED.addLeds<NEOPIXEL, PIN_LED_OUTPUT>(pixels, NUM_PIXELS_TOTAL);
 
   destinations::begin();
@@ -56,7 +51,6 @@ void loop()
 
   currentMillis = millis();
   tempoGate = tempo::pulsed();
-  currentTempo = tempo::beatLengthMs();
   if (tempoGate) lastGateMillis = currentMillis;
 
   perform();
@@ -71,13 +65,7 @@ void loop()
 
 void perform()
 {
-  setCurrentColor();
-
-  if (tempoGate && (currentPreset != selectedPreset))
-  {
-    previousPreset = currentPreset;
-    currentPreset = selectedPreset;
-  }
+  if (tempoGate) currentPreset = selectedPreset;
 }
 
 void renderFrame()
@@ -105,10 +93,8 @@ void reportState()
 {
   if (!tempoGate) return;
 
-  Serial.printf("pulse  %.1f BPM  %u tk/beat  beat %.2f  preset %u%s  hsv %u/%u/%u  frame %lu ms%s\n",
-                tempo::bpm(), tempo::ticksPerAnimationBeat(), tempo::beats(),
-                currentPreset, presetAltModeEnabled ? " alt" : "",
-                presetColor.hue, presetColor.saturation, presetColor.value,
+  Serial.printf("pulse  %.1f BPM  quarter %.2f  preset %u  frame %lu ms%s\n",
+                tempo::bpm(), tempo::quarterNotes(), currentPreset,
                 elapsedLoopTime, tempo::running() ? "" : "  [stopped]");
   const uint8_t *dmx = dmx_out::lastValues();
   Serial.printf("       dmx dim %u  rgbw %u/%u/%u/%u\n",

@@ -56,41 +56,27 @@ static const uint8_t AURORA_MIDI_CHANNEL = 1;
 // ---------------------------------------------------------------------------
 //
 // Layout:
-//      0 –   9 : preset select (0 = off, 1–9 = preset slots)
-//           10 : the parametric generator (experiment; see shared/render/generator.cpp)
+//            0 : blackout
+//           10 : the generator — every patch; see shared/render/generator.cpp
 //           11 : strip-order rigging aid
-//     12 – 127 : RESERVED
+//     everything else : ignored
 //
 // ---------------------------------------------------------------------------
 
 enum AuroraPreset : uint8_t {
     PRESET_OFF               = 0,
-    // Row 1 — ambient
-    PRESET_FILL_OR_STARFIELD = 1,
-    PRESET_BREATHE_OR_WAVE   = 2,
-    PRESET_PLASMA_OR_AURORA  = 3,
-    // Row 2 — groove
-    PRESET_PULSE_OR_BARS     = 4,
-    PRESET_SWEEP_OR_CROSS    = 5,
-    PRESET_RAIN_OR_STORM     = 6,
-    // Row 3 — intensity
-    PRESET_STRIP_OR_COMET    = 7,
-    PRESET_STROBE_OR_STUTTER = 8,
-    PRESET_CHAOS_OR_GLITCH   = 9,
-    // One pattern whose shape comes entirely from CC 54–70 rather than
-    // from a hand-written renderer. Under evaluation; it does not replace
-    // any slot above.
     PRESET_GENERATOR         = 10,
     // Rigging aid rather than a look: each strip a flat hue, so the order of
     // the data chain can be read off the wall while the strips are being hung.
     PRESET_STRIP_ORDER       = 11,
-    // 12–63 reserved
 };
 
 
 // Helpers
 
-static inline bool aurora_pc_is_preset(uint8_t pc)  { return pc <= PRESET_STRIP_ORDER; }
+static inline bool aurora_pc_is_preset(uint8_t pc) {
+    return pc == PRESET_OFF || pc == PRESET_GENERATOR || pc == PRESET_STRIP_ORDER;
+}
 
 // ---------------------------------------------------------------------------
 // Control Change — continuous parameters

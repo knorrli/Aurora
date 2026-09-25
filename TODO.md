@@ -22,8 +22,6 @@ Everything lives on **`main`**. The last v1 commit is tagged
   transport, tempo division, free-run on clock loss.
 - **DMX out working** end to end. Two PARs addressed at `A001` and
   `A009`, 2026-09-21.
-- **The nine hand-written patterns and all nine variants** render, on
-  PC 1–9. See `docs/visual-design.md`.
 - **The parametric generator** on PC 10, with the redesigned color layer
   in the firmware as of 2026-09-21. See `docs/generator.md`.
 - **The LFO's destinations**, 2026-09-22. One oscillator with one rate
@@ -238,6 +236,11 @@ live from the editor.
       and stop again, all five together. A tail follows the swing, so a
       shape swung backwards leaves its glow behind it rather than running
       tail-first. See `docs/modulation.md` § "A rate swings both ways".
+- [ ] **Morph between two patches of different tempo divisions.** Every
+      shape jumps when the division lands at the end of the morph. Judge
+      whether it reads as a glitch; if it does, carry the position across
+      in `renderGenerator` the way a tracker carries a rate change. See
+      `docs/architecture.md` § "Tempo division".
 - [ ] **Judge the afterglow.** The *Swing* looks, from
       `git show 21a435c:tools/patch.js`, § starting points: a tail should
       stay behind its shape through the swing, shrink as it slows and be

@@ -1,5 +1,7 @@
 #include "Aurora.h"
 
+#include "destinations.h"
+
 #define TRIGGER_DEBOUNCE_DELAY 300
 #define TRIGGER_EFFECT_DURATION 700
 #define TRIGGER_BLACKPHASE 200
@@ -22,7 +24,7 @@ static void readTrigger()
   if (currentMillis - lastTriggerMillis <= TRIGGER_DEBOUNCE_DELAY) return;
 
   lastTriggerMillis = currentMillis;
-  triggerLedColor = CHSV(presetColor.hue, 0, 255);
+  triggerLedColor = CHSV(render::colorFrom(destinations::all(), nullptr).h, 0, 255);
 }
 
 void renderTrigger()

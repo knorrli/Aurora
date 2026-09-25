@@ -3,8 +3,9 @@
 An experiment that worked. Started 2026-09-18 as a bench test and came out
 of it as a candidate foundation rather than a feature.
 
-It is not committed to yet, and it replaces nothing: the nine hand-written
-patterns still sit on PC 1–9, untouched. The generator is PC 10.
+Every patch runs it, on PC 10. The nine hand-written patterns it grew out of
+were removed from the brain on 2026-09-25; their code is at
+`git show 820cf19:brain/src/`, and v1's at the tag `aurora-nano-final`.
 
 ---
 
@@ -292,8 +293,8 @@ staggered bars could never strobe in unison. They are three amounts on one
 wave now. See § "The fan is a wave".
 
 **Plasma and Aurora are not in here and should not be.** They are a color
-field rather than a moving shape, so they are either a second generator or
-they stay hand-written. Either is fine.
+field rather than a moving shape, so they would come back as a second
+generator.
 
 ## What the bench proved, 2026-09-18
 

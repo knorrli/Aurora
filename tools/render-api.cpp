@@ -43,8 +43,8 @@ EMSCRIPTEN_KEEPALIVE render::Paths *aurora_paths_new() { return new render::Path
 
 EMSCRIPTEN_KEEPALIVE void aurora_paths_clear(render::Paths *paths) { render::clearPaths(*paths); }
 
-EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Paths *paths, float beats) {
-  render::renderGenerator(controls, beats, *motion, *paths, frame);
+EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Paths *paths, float quarterNotes) {
+  render::renderGenerator(controls, quarterNotes, *motion, *paths, frame);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount(); }

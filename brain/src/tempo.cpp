@@ -117,19 +117,12 @@ void setDivision(uint8_t division) {
     ticksPerPulse = aurora_ticks_per_gate(division);
 }
 
-float beats() {
-    return positionTicks / (float)ticksPerPulse;
-}
-
-float cyclePosition(float lengthInBeats) {
-    if (lengthInBeats <= 0.0f) return 0.0f;
-    return fmodf(beats(), lengthInBeats) / lengthInBeats;
+float quarterNotes() {
+    return positionTicks / (float)AURORA_TICKS_PER_BEAT;
 }
 
 bool pulsed() { return pulsedThisFrame; }
 float bpm() { return 60000000.0f / (float)(usPerTick * AURORA_TICKS_PER_BEAT); }
-uint32_t beatLengthMs() { return (uint32_t)usPerTick * ticksPerPulse / 1000; }
-uint16_t ticksPerAnimationBeat() { return ticksPerPulse; }
 bool running() { return isRunning; }
 
 } // namespace tempo

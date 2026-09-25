@@ -86,9 +86,9 @@
         return at ? [m.HEAPF32[at >> 2], m.HEAPF32[(at >> 2) + 1]] : null;
       },
 
-      render(bytes, beats, motion, paths) {
+      render(bytes, quarterNotes, motion, paths) {
         m.HEAPU8.set(bytes, controls);
-        m._aurora_render(motion, paths, beats);
+        m._aurora_render(motion, paths, quarterNotes);
         return { pixels, par: seenWash(), fan: readFan(), bend: Array.from(bend) };
       },
       draw,
