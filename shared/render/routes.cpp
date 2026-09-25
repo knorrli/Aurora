@@ -90,13 +90,16 @@ static bool circular(uint8_t cc) {
 // The fan's own controls shape the strips' shifted reading of the clock, so a
 // route aimed at one while reading that would need its own phase to compute
 // what sets its own phase. Count sets the cell geometry and is read before the
-// strip loop opens. The washes have no strip to be offset from.
+// strip loop opens, and so is the bend. The washes have no strip to be offset
+// from.
 static bool plainClock(uint8_t cc) {
   switch (cc) {
     case CC_WASH_LEVEL:
     case CC_WASH_HUE_OFFSET:
     case CC_WASH_SATURATION:
     case CC_GEN_COUNT:
+    case CC_GEN_BEND:
+    case CC_GEN_BEND_AT:
     case CC_GEN_FAN:
     case CC_GEN_FAN_FREQ:
     case CC_GEN_FAN_PHASE:

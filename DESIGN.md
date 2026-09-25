@@ -378,9 +378,9 @@ does something unexpected is not.
 
 **Motion needs a real toolkit or it collapses into the other two.** Speed,
 pulse rate and pulse shape are the obvious material, and fan spread is
-already in the generator. A travel *easing* — linear through to slow at
-the ends and fast through the middle, so a shape reads as a bouncing ball
-— does not exist and would have to be built.
+already in the generator, and so, since 2026-09-25, is a travel easing —
+Bend, slowing and speeding a shape by where it is on the strip. See
+`docs/generator.md` § "Bend: speed set by where a shape is on the strip".
 
 **Where the scatter belongs is unsettled, and it is a settle-by-looking
 question.** Scattering a clean strobe into a chaotic one could be a lift

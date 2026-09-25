@@ -103,12 +103,13 @@ That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ## The budget
 
-Aurora needs **103 numbers**: 63 controls and eight routes of five bytes.
-There are 114 safe ones, so the map spends them all but eleven.
+Aurora needs **105 numbers**: 65 controls and eight routes of five bytes.
+There are 114 safe ones, so the map spends them all but nine.
 
-**The eleven are 3–6, 8, 9, 30, 31 and 68–70.** Only the generator's three
-are in a block anything is waiting to grow into: a curve on a rate or a bend
-of a ruler, each costed in `docs/modulation.md` at one or two numbers apiece.
+**The nine are 3–6, 8, 9, 30, 31 and 70.** Only the generator's one is in a
+block anything is waiting to grow into, and the tail's three-way switch in
+`TODO.md` is the claim on it. After that, the next generator control means a
+regroup.
 
 **The scatter's lifetime fork no longer fits.** Spots with a birth and a
 death, which is what raindrops and shooting stars need, is priced in
@@ -131,7 +132,7 @@ channel is free for the taking but nothing is built to tell them apart.
 | 12–26 | 15 | The controller | 15 | 0 |
 | 27–31 | 5 | Washes / DMX | 3 | 2 |
 | 33–52 | 20 | Color | 20 | 0 |
-| 53–70 | 18 | Generator — shape, fan, the one clock | 15 | 3 |
+| 53–70 | 18 | Generator — shape, fan, the one clock, the bend | 17 | 1 |
 | 71–79 | 9 | Scatter / texture | 9 | 0 |
 | 80–119 | 40 | Modulation routes | 40 | 0 |
 
@@ -147,7 +148,7 @@ counted in `docs/controls.md`.
 
 ## The map
 
-Every number, assigned. 103 spoken for, 11 spare.
+Every number, assigned. 105 spoken for, 9 spare.
 
 ### 2–9 · Transport / meta
 
@@ -235,8 +236,10 @@ No spare.
 | **65** | `GEN_FAN_RATE` | [patch][rate][plain] | bipolar; how far apart their speeds stand |
 | **66** | `GEN_FAN_PULSE` | [patch][plain] | bipolar; how far apart they stand in the swell |
 | **67** | `GEN_PULSE_RATE` | [patch] | stepped; beats per swell. The one clock, and no route may aim at it |
+| **68** | `GEN_BEND` | [patch][plain] | bipolar; travel slowed and sped by where a shape is |
+| **69** | `GEN_BEND_AT` | [patch][plain] | where the bend peaks, bottom to top |
 
-Spare: 68, 69, 70.
+Spare: 70.
 
 ### 71–79 · Scatter / texture
 

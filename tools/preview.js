@@ -9,8 +9,8 @@
 // Which physical end pixel 0 sits at, and the left-to-right order of the
 // five strips, are rigging facts the firmware never states. PC 11 settles
 // the order: it paints each strip one flat color, and that order is
-// recorded in WALL_STRIP_ORDER below. It cannot settle which end pixel 0
-// is — a flat color has no end to tell apart — so that stays a control.
+// recorded in WALL_STRIP_ORDER below. Pixel 0 is at the bottom — see
+// docs/wiring.md — and the flip stays only as a check.
 
 (function (global) {
   'use strict';
@@ -35,6 +35,8 @@
     const wash = m._aurora_wash();
     const fan = m.HEAPF32.subarray(m._aurora_fan() >> 2,
                                    (m._aurora_fan() >> 2) + STRIPS + CURVE_POINTS + 6);
+    const bend = m.HEAPF32.subarray(m._aurora_bend() >> 2,
+                                    (m._aurora_bend() >> 2) + m._aurora_bend_points());
     const DARK = [0, 0, 0];
 
     // The fixture dims in its own hardware, so this is how the eye sees the
@@ -82,7 +84,7 @@
       render(bytes, beats, motion) {
         m.HEAPU8.set(bytes, controls);
         m._aurora_render(motion, beats);
-        return { pixels, par: seenWash(), fan: readFan() };
+        return { pixels, par: seenWash(), fan: readFan(), bend: Array.from(bend) };
       },
       renderStripOrder() {
         m._aurora_render_strip_order();
@@ -157,6 +159,7 @@
     ctx.stroke();
 
     if (showFan && frame.fan) drawFan(ctx, frame.fan, order, flipped, columnW, WALL_TOP, WALL_H);
+    if (showFan && frame.bend) drawBend(ctx, frame.bend, flipped, columnW, WALL_TOP, WALL_H);
   }
 
   // Drawn against the wall's own left-to-right order, so it reads the way the
@@ -238,6 +241,48 @@
     if (fan.scrambled > 0.005) {
       ctx.fillText(Math.round(fan.scrambled * 100) + '% scrambled', 8, WALL_TOP + 36);
     }
+    ctx.restore();
+  }
+
+  // How fast travel runs at each height, drawn up the right-hand margin
+  // against the strips it applies to: right is faster, left slower. The
+  // curve is a cosine lifted so a trip keeps its length, so it is drawn about
+  // its own middle, and at a fixed scale: its width is how much it bends, and
+  // no bend is a straight line.
+  function drawBend(ctx, bend, flipped, columnW, WALL_TOP, WALL_H) {
+    const { STRIPS, PIXELS } = api;
+    const axis = columnW * (STRIPS + 0.5);
+    const reach = columnW * 0.4;
+    const low = Math.min(...bend), high = Math.max(...bend);
+    const middle = (low + high) / 2;
+    const yAt = i => WALL_TOP + (flipped ? i : PIXELS - i) * WALL_H / PIXELS;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(axis, yAt(0));
+    ctx.lineTo(axis, yAt(PIXELS));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = 'rgba(232,168,90,0.8)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    bend.forEach((v, i) => {
+      const x = axis + (v - middle) / middle * reach;
+      if (i === 0) ctx.moveTo(x, yAt(i)); else ctx.lineTo(x, yAt(i));
+    });
+    ctx.stroke();
+
+    if (high - low < 0.01) {
+      ctx.restore();
+      return;
+    }
+    ctx.fillStyle = 'rgba(232,168,90,0.8)';
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`travel ×${low.toFixed(low < 1 ? 2 : 1)}–${high.toFixed(1)}`, columnW * (STRIPS + 1) - 6, WALL_TOP + 12);
     ctx.restore();
   }
 

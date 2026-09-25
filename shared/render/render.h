@@ -15,6 +15,7 @@ static const uint8_t STRIPS = 5;
 static const uint8_t PIXELS = 45;
 static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
+static const uint8_t BEND_POINTS = PIXELS + 1;
 
 struct Hsv {
   uint8_t h, s, v;
@@ -67,6 +68,10 @@ struct Frame {
   Rgb pixels[STRIPS * PIXELS];  // strip by strip, pixel 0 first
   Wash wash;
   FanReading fan;
+  // How fast travel runs at each pixel boundary along the strip, pixel 0
+  // first, as a multiple of the dialed speed: what the bend is doing, for the
+  // editor's overlay.
+  float bend[BEND_POINTS];
   // The clock as the routes read it this frame: plainly, and as each strip
   // reads it shifted by the fan.
   float clock;

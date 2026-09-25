@@ -178,14 +178,13 @@ Routes cost per route instead of per destination. Counted off
 |----|----|
 | CC numbers that exist, 0–127 | 128 |
 | Excluded, never to be assigned | −14 |
-| Every control that is not a route: 2, 12–29, 33–67, 71–79 | −63 |
-| **Free for routes and anything new** | **51** |
+| Every control that is not a route: 2, 12–29, 33–69, 71–79 | −65 |
+| **Free for routes and anything new** | **49** |
 | Eight routes at five bytes, 80–119 | −40 |
-| **Left over** | **11** |
+| **Left over** | **9** |
 
-The eleven are 3–6, 8 and 9 in transport, 30–31 in the washes and 68–70 in
-the generator. The generator's three are where a curve on a rate or a bend of
-a ruler would go.
+The nine are 3–6, 8 and 9 in transport, 30–31 in the washes and 70 in the
+generator. Bend took 68 and 69 the same day.
 
 Five bytes did not fit the map as it stood: the numbers a route could use
 without leaving its own block came to 36. The regroup moved the washes to
@@ -226,12 +225,12 @@ would send it unbidden. It is in use rather than up for choice, so it is
 recorded here rather than acted on.
 
 **Raising the count is an array size** in the renderer and a loop bound
-in the editor. What is *not* freely raisable is the ceiling: 11 CCs left
+in the editor. What is *not* freely raisable is the ceiling: 9 CCs left
 over is the whole of it, and one more route costs five.
 
 **A source byte is not affordable at this count.** Adding wander, scatter or
-fan as route sources costs one more CC per route — eight, against the 11 left
-over, which would leave nothing for a curve on a rate or a bend of a ruler.
+fan as route sources costs one more CC per route — eight, against the 9 left
+over, which would leave one for everything else the generator grows.
 The catch when it comes anyway: the wander and the scatter have a position,
 so pointing one at a global control needs a rule for where on the wall to
 sample it — the same unbuilt work `docs/generator.md` already records
@@ -383,7 +382,7 @@ own.
 **What this cannot do.** All strip routes are fanned together or none are,
 because CC 66 is a single global amount — brightness rolling across the
 wall while width pulses in unison is out of reach. A per-route byte would
-buy it, eight CCs of the eleven left over.
+buy it, eight CCs of the nine left over.
 
 ## What a morph does to a route
 
@@ -533,10 +532,9 @@ so a swing that reverses travel runs the shape tail-first until it turns back.
 Putting the tail on the side the shape is actually moving away from needs the
 tail to follow the swing, which is drawing work, not modulation.
 
-**And easing is still not this.** A route is locked to the clock; slow at the
-ends of a trip and fast through the middle has to be locked to the trip, whose
-length falls out of speed, count and width. Settled in `docs/generator.md` §
-"Travel easing is a curve, not a modulation route".
+**And easing is still not this.** A route is locked to the clock; fast at the
+top of the strip and slow at the bottom has to follow where a shape is. Built
+as Bend and Bend at, on CC 68 and 69 — `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
 
 ## A route has a phase
 

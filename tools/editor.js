@@ -1321,6 +1321,7 @@
       if (name === route.ratio) return stepPoints(A.routeRatio);
       return [64];
     }
+    if (name === 'genBendAt') return [64];
     if (name === 'genPulseRate' || name === 'genFanFreq') {
       return stepPoints(v => V.convert(P.CC[name], v));
     }

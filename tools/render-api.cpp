@@ -25,10 +25,12 @@ EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return controls; }
 EMSCRIPTEN_KEEPALIVE render::Rgb *aurora_pixels() { return frame.pixels; }
 EMSCRIPTEN_KEEPALIVE render::Wash *aurora_wash() { return &frame.wash; }
 EMSCRIPTEN_KEEPALIVE render::FanReading *aurora_fan() { return &frame.fan; }
+EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
 
 EMSCRIPTEN_KEEPALIVE int aurora_strips() { return render::STRIPS; }
 EMSCRIPTEN_KEEPALIVE int aurora_pixels_per_strip() { return render::PIXELS; }
 EMSCRIPTEN_KEEPALIVE int aurora_fan_curve_points() { return render::FAN_CURVE_POINTS; }
+EMSCRIPTEN_KEEPALIVE int aurora_bend_points() { return render::BEND_POINTS; }
 
 EMSCRIPTEN_KEEPALIVE render::Motion *aurora_motion_new() { return new render::Motion(); }
 

@@ -110,6 +110,11 @@ static const float GOLD = 0.6180339887f;
 
 static const float TURN = 6.28318530718f;
 
+// At full bend the fastest point on the span is 39 times the slowest. At 1 the
+// slowest point would stop and a shape arriving there would never leave.
+static const float GEN_BEND_MAX = 0.95f;
+static const uint8_t GEN_BEND_STEPS = 64;
+
 enum ColorRuler : uint8_t {
   RULER_WALL = 0,   // which of the five strips a pixel is on
   RULER_STRIP = 1,  // how far along its strip a pixel is
@@ -148,6 +153,8 @@ struct Params {
   float fanFreq;
   float fanPhase;
   float fanRandom;
+  float bend;
+  float bendAt;
   float pulseBeats;
   bool alternate;
   bool bounce;
@@ -623,6 +630,84 @@ static bool nearestOffset(float posCells, float coreCenter, float stripDirection
   return lit;
 }
 
+// Bend sets the speed by which pixel a shape is on: a cosine peaking at `at`
+// along the span and falling to its slowest at whichever end is farther. With
+// the peak in the middle that is one whole cycle across the span, so minus
+// is the same curve turned over. The table holds, for each point along the
+// span, where the pattern would stand there unbent: the time taken to reach
+// that point at this speed, as a share of the whole trip. Measuring time
+// rather than distance is what keeps a trip as long as the dialed speed makes
+// it — slowing down costs more time than the same speeding up saves, so the
+// whole curve is lifted until they balance.
+struct BendTable {
+  float amount = 0.0f;
+  float at = 0.0f;
+  bool ready = false;
+  float inverse[GEN_BEND_STEPS + 1];
+  // How long one trip takes at the unlifted curve, in trips at the dial: the
+  // factor the whole curve is lifted by.
+  float lift;
+};
+
+static float bendSpeed(float along, float amount, float at) {
+  const float reach = fmaxf(at, 1.0f - at);
+  return 1.0f + amount * GEN_BEND_MAX * cosf(0.5f * TURN * fabsf(along - at) / reach);
+}
+
+static const BendTable &bendTable(float amount, float at) {
+  static BendTable table;
+  if (table.ready && table.amount == amount && table.at == at) return table;
+  table.amount = amount;
+  table.at = at;
+  table.ready = true;
+
+  const uint8_t slices = 4;
+  const float step = 1.0f / (float)(GEN_BEND_STEPS * slices);
+  float elapsed = 0.0f;
+  table.inverse[0] = 0.0f;
+  for (uint8_t i = 0; i < GEN_BEND_STEPS; i++) {
+    for (uint8_t j = 0; j < slices; j++) {
+      const float along = ((float)(i * slices + j) + 0.5f) * step;
+      elapsed += step / bendSpeed(along, amount, at);
+    }
+    table.inverse[i + 1] = elapsed;
+  }
+  for (uint8_t i = 1; i <= GEN_BEND_STEPS; i++) table.inverse[i] /= elapsed;
+  table.lift = elapsed;
+  return table;
+}
+
+static float unbend(const BendTable &table, float along) {
+  const float at = (along < 0.0f ? 0.0f : (along > 1.0f ? 1.0f : along)) * (float)GEN_BEND_STEPS;
+  const uint8_t i = (at >= (float)GEN_BEND_STEPS) ? GEN_BEND_STEPS - 1 : (uint8_t)at;
+  const float t = at - (float)i;
+  return table.inverse[i] + t * (table.inverse[i + 1] - table.inverse[i]);
+}
+
+// Where a point along the strip, in pixels, would stand in cells unbent.
+// Null bends nothing.
+static float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength,
+                       uint8_t count) {
+  const float cells = pixel / cellLength;
+  if (!bend) return cells;
+  if (!perCell) return (float)count * unbend(*bend, pixel / (float)PIXELS);
+  float cell = floorf(cells);
+  if (cell < 0.0f) cell = 0.0f;
+  else if (cell > (float)(count - 1)) cell = (float)(count - 1);
+  return cell + unbend(*bend, cells - cell);
+}
+
+static void readBend(const BendTable *bend, bool perCell, float cellLength, float *out) {
+  for (uint8_t i = 0; i < BEND_POINTS; i++) {
+    if (!bend) {
+      out[i] = 1.0f;
+      continue;
+    }
+    const float along = perCell ? fract((float)i / cellLength) : (float)i / (float)PIXELS;
+    out[i] = bendSpeed(along, bend->amount, bend->at) * bend->lift;
+  }
+}
+
 // Bipolar around 64, squared so the slow end — where every pattern in the
 // roster actually lives — gets most of the travel.
 static float squaredRate(uint8_t value, float max) {
@@ -666,6 +751,8 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_PLACED_COUNT:
     case CC_SCATTER_COUNT:   return ccCount(value);
 
+    case CC_GEN_BEND:        return ccBipolar(value);
+    case CC_GEN_BEND_AT:     return 0.5f + 0.5f * ccBipolar(value);
     case CC_GEN_POSITION:
     case CC_GEN_FAN:
     case CC_GEN_FAN_PULSE:   return ccBipolar(value) * 0.5f;
@@ -731,6 +818,8 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
   p.fanFreq = at(CC_GEN_FAN_FREQ);
   p.fanPhase = at(CC_GEN_FAN_PHASE);
   p.fanRandom = at(CC_GEN_FAN_RANDOM);
+  p.bend = at(CC_GEN_BEND);
+  p.bendAt = at(CC_GEN_BEND_AT);
   p.pulseBeats = at(CC_GEN_PULSE_RATE);
 
   // A switch has no middle for a push to land in, so it is read as dialed.
@@ -843,6 +932,9 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
 
   const float cellLength = (float)PIXELS / (float)p.count;
   const float countCells = (float)p.count;
+
+  const BendTable *bend = (fabsf(p.bend) > 0.001f) ? &bendTable(p.bend, p.bendAt) : nullptr;
+  readBend(bend, p.bounce, cellLength, out.bend);
 
   // Under bounce the core swings inside its own cell, turning where its own
   // edge meets the cell's boundary the way a ball meets a wall, so nothing
@@ -993,7 +1085,8 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
       for (uint8_t sampleIndex = 0; sampleIndex < GEN_SUBSAMPLES; sampleIndex++) {
         const float acrossPixel =
             ((float)sampleIndex + 0.5f) / (float)GEN_SUBSAMPLES - 0.5f;
-        const float posCells = ((float)pixelIndex + 0.5f + acrossPixel) / cellLength;
+        const float posCells =
+            bentCells(bend, p.bounce, (float)pixelIndex + 0.5f + acrossPixel, cellLength, p.count);
         float shapeU = 0.5f;
 
         if (bouncing) {

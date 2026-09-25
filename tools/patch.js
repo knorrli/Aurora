@@ -134,6 +134,10 @@
     genPosition: v => signed(real('genPosition', v)) + ' of a cell off center',
     genSpeed: v => { const s = real('genSpeed', v);
                      return sign(s) + Math.abs(s).toFixed(1) + ' px/beat'; },
+    genBend: v => signed(real('genBend', v)) + ' bent',
+    genBendAt: v => { const at = real('genBendAt', v);
+                      return at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top'
+                           : Math.round(at * 100) + '% up'; },
     genFan: fanAmount('genFan', 'of a cell apart'),
     genFanPulse: fanAmount('genFanPulse', 'of a swell apart'),
     genFanRate: v => '±' + Math.abs(real('genFanRate', v)).toFixed(1)
@@ -221,7 +225,7 @@
 
   const NEUTRAL = {
     tempoDivision: 0,
-    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64,
+    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
     genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
     genAlternate: OFF, genBounce: OFF,
 
@@ -289,6 +293,8 @@
           controls: define([
             C('genPosition', 'Position', 'where a still pattern stands in its cell'),
             C('genSpeed', 'Speed', 'center is still; either side travels'),
+            C('genBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
+            C('genBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape\u2019s own cell'),
           ]),
           switches: define([
             C('genAlternate', 'Alternate', 'the odd strips run the journey backwards',
@@ -454,7 +460,7 @@
   // full-width look's strips cannot be seen to stand apart, which is why
   // Wave, Chase and Stutter below spend their amount on the swell.
   const SHAPE_FLAT = {
-    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64,
+    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
     genFan: 64, genFanPulse: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
     genAlternate: OFF, genBounce: OFF,
   };
@@ -471,6 +477,8 @@
     Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 99, genSpeed: 80, genFan: 114, pulseDepth: 0, genPulseRate: 55, pulseWave: 32 },
     Strobe:     { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
     Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanPulse: 88, genAlternate: ON, pulseDepth: 127, genPulseRate: 100, pulseWave: 96 },
+    'Falling, bent': { genWidth: 30, genCount: 39, genEdge: 8, genTail: 50, genSpeed: 40, genBend: 127, genBendAt: 127 },
+    'Bouncing, bent': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 92, genBounce: ON, genBend: 127, genBendAt: 64 },
   };
 
   // The looks the fan rework was built against. The first is the patch that

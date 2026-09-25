@@ -126,7 +126,7 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //    120 – 127 : AVOID — channel mode messages
 //
 // Nothing between 2 and 119 is outside a block, and the routes take the one
-// run of 40 the map has. Spare: 3–6, 8, 9, 30, 31 and 68–70.
+// run of 40 the map has. Spare: 3–6, 8, 9, 30, 31 and 70.
 //
 // The four AVOIDed numbers in the middle are the ones a DAW writes without
 // being asked: volume, pan, expression and bank select, which travels with
@@ -419,7 +419,17 @@ enum AuroraCC : uint8_t {
     CC_GEN_PULSE_RATE      = 67, // [patch] beats per swell; stepped, see
                                  // AURORA_PULSE_PERIODS
 
-    // 68–70 reserved (the generator)
+    // Travel slowed and sped by which pixel a shape is on, across the strip,
+    // or across each cell while bouncing, so a shape stretches where it is
+    // fast and squashes where it is slow. Bend is how much and Bend at is
+    // where the fastest point sits. See docs/generator.md § "Bend: speed set
+    // by where a shape is on the strip".
+    CC_GEN_BEND            = 68, // [patch][plain] bipolar: 64 is even, plus
+                                 // is fast at the peak, minus slow there
+    CC_GEN_BEND_AT         = 69, // [patch][plain] 0 = the bottom, 64 = the
+                                 // middle, 127 = the top
+
+    // 70 reserved (the generator)
 
     // 71–79 — the scatter. The third source in the family: the pulse is
     // regular in time and has no place on the wall, the wander is smooth over

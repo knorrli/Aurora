@@ -229,10 +229,11 @@ Nothing in the firmware knows this. It matters in two places:
   would reverse it; so does turning the fan's amount through zero to the
   other side, which is what that control is bipolar for.
 
-PC 11 cannot tell you which end of a strip pixel 0 sits at — every strip
-is one flat color, so there is no end to tell apart. That takes a
-single narrow shape traveling slowly with no fan: whichever end it
-sets off from is pixel 0.
+**Pixel 0 is at the bottom of every strip**, and always will be — stated
+by the performer, 2026-09-25. So positive speed travels up, and the bend's
+plus is fast at the top. PC 11 could never have told you this: every strip
+is one flat color, so there is no end to tell apart. The editor keeps its
+"pixel 0 at bottom" toggle as a check, not as an open question.
 
 ---
 

@@ -54,6 +54,8 @@ That is the whole thing. Everything below is a parameter of it.
 | 57 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
 | 58 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
 | 60 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
+| 68 | Bend | Travel slowed and sped by where a shape is. See "Bend: speed set by where a shape is on the strip" | bipolar, up to 39:1 |
+| 69 | Bend at | Where the bend peaks along the strip, or each cell while bouncing | bottom → top |
 | 64 | Fan · Position | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
 | 66 | Fan · Pulse | How far apart they stand in the swell | bipolar, ±100 % of a swell |
 | 65 | Fan · Rate | How far apart their speeds stand, either side of Speed | bipolar, ±60 px/beat |
@@ -685,32 +687,61 @@ The parameter-count objection was the other half, and the wave answered it.
 Three bytes per destination for all 43 reachable controls is 129 CCs against
 the 128 that exist; five bytes per *route* for eight routes is 40.
 
-### Travel easing is a curve, not a modulation route
+### Bend: speed set by where a shape is on the strip
 
-Easing — slow at the strip's two ends, fast through the middle, so a
-shape reads as a ball thrown across the wall — looks like an LFO on
-speed, and is not one.
+Settled and built 2026-09-25, on CC 68 and 69. Two looks asked for it: bars
+falling down the strip fast at the top and slow at the bottom, wrapping; and
+a bar bouncing fast through the middle and slow at each turn.
 
-A modulator doing that job would have to be phase-locked to the travel
-cycle exactly: zero speed at each turn, maximum at mid-travel, every
-time. The travel period is not something anyone dials. It falls out of
-speed, count, and under bounce the width as well, since the turn comes
-when the core's edge meets the end. Any rate a person can set will be
-slightly wrong and will slide, which gives a wobble drifting through the
-bounce rather than a bounce. Shaping the travel phase directly makes one
-traversal one cycle by construction, with no rate to get wrong.
+**The speed is a function of the pixel a shape is on.** Picture the strip as
+a circle: travel is raised at one point and lowered on the opposite side.
+Bend is how much, and Bend at is where the fastest point sits, from the
+bottom through the middle to the top. Plus makes that point the fastest,
+minus the slowest. Wrapping, one bend spans the whole strip; bouncing, each
+shape swings in its own cell and the bend spans each cell.
 
-**It shapes the strip, not the cell.** At counts above one every shape
-slows and speeds up together, so the whole field breathes across the
-wall. Shaping the cell instead would have each shape easing inside its
-own cell, which is a different look and not the one wanted.
+**Three things the circle picture needs added**, each found on the way:
 
-So easing is one more knob in Travel, beside Speed and Fan — and it is
-the third instance of a control the generator already has twice. Pulse
-shape bends a swell from square to sine; a region's edge bends it from a
-hard cell to a smooth fade; easing bends a traversal from linear to
-slow-at-the-ends. Same idea every time, which is what makes **Shape** a
-shared word rather than a coincidence.
+- **Slowing down costs more time than the same speeding up saves.** Half a
+  strip at 1.5× and half at 0.5× takes a third longer than the whole at 1×.
+  So the curve is lifted until a trip takes exactly as long as Speed says —
+  Speed stays the true average. At full Bend the fastest point is about 6×
+  the dialed speed and the slowest about 0.16×, 39 to 1.
+- **On a circle the top and bottom touch**, which is where a wrapping shape
+  jumps from one end to the other, so "fast at the top, slow at the bottom"
+  cannot exist on a pure circle. The cosine is stretched instead so its
+  slowest point is always whichever end is farther from the peak. With the
+  peak in the middle that is exactly the circle, one whole cycle across the
+  span; with the peak at an end it is half a cycle, a ramp from slow to fast.
+- **The curve is defined on the pixels, not on where a shape would be
+  unbent.** The first version did the second, which squeezed every slow zone
+  and stretched every fast one, so plus in the middle drew a broad hump and
+  minus a narrow dip. On the pixels, plus and minus are the same curve
+  turned over.
+
+**A shape stretches where it is fast and squashes where it is slow**, tail
+included, and several bars bunch up at the slow end the way traffic does.
+That squash is the look. The other way was drawn side by side before
+choosing — moving only each shape's center and keeping its size — and looked
+much the same with several bars, but stiff on one bar with a tail, and it
+would have broken the pattern's once-per-cell repetition, so shape sizes,
+overlapping tails and bounce's trail would each have needed new rules.
+Bending the whole strip's timing — every bar speeding and slowing together —
+was drawn too, and at three bars the bottom one is fast whenever the top one
+is, so the wall breathes instead of falling.
+
+**The limit** is 0.95 of the way to a standstill, tried in the editor and
+kept, 2026-09-25; 0.8 was the first guess, held back for fear of shapes
+squashing below a pixel at the slow end. At 1 the slowest point stops and a
+shape arriving there never leaves.
+
+**It is not a rate**, so a route may push it like any other control, and it
+reads the plain clock, since where each pixel falls is worked out before the
+strip loop opens. The editor's overlay draws the speed at each height up the
+wall's right-hand margin, with the dialed speed as the dashed line.
+
+**Not built:** a curve other than the cosine. The route's wave shapes are the
+obvious vocabulary if one is wanted.
 
 ### The color layer has no jitter
 

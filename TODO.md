@@ -331,8 +331,12 @@ designing there. See `docs/bench-facts.md`.
       downbeat every three bars rather than every one, which is a musical
       relationship and may still read as adrift. Cutting them would leave
       seven positions, all powers of two.
-- [ ] **Travel easing** — a Shape curve in Travel, beside Speed and Fan.
-      See `docs/generator.md` § "Travel easing is a curve".
+- [x] **Travel easing.** Built 2026-09-25 as Bend and Bend at, on CC 68 and
+      69: speed is set by which pixel a shape is on, on a cosine whose peak
+      Bend at places. See `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
+- [ ] **Judge Bend on the wall.** The *Falling, bent* and *Bouncing, bent*
+      starting points. Liked in the preview on sight; what the preview cannot
+      show is whether shapes squashed at the slow end shimmer at full bend.
 - [x] **Preserve position when bounce flips.** Done 2026-09-22; the phase
       is solved for rather than carried across. Alternate keeps its jump
       deliberately — it cannot be fixed without making it invisible under
@@ -500,16 +504,13 @@ it becomes a build item.
       spaced across the stage against the back wall. Whether that swap is
       an improvement is not obvious — "within a shape" is not a direction
       at all, so the three would stop being one vocabulary.
-- [ ] **Easing — the looks are named, the mechanism is not.** Answered
-      2026-09-25: raindrops falling top to bottom that start slow and pick
-      up speed until they wrap, and bars bouncing that are fast through the
-      middle and slow at the edges. The trip keeps its length and the wave
-      only redistributes speed within it, chosen from the same wave shapes a
-      route uses, with a phase. Open fork: bend the clock of the trip, which
-      at count 3 makes every drop surge together, or bend the ruler, which
-      speeds each drop by where it is and stretches it as it goes. Next is
-      both side by side in the preview. See `docs/generator.md` § "Travel
-      easing is a curve, not a modulation route".
+- [x] **Easing — the looks are named, the mechanism is not.** Settled and
+      built 2026-09-25. The looks: raindrops falling fast at the top and slow
+      at the bottom, and bars bouncing fast through the middle and slow at
+      the edges. Bending the clock, bending only each shape's center and
+      stretching the strip itself were drawn side by side; stretching the
+      strip won, on looks and on cost. See `docs/generator.md` § "Bend: speed set by where a shape is on the strip".
+
 - [x] **Gate length on the pulse.** Built 2026-09-24 as the top of a
       route's wave byte rather than the bottom of a Shape fader: past the
       square at 96 the flash shortens to a stab at 127, down to
