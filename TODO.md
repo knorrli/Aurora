@@ -424,15 +424,6 @@ it becomes a build item.
       patch recall and with any DAW driving a CC a fader also owns. Needs
       a fader in hand, not a desk. See `DESIGN.md` § Open.
 
-- [ ] **Jump the pattern to Position on the beat.** A reset that fires on
-      the grid rather than a place to sit: bars swiping up from the center,
-      snapping back to the center on the beat and swiping again. It is the
-      same family as the LFO's anchoring — something landing on the
-      musical grid rather than wherever it drifted to — and it needed
-      Position first, because a jump needs somewhere to jump to. Open
-      questions: what fires it (every beat, a division, a switch), and
-      whether the snap is instant or the settle it already has.
-
 ## Open on the controller
 
 - [ ] **Decide where the peak-follower switch goes.** `docs/controls.md`
