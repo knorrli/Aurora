@@ -181,7 +181,10 @@ static inline uint8_t aurora_pc_palette_index(uint8_t pc) {
 //
 // Which pattern runs arrives as a Program Change rather than a CC, and a
 // patch holds it, so there is one thing in a patch this table does not
-// reach. The palette numbers at PC 64–126 are reserved for something that
+// reach. A patch sends it after its controls, never before: it is how the
+// brain knows a patch has landed, and the generator clears its tails there,
+// since a tail recorded while the controls were still arriving would streak
+// from the old shapes to the new. The palette numbers at PC 64–126 are reserved for something that
 // is not built and the brain ignores them — see handleProgramChange in
 // brain/src/midi_in.cpp.
 //

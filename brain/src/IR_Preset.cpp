@@ -143,8 +143,9 @@ void resetPreset(uint8_t preset) {
         resetChaos();
       }
       break;
-    // Both derive everything they show from scratch each frame.
     case PRESET_GENERATOR:
+      resetGenerator();
+      return;
     case PRESET_STRIP_ORDER:
       return;
   }

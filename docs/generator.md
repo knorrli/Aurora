@@ -671,7 +671,9 @@ a cell as it resizes, and bounce is solved to stand the core where it was.
 a beat after the last — the transport jumped, or the editor's tab sat in
 the background. The renderer cannot tell a patch change from fast faders,
 so the caller clears it with `clearPaths`: the editor does on choosing a
-slot or a starting point. The brain has no patch recall yet.
+slot or a starting point, and the brain on the generator's program change,
+which a patch sends after its controls — see the note on Program Change in
+`shared/aurora_protocol.h`.
 
 **The editor copies Motion between walls, never Paths.** The small walls
 take the big wall's phases each frame so all three show one instant; a
@@ -681,7 +683,9 @@ copied path would draw the big wall's tail behind a small wall's shape.
 how long ago the core passed, as the distance the core covered since, so a
 slowing shape squeezes its color with its tail and the two measures meet at
 the core's back edge. Which side is behind comes from which way the path
-last moved, not from Speed's sign.
+last moved, not from Speed's sign, so at a turn the core's two halves swap
+colors in one frame while the glow keeps its own. Seen in the preview and
+accepted.
 
 **Measured in the preview.** Under a sine on Speed through zero with bounce
 on, sampled every frame for twelve beats, the side just behind the core was brighter

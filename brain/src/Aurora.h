@@ -116,6 +116,7 @@ extern void Glitch(CHSV color);
 // take its wash while it is the pattern being drawn.
 extern void Generator(CHSV color);
 extern const render::Wash &generatorWash();
+extern void resetGenerator();
 // Shared helpers (still active)
 extern void MovingBlocks(CHSV color, uint8_t fillLength, uint8_t gap, int8_t direction = UP);
 extern void resetMovingBlocks();

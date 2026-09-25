@@ -174,9 +174,16 @@
     }
   }
 
-  function sendPatchToWall() {
-    link.sendPC(patch().pattern);
+  // The program change goes last: the brain takes it as the patch having
+  // landed, and clears the tails there.
+  function arrive() {
     sendLive(true);
+    link.sendPC(patch().pattern);
+    clearTails();
+  }
+
+  function sendPatchToWall() {
+    arrive();
     say(`sent "${patch().name}" on PC ${patch().pattern}`);
   }
 
@@ -410,7 +417,7 @@
       host.innerHTML = '';
       for (const [name, values] of Object.entries(table)) {
         const b = el('button', null, name);
-        b.addEventListener('click', () => { snap(); applyNamed(values); clearTails(); });
+        b.addEventListener('click', () => { snap(); applyNamed(values); arrive(); });
         host.appendChild(b);
       }
     };
@@ -1067,9 +1074,7 @@
     buildSurfaces();
     paint();
     paintList();
-    link.sendPC(patch().pattern);
-    sendLive(true);
-    clearTails();
+    arrive();
   }
 
   function selectPatch(s) {

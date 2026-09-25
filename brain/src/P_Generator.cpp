@@ -16,3 +16,5 @@ void Generator(CHSV color) {
 }
 
 const render::Wash &generatorWash() { return frame.wash; }
+
+void resetGenerator() { render::clearPaths(paths); }

@@ -560,10 +560,11 @@ it becomes a build item.
       top and whether half a beat sits at a useful place on the fader, and
       what the brain's frame time does with the walk.
 
-- [ ] **Clear the tails when the brain changes patch.** `render::clearPaths`
-      exists and the editor calls it; the brain has no patch recall to call
-      it from yet. Until it does, a patch sent as CCs streaks from the old
-      shapes to the new.
+- [x] **Clear the tails when the brain changes patch.** Done 2026-09-25 on
+      the generator's program change, which the editor now sends after a
+      patch's controls rather than before, so it marks the patch as landed.
+      When the brain gets patch recall of its own, recall calls
+      `resetGenerator` the same way.
 
 - [x] **Is Alternate still worth its switch?** No, cut 2026-09-25. The
       fan's rate spread draws the same wall on anything moving, bounce and
