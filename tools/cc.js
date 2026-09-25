@@ -95,6 +95,7 @@
   const ROUTES = 8;
   const ROUTE_BASE = [80,85,90,95,100,105,110,115];
   const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4};
+  const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0};
   const ROUTE_MAX_RATIO = 8;
   const PATCH_FORMAT = 1;
   const PATCH_MAX = 128;
@@ -149,6 +150,7 @@
     LFO_PERIODS,
     ROUTES,
     ROUTE_FIELD,
+    ROUTE_DEFAULTS,
     PATCH_FORMAT,
     PATCH_MAX,
     PATCH_CC_COUNT,

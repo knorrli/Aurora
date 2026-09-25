@@ -85,6 +85,15 @@ const routeField = Object.fromEntries(enumEntries('AuroraRouteField')
   .filter(([key]) => key !== 'ROUTE_FIELDS')
   .map(([key, value]) => [camel(key.replace(/^ROUTE_/, '')), value]));
 
+const routeDefaultValues = (header.match(/AURORA_ROUTE_DEFAULTS\[ROUTE_FIELDS\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_ROUTE_DEFAULTS'))[1]
+  .split(',').map(text => text.trim()).filter(Boolean)
+  .map(text => (/^\d+$/.test(text) ? Number(text) : constant(text)));
+if (routeDefaultValues.length !== Object.keys(routeField).length) {
+  throw new Error('AURORA_ROUTE_DEFAULTS does not match AuroraRouteField');
+}
+const routeDefaults = Object.fromEntries(Object.entries(routeField)
+  .map(([field, index]) => [field, routeDefaultValues[index]]));
+
 const lfoPeriods = (header.match(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_LFO_PERIODS'))[1]
   .split(',').map(text => text.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
@@ -123,6 +132,7 @@ const generated = {
   ROUTES: routeCount,
   ROUTE_BASE: routeBase,
   ROUTE_FIELD: routeField,
+  ROUTE_DEFAULTS: routeDefaults,
   ROUTE_MAX_RATIO: constant('AURORA_ROUTE_MAX_RATIO'),
   PATCH_FORMAT: constant('AURORA_PATCH_FORMAT'),
   PATCH_MAX: constant('AURORA_PATCH_MAX'),

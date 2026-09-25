@@ -69,8 +69,3 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 ## Editor
 
 - Use it at the bench: is driving a morph's CCs at frame rate too much USB traffic?
-
-## Code cleanup
-
-- One source for defaults: the brain and the editor both start from `AURORA_CONTROL_DEFAULTS`; the route defaults are still written separately in each.
-- Editor: on the Accent tab with "Coming from" set, a route whose destination differs between the two patches should hold whole, as `docs/design.md` says; the preview mixes the other patch's destinations with this patch's amounts.

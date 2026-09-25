@@ -180,12 +180,10 @@
     }
   }
 
-  const ROUTE_DEFAULTS = { destination: 0, amount: 64, ratio: 0, wave: Protocol.WAVE_SWELL, phase: 0 };
-
   const DEFAULT = {};
   for (const name of NAMES) DEFAULT[name] = Protocol.CONTROL_DEFAULTS[name] || 0;
   for (const route of ROUTES) {
-    for (const field of ROUTE_FIELDS) DEFAULT[route[field]] = ROUTE_DEFAULTS[field];
+    for (const field of ROUTE_FIELDS) DEFAULT[route[field]] = Protocol.ROUTE_DEFAULTS[field];
   }
 
   const NEUTRAL = Object.assign({}, DEFAULT, { shapeWidth: 127, shapeEdge: 0, shapeSpeed: 64 });

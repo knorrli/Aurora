@@ -11,8 +11,9 @@ void begin() {
         values[control.cc] = control.value;
     }
     for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-        values[aurora_route_cc(route, ROUTE_AMOUNT)] = 64;
-        values[aurora_route_cc(route, ROUTE_WAVE)] = WAVE_SWELL;
+        for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
+            values[aurora_route_cc(route, field)] = AURORA_ROUTE_DEFAULTS[field];
+        }
     }
 }
 

@@ -64,13 +64,22 @@
     return named;
   }
 
+  function holdRoutesChangingDestination(named, switchesFrom, toBytes) {
+    for (const route of Patch.ROUTES) {
+      if (byteOf(switchesFrom, route.destination) === byteOf(toBytes, route.destination)) continue;
+      for (const name of route.fields) named[name] = byteOf(switchesFrom, name);
+    }
+    return named;
+  }
+
   function blend(fromBytes, toBytes, position, switchesFrom) {
+    const switches = switchesFrom || fromBytes;
     const named = {};
     for (const name of Patch.CONTINUOUS) {
       const from = byteOf(fromBytes, name), to = byteOf(toBytes, name);
       named[name] = Math.round(from + (to - from) * position);
     }
-    return switchesInto(named, switchesFrom || fromBytes);
+    return holdRoutesChangingDestination(switchesInto(named, switches), switches, toBytes);
   }
 
   function mix(patch, positions) {
