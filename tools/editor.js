@@ -316,6 +316,7 @@
 
     paintTabs();
     paintRoutePanel(live);
+    paintRouteList(live);
     paintHead();
     paintCompare();
   }
@@ -413,6 +414,7 @@
     }
     if (body.children.length < 2) body.style.gridTemplateColumns = '1fr';
     card.appendChild(body);
+    if (mod === P.LFO) card.appendChild(buildRouteList());
     return card;
   }
 
@@ -535,20 +537,10 @@
       const head = el('div', 'dest-head');
       const remove = el('button', 'tiny', '\u00d7');
       remove.title = 'free this route';
-      remove.addEventListener('click', () => {
-        snap();
-        bypassed.delete(route);
-        resetNames(routeFields(route));
-        const aimed = L.namedFromSet(baseSet());
-        if (!P.ROUTES.some(r => aimed[r.destination] === P.CC[routePanel.target])) closeRoutePanel();
-      });
+      remove.addEventListener('click', () => freeRoute(route));
       const bypass = el('button', 'tiny', 'bypass');
       bypass.title = 'silence this route while you listen; not saved';
-      bypass.addEventListener('click', () => {
-        if (!bypassed.delete(route)) bypassed.add(route);
-        paint();
-        sendLive();
-      });
+      bypass.addEventListener('click', () => toggleBypass(route));
       const buttons = el('span', 'dest-buttons');
       buttons.append(bypass, remove);
       head.append(el('span', 'dest-name', route.name), buttons);
@@ -579,6 +571,96 @@
 
   const routeFields = route =>
     [route.destination, route.amount, route.ratio, route.wave, route.phase];
+
+  function freeRoute(route) {
+    snap();
+    bypassed.delete(route);
+    resetNames(routeFields(route));
+    const aimed = L.namedFromSet(baseSet());
+    if (routePanel.target && !P.ROUTES.some(r => aimed[r.destination] === P.CC[routePanel.target])) {
+      closeRoutePanel();
+    }
+  }
+
+  function toggleBypass(route) {
+    if (!bypassed.delete(route)) bypassed.add(route);
+    paint();
+    sendLive();
+  }
+
+  // ---- every route, listed at the LFO ------------------------------------
+  //
+  // Read-only apart from bypass and free: the dials stay in the one panel
+  // under the control a route moves, and a line opens it there.
+
+  const routeList = { root: null, count: null, lines: [] };
+
+  // Where a control sits on the page, as its card and label read.
+  const PLACE = {};
+  for (const g of P.SHAPE.groups) {
+    for (const n of [...(g.switches || []), ...(g.controls || [])]) PLACE[n] = `${P.SHAPE.name} \u00b7 ${g.title}`;
+  }
+  for (const mod of P.MODULATORS) {
+    for (const n of [...(mod.switches || []), ...(mod.source || []), ...(mod.amounts || [])]) PLACE[n] = mod.name;
+  }
+  for (const n of P.STRIPS.controls) PLACE[n] = '5 strips';
+  for (const n of P.PARS.controls) PLACE[n] = '4 PARs';
+
+  function buildRouteList() {
+    const root = el('details', 'routelist');
+    root.open = true;
+    const count = el('span', 'cc');
+    const summary = el('summary', null, 'Routes ');
+    summary.appendChild(count);
+    root.appendChild(summary);
+    root.addEventListener('toggle', paint);
+
+    for (const route of P.ROUTES) {
+      const line = el('div', 'routeline');
+      const target = el('button', 'routeline-target');
+      target.title = 'open this route under the control it moves';
+      target.addEventListener('click', () => {
+        const name = A.NAME_BY_CC[liveNamed()[route.destination]];
+        rows[name].root.scrollIntoView({ block: 'center' });
+        if (routePanel.target !== name) toggleRoutePanel(name);
+      });
+      const values = el('span', 'cc routeline-values');
+      const canvas = el('canvas', 'destwave routeline-wave');
+      const remove = el('button', 'tiny', '\u00d7');
+      remove.addEventListener('click', () => freeRoute(route));
+      const bypass = el('button', 'tiny', 'bypass');
+      bypass.title = 'silence this route while you listen; not saved';
+      bypass.addEventListener('click', () => toggleBypass(route));
+      const buttons = el('span', 'dest-buttons');
+      buttons.append(bypass, remove);
+      line.append(target, values, canvas, buttons);
+      root.appendChild(line);
+      routeList.lines.push({ route, line, target, values, canvas, remove, bypass });
+    }
+    Object.assign(routeList, { root, count });
+    return root;
+  }
+
+  function paintRouteList(live) {
+    if (!routeList.root) return;
+    const farEnd = isFarEnd();
+    let aimed = 0;
+    for (const { route, line, target, values, canvas, remove, bypass } of routeList.lines) {
+      const name = A.NAME_BY_CC[live[route.destination]];
+      line.hidden = !name;
+      if (!name) continue;
+      aimed++;
+      target.textContent = `${PLACE[name]} \u00b7 ${P.CONTROLS[name].label}`;
+      values.textContent = [route.amount, route.ratio, route.wave, route.phase]
+        .map(field => P.DERIVED[field](live[field])).join(' \u00b7 ');
+      line.classList.toggle('bypassed', bypassed.has(route));
+      bypass.classList.toggle('on', bypassed.has(route));
+      remove.disabled = farEnd;
+      remove.title = farEnd ? 'freed on the base: a route belongs to the whole patch' : 'free this route';
+      if (routeList.root.open) drawWave(canvas, route, live);
+    }
+    routeList.count.textContent = aimed ? `${aimed} of ${P.ROUTES.length}` : 'none';
+  }
 
   // A control with no route yet is opened to add one, so opening it adds it.
   function toggleRoutePanel(name) {

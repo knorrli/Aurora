@@ -200,6 +200,12 @@ from the base first. **bypass** silences a route while you listen and is
 never saved: the wall and the brain are sent a free slot, and the patch keeps
 the route. Choosing another patch clears it. The rates have no **~**, since the renderer refuses them.
 
+**The LFO card lists every route the patch has**, under a **Routes** section
+that folds away. Each line names the control it moves and reads its amount,
+ratio, wave and phase, with the wave drawn beside it, and carries the same
+**bypass** and free as the panel. It is read-only otherwise: clicking a line
+scrolls to that control and opens its panel, so the dials live in one place.
+
 A slider a route is aimed at carries a band from the dialed value to the
 furthest the routes can push it, and five marks, one per strip, where each
 strip has it this frame. The marks move together unless the fan spreads the
