@@ -51,8 +51,9 @@ switches first, what kind of thing it is; then how many and how big, Count,
 Width, Edge; then time, Speed or Rate; then finesse, Randomize, Position,
 Slide, Bend, Tail; amounts last, Hue, White, Dark. The fan is the one
 exception: its three amounts come first, since nothing happens until one of
-them is up. The PARs follow the strips' Hue, Saturation, Brightness, then
-their two spreads, each with its shuffle after it.
+them is up. The PARs follow the strips' Hue, Saturation, Brightness, in a
+group beside the strips' own, and what runs across the four sits in two
+groups under them: the hue spread with its shuffle, the LFO spread with its.
 
 ## Bypass and "no effect"
 

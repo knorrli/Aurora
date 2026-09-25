@@ -426,7 +426,9 @@
   function buildOutputs() {
     $('outputs').replaceChildren(
       buildGroup('5 strips', P.STRIPS.controls),
-      buildGroup('4 PARs', P.PARS.controls));
+      buildGroup('4 PARs', P.PARS.color),
+      buildGroup('4 PARs \u00b7 hue across them', P.PARS.hue),
+      buildGroup('4 PARs \u00b7 LFO across them', P.PARS.lfo));
 
   }
 

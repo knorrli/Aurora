@@ -442,18 +442,25 @@
     ]),
   };
 
+  // Their color first, beside the strips' own, then what runs across the four
+  // in two groups of its own.
   const PARS = {
-    controls: define([
+    color: define([
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
       C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
       C('washLevel', 'Brightness', 'the PARs\u2019 master, independent of the strips'),
+    ]),
+    hue: define([
       C('washHueSpread', 'Hue spread', 'each PAR further round the palette than the one before: halfway up is four colors evenly round, either end two alternating. The first PAR sits on Hue offset'),
       C('washHueShuffle', 'Hue shuffle', 'the chance the four colors are dealt out to the PARs in a new order, once every period'),
       C('washHuePeriod', 'Shuffle every', 'how often the hue shuffle rolls. Stepped, so it can sit on the bar'),
+    ]),
+    lfo: define([
       C('washLfoSpread', 'LFO spread', 'each PAR further into the LFO\u2019s cycle than the one before: 25% is a chase, either end alternating pairs'),
       C('washLfoShuffle', 'LFO shuffle', 'the chance the four PARs swap places in the LFO spread, once every LFO cycle'),
     ]),
   };
+  PARS.controls = [...PARS.color, ...PARS.hue, ...PARS.lfo];
 
   global.AuroraPatch = {
     PATCH_FORMAT, CC_COUNT, NAME_LEN, SETS, KEYS, PATCH_MAX,
