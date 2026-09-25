@@ -23,7 +23,7 @@ The color layer's sources are not unrelated boxes of sliders. Every one of them
 lands on the same three qualities and the pushes add, which is a modulation
 matrix, so the page is drawn as one.
 
-From the top, below the starting points:
+From the top, below the patch head and the audition:
 
 - **The outputs**: the five strips on the left, carrying the three color
   faders, and the four PARs on the right, with the controls that relate them to
@@ -197,10 +197,10 @@ firmware change and this was not a firmware night.
 bar, send a Program Change straight past the patch, and say so. Program Change
 means patch now, so there is no preset row left for them to live in.
 
-**What tells the brain to run the generator is the patch's own pattern byte.**
-The editor sends `PC = pattern` when it puts a patch on the wall. That is the
-same Program Change the old page hard-coded to 10, sourced from the patch
-instead of from the page.
+**Every patch runs the generator.** A patch has no pattern of its own: the
+editor sends `PRESET_GENERATOR` as the Program Change when it puts a patch on
+the wall, and writes the same number into the pattern byte of the SysEx head,
+which the brain's side of the wire still carries.
 
 **A parameter set is 128 bytes and the editor writes zero to the ones it does
 not own.** Arriving at a patch writes the `[patch]` and `[switch]` CCs through

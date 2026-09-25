@@ -122,10 +122,10 @@
 
   /* ---- set tabs and audition ------------------------------------------ */
 
-  .sets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sets { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
   .sets .tab {
     display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
-    padding: 6px 12px; min-width: 104px;
+    padding: 6px 12px; min-width: 0;
   }
   .sets .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
   .sets .tab.on .badge { color: var(--accent); }
@@ -254,11 +254,8 @@
   .outs { border-left: 3px solid var(--out); }
   .outgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px 22px; }
 
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chips button { padding: 3px 9px; font-size: 11px; }
-  .startgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 14px 22px; }
-  details.starts summary, details.slots summary { cursor: pointer; color: var(--dim); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-  details.starts[open] summary, details.slots[open] summary { margin-bottom: 10px; }
+  details.slots summary { cursor: pointer; color: var(--dim); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  details.slots[open] summary { margin-bottom: 10px; }
 
   /* ---- preview dock ------------------------------------------------------ */
 
@@ -305,7 +302,7 @@
     <span class="cc">BPM</span>
   </div>
   <div class="group">
-    <button id="sendPatch" title="Send this patch's pattern and every parameter it holds">send to the wall</button>
+    <button id="sendPatch" title="Send every parameter this patch holds">send to the wall</button>
   </div>
   <div class="spacer"></div>
   <div class="group">
@@ -361,7 +358,6 @@
 
     <section class="panel head">
       <label class="field"><span>Name</span><input type="text" id="pName" maxlength="16"></label>
-      <label class="field"><span>Pattern</span><select id="pPattern"></select></label>
       <label class="field"><span>Palette</span><select id="pPalette"></select></label>
       <label class="field"><span>Journey ramp</span><select id="pRampJourney"></select></label>
       <label class="field"><span>Accent ramp</span><select id="pRampAccent"></select></label>
@@ -371,30 +367,6 @@
 
     <section class="panel audition" id="auditionBar"></section>
     <section class="panel" id="surfaceBar" hidden></section>
-
-    <section class="panel">
-      <details class="starts">
-        <summary>Starting points</summary>
-        <div class="startgrid">
-          <div>
-            <h3>Shape</h3>
-            <div class="chips" id="shapeStarts"></div>
-          </div>
-          <div>
-            <h3>Fan</h3>
-            <div class="chips" id="fanStarts"></div>
-          </div>
-          <div>
-            <h3>Swing</h3>
-            <div class="chips" id="swingStarts"></div>
-          </div>
-          <div>
-            <h3>Color</h3>
-            <div class="chips" id="colorStarts"></div>
-          </div>
-        </div>
-      </details>
-    </section>
 
     <section class="panel outs">
       <h2>Outputs</h2>

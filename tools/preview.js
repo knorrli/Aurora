@@ -37,7 +37,6 @@
                                    (m._aurora_fan() >> 2) + STRIPS + CURVE_POINTS + 6);
     const bend = m.HEAPF32.subarray(m._aurora_bend() >> 2,
                                     (m._aurora_bend() >> 2) + m._aurora_bend_points());
-    const DARK = [0, 0, 0];
 
     // The fixture dims in its own hardware, so this is how the eye sees the
     // dimmer rather than anything the brain computes.
@@ -87,14 +86,6 @@
         m.HEAPU8.set(bytes, controls);
         m._aurora_render(motion, paths, beats);
         return { pixels, par: seenWash(), fan: readFan(), bend: Array.from(bend) };
-      },
-      renderStripOrder() {
-        m._aurora_render_strip_order();
-        return { pixels, par: DARK, fan: null };
-      },
-      blank() {
-        pixels.fill(0);
-        return { pixels, par: DARK, fan: null };
       },
       draw,
     });

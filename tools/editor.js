@@ -17,6 +17,7 @@
 (function () {
   'use strict';
 
+  const A = window.AuroraCC;
   const P = window.AuroraPatch;
   const L = window.AuroraLibrary;
   const V = window.AuroraPreview;
@@ -178,13 +179,13 @@
   // landed, and clears the tails there.
   function arrive() {
     sendLive(true);
-    link.sendPC(patch().pattern);
+    link.sendPC(A.PRESET_GENERATOR);
     clearTails();
   }
 
   function sendPatchToWall() {
     arrive();
-    say(`sent "${patch().name}" on PC ${patch().pattern}`);
+    say(`sent "${patch().name}"`);
   }
 
   // ---- control rows ------------------------------------------------------
@@ -409,25 +410,6 @@
     $('mods').replaceChildren(...P.MODULATORS.map(modCard));
   }
 
-  // A starting point writes into whichever set is on screen, which is what
-  // makes it useful on a far end too: land Strobe on the Motion tab and every
-  // control it names becomes an override in one click.
-  function buildStarts() {
-    const add = (hostId, table) => {
-      const host = $(hostId);
-      host.innerHTML = '';
-      for (const [name, values] of Object.entries(table)) {
-        const b = el('button', null, name);
-        b.addEventListener('click', () => { snap(); applyNamed(values); arrive(); });
-        host.appendChild(b);
-      }
-    };
-    add('shapeStarts', P.ANCHORS);
-    add('fanStarts', P.FAN_LOOKS);
-    add('swingStarts', P.SWING_LOOKS);
-    add('colorStarts', P.COLOR_LOOKS);
-  }
-
   function buildOutputs() {
     $('outputs').replaceChildren(
       buildGroup('5 strips', P.STRIPS.controls),
@@ -444,7 +426,6 @@
   // A rate swings around its dialed value, so its wave is drawn with its
   // average taken off, the way the renderer applies it.
   function departureAt(route, phase, live) {
-    const A = window.AuroraCC;
     const ratio = A.routeRatio(live[route.ratio]);
     const wave = live[route.wave];
     const swings = (A.TAGS[A.NAME_BY_CC[live[route.destination]]] || []).includes('rate');
@@ -490,7 +471,7 @@
   // from, so the row and its band stay in view while a route is dialed. It
   // floats over the rows below rather than pushing them down.
 
-  const routable = name => (window.AuroraCC.TAGS[name] || []).includes('patch')
+  const routable = name => (A.TAGS[name] || []).includes('patch')
     && !V.routeRefused(P.CC[name]);
 
   // Half of the way to the limit, so the band shows the moment a route exists:
@@ -937,24 +918,7 @@
 
   // ---- the patch head ----------------------------------------------------
 
-  const PATTERNS = [
-    [10, '10 · the generator'], [0, '0 · blackout'],
-    [1, '1 · fill / starfield'], [2, '2 · breathe / wave'],
-    [3, '3 · plasma / aurora'], [4, '4 · pulse / bars'],
-    [5, '5 · sweep / cross'], [6, '6 · rain / storm'],
-    [7, '7 · strip / comet'], [8, '8 · strobe / stutter'],
-    [9, '9 · chaos / glitch'], [11, '11 · strip order'],
-  ];
-
   function buildHead() {
-    const pattern = $('pPattern');
-    PATTERNS.forEach(([v, text]) => {
-      const o = el('option', null, text); o.value = v; pattern.appendChild(o);
-    });
-    pattern.addEventListener('change', () => {
-      editing().pattern = +pattern.value; save(); link.sendPC(patch().pattern); paint();
-    });
-
     const palette = $('pPalette');
     for (let i = 0; i < 9; i++) {
       const o = el('option', null, 'palette ' + i); o.value = i; palette.appendChild(o);
@@ -980,7 +944,6 @@
   function paintHead() {
     const p = patch();
     if ($('pName').value !== p.name) $('pName').value = p.name;
-    $('pPattern').value = p.pattern;
     $('pPalette').value = p.palette;
     $('pRampJourney').value = String(P.periodByte(P.periodStep(p.rampJourney)));
     $('pRampAccent').value = String(P.periodByte(P.periodStep(p.rampAccent)));
@@ -1323,7 +1286,6 @@
   // value changes sign; the named shapes on a route's wave and the quarter
   // turns of its phase; and the steps of a stepped control.
   function pointsFor(name) {
-    const A = window.AuroraCC;
     const route = P.ROUTES.find(r => [r.amount, r.ratio, r.wave, r.phase].includes(name));
     if (route) {
       if (name === route.wave) return [A.GEN_WAVE_SWELL, A.GEN_WAVE_SAW_DOWN, A.GEN_WAVE_SQUARE];
@@ -1381,19 +1343,17 @@
 
   // Routes are read off the last render, so only a frame the generator drew
   // has any to show.
-  function paintTracks(rendered) {
+  function paintTracks() {
     for (const input of document.querySelectorAll('input[type=range]')) {
       const r = rows[input.closest('.row')?.dataset.name];
-      paintTrack(input, rendered && r ? swingOf(r.def.name) : null, r ? r.points : []);
+      paintTrack(input, r ? swingOf(r.def.name) : null, r ? r.points : []);
     }
   }
 
   // The overlay goes on the big wall only. On a small one the five dots land
   // within a few pixels of each other and report nothing.
-  function drawOne(wall, named, beats, pattern) {
-    const frame = pattern === 11 ? V.renderStripOrder()
-      : pattern === 0 ? V.blank()
-      : V.render(L.setFromNamed(sounding(named)), beats, wall.motion, wall.paths);
+  function drawOne(wall, named, beats) {
+    const frame = V.render(L.setFromNamed(sounding(named)), beats, wall.motion, wall.paths);
     V.draw(wall.ctx, wall.glow, frame, order(), flipped, wall.w, wall.h,
            showFan && wall === walls.main);
   }
@@ -1414,15 +1374,14 @@
   // is for.
   function frame() {
     const beats = ((performance.now() - startedAt) / 60000) * bpm();
-    const pattern = patch().pattern;
-    drawOne(walls.main, liveNamed(), beats, pattern);
-    paintTracks(pattern !== 0 && pattern !== 11);
+    drawOne(walls.main, liveNamed(), beats);
+    paintTracks();
     if (isFarEnd()) {
       V.copyMotion(walls.base.motion, walls.main.motion);
       V.copyMotion(walls.far.motion, walls.main.motion);
-      drawOne(walls.base, L.namedFromSet(baseSet()), beats, pattern);
+      drawOne(walls.base, L.namedFromSet(baseSet()), beats);
       drawOne(walls.far, L.blend(baseSet(), L.materialize(patch(), setIndex), 1, switchSource()),
-              beats, pattern);
+              beats);
     }
     requestAnimationFrame(frame);
   }
@@ -1467,7 +1426,6 @@
     buildShape();
     buildModulators();
     buildRoutePanel();
-    buildStarts();
     buildOutputs();
     buildTabs();
     buildHead();

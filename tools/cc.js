@@ -85,6 +85,8 @@
     1 + Math.min(ROUTE_MAX_RATIO - 1,
                  Math.floor((v * (ROUTE_MAX_RATIO - 1) + 63) / 127));
 
+  const PRESET_GENERATOR = 10;
+
   const GEN_WAVE_SWELL = 32;
   const GEN_WAVE_SAW_DOWN = 64;
   const GEN_WAVE_SQUARE = 96;
@@ -102,7 +104,7 @@
 
   global.AuroraCC = {
     CC, TAGS, tagged, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
-    routeCC, routeRatio,
+    routeCC, routeRatio, PRESET_GENERATOR,
     GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_LFO_MIN_WIDTH,
     LFO_PERIODS,
   };

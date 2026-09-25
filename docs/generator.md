@@ -671,7 +671,7 @@ a cell as it resizes, and bounce is solved to stand the core where it was.
 a beat after the last — the transport jumped, or the editor's tab sat in
 the background. The renderer cannot tell a patch change from fast faders,
 so the caller clears it with `clearPaths`: the editor does on choosing a
-slot or a starting point, and the brain on the generator's program change,
+slot, and the brain on the generator's program change,
 which a patch sends after its controls — see the note on Program Change in
 `shared/aurora_protocol.h`.
 
@@ -1081,8 +1081,8 @@ nearly free and the question shrinks to what 4 and 5 need.
 1. **The fan is built and unseen.** § "The fan is a wave" answers the
    staircase, the random arrangement and the rate offset together, and
    renders all of it in `tools/preview.js` and the firmware. Ten looks
-   are dialed in the editor's *Fan looks* row and none has been on the
-   wall. Until they have, four things are guesses:
+   were dialed as editor starting points, now in
+   `git show 21a435c:tools/patch.js`, and none has been on the wall. Until they have, four things are guesses:
 
    - **Whether the chevron gets Rain back.** `docs/visual-design.md`
      records Rain and Comet arriving at the same look because a linear
@@ -1243,8 +1243,7 @@ nearly free and the question shrinks to what 4 and 5 need.
   button sends a transport start and restarts the page's beat zero
   together, so the bar a swell lands on is the same bar in both.
 - `tools/editor.html` — sliders over Web MIDI, the patch library over SysEx,
-  the morph control, the roster as one-click starting points, and a row of
-  color looks that set the color layer only.
+  and the morph control.
 
   **Serve it rather than opening the file.** `python3 -m http.server` from
   `tools/`, then `http://localhost:8000/`. A `file://` page gets a

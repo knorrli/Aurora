@@ -61,6 +61,7 @@ for (const m of src.matchAll(/^\s*(ROUTE_[A-Z]+)\s*=\s*(\d+),/gm)) {
 
 const num = (re, what) => Number(one(re, what));
 const maxRatio = num(/AURORA_ROUTE_MAX_RATIO\s*=\s*(\d+);/, 'AURORA_ROUTE_MAX_RATIO');
+const presetGenerator = num(/PRESET_GENERATOR\s*=\s*(\d+),/, 'PRESET_GENERATOR');
 const waveSwell = num(/#define GEN_WAVE_SWELL\s+(\d+)/, 'GEN_WAVE_SWELL');
 const waveSawDown = num(/#define GEN_WAVE_SAW_DOWN\s+(\d+)/, 'GEN_WAVE_SAW_DOWN');
 const waveSquare = num(/#define GEN_WAVE_SQUARE\s+(\d+)/, 'GEN_WAVE_SQUARE');
@@ -96,6 +97,8 @@ ${body}
     1 + Math.min(ROUTE_MAX_RATIO - 1,
                  Math.floor((v * (ROUTE_MAX_RATIO - 1) + 63) / 127));
 
+  const PRESET_GENERATOR = ${presetGenerator};
+
   const GEN_WAVE_SWELL = ${waveSwell};
   const GEN_WAVE_SAW_DOWN = ${waveSawDown};
   const GEN_WAVE_SQUARE = ${waveSquare};
@@ -113,7 +116,7 @@ ${body}
 
   global.AuroraCC = {
     CC, TAGS, tagged, NAME_BY_CC, ROUTES, ROUTE_BASE, ROUTE_FIELD, ROUTE_MAX_RATIO,
-    routeCC, routeRatio,
+    routeCC, routeRatio, PRESET_GENERATOR,
     GEN_WAVE_SWELL, GEN_WAVE_SAW_DOWN, GEN_WAVE_SQUARE, GEN_LFO_MIN_WIDTH,
     LFO_PERIODS,
   };

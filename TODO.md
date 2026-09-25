@@ -41,7 +41,7 @@ Everything lives on **`main`**. The last v1 commit is tagged
   wherever the last traveling one ran out. See `docs/generator.md` § "A
   still pattern stands where it is told".
 - **The bench panel** — `tools/editor.html`, drawn as the signal flow, with
-  the patch library, the morph control and a row of color looks. The routes
+  the patch library and the morph control. The routes
   are a third branch on it, since they reach both the others and the washes.
 - **The wall on screen** — `tools/preview.js`, five strips and four PARs
   drawn by the brain's own renderer compiled to WebAssembly, so a look can
@@ -194,7 +194,8 @@ live from the editor.
       heading for, and so should every strip with the fan up, since each
       now carries its own travel phase. A pattern entered with bounce
       already on still starts its swing somewhere new, which is expected. See `DESIGN.md` § "Switches belong to the patch".
-- [ ] **Dial the ten fan looks**, in the *Fan looks* row of either page.
+- [ ] **Dial the ten fan looks**, removed from the editor 2026-09-25 and
+      recoverable from `git show 21a435c:tools/patch.js`, § starting points.
       Built 2026-09-23, seen by nothing but the preview, and the whole
       rework rests on them. Four of them answer something on their own:
       **Chevron ∧** is whether a quarter turn of phase gets Rain back,
@@ -237,7 +238,8 @@ live from the editor.
       and stop again, all five together. A tail follows the swing, so a
       shape swung backwards leaves its glow behind it rather than running
       tail-first. See `docs/modulation.md` § "A rate swings both ways".
-- [ ] **Judge the afterglow.** The *Swing* starting points: a tail should
+- [ ] **Judge the afterglow.** The *Swing* looks, from
+      `git show 21a435c:tools/patch.js`, § starting points: a tail should
       stay behind its shape through the swing, shrink as it slows and be
       gone while it stands. Then whether 8 beats is the right top, whether
       half a beat sits at a useful place on the fader, and what the brain's
@@ -301,7 +303,7 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       relationship and may still read as adrift. Cutting them would leave
       seven positions, all powers of two.
 - [ ] **Judge Bend on the wall.** The *Falling, bent* and *Bouncing, bent*
-      starting points. Liked in the preview on sight; what the preview cannot
+      anchors, from `git show 21a435c:tools/patch.js`, § starting points. Liked in the preview on sight; what the preview cannot
       show is whether shapes squashed at the slow end shimmer at full bend.
 - [ ] **Decide whether a wrapping strip is a loop or a line.** Settled
       for bounce, open for wrap. See `docs/generator.md` § Open, "Is a

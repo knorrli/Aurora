@@ -444,122 +444,6 @@
     ]),
   };
 
-;
-
-  // ---- starting points ---------------------------------------------------
-
-  // Carries the fan's wave as well as its amounts, so an anchor that fans
-  // nothing cannot inherit a chevron from whatever was up before it. A
-  // full-width look's strips cannot be seen to stand apart, which is why
-  // Wave, Chase and Stutter below spend their amount on the swell.
-  const SHAPE_FLAT = {
-    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
-    genFan: 64, genFanLfo: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
-    genBounce: OFF,
-  };
-
-  const ANCHORS = {
-    Fill:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
-    Sweep:      { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 80, genFan: 64, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
-    Rain:       { genWidth: 40, genCount: 0, genEdge: 18, genTail: 96, genSpeed: 80, genFan: 100, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
-    CrossSweep: { genWidth: 40, genCount: 0, genEdge: 18, genTail: 0, genSpeed: 64, genFan: 64, genFanRate: 80, genFanFreq: 127, genFanPhase: 64, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
-    Bars:       { genWidth: 25, genCount: 0, genEdge: 15, genTail: 0, genSpeed: 88, genFan: 64, genBounce: ON, pulseDepth: 0, genLfoRate: 64, pulseWave: 32 },
-    Breathe:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 100, genLfoRate: 30, pulseWave: 32 },
-    Wave:       { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanLfo: 104, pulseDepth: 100, genLfoRate: 30, pulseWave: 32 },
-    Chase:      { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanLfo: 114, pulseDepth: 127, genLfoRate: 55, pulseWave: 88 },
-    Comet:      { genWidth: 30, genCount: 0, genEdge: 30, genTail: 119, genSpeed: 80, genFan: 114, pulseDepth: 0, genLfoRate: 55, pulseWave: 32 },
-    Strobe:     { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, pulseDepth: 127, genLfoRate: 100, pulseWave: 96 },
-    Stutter:    { genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 64, genFanLfo: 88, pulseDepth: 127, genLfoRate: 100, pulseWave: 96 },
-    'Falling, bent': { genWidth: 30, genCount: 39, genEdge: 8, genTail: 32, genSpeed: 40, genBend: 127, genBendAt: 127 },
-    'Bouncing, bent': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 92, genBounce: ON, genBend: 127, genBendAt: 64 },
-  };
-
-  // The looks the fan rework was built against. The first is the patch that
-  // could not be built before it: the five strips standing apart in their
-  // cells while the swell lands on all of them together.
-  //
-  // Count 68 is five bars to a strip. Rate 96 is ±30 px/beat at the ends of
-  // the wave, so Speed at 20 — about −29 px/beat — is what stands the outer
-  // strips still in Hypno together while the center runs.
-  const FAN_LOOKS = {
-    'Bars, unison strobe': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFan: 100,
-                             pulseDepth: 127, genLfoRate: 100, pulseWave: 96 },
-    'Diagonal bars':  { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 0 },
-    'Chevron \u2227':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 114, genFanPhase: 32 },
-    'Chevron \u2228':     { genWidth: 25, genCount: 0, genEdge: 10, genTail: 0, genSpeed: 64, genFan: 14, genFanPhase: 32 },
-    'Comets':         { genWidth: 12, genCount: 0, genEdge: 8, genTail: 127, genSpeed: 48, genFan: 127, genFanRandom: 127 },
-    'Shooting stars': { genWidth: 10, genCount: 0, genEdge: 0, genTail: 83, genSpeed: 40, genFanRate: 105, genFanRandom: 127 },
-    'Hypno outer':    { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 0 },
-    'Hypno together': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 20, genFanRate: 108, genFanPhase: 32 },
-    'Hypno center':   { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 32 },
-    'Alternate by rate': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108,
-                           genFanFreq: 127, genFanPhase: 64 },
-  };
-
-  // For judging a tail under a swung speed: it should stay behind the shape
-  // through the reversal, shrink as the shape slows and be gone while it
-  // stands. One comet per strip, a one-bar LFO and a sine on Speed, with the
-  // fan's LFO spread at full so the five strips stand at five points of the
-  // swing and forward and backward show side by side. The first stands still
-  // and swings ±20 px/beat; the second runs forward at 20 and swings ±10, so
-  // it slows and never reverses; the third is the first under bounce. Every other route is freed, since a look that left
-  // one running would be judged against it.
-  const route0 = field => routeName(0, field);
-  const SWING = {
-    genWidth: 10, genCount: 0, genEdge: 6, genTail: 56, genSpeed: 64, genLfoRate: 38,
-    genFanLfo: 127,
-    [route0('destination')]: A.CC.genSpeed, [route0('amount')]: 100,
-    [route0('ratio')]: 0, [route0('wave')]: A.GEN_WAVE_SWELL, [route0('phase')]: 32,
-  };
-  const SWING_LOOKS = {
-    'Tail, swung backwards': SWING,
-    'Tail, slowed only': Object.assign({}, SWING, { genSpeed: 100, [route0('amount')]: 90 }),
-    'Tail, swung under bounce': Object.assign({}, SWING, { genBounce: ON }),
-  };
-
-  const COLOR_FLAT = {
-    colorRegion: GRADIENT, colorRuler: ON_STRIP,
-    placedHue: 64, placedWhite: 64, placedDark: 64,
-    placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
-    wanderHue: 64, wanderWhite: 64, wanderDark: 64, wanderRate: 50, wanderScale: 20,
-    litHue: 64, litWhite: 0, litDark: 64,
-    scatterLight: 64, scatterHue: 64, scatterWhite: 64,
-  };
-
-  const COLOR_LOOKS = {
-    Flat: {},
-    Rainbow: { colorRegion: GRADIENT, colorRuler: ON_WALL, placedHue: 112 },
-    Mirror: { colorRegion: REGION, colorRuler: ON_WALL, placedHue: 110, placedWidth: 30, placedEdge: 96 },
-    'Strip gradient': { colorRegion: GRADIENT, colorRuler: ON_STRIP, placedHue: 110 },
-    'Center cell': { colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 104, placedWidth: 22, placedEdge: 0 },
-    'Head and tail': { colorRegion: GRADIENT, colorRuler: IN_SHAPE, placedHue: 104 },
-    'Comet tail': { colorRegion: GRADIENT, colorRuler: IN_SHAPE, placedHue: 108, litWhite: 127 },
-    'Drifting bands': { colorRegion: REGION, colorRuler: ON_STRIP, placedHue: 90, placedCount: 54, placedWidth: 40, placedEdge: 110, placedSpeed: 78 },
-    Alive: { wanderHue: 92, wanderRate: 60, wanderScale: 6 },
-    Boiling: { wanderHue: 104, wanderDark: 40, wanderRate: 110, wanderScale: 74 },
-    Ember: { litHue: 100, litWhite: 34 },
-    Sprinkle: { scatterLight: 116, scatterRate: 72, scatterCount: 90, scatterWidth: 30, scatterEdge: 44, scatterStagger: 122, scatterDrift: 64 },
-    Blitzgewitter: { scatterLight: 127, scatterRate: 58, scatterCount: 74, scatterWidth: 40, scatterEdge: 4, scatterStagger: 0, scatterDrift: 64 },
-    Raindrops: { scatterLight: 120, scatterRate: 34, scatterCount: 10, scatterWidth: 16, scatterEdge: 70, scatterStagger: 108, scatterDrift: 8 },
-  };
-  for (const name of Object.keys(COLOR_LOOKS)) {
-    COLOR_LOOKS[name] = Object.assign({}, COLOR_FLAT, COLOR_LOOKS[name]);
-  }
-  for (const name of Object.keys(FAN_LOOKS)) {
-    FAN_LOOKS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, FAN_LOOKS[name]);
-  }
-  const ROUTES_FREE = {};
-  for (const route of ROUTES) {
-    for (const field of ROUTE_FIELDS) ROUTES_FREE[route[field]] = NEUTRAL[route[field]];
-  }
-  for (const name of Object.keys(SWING_LOOKS)) {
-    SWING_LOOKS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, ROUTES_FREE, SWING_LOOKS[name]);
-  }
-
-  for (const name of Object.keys(ANCHORS)) {
-    ANCHORS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, ANCHORS[name]);
-  }
-
   global.AuroraPatch = {
     PATCH_FORMAT, CC_COUNT, NAME_LEN, SETS, KEYS, PATCH_MAX,
     SET_BASE, SET_COLOR, SET_EXTENT, SET_MOTION, SET_ACCENT, SET_NAMES, SET_BLURB,
@@ -568,6 +452,5 @@
     unit, bip, LFO_PERIODS, LFO_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
     SHAPE, LFO, MODULATORS, ROUTES, STRIPS, PARS, TIMING,
-    ANCHORS, FAN_LOOKS, SWING_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

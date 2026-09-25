@@ -13,6 +13,7 @@
 (function (global) {
   'use strict';
 
+  const A = global.AuroraCC;
   const P = global.AuroraPatch;
 
   const SYSEX_ID = 0x7D, SIG_A = 0x41, SIG_B = 0x55;
@@ -71,7 +72,6 @@
   function newPatch(name) {
     return {
       name: (name || 'untitled').slice(0, P.NAME_LEN),
-      pattern: 10,
       palette: 0,
       rampJourney: P.periodByte(4),   // four beats, one bar
       rampAccent: P.periodByte(10),   // half a beat
@@ -81,7 +81,7 @@
   }
 
   const clonePatch = p => ({
-    name: p.name, pattern: p.pattern, palette: p.palette,
+    name: p.name, palette: p.palette,
     rampJourney: p.rampJourney, rampAccent: p.rampAccent,
     base: p.base.slice(),
     overrides: p.overrides.map(o => (o ? Object.assign({}, o) : null)),
@@ -104,7 +104,7 @@
 
   function toWire(patch) {
     return {
-      name: patch.name, pattern: patch.pattern, palette: patch.palette,
+      name: patch.name, palette: patch.palette,
       rampJourney: patch.rampJourney, rampAccent: patch.rampAccent,
       sets: Array.from({ length: P.SETS }, (_, i) => materialize(patch, i)),
     };
@@ -127,7 +127,7 @@
       overrides.push(o);
     }
     return {
-      name: w.name, pattern: w.pattern, palette: w.palette,
+      name: w.name, palette: w.palette,
       rampJourney: w.rampJourney, rampAccent: w.rampAccent, base, overrides,
     };
   }
@@ -234,7 +234,7 @@
     lib.patches.forEach((p, i) => {
       out.push('    {');
       out.push(`      "slot": ${p.slot}, "name": ${JSON.stringify(p.name)},`);
-      out.push(`      "pattern": ${p.pattern}, "palette": ${p.palette}, "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
+      out.push(`      "palette": ${p.palette}, "rampJourney": ${p.rampJourney}, "rampAccent": ${p.rampAccent},`);
       out.push('      "sets": [');
       p.sets.forEach((set, n) => out.push(`        [${set.join(',')}]${n < P.SETS - 1 ? ',' : ''}`));
       out.push('      ]');
@@ -281,7 +281,7 @@
 
   function headBytes(p) {
     const name = String(p.name || '').padEnd(P.NAME_LEN, ' ').slice(0, P.NAME_LEN);
-    const out = [p.pattern & 0x7F, p.palette & 0x7F,
+    const out = [A.PRESET_GENERATOR, p.palette & 0x7F,
                  p.rampJourney & 0x7F, p.rampAccent & 0x7F];
     for (let i = 0; i < P.NAME_LEN; i++) out.push(name.charCodeAt(i) & 0x7F);
     return out;
@@ -408,7 +408,7 @@
     }
     return {
       patch: {
-        name: nameOf(head), pattern: head[0], palette: head[1],
+        name: nameOf(head), palette: head[1],
         rampJourney: head[2], rampAccent: head[3], sets,
       },
     };

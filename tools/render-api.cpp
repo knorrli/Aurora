@@ -46,10 +46,6 @@ EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Paths *p
   render::renderGenerator(controls, beats, *motion, *paths, frame);
 }
 
-EMSCRIPTEN_KEEPALIVE void aurora_render_strip_order() {
-  render::renderStripOrder(frame.pixels);
-}
-
 EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave) {
   return render::lfoWave(phase, (uint8_t)wave);
 }
