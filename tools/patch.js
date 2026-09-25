@@ -1,475 +1,413 @@
-// tools/patch.js — what a patch is, in the editor.
-//
-// One place that knows the CC map, what every control means, how its value
-// reads in words, and how a patch turns into the bytes the wire carries.
-// The page above it holds no numbers of its own.
-//
-// A patch is five parameter sets of 128 bytes plus a head — DESIGN.md
-// § "Patch storage". The editor owns the [patch] and [switch] CCs and writes
-// zero to every other byte: arriving at a patch writes those CCs through the
-// brain's own handlers, and a byte no handler claims is never read.
-
 (function (global) {
   'use strict';
 
-  const PATCH_FORMAT = 1;
-  const CC_COUNT = 128;
-  const NAME_LEN = 16;
-  const SETS = 5;
-  const KEYS = 9;
-  const PATCH_MAX = 128;
+  const Protocol = global.AuroraProtocol;
+  const preview = () => global.AuroraPreview;
 
-  // PATCH_SET_* in shared/aurora_protocol.h. The order is part of the format.
-  const SET_BASE = 0, SET_COLOR = 1, SET_EXTENT = 2, SET_MOTION = 3, SET_ACCENT = 4;
-
-  const SET_NAMES = ['Base', 'Color', 'Extent', 'Motion', 'Accent'];
-  const SET_BLURB = [
+  const PART_NAMES = ['Base', 'Color', 'Extent', 'Motion', 'Accent'];
+  const PART_BLURBS = [
     'the look itself — what the wall shows with every fader down',
-    'the Color fader’s far end. More means hotter, toward white',
-    'the Extent fader’s far end. More means more of the wall lit',
-    'the Motion fader’s far end. More means faster, harder, more agitated',
+    'where the Color fader morphs to. More means hotter, toward white',
+    'where the Extent fader morphs to. More means more of the wall lit',
+    'where the Motion fader morphs to. More means faster, harder, more agitated',
     'where holding this patch’s own key pushes. Belongs to no fader',
   ];
+  const TARGETS = [Protocol.PATCH_TARGET_COLOR, Protocol.PATCH_TARGET_EXTENT,
+                   Protocol.PATCH_TARGET_MOTION, Protocol.PATCH_TARGET_ACCENT];
+  const isTarget = part => part !== Protocol.PATCH_BASE;
 
-  // Every [patch] and [switch] CC in shared/aurora_protocol.h, and nothing
-  // else. A name here is the only handle the rest of the editor uses.
-  const A = global.AuroraCC;
-  const CC = Object.assign({}, A.CC);
+  const CC = Object.assign({}, Protocol.CC);
 
-  // The route CCs have no enum names of their own — the block is regular, so
-  // AURORA_ROUTE_BASE and the field offsets are the whole of it. Their control
-  // names are built to match: route3Amount is route 3's amount.
-  const ROUTE_FIELDS = Object.keys(A.ROUTE_FIELD);
-  const routeName = (r, field) => `route${r}${field[0].toUpperCase()}${field.slice(1)}`;
-  const ROUTE_NAMES = [];
-  for (let r = 0; r < A.ROUTES; r++) {
+  const ROUTE_FIELDS = Object.keys(Protocol.ROUTE_FIELD);
+  const capitalized = word => word[0].toUpperCase() + word.slice(1);
+  const routeName = (route, field) => `route${route + 1}${capitalized(field)}`;
+
+  const ROUTES = Array.from({ length: Protocol.ROUTES }, (_, route) => {
+    const names = {};
     for (const field of ROUTE_FIELDS) {
-      const name = routeName(r, field);
-      CC[name] = A.routeCC(r, A.ROUTE_FIELD[field]);
-      ROUTE_NAMES.push(name);
+      names[field] = routeName(route, field);
+      CC[names[field]] = Protocol.routeCC(route, Protocol.ROUTE_FIELD[field]);
     }
-  }
+    return Object.assign({
+      name: 'Route ' + (route + 1),
+      fields: ROUTE_FIELDS.map(field => names[field]),
+      controls: ROUTE_FIELDS.filter(field => field !== 'destination').map(field => names[field]),
+    }, names);
+  });
+  const ROUTE_FIELD_NAMES = ROUTES.flatMap(route => route.fields);
+  const routeOf = name => ROUTES.find(route => route.fields.includes(name));
 
-  // What a patch holds: the enum's [patch] and [switch], plus the routes. The
-  // controller's own reports are [ambient] and [gesture] — a fader position is
-  // where a hand left it, not something a look holds.
-  const NAMES = A.tagged('patch').concat(A.tagged('switch'), ROUTE_NAMES)
+  const NAMES = Protocol.tagged('patch').concat(Protocol.tagged('switch'), ROUTE_FIELD_NAMES)
     .sort((a, b) => CC[a] - CC[b]);
+  const SWITCHES = new Set(Protocol.tagged('switch').concat(ROUTES.map(route => route.destination)));
+  const isSwitch = name => SWITCHES.has(name);
+  const CONTINUOUS = NAMES.filter(name => !isSwitch(name));
 
-  // The four with no middle. A morph never moves one, and within a patch the
-  // far ends share the base's — DESIGN.md § "Switches belong to the patch"
-  // states the authoring rule directly: a patch and its own morph target
-  // share switches.
-  // A route's destination has no middle either: halfway between two controls
-  // is not a control.
-  const SWITCHES = A.tagged('switch')
-    .concat(Array.from({ length: A.ROUTES }, (_, r) => routeName(r, 'destination')));
-  const CONTINUOUS = NAMES.filter(n => !SWITCHES.includes(n));
+  const clampToSevenBits = value => (value < 0 ? 0 : value > 127 ? 127 : value | 0);
+  const bipolar = value => (value < 64 ? (value - 64) / 64 : (value - 64) / 63);
 
-  const OFF = 0, ON = 127;
-  const isOn = v => v >= 64;
-  const band3 = v => (v < 43 ? 0 : v < 86 ? 1 : 2);
-  const GRADIENT = 0, REGION = 64, INSIDE_OUT = 127;
-  const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
+  const real = (name, value) => preview().convert(CC[name], value);
 
-  const clamp7 = v => (v < 0 ? 0 : v > 127 ? 127 : v | 0);
-
-  // ---- readouts ----------------------------------------------------------
-  //
-  // The number in every label is the renderer's own, from convert() in
-  // shared/render/generator.cpp, so a label says what the wall is doing. What
-  // stays here is only the wording. Labels are drawn after tools/preview.js has
-  // its module, which is why they reach it at call time.
-
-  const V = () => global.AuroraPreview;
-  const real = (name, v) => V().convert(A.CC[name], v);
-
-  const unit = v => v / 127;
-  const bip = v => (v < 64 ? (v - 64) / 64 : (v - 64) / 63);
-  const pct = v => (v / 127 * 100).toFixed(0) + '%';
-  const percent = r => (r * 100).toFixed(0) + '%';
-  const ofByte = r => percent(r / 255);
-  const sign = r => (r < 0 ? '−' : '+');
-  const signed = r => sign(r) + percent(Math.abs(r));
-  const signedInt = r => sign(r) + Math.abs(r);
+  const percent = ratio => (ratio * 100).toFixed(0) + '%';
+  const ofByte = ratio => percent(ratio / 255);
+  const sign = ratio => (ratio < 0 ? '−' : '+');
+  const signed = ratio => sign(ratio) + percent(Math.abs(ratio));
+  const signedInteger = ratio => sign(ratio) + Math.abs(ratio);
   const beatsPer = rate => {
     if (Math.abs(rate) < 0.004) return '∞';
     const beats = 1 / Math.abs(rate);
     return beats.toFixed(beats < 10 ? 1 : 0);
   };
 
-  function fanTurns(v) {
-    const turns = real('genFanFreq', v) * (V().STRIPS - 1);
-    return turns.toFixed(2) + ' turns';
-  }
+  const fanAmount = (name, what) => value => percent(Math.abs(real(name, value)) * 2) + ' ' + what;
+  const hueReach = name => value => signedInteger(Math.round(real(name, value))) + ' of 255';
 
-  // Both ends of a fan amount are the same wall with the wave turned over,
-  // so these say how far apart the strips stand and not which way.
-  const fanAmount = (name, what) => v => percent(Math.abs(real(name, v)) * 2) + ' ' + what;
-  const hueReach = name => v => signedInt(Math.round(real(name, v))) + ' of 255';
-
-  const LFO_PERIODS = A.LFO_PERIODS;
   const PERIOD_NAMES = {
     16: '16 beats · four bars', 12: '12 beats · three bars', 8: '8 beats · two bars',
     6: '6 beats', 4: '4 beats · one bar', 3: '3 beats', 2: '2 beats · half a bar',
     1.5: '1½ beats', 1: '1 beat', 0.75: '¾ beat', 0.5: '½ beat', 0.375: '⅜ beat', 0.25: '¼ beat',
   };
-  const LFO_PERIOD_NAMES = LFO_PERIODS.map(beats => PERIOD_NAMES[beats]);
-  const periodStep = v => LFO_PERIODS.indexOf(V().lfoPeriodBeats(v));
-  const periodByte = step => Math.round(step * 127 / (LFO_PERIODS.length - 1));
+  const LFO_PERIOD_NAMES = Protocol.LFO_PERIODS.map(beats => PERIOD_NAMES[beats]);
+  const shortPeriodName = beats => PERIOD_NAMES[beats].split(' · ')[0];
+  const periodStep = value => Protocol.steppedIndex(value, Protocol.LFO_PERIODS.length);
+  const periodValue = step => Math.round(step * 127 / (Protocol.LFO_PERIODS.length - 1));
 
-  // AuroraTempoDivision. The value is the enum index, not a 0-127 scale, which
-  // is why this control is a list and not a fader.
-  const DIVISIONS = [
-    [0, 'quarter · one pulse a beat'], [1, 'bar'], [2, 'half'],
-    [3, 'eighth'], [4, 'eighth triplet'], [5, 'sixteenth'],
-  ];
+  const TEMPO_DIVISION_NAMES = {
+    quarter: 'quarter · one pulse a beat', bar: 'bar', half: 'half',
+    eighth: 'eighth', eighthTriplet: 'eighth triplet', sixteenth: 'sixteenth',
+  };
+  const TEMPO_DIVISIONS = Object.entries(Protocol.TEMPO_DIVISION)
+    .map(([key, value]) => [value, TEMPO_DIVISION_NAMES[key]]);
 
-  // One pattern per control, with only the number moving: a readout that
-  // changes shape as the fader moves reflows the rows below it. Each fits the
-  // readout column on one line; what a number means is in the control's hint.
-  const DERIVED = {
-
-    genWidth: v => percent(real('genWidth', v)),
-    genEdge: v => percent(real('genEdge', v)) + ' of the gap',
-    genTail: v => { const beats = real('genTail', v);
-                    return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats'; },
-    genCount: v => real('genCount', v) + ' shapes',
-    genPosition: v => signed(real('genPosition', v)) + ' of a cell',
-    genSpeed: v => { const s = real('genSpeed', v);
-                     return sign(s) + Math.abs(s).toFixed(1) + ' px/beat'; },
-    genBend: v => signed(real('genBend', v)) + ' bent',
-    genBendAt: v => { const at = real('genBendAt', v);
-                      return at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top'
-                           : Math.round(at * 100) + '% up'; },
-    genFan: fanAmount('genFan', 'of a cell'),
-    genFanLfo: fanAmount('genFanLfo', 'of a cycle'),
-    genFanRate: v => '±' + Math.abs(real('genFanRate', v)).toFixed(1) + ' px/beat',
-    genFanFreq: fanTurns,
-    genFanPhase: v => percent(real('genFanPhase', v)) + ' of a turn',
-    genFanRandom: v => percent(real('genFanRandom', v)) + ' scrambled',
-
-    hue: v => real('hue', v) + '/255',
-    saturation: v => ofByte(real('saturation', v)),
-    value: v => ofByte(real('value', v)),
-
-    genLfoRate: v => PERIOD_NAMES[real('genLfoRate', v)].split(' · ')[0],
-    routeAmount: v => signed(bip(v)),
-    routeRatio: v => '×' + A.routeRatio(v) + ' the LFO',
-    routePhase: v => Math.round(v / 128 * 360) + '°',
-    // One axis from a build to a stab; the named shapes are notched on the
-    // track. See docs/modulation.md § "The fork, settled".
-    routeWave: v => v < 32 ? 'build ' + pct(v * 4) + '→swell'
-                  : v < 64 ? 'swell ' + pct((v - 32) * 4) + '→snap'
-                  : v < 96 ? 'snap ' + pct((v - 64) * 4) + '→square'
-                  : 'square ' + pct((v - 96) * 4) + '→stab',
-
-    scatterRate: v => 'every ' + beatsPer(real('scatterRate', v)) + ' beats',
-    scatterCount: v => { const n = real('scatterCount', v);
-                         return n + ' × ' + (V().PIXELS / n).toFixed(1) + ' px'; },
-    scatterWidth: v => percent(real('scatterWidth', v)) + ' of a cell',
-    scatterEdge: v => percent(real('scatterEdge', v)) + ' soft',
-    scatterStagger: v => percent(real('scatterStagger', v)) + ' scrambled',
-    scatterDrift: v => signed(real('scatterDrift', v)) + ' of a cell',
-    scatterPlace: v => percent(real('scatterPlace', v)) + ' random',
-    scatterLight: v => signed(real('scatterLight', v)),
-    scatterHue: hueReach('scatterHue'),
-    scatterWhite: v => percent(real('scatterWhite', v)) + ' white',
-
-    placedHue: hueReach('placedHue'),
-    placedWhite: v => percent(real('placedWhite', v)) + ' white',
-    placedDark: v => percent(real('placedDark', v)) + ' dark',
-    placedCount: v => real('placedCount', v) + ' regions',
-    placedWidth: v => percent(real('placedWidth', v)) + ' of a cell',
-    placedEdge: v => percent(real('placedEdge', v)) + ' soft',
-    placedSpeed: v => { const r = real('placedSpeed', v);
-                        return sign(r) + beatsPer(r) + ' beats/cell'; },
-
-    wanderHue: v => '±' + Math.abs(Math.round(real('wanderHue', v))) + ' of 255',
-    wanderWhite: v => percent(real('wanderWhite', v)) + ' white',
-    wanderDark: v => percent(real('wanderDark', v)) + ' dark',
-    wanderRate: v => { const r = real('wanderRate', v);
-                       return (r < 0.004 ? '∞' : (1 / r).toFixed(0)) + ' beats/cycle'; },
-    wanderScale: v => { const c = real('wanderScale', v);
-                        return (c <= 0 ? '∞' : (V().PIXELS / c).toFixed(0)) + ' px across'; },
-
-    litHue: hueReach('litHue'),
-    litWhite: v => percent(real('litWhite', v)) + ' white',
-    litDark: v => percent(real('litDark', v)) + ' dark',
-
-    washLevel: v => ofByte(real('washLevel', v)),
-    washHueOffset: v => '+' + real('washHueOffset', v) + ' of 255',
-    washSaturation: v => ofByte(real('washSaturation', v)) + ' of theirs',
-    washHueSpread: v => signedInt(Math.round(real('washHueSpread', v))) + ' a lamp',
-    washLfoSpread: v => signed(real('washLfoSpread', v)) + ' of a cycle',
-    washHueShuffle: v => percent(real('washHueShuffle', v)) + ' chance',
-    washHuePeriod: v => 'every ' + PERIOD_NAMES[real('washHuePeriod', v)].split(' · ')[0],
-    washLfoShuffle: v => percent(real('washLfoShuffle', v)) + ' chance',
+  const waveText = value => {
+    const stages = ['build', 'swell', 'snap', 'square', 'stab'];
+    const stage = Math.min(3, value >> 5);
+    return `${stages[stage]} ${percent((value - stage * 32) * 4 / 127)}→${stages[stage + 1]}`;
   };
 
-  // Every route reads its fields the same way.
-  for (let r = 0; r < A.ROUTES; r++) {
+  const ROUTE_READOUTS = {
+    amount: value => signed(bipolar(value)),
+    ratio: value => '×' + Protocol.routeRatio(value) + ' the LFO',
+    phase: value => Math.round(value / 128 * 360) + '°',
+    wave: waveText,
+  };
+
+  const READOUTS = {
+    shapeWidth: value => percent(real('shapeWidth', value)),
+    shapeEdge: value => percent(real('shapeEdge', value)) + ' of the gap',
+    shapeTail: value => {
+      const beats = real('shapeTail', value);
+      return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats';
+    },
+    shapeCount: value => real('shapeCount', value) + ' shapes',
+    shapePosition: value => signed(real('shapePosition', value)) + ' of a cell',
+    shapeSpeed: value => {
+      const speed = real('shapeSpeed', value);
+      return sign(speed) + Math.abs(speed).toFixed(1) + ' px/beat';
+    },
+    shapeBend: value => signed(real('shapeBend', value)) + ' bent',
+    shapeBendAt: value => {
+      const at = real('shapeBendAt', value);
+      return at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up';
+    },
+    fanSpread: fanAmount('fanSpread', 'of a cell'),
+    fanLfo: fanAmount('fanLfo', 'of a cycle'),
+    fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
+    fanFrequency: value => (real('fanFrequency', value) * (preview().STRIPS - 1)).toFixed(2) + ' turns',
+    fanPhase: value => percent(real('fanPhase', value)) + ' of a turn',
+    fanRandomize: value => percent(real('fanRandomize', value)) + ' scrambled',
+
+    hue: value => real('hue', value) + '/255',
+    saturation: value => ofByte(real('saturation', value)),
+    value: value => ofByte(real('value', value)),
+
+    lfoRate: value => shortPeriodName(real('lfoRate', value)),
+
+    scatterRate: value => 'every ' + beatsPer(real('scatterRate', value)) + ' beats',
+    scatterCount: value => {
+      const count = real('scatterCount', value);
+      return count + ' × ' + (preview().PIXELS / count).toFixed(1) + ' px';
+    },
+    scatterWidth: value => percent(real('scatterWidth', value)) + ' of a cell',
+    scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
+    scatterRandomize: value => percent(real('scatterRandomize', value)) + ' scrambled',
+    scatterSlide: value => signed(real('scatterSlide', value)) + ' of a cell',
+    scatterSpread: value => percent(real('scatterSpread', value)) + ' random',
+    scatterValue: value => signed(real('scatterValue', value)),
+    scatterHue: hueReach('scatterHue'),
+    scatterWhite: value => percent(real('scatterWhite', value)) + ' white',
+
+    fieldHue: hueReach('fieldHue'),
+    fieldWhite: value => percent(real('fieldWhite', value)) + ' white',
+    fieldDark: value => percent(real('fieldDark', value)) + ' dark',
+    fieldCount: value => real('fieldCount', value) + ' regions',
+    fieldWidth: value => percent(real('fieldWidth', value)) + ' of a cell',
+    fieldEdge: value => percent(real('fieldEdge', value)) + ' soft',
+    fieldSpeed: value => {
+      const rate = real('fieldSpeed', value);
+      return sign(rate) + beatsPer(rate) + ' beats/cell';
+    },
+
+    flowHue: value => '±' + Math.abs(Math.round(real('flowHue', value))) + ' of 255',
+    flowWhite: value => percent(real('flowWhite', value)) + ' white',
+    flowDark: value => percent(real('flowDark', value)) + ' dark',
+    flowRate: value => {
+      const rate = real('flowRate', value);
+      return (rate < 0.004 ? '∞' : (1 / rate).toFixed(0)) + ' beats/cycle';
+    },
+    flowDensity: value => {
+      const cells = real('flowDensity', value);
+      return (cells <= 0 ? '∞' : (preview().PIXELS / cells).toFixed(0)) + ' px across';
+    },
+
+    lightHue: hueReach('lightHue'),
+    lightWhite: value => percent(real('lightWhite', value)) + ' white',
+    lightDark: value => percent(real('lightDark', value)) + ' dark',
+
+    parValue: value => ofByte(real('parValue', value)),
+    parHueOffset: value => '+' + real('parHueOffset', value) + ' of 255',
+    parSaturation: value => ofByte(real('parSaturation', value)) + ' of theirs',
+    parHueSpread: value => signedInteger(Math.round(real('parHueSpread', value))) + ' a lamp',
+    parLfoSpread: value => signed(real('parLfoSpread', value)) + ' of a cycle',
+    parHueShuffle: value => percent(real('parHueShuffle', value)) + ' chance',
+    parHueShuffleEvery: value => 'every ' + shortPeriodName(real('parHueShuffleEvery', value)),
+    parLfoShuffle: value => percent(real('parLfoShuffle', value)) + ' chance',
+  };
+
+  for (const route of ROUTES) {
     for (const field of ROUTE_FIELDS) {
-      DERIVED[routeName(r, field)] =
-          DERIVED['route' + field[0].toUpperCase() + field.slice(1)];
+      if (ROUTE_READOUTS[field]) READOUTS[route[field]] = ROUTE_READOUTS[field];
     }
   }
 
-  // ---- what a control is -------------------------------------------------
-  //
-  // kind: 'fader' unless stated. 'pick' carries its own options, drawn as a
-  // dropdown, and is for the handful of values that are an index rather than a
-  // position. Options can be a function, for a list only the renderer knows
-  // once it has loaded.
+  const ROUTE_DEFAULTS = { destination: 0, amount: 64, ratio: 0, wave: Protocol.WAVE_SWELL, phase: 0 };
 
-  const C = (name, label, hint, extra) =>
-    Object.assign({ name, label, hint, kind: 'fader' }, extra || {});
-
-  const CONTROLS = {};
-  const define = list => { for (const c of list) CONTROLS[c.name] = c; return list.map(c => c.name); };
-
-  // ---- neutral and default ----------------------------------------------
-  //
-  // NEUTRAL is what a reset gives: no push. DEFAULT is where a new patch
-  // starts, which for a source is a setting you can hear rather than a dead
-  // one — a scatter at rate zero is not neutral, it is switched off.
-
-  const NEUTRAL = {
-    tempoDivision: 0,
-    genWidth: 127, genCount: 0, genEdge: 0, genTail: 0, genPosition: 64, genSpeed: 64, genBend: 64, genBendAt: 64,
-    genFan: 64, genFanLfo: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
-    genBounce: OFF,
-
-    palette: 0, hue: 20, saturation: 127, value: 127,
-
-    genLfoRate: 64,
-
-    scatterRate: 60, scatterCount: 80, scatterWidth: 34, scatterEdge: 40,
-    scatterStagger: 110, scatterDrift: 64, scatterPlace: 0,
-    scatterLight: 64, scatterHue: 64, scatterWhite: 0,
-
-    colorPrimitive: GRADIENT, colorRuler: ON_STRIP,
-    placedHue: 64, placedWhite: 0, placedDark: 0,
-    placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
-
-    wanderHue: 64, wanderWhite: 0, wanderDark: 0, wanderRate: 50, wanderScale: 20,
-
-    litHue: 64, litWhite: 0, litDark: 0,
-
-    washLevel: 127, washHueOffset: 0, washSaturation: 127,
-    washHueSpread: 64, washLfoSpread: 64, washHueShuffle: 0, washLfoShuffle: 0,
-    washHuePeriod: 42,
-  };
-  for (const n of ['slotA', 'slotB', 'slotC', 'slotD', 'slotE',
-                   'slotF', 'slotG', 'slotH', 'slotI', 'slotJ']) NEUTRAL[n] = 0;
-
-  // Aimed nowhere, pushing nothing, at the LFO's own rate, on the swell,
-  // starting on the bar line.
-  for (let r = 0; r < A.ROUTES; r++) {
-    NEUTRAL[routeName(r, 'destination')] = 0;
-    NEUTRAL[routeName(r, 'amount')] = 64;
-    NEUTRAL[routeName(r, 'ratio')] = 0;
-    NEUTRAL[routeName(r, 'wave')] = A.GEN_WAVE_SWELL;
-    NEUTRAL[routeName(r, 'phase')] = 0;
+  const DEFAULT = {};
+  for (const name of NAMES) DEFAULT[name] = Protocol.CONTROL_DEFAULTS[name] || 0;
+  for (const route of ROUTES) {
+    for (const field of ROUTE_FIELDS) DEFAULT[route[field]] = ROUTE_DEFAULTS[field];
   }
 
-  // A new patch is one shape traveling across a lit wall: something on the
-  // screen the moment it exists, so the first thing you do is change it
-  // rather than hunt for why the wall is dark.
-  const DEFAULT = Object.assign({}, NEUTRAL, {
-    genWidth: 40, genCount: 0, genEdge: 18, genSpeed: 80,
-  });
+  const NEUTRAL = Object.assign({}, DEFAULT, { shapeWidth: 127, shapeEdge: 0, shapeSpeed: 64 });
 
-  // ---- the surface -------------------------------------------------------
-  //
-  // Carrier, modulators, outputs. The shape lane and the outputs hold only
-  // what the wall shows with nothing pushing on it; everything that pushes is
-  // a source with its amounts beside it, and every source is drawn the same
-  // way whatever it reaches — the placed field, the wander and the light level
-  // all land on the same three qualities and add.
+  const CONTROLS = {};
+  const control = (name, label, hint, extra) => {
+    CONTROLS[name] = Object.assign({ name, label, hint, kind: 'fader' }, extra || {});
+    return name;
+  };
+
+  const OFF = 0, ON = 127;
+  const threeWayOptions = (positions, labels) =>
+    Object.entries(positions).map(([key, position]) => [Protocol.THREE_WAY_VALUES[position], labels[key]]);
 
   const SHAPE = {
     name: 'Shape',
     groups: [
       {
-        key: 'form', title: 'Form',
-        controls: define([
-          C('genCount', 'Count', 'how many shapes along the strip, 1\u201320'),
-          C('genWidth', 'Width', 'the solid core, as a proportion of one cell'),
-          C('genEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
-          C('genTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
-        ]),
+        title: 'Form',
+        names: [
+          control('shapeCount', 'Count', 'how many shapes along the strip, 1–20'),
+          control('shapeWidth', 'Width', 'the solid core, as a proportion of one cell'),
+          control('shapeEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
+          control('shapeTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
+        ],
       },
       {
-        key: 'travel', title: 'Travel',
-        controls: define([
-          C('genSpeed', 'Speed', 'center is still; either side travels'),
-          C('genPosition', 'Position', 'where a still pattern stands in its cell'),
-          C('genBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
-          C('genBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape\u2019s own cell'),
-        ]),
-        switches: define([
-          C('genBounce', 'Bounce', 'turn at the cell\u2019s edge instead of wrapping',
+        title: 'Travel',
+        names: [
+          control('shapeBounce', 'Bounce', 'turn at the cell’s edge instead of wrapping',
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
-        ]),
+          control('shapeSpeed', 'Speed', 'center is still; either side travels'),
+          control('shapePosition', 'Position', 'where a still pattern stands in its cell'),
+          control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
+          control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own cell'),
+        ],
       },
       {
-        key: 'genFan', title: 'Fan',
-        controls: define([
-          C('genFan', 'Spread', 'how far apart the five strips stand in their cells'),
-          C('genFanRate', 'Rate', 'how far apart their speeds stand, either side of Speed'),
-          C('genFanLfo', 'LFO', 'how far apart they stand in the LFO\u2019s cycle'),
-        
-          C('genFanFreq', 'Frequency', 'all five alike \u2192 every strip opposite its neighbors'),
-          C('genFanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
-          C('genFanRandom', 'Randomize', 'the wave \u2192 a fixed draw per strip'),]),
+        title: 'Fan',
+        names: [
+          control('fanSpread', 'Spread', 'how far apart the five strips stand in their cells'),
+          control('fanSpeed', 'Speed', 'how far apart their speeds stand, either side of Speed'),
+          control('fanLfo', 'LFO', 'how far apart they stand in the LFO’s cycle'),
+          control('fanFrequency', 'Frequency', 'all five alike → every strip opposite its neighbors'),
+          control('fanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
+          control('fanRandomize', 'Randomize', 'the wave → a fixed draw per strip'),
+        ],
       },
     ],
   };
 
-  // ---- the modulators ----------------------------------------------------
-  //
-  // Amounts live at the source rather than at the target, settled in
-  // docs/generator.md § Modulation: most of these destinations are not
-  // controls at all — how lit a pixel is, what color it is — so an amount
-  // beside the target would mean inventing rows for things that are not
-  // controls. What that costs is the view from the target’s end, and the
-  // destination table below is what buys it back.
-
-  const ROUTES = Array.from({ length: A.ROUTES }, (_, r) => ({
-    key: 'route' + r,
-    name: 'Route ' + (r + 1),
-    destination: routeName(r, 'destination'),
-    amount: routeName(r, 'amount'),
-    ratio: routeName(r, 'ratio'),
-    wave: routeName(r, 'wave'),
-    phase: routeName(r, 'phase'),
-  }));
-
   for (const route of ROUTES) {
-    define([
-      C(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom. On a rate, how wide the swing either side, and which half comes first'),
-      C(route.ratio, 'Ratio', 'whole multiples of the LFO'),
-      C(route.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
-      C(route.phase, 'Phase', 'how far into its own cycle the wave starts after the bar line'),
-    ]);
+    control(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom. On a rate, how wide the swing either side, and which half comes first');
+    control(route.ratio, 'Ratio', 'whole multiples of the LFO');
+    control(route.wave, 'Wave', 'a build → swell → snap → hard half-bar → stab');
+    control(route.phase, 'Phase', 'how far into its own cycle the wave starts after the bar line');
   }
 
-  // Under a gradient placedAt returns on its first line, so these four reach
-  // nothing at all — and gradient is where the switch starts. They are shown
-  // and dimmed rather than hidden: a control that vanishes reads as a bug, and
-  // the reason is short enough to say.
   const gradientInert = {
-    inertWhen: s => band3(s.colorPrimitive) === band3(GRADIENT),
+    inertWhen: live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient,
     inertWhy: 'a gradient spans its direction once, so there is nothing here to repeat, size or move',
   };
 
   const LFO = {
-    key: 'lfo', name: 'LFO', tone: 'lfo',
-    source: define([
-      C('genLfoRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar'),
-    ]),
+    name: 'LFO', tone: 'lfo',
+    source: [control('lfoRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar')],
+    amounts: [],
   };
 
   const MODULATORS = [
     {
-      key: 'scatter', name: 'Scatter', tone: 'scatter',
-      source: define([
-        C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
-        C('scatterWidth', 'Width', 'the spot\u2019s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
-        C('scatterEdge', 'Edge', 'hard through to a fade \u2014 in space and in time alike'),
-        C('scatterRate', 'Rate', 'how often a cell relights'),
-        C('scatterStagger', 'Randomize', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
-        C('scatterPlace', 'Position', 'where a spot lands each time its cell relights: 0 is the middle of the cell, full anywhere in it'),
-      
-        C('scatterDrift', 'Slide', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),]),
-      amounts: define([
-        C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
-        C('scatterWhite', 'White', 'how far a spot whitens'),
-        C('scatterLight', 'Brightness', 'plus lights a spot up, minus darkens it: on a shape, in a gap or on its tail'),
-      ]),
+      name: 'Scatter', tone: 'scatter',
+      source: [
+        control('scatterCount', 'Count', 'cells along a strip. The same unit as the shape’s Count'),
+        control('scatterWidth', 'Width', 'the spot’s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
+        control('scatterEdge', 'Edge', 'hard through to a fade — in space and in time alike'),
+        control('scatterRate', 'Rate', 'how often a cell relights'),
+        control('scatterRandomize', 'Randomize', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
+        control('scatterSpread', 'Spread', 'where a spot lands each time its cell relights: 0 is the middle of the cell, full anywhere in it'),
+        control('scatterSlide', 'Slide', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),
+      ],
+      amounts: [
+        control('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
+        control('scatterWhite', 'White', 'how far a spot whitens'),
+        control('scatterValue', 'Value', 'plus lights a spot up, minus darkens it: on a shape, in a gap or on its tail'),
+      ],
     },
     {
-      key: 'placed', name: 'Field', tone: 'color',
-      switches: define([
-        C('colorPrimitive', 'Form', 'one ramp along the direction, a region sitting on it, or everything but the region departing',
-          { kind: 'three', options: [[GRADIENT, 'gradient'], [REGION, 'region'], [INSIDE_OUT, 'all but region']] }),
-        C('colorRuler', 'Direction', 'which way the field runs: across the five strips, up a strip, or along a shape from its tip to the end of its tail',
-          { kind: 'three',
-            options: [[ON_WALL, 'horizontal'], [ON_STRIP, 'vertical'], [IN_SHAPE, 'shape']] }),
-      ]),
-      source: define([
-        C('placedCount', 'Count', 'how many regions along the direction', gradientInert),
-        C('placedWidth', 'Width', 'a region\u2019s solid core, as a proportion of one cell', gradientInert),
-        C('placedEdge', 'Edge', 'hard-edged cell through to a smooth fade', gradientInert),
-        C('placedSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back', gradientInert),
-      ]),
-      amounts: define([
-        C('placedHue', 'Hue', 'how far the hue turns, opposite ways at the two ends of a gradient'),
-        C('placedWhite', 'White', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
-        C('placedDark', 'Dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
-      ]),
+      name: 'Field', tone: 'color',
+      source: [
+        control('fieldForm', 'Form', 'one ramp along the direction, a region sitting on it, or everything but the region departing',
+          { kind: 'three', options: threeWayOptions(Protocol.FIELD_FORM,
+            { gradient: 'gradient', region: 'region', allButRegion: 'all but region' }) }),
+        control('fieldDirection', 'Direction', 'which way the field runs: across the five strips, up a strip, or along a shape from its tip to the end of its tail',
+          { kind: 'three', options: threeWayOptions(Protocol.FIELD_DIRECTION,
+            { horizontal: 'horizontal', vertical: 'vertical', shape: 'shape' }) }),
+        control('fieldCount', 'Count', 'how many regions along the direction', gradientInert),
+        control('fieldWidth', 'Width', 'a region’s solid core, as a proportion of one cell', gradientInert),
+        control('fieldEdge', 'Edge', 'hard-edged cell through to a smooth fade', gradientInert),
+        control('fieldSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back', gradientInert),
+      ],
+      amounts: [
+        control('fieldHue', 'Hue', 'how far the hue turns, opposite ways at the two ends of a gradient'),
+        control('fieldWhite', 'White', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
+        control('fieldDark', 'Dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
+      ],
     },
     {
-      key: 'wander', name: 'Flow', tone: 'color',
-      source: define([
-        C('wanderScale', 'Density', 'the whole wall moving as one, down to individual pixels'),
-      
-        C('wanderRate', 'Speed', 'frozen, through a slow ocean swell, to a nervous flicker'),]),
-      amounts: define([
-        C('wanderHue', 'Hue', 'how far the hue wanders either side of the base'),
-        C('wanderWhite', 'White', 'how far it whitens where it swings high'),
-        C('wanderDark', 'Dark', 'how far it darkens where it swings high'),
-      ]),
+      name: 'Flow', tone: 'color',
+      source: [
+        control('flowDensity', 'Density', 'the whole wall moving as one, down to individual pixels'),
+        control('flowRate', 'Rate', 'frozen, through a slow ocean swell, to a nervous flicker'),
+      ],
+      amounts: [
+        control('flowHue', 'Hue', 'how far the hue wanders either side of the base'),
+        control('flowWhite', 'White', 'how far it whitens where it swings high'),
+        control('flowDark', 'Dark', 'how far it darkens where it swings high'),
+      ],
     },
     {
-      key: 'lit', name: 'Light', tone: 'color',
+      name: 'Light', tone: 'color',
       source: [],
-      amounts: define([
-        C('litHue', 'Hue', 'how far the brightest part rotates off the base hue'),
-        C('litWhite', 'White', 'how pale the brightest part goes'),
-        C('litDark', 'Dark', 'how far the brightest part darkens'),
-      ]),
+      amounts: [
+        control('lightHue', 'Hue', 'how far the brightest part rotates off the base hue'),
+        control('lightWhite', 'White', 'how pale the brightest part goes'),
+        control('lightDark', 'Dark', 'how far the brightest part darkens'),
+      ],
     },
   ];
 
   const STRIPS = {
-    controls: define([
-      C('palette', 'Palette', 'what the hue walks through: the rainbow, or a set of colors that loops',
-        { kind: 'pick', options: () => V().paletteNames().map((name, i) => [i, name]) }),
-      C('hue', 'Hue', 'the center hue everything else is measured from, around the palette\u2019s loop'),
-      C('saturation', 'Saturation', 'full is a pure hue, zero is white'),
-      C('value', 'Brightness', 'the ceiling everything below scales against'),
-    ]),
+    title: '5 strips',
+    sections: [[null, [
+      control('palette', 'Palette', 'what the hue walks through: the rainbow, or a set of colors that loops',
+        { kind: 'pick', options: () => preview().paletteNames().map((name, index) => [index, name]) }),
+      control('hue', 'Hue', 'the center hue everything else is measured from, around the palette’s loop'),
+      control('saturation', 'Saturation', 'full is a pure hue, zero is white'),
+      control('value', 'Value', 'the ceiling everything below scales against'),
+    ]]],
   };
 
-  // Their color first, level with the strips' own, then what runs across the
-  // four.
   const PARS = {
-    color: define([
-      C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
-      C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
-      C('washLevel', 'Brightness', 'the PARs\u2019 master, independent of the strips'),
-    ]),
-    hue: define([
-      C('washHueSpread', 'Hue spread', 'each PAR further round the palette than the one before: halfway up is four colors evenly round, either end two alternating. The first PAR sits on Hue offset'),
-      C('washHueShuffle', 'Hue shuffle', 'the chance the four colors are dealt out to the PARs in a new order, once every period'),
-      C('washHuePeriod', 'Shuffle every', 'how often the hue shuffle rolls. Stepped, so it can sit on the bar'),
-    ]),
-    lfo: define([
-      C('washLfoSpread', 'LFO spread', 'each PAR further into the LFO\u2019s cycle than the one before: 25% is a chase, either end alternating pairs'),
-      C('washLfoShuffle', 'LFO shuffle', 'the chance the four PARs swap places in the LFO spread, once every LFO cycle'),
-    ]),
+    title: '4 PARs',
+    sections: [
+      ['Color', [
+        control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue. Zero matches them'),
+        control('parSaturation', 'Saturation', 'scales the PARs down from the strips’ saturation. Full matches them, zero is white'),
+        control('parValue', 'Value', 'the PARs’ master, independent of the strips'),
+      ]],
+      ['Hue across them', [
+        control('parHueSpread', 'Hue spread', 'each PAR further around the palette than the one before: halfway up is four colors evenly around, either end two alternating. The first PAR sits on Hue offset'),
+        control('parHueShuffle', 'Hue shuffle', 'the chance the four colors are dealt out to the PARs in a new order, once every period'),
+        control('parHueShuffleEvery', 'Shuffle every', 'how often the hue shuffle rolls. Stepped, so it can sit on the bar'),
+      ]],
+      ['LFO across them', [
+        control('parLfoSpread', 'LFO spread', 'each PAR further into the LFO’s cycle than the one before: 25% is a chase, either end alternating pairs'),
+        control('parLfoShuffle', 'LFO shuffle', 'the chance the four PARs swap places in the LFO spread, once every LFO cycle'),
+      ]],
+    ],
   };
-  PARS.controls = [...PARS.color, ...PARS.hue, ...PARS.lfo];
+
+  const OUTPUTS = [STRIPS, PARS];
+  const outputNames = output => output.sections.flatMap(([, names]) => names);
+  const cardNames = card => [...card.source, ...card.amounts];
+
+  const PLACES = {};
+  for (const group of SHAPE.groups) {
+    for (const name of group.names) PLACES[name] = `${SHAPE.name} · ${group.title}`;
+  }
+  for (const card of [LFO, ...MODULATORS]) {
+    for (const name of cardNames(card)) PLACES[name] = card.name;
+  }
+  for (const output of OUTPUTS) {
+    for (const name of outputNames(output)) PLACES[name] = output.title;
+  }
+
+  let routableNames = null;
+  const routable = name => {
+    if (!routableNames) {
+      routableNames = new Set(Protocol.tagged('patch').filter(candidate =>
+        CONTROLS[candidate] && !preview().routeRefused(CC[candidate])));
+    }
+    return routableNames.has(name);
+  };
+  const routableDestination = number =>
+    number === 0 || routable(Protocol.NAME_BY_CC[number]);
+  const isCircular = name => Protocol.hasTag(name, 'circular');
+  const swings = name => Protocol.hasTag(name, 'rate');
+
+  function steps(valueOf) {
+    const points = [];
+    let start = 0;
+    for (let value = 1; value <= 128; value++) {
+      if (value < 128 && valueOf(value) === valueOf(start)) continue;
+      if (start > 0 && value < 128) points.push(Math.round((start + value - 1) / 2));
+      start = value;
+    }
+    return points;
+  }
+
+  function pointsFor(name) {
+    const route = routeOf(name);
+    if (route) {
+      if (name === route.wave) return [Protocol.WAVE_SWELL, Protocol.WAVE_SNAP, Protocol.WAVE_SQUARE];
+      if (name === route.phase) return [32, 64, 96];
+      if (name === route.ratio) return steps(Protocol.routeRatio);
+      return [64];
+    }
+    const at = value => real(name, value);
+    if (name === 'shapeBendAt') return [64];
+    if (name === 'parLfoSpread') return steps(at).filter(value => at(value) % 0.25 === 0);
+    if (name === 'lfoRate' || name === 'fanFrequency' || name === 'parHueShuffleEvery') return steps(at);
+    if (!Protocol.hasTag(name, 'patch')) return [];
+    return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
+  }
 
   global.AuroraPatch = {
-    PATCH_FORMAT, CC_COUNT, NAME_LEN, SETS, KEYS, PATCH_MAX,
-    SET_BASE, SET_COLOR, SET_EXTENT, SET_MOTION, SET_ACCENT, SET_NAMES, SET_BLURB,
-    CC, NAMES, SWITCHES, CONTINUOUS, CONTROLS, DERIVED, NEUTRAL, DEFAULT,
-    OFF, ON, isOn, band3, GRADIENT, REGION, INSIDE_OUT, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
-    unit, bip, LFO_PERIODS, LFO_PERIOD_NAMES, periodStep, periodByte,
-    DIVISIONS,
-    SHAPE, LFO, MODULATORS, ROUTES, STRIPS, PARS,
+    PART_NAMES, PART_BLURBS, TARGETS, isTarget,
+    CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT, NEUTRAL,
+    clampToSevenBits, bipolar,
+    LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
+    SHAPE, LFO, MODULATORS, OUTPUTS, ROUTES, PLACES, cardNames,
+    routable, routableDestination, isCircular, swings, pointsFor,
   };
 })(window);

@@ -1,16 +1,3 @@
-// Compiles shared/render to WebAssembly and writes tools/render.js, the one
-// renderer the editor draws the wall with. Needs Emscripten on the path
-// (`brew install emscripten`).
-//
-// The output is committed, so the editor opens from a double-click with no
-// toolchain. It is one file with the WebAssembly inlined, because a page
-// opened from file:// cannot fetch a second one, and inlined as base64
-// because Emscripten's denser encoding is raw bytes in a string, which a page
-// not declared UTF-8 decodes into a different module.
-//
-// `--check` fails if tools/render.js was built from different sources. It
-// compares a hash rather than rebuilding, so it runs without Emscripten.
-
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -28,13 +15,13 @@ const inputs = [...inRender, 'shared/aurora_protocol.h', 'tools/render-api.cpp']
 const sources = inputs.filter(f => f.endsWith('.cpp')).map(f => join(ROOT, f));
 
 const EXPORTS = [
-  'aurora_controls', 'aurora_pixels', 'aurora_washes', 'aurora_fan', 'aurora_bend',
+  'aurora_controls', 'aurora_pixels', 'aurora_pars', 'aurora_fan', 'aurora_bend',
   'aurora_bend_points',
-  'aurora_strips', 'aurora_washes_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
-  'aurora_motion_new', 'aurora_motion_copy', 'aurora_paths_new', 'aurora_paths_clear',
+  'aurora_strip_count', 'aurora_par_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
+  'aurora_motion_new', 'aurora_motion_copy', 'aurora_wall_new', 'aurora_wall_clear_tails',
   'aurora_render', 'aurora_palette_count', 'aurora_palette_name', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats',
-  'aurora_strip_value', 'aurora_wash_value', 'aurora_route_reach', 'aurora_route_refused',
+  'aurora_control_at_strip', 'aurora_control_at_par', 'aurora_route_reach', 'aurora_route_refused',
   'aurora_wave_mean',
 ];
 

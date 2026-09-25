@@ -1,13 +1,5 @@
 #include "palettes.h"
 
-// A palette is color stops at positions around the hue loop, blended linearly
-// and wrapping from the last stop back to the first, so a hue sweep has no
-// seam unless the stops put one there.
-//
-// The cpt-city ones are sampled at sixteen even steps off the category
-// thumbnails on the cpt-city site, one representative gradient each; thin
-// bands in the originals fall between samples. Several of them fade toward
-// black at both ends, which is where the fader's two ends meet.
 namespace render {
 
 namespace {
@@ -147,10 +139,6 @@ const Stop TV[] = {
     { 240, 0x1F, 0x0B, 0x0C },
 };
 
-// rafi/sky-35 from cpt-city, by Rafi of GraphicsFuel, free for commercial and
-// non-commercial use. Converted from the site's c3g file, its exact stops
-// squeezed into the first half and run back in the second: the ramp runs
-// yellow to navy, and as published its two ends meet in a hard jump.
 const Stop SKY_35_MIRRORED[] = {
     {   0, 0xFD, 0xE7, 0x32 },
     {   3, 0xFF, 0xE9, 0x3E },
@@ -242,7 +230,7 @@ Rgb blend(const Stop &a, const Stop &b, uint16_t span, uint16_t into) {
            (uint8_t)(scale8(a.b, toA) + scale8(b.b, toB)) };
 }
 
-}  // namespace
+}
 
 uint8_t paletteCount() { return COUNT; }
 
@@ -250,7 +238,7 @@ const char *paletteName(uint8_t index) {
   return index < COUNT ? PALETTES[index].name : "";
 }
 
-Rgb paletteRgb(uint8_t index, uint8_t hue) {
+static Rgb paletteRgb(uint8_t index, uint8_t hue) {
   if (index == 0 || index >= COUNT) return rainbowRgb(hue);
   const Palette &p = PALETTES[index];
   const Stop &first = p.stops[0];
@@ -268,4 +256,8 @@ Rgb paletteRgb(uint8_t index, uint8_t hue) {
   return blend(a, b, (uint16_t)(b.at - a.at), (uint16_t)(hue - a.at));
 }
 
-}  // namespace render
+Rgb paletteColor(uint8_t palette, uint8_t hue, uint8_t saturation) {
+  return withSaturationAndValue(paletteRgb(palette, hue), saturation, 255);
+}
+
+}

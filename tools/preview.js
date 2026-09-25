@@ -1,24 +1,6 @@
-// The wall on screen. What is lit comes from shared/render, the brain's own
-// renderer compiled to WebAssembly in tools/render.js; this file only draws
-// it.
-//
-// A screen is not a WS2812. Desaturation, the dark floor and red's resolution
-// are the things docs/bench-facts.md caught a screen getting wrong; settle
-// those on the wall.
-//
-// Which physical end pixel 0 sits at, and the left-to-right order of the
-// five strips, are rigging facts the firmware never states. PC 11 settles
-// the order: it paints each strip one flat color, and that order is
-// recorded in WALL_STRIP_ORDER below. Pixel 0 is at the bottom — see
-// docs/wiring.md — and the flip stays only as a check.
-
 (function (global) {
   'use strict';
 
-  // Data-chain strip numbers, left to right across the room. The chain runs
-  // the opposite way to the wall, so strip 5 stands at the left-hand end —
-  // read off PC 11, 2026-09-22. See docs/wiring.md § "Where they stand on
-  // the wall", which is also where fan's zero end is worked out.
   const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
 
   const api = {
@@ -26,25 +8,24 @@
     ready: global.AuroraRenderModule().then(connect),
   };
 
-  function connect(m) {
-    const STRIPS = m._aurora_strips();
-    const WASHES = m._aurora_washes_count();
-    const PIXELS = m._aurora_pixels_per_strip();
-    const CURVE_POINTS = m._aurora_fan_curve_points();
-    const controls = m._aurora_controls();
-    const pixels = m.HEAPU8.subarray(m._aurora_pixels(), m._aurora_pixels() + STRIPS * PIXELS * 3);
-    const washes = m._aurora_washes();
-    const fan = m.HEAPF32.subarray(m._aurora_fan() >> 2,
-                                   (m._aurora_fan() >> 2) + STRIPS + CURVE_POINTS + 6);
-    const bend = m.HEAPF32.subarray(m._aurora_bend() >> 2,
-                                    (m._aurora_bend() >> 2) + m._aurora_bend_points());
+  function connect(renderer) {
+    const STRIPS = renderer._aurora_strip_count();
+    const PARS = renderer._aurora_par_count();
+    const PIXELS = renderer._aurora_pixels_per_strip();
+    const CURVE_POINTS = renderer._aurora_fan_curve_points();
+    const controls = renderer._aurora_controls();
+    const pixelsAt = renderer._aurora_pixels();
+    const pixels = renderer.HEAPU8.subarray(pixelsAt, pixelsAt + STRIPS * PIXELS * 3);
+    const parColors = renderer._aurora_pars();
+    const fanAt = renderer._aurora_fan() >> 2;
+    const fan = renderer.HEAPF32.subarray(fanAt, fanAt + STRIPS + CURVE_POINTS + 6);
+    const bendAt = renderer._aurora_bend() >> 2;
+    const bend = renderer.HEAPF32.subarray(bendAt, bendAt + renderer._aurora_bend_points());
 
-    // The fixture dims in its own hardware, so this is how the eye sees the
-    // dimmer rather than anything the brain computes.
-    function seenWashes() {
-      return Array.from({ length: WASHES }, (_, lamp) => {
-        const at = washes + lamp * 4;
-        return [0, 1, 2].map(i => Math.round(m.HEAPU8[at + i] * m.HEAPU8[at + 3] / 255));
+    function seenPars() {
+      return Array.from({ length: PARS }, (_, par) => {
+        const at = parColors + par * 4;
+        return [0, 1, 2].map(i => Math.round(renderer.HEAPU8[at + i] * renderer.HEAPU8[at + 3] / 255));
       });
     }
 
@@ -53,7 +34,7 @@
       const stepsPerStrip = (CURVE_POINTS - 1) / (STRIPS - 1);
       return {
         values: Array.from(fan.subarray(0, STRIPS)),
-        curve: Array.from(fan.subarray(STRIPS, after), (v, i) => [i / stepsPerStrip, v]),
+        curve: Array.from(fan.subarray(STRIPS, after), (value, i) => [i / stepsPerStrip, value]),
         turns: fan[after],
         stillAt: Math.abs(fan[after + 1]) <= 1 ? fan[after + 1] : null,
         spent: [
@@ -65,226 +46,202 @@
       };
     }
 
-    // A frame is a view into the module's memory, good until the next render.
     Object.assign(api, {
-      STRIPS, PIXELS, WASHES,
-      makeMotion: () => m._aurora_motion_new(),
-      copyMotion: (to, from) => m._aurora_motion_copy(to, from),
-      makePaths: () => m._aurora_paths_new(),
-      clearPaths: paths => m._aurora_paths_clear(paths),
-      paletteNames: () => Array.from({ length: m._aurora_palette_count() }, (_, i) => {
-        const at = m._aurora_palette_name(i);
-        return String.fromCharCode(...m.HEAPU8.subarray(at, m.HEAPU8.indexOf(0, at)));
+      STRIPS, PIXELS, PARS,
+      makeMotion: () => renderer._aurora_motion_new(),
+      copyMotion: (to, from) => renderer._aurora_motion_copy(to, from),
+      makeWallState: () => renderer._aurora_wall_new(),
+      clearTails: wallState => renderer._aurora_wall_clear_tails(wallState),
+      paletteNames: () => Array.from({ length: renderer._aurora_palette_count() }, (_, i) => {
+        const at = renderer._aurora_palette_name(i);
+        return String.fromCharCode(...renderer.HEAPU8.subarray(at, renderer.HEAPU8.indexOf(0, at)));
       }),
-      lfoWave: (phase, wave) => m._aurora_lfo_wave(phase, wave),
-      waveMean: wave => m._aurora_wave_mean(wave),
-      convert: (cc, value) => m._aurora_convert(cc, value),
-      lfoPeriodBeats: value => m._aurora_lfo_period_beats(value),
+      lfoWave: (phase, wave) => renderer._aurora_lfo_wave(phase, wave),
+      waveMean: wave => renderer._aurora_wave_mean(wave),
+      convert: (cc, value) => renderer._aurora_convert(cc, value),
 
-      // Both read the last render, so call them before the next one.
-      stripValues: cc => Array.from({ length: STRIPS }, (_, i) => m._aurora_strip_value(cc, i)),
-      washValues: cc => Array.from({ length: WASHES }, (_, i) => m._aurora_wash_value(cc, i)),
-      routeRefused: cc => !!m._aurora_route_refused(cc),
+      controlAtStrips: cc => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_control_at_strip(cc, i)),
+      controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
+      routeRefused: cc => !!renderer._aurora_route_refused(cc),
       routeReach(cc) {
-        const at = m._aurora_route_reach(cc);
-        return at ? [m.HEAPF32[at >> 2], m.HEAPF32[(at >> 2) + 1]] : null;
+        const at = renderer._aurora_route_reach(cc);
+        return at ? [renderer.HEAPF32[at >> 2], renderer.HEAPF32[(at >> 2) + 1]] : null;
       },
 
-      render(bytes, quarterNotes, motion, paths) {
-        m.HEAPU8.set(bytes, controls);
-        m._aurora_render(motion, paths, quarterNotes);
-        return { pixels, pars: seenWashes(), fan: readFan(), bend: Array.from(bend) };
+      render(bytes, quarterNotes, motion, wallState) {
+        renderer.HEAPU8.set(bytes, controls);
+        renderer._aurora_render(motion, wallState, quarterNotes);
+        return { pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend) };
       },
       draw,
     });
     return api;
   }
 
-  // The room's proportions are fixed and the picture scales inside them, so
-  // a small copy of the wall beside a large one is the same wall.
-  function draw(ctx, glow, frame, order, flipped, W, H, showFan) {
+  function draw(context, glow, frame, order, flipped, width, height, showOverlays) {
     const { STRIPS, PIXELS } = api;
-    const PAR_BAND = H * 0.2;
-    const WALL_TOP = H * 0.025;
-    const WALL_H = H - PAR_BAND - WALL_TOP - H * 0.025;
-    const gctx = glow.getContext('2d');
-    gctx.clearRect(0, 0, W, H);
+    const PAR_BAND = height * 0.2;
+    const WALL_TOP = height * 0.025;
+    const WALL_HEIGHT = height - PAR_BAND - WALL_TOP - height * 0.025;
+    const glowContext = glow.getContext('2d');
+    glowContext.clearRect(0, 0, width, height);
 
-    const pitch = WALL_H / PIXELS;
-    const pixelH = Math.max(2, pitch - 1.4);
-    const columnW = W / (STRIPS + 1);
-    const stripW = Math.min(26, columnW * 0.62);
+    const pitch = WALL_HEIGHT / PIXELS;
+    const pixelHeight = Math.max(2, pitch - 1.4);
+    const columnWidth = width / (STRIPS + 1);
+    const stripWidth = Math.min(26, columnWidth * 0.62);
 
     for (let column = 0; column < STRIPS; column++) {
       const stripIndex = order[column];
-      const x = columnW * (column + 1) - stripW / 2;
+      const x = columnWidth * (column + 1) - stripWidth / 2;
       for (let pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
         const at = (stripIndex * PIXELS + pixelIndex) * 3;
-        const r = frame.pixels[at], g = frame.pixels[at + 1], b = frame.pixels[at + 2];
-        if (r + g + b === 0) continue;
+        const red = frame.pixels[at], green = frame.pixels[at + 1], blue = frame.pixels[at + 2];
+        if (red + green + blue === 0) continue;
         const row = flipped ? pixelIndex : PIXELS - 1 - pixelIndex;
-        gctx.fillStyle = `rgb(${r},${g},${b})`;
-        gctx.fillRect(x, WALL_TOP + row * pitch, stripW, pixelH);
+        glowContext.fillStyle = `rgb(${red},${green},${blue})`;
+        glowContext.fillRect(x, WALL_TOP + row * pitch, stripWidth, pixelHeight);
       }
     }
 
-    const parY = H - PAR_BAND / 2;
+    const parY = height - PAR_BAND / 2;
     for (let i = 0; i < frame.pars.length; i++) {
       const par = frame.pars[i];
-      const x = W * (i + 0.5) / frame.pars.length;
-      const grad = gctx.createRadialGradient(x, parY, 2, x, parY, PAR_BAND * 0.52);
-      grad.addColorStop(0, `rgba(${par[0]},${par[1]},${par[2]},0.95)`);
-      grad.addColorStop(1, `rgba(${par[0]},${par[1]},${par[2]},0)`);
-      gctx.fillStyle = grad;
-      gctx.beginPath();
-      gctx.arc(x, parY, PAR_BAND * 0.52, 0, Math.PI * 2);
-      gctx.fill();
+      const x = width * (i + 0.5) / frame.pars.length;
+      const gradient = glowContext.createRadialGradient(x, parY, 2, x, parY, PAR_BAND * 0.52);
+      gradient.addColorStop(0, `rgba(${par[0]},${par[1]},${par[2]},0.95)`);
+      gradient.addColorStop(1, `rgba(${par[0]},${par[1]},${par[2]},0)`);
+      glowContext.fillStyle = gradient;
+      glowContext.beginPath();
+      glowContext.arc(x, parY, PAR_BAND * 0.52, 0, Math.PI * 2);
+      glowContext.fill();
     }
 
-    ctx.fillStyle = '#0a0b0e';
-    ctx.fillRect(0, 0, W, H);
+    context.fillStyle = '#0a0b0e';
+    context.fillRect(0, 0, width, height);
 
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.55;
-    ctx.filter = 'blur(7px)';
-    ctx.drawImage(glow, 0, 0);
-    ctx.restore();
+    context.save();
+    context.globalCompositeOperation = 'lighter';
+    context.globalAlpha = 0.55;
+    context.filter = 'blur(7px)';
+    context.drawImage(glow, 0, 0);
+    context.restore();
 
-    ctx.drawImage(glow, 0, 0);
+    context.drawImage(glow, 0, 0);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.beginPath();
-    ctx.moveTo(0, H - PAR_BAND);
-    ctx.lineTo(W, H - PAR_BAND);
-    ctx.stroke();
+    context.strokeStyle = 'rgba(255,255,255,0.05)';
+    context.beginPath();
+    context.moveTo(0, height - PAR_BAND);
+    context.lineTo(width, height - PAR_BAND);
+    context.stroke();
 
-    if (showFan && frame.fan) drawFan(ctx, frame.fan, order, flipped, columnW, WALL_TOP, WALL_H);
-    if (showFan && frame.bend) drawBend(ctx, frame.bend, flipped, columnW, WALL_TOP, WALL_H);
+    if (showOverlays && frame.fan) drawFan(context, frame.fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (showOverlays && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
   }
 
-  // Drawn against the wall's own left-to-right order, so it reads the way the
-  // room does rather than the way the data chain runs. The curve between the
-  // strips can only be drawn where that order is a straight run in one
-  // direction; anywhere else the strips are not in the wave's order and the
-  // dots alone are the truth.
-  //
-  // The still line is where a strip has to sit for the fan to cancel Speed
-  // exactly. The zero line is not it: a strip there travels at Speed, which is
-  // a standstill only while Speed is centered, so without it a dot plainly
-  // above the zero line can be running backwards and the overlay looks like it
-  // is lying.
-  function drawFan(ctx, fan, order, flipped, columnW, WALL_TOP, WALL_H) {
+  function drawFan(context, fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT) {
     const { STRIPS } = api;
-    const mid = WALL_TOP + WALL_H / 2;
+    const middle = WALL_TOP + WALL_HEIGHT / 2;
 
-    // Follows the flip, so a positive amount aimed at position always draws
-    // the curve through the bars it puts there rather than through their
-    // mirror image.
-    const reach = WALL_H * 0.3 * (flipped ? -1 : 1);
-    const xAt = column => columnW * (column + 1);
+    const reach = WALL_HEIGHT * 0.3 * (flipped ? -1 : 1);
+    const xAt = column => columnWidth * (column + 1);
 
     const step = order[1] - order[0];
     const runs = (step === 1 || step === -1)
-      && order.every((s, i) => i === 0 || s - order[i - 1] === step);
+      && order.every((strip, i) => i === 0 || strip - order[i - 1] === step);
 
-    ctx.save();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath();
-    ctx.moveTo(xAt(-0.4), mid);
-    ctx.lineTo(xAt(STRIPS - 0.6), mid);
-    ctx.stroke();
+    context.save();
+    context.lineWidth = 1;
+    context.strokeStyle = 'rgba(255,255,255,0.14)';
+    context.setLineDash([3, 4]);
+    context.beginPath();
+    context.moveTo(xAt(-0.4), middle);
+    context.lineTo(xAt(STRIPS - 0.6), middle);
+    context.stroke();
 
     if (fan.stillAt !== null) {
-      const y = mid - fan.stillAt * reach;
-      ctx.strokeStyle = 'rgba(232,168,90,0.6)';
-      ctx.beginPath();
-      ctx.moveTo(xAt(-0.4), y);
-      ctx.lineTo(xAt(STRIPS - 0.6), y);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(232,168,90,0.8)';
-      ctx.font = '9px ui-monospace, monospace';
-      ctx.fillText('still', xAt(-0.4) + 2, y - 3);
+      const y = middle - fan.stillAt * reach;
+      context.strokeStyle = 'rgba(232,168,90,0.6)';
+      context.beginPath();
+      context.moveTo(xAt(-0.4), y);
+      context.lineTo(xAt(STRIPS - 0.6), y);
+      context.stroke();
+      context.fillStyle = 'rgba(232,168,90,0.8)';
+      context.font = '9px ui-monospace, monospace';
+      context.fillText('still', xAt(-0.4) + 2, y - 3);
     }
-    ctx.setLineDash([]);
+    context.setLineDash([]);
 
     if (runs) {
       const columnOf = index => (step === 1 ? index - order[0] : order[0] - index);
-      ctx.strokeStyle = 'rgba(120,200,255,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
+      context.strokeStyle = 'rgba(120,200,255,0.5)';
+      context.lineWidth = 1.5;
+      context.beginPath();
       fan.curve.forEach(([index, value], i) => {
         const x = xAt(columnOf(index));
-        const y = mid - value * reach;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        const y = middle - value * reach;
+        if (i === 0) context.moveTo(x, y); else context.lineTo(x, y);
       });
-      ctx.stroke();
+      context.stroke();
     }
 
     for (let column = 0; column < STRIPS; column++) {
       const value = fan.values[order[column]];
-      ctx.fillStyle = 'rgba(150,215,255,0.95)';
-      ctx.beginPath();
-      ctx.arc(xAt(column), mid - value * reach, 3.2, 0, Math.PI * 2);
-      ctx.fill();
+      context.fillStyle = 'rgba(150,215,255,0.95)';
+      context.beginPath();
+      context.arc(xAt(column), middle - value * reach, 3.2, 0, Math.PI * 2);
+      context.fill();
     }
 
-    ctx.fillStyle = 'rgba(150,215,255,0.75)';
-    ctx.font = '10px ui-monospace, monospace';
+    context.fillStyle = 'rgba(150,215,255,0.75)';
+    context.font = '10px ui-monospace, monospace';
     const spent = fan.spent.length
       ? fan.spent.map(([where, amount]) =>
           where + ' ' + (amount > 0 ? '+' : '−') + Math.round(Math.abs(amount) * 100) + '%').join('  ')
       : 'spent nowhere';
-    ctx.fillText(fan.turns.toFixed(2) + ' turns across the wall', 8, WALL_TOP + 12);
-    ctx.fillText(spent, 8, WALL_TOP + 24);
+    context.fillText(fan.turns.toFixed(2) + ' turns across the wall', 8, WALL_TOP + 12);
+    context.fillText(spent, 8, WALL_TOP + 24);
     if (fan.scrambled > 0.005) {
-      ctx.fillText(Math.round(fan.scrambled * 100) + '% scrambled', 8, WALL_TOP + 36);
+      context.fillText(Math.round(fan.scrambled * 100) + '% scrambled', 8, WALL_TOP + 36);
     }
-    ctx.restore();
+    context.restore();
   }
 
-  // How fast travel runs at each height, drawn up the right-hand margin
-  // against the strips it applies to: right is faster, left slower. The
-  // curve is a cosine lifted so a trip keeps its length, so it is drawn about
-  // its own middle, and at a fixed scale: its width is how much it bends, and
-  // no bend is a straight line.
-  function drawBend(ctx, bend, flipped, columnW, WALL_TOP, WALL_H) {
+  function drawBend(context, bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT) {
     const { STRIPS, PIXELS } = api;
-    const axis = columnW * (STRIPS + 0.5);
-    const reach = columnW * 0.4;
+    const axis = columnWidth * (STRIPS + 0.5);
+    const reach = columnWidth * 0.4;
     const low = Math.min(...bend), high = Math.max(...bend);
     const middle = (low + high) / 2;
-    const yAt = i => WALL_TOP + (flipped ? i : PIXELS - i) * WALL_H / PIXELS;
+    const yAt = i => WALL_TOP + (flipped ? i : PIXELS - i) * WALL_HEIGHT / PIXELS;
 
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath();
-    ctx.moveTo(axis, yAt(0));
-    ctx.lineTo(axis, yAt(PIXELS));
-    ctx.stroke();
-    ctx.setLineDash([]);
+    context.save();
+    context.strokeStyle = 'rgba(255,255,255,0.14)';
+    context.setLineDash([3, 4]);
+    context.beginPath();
+    context.moveTo(axis, yAt(0));
+    context.lineTo(axis, yAt(PIXELS));
+    context.stroke();
+    context.setLineDash([]);
 
-    ctx.strokeStyle = 'rgba(232,168,90,0.8)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    bend.forEach((v, i) => {
-      const x = axis + (v - middle) / middle * reach;
-      if (i === 0) ctx.moveTo(x, yAt(i)); else ctx.lineTo(x, yAt(i));
+    context.strokeStyle = 'rgba(232,168,90,0.8)';
+    context.lineWidth = 1.5;
+    context.beginPath();
+    bend.forEach((value, i) => {
+      const x = axis + (value - middle) / middle * reach;
+      if (i === 0) context.moveTo(x, yAt(i)); else context.lineTo(x, yAt(i));
     });
-    ctx.stroke();
+    context.stroke();
 
     if (high - low < 0.01) {
-      ctx.restore();
+      context.restore();
       return;
     }
-    ctx.fillStyle = 'rgba(232,168,90,0.8)';
-    ctx.font = '10px ui-monospace, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`travel ×${low.toFixed(low < 1 ? 2 : 1)}–${high.toFixed(1)}`, columnW * (STRIPS + 1) - 6, WALL_TOP + 12);
-    ctx.restore();
+    context.fillStyle = 'rgba(232,168,90,0.8)';
+    context.font = '10px ui-monospace, monospace';
+    context.textAlign = 'right';
+    context.fillText(`travel ×${low.toFixed(low < 1 ? 2 : 1)}–${high.toFixed(1)}`, columnWidth * (STRIPS + 1) - 6, WALL_TOP + 12);
+    context.restore();
   }
 
   global.AuroraPreview = api;

@@ -47,8 +47,6 @@
   button.on { border-color: var(--accent); color: var(--accent); background: #2f2921; }
   .tiny { padding: 2px 7px; font-size: 10.5px; letter-spacing: .06em; }
 
-  /* ---- frame --------------------------------------------------------- */
-
   .top {
     position: sticky; top: 0; z-index: 30; display: flex; gap: 14px; align-items: center;
     flex-wrap: wrap; padding: 10px 16px; background: #171921;
@@ -74,8 +72,6 @@
   .panel + .panel { margin-top: 14px; }
   .work > * + * { margin-top: 16px; }
 
-  /* ---- library rail --------------------------------------------------- */
-
   .patchlist { max-height: 34vh; overflow-y: auto; margin: 0 -4px; }
   .patchlist .item {
     display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left;
@@ -84,7 +80,7 @@
   }
   .patchlist .item:hover { background: #22252f; color: var(--text); border-color: transparent; }
   .patchlist .item.on { background: #2b2f3c; border-color: var(--rail); }
-  .patchlist .item .pc { color: var(--faint); font-size: 10.5px; flex: 0 0 auto; min-width: 22px; }
+  .patchlist .item .slot { color: var(--faint); font-size: 10.5px; flex: 0 0 auto; min-width: 22px; }
   .patchlist .item .name {
     flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -102,7 +98,7 @@
     cursor: pointer; text-align: left; color: var(--text);
   }
   .keypad .key:hover { border-color: var(--accent); }
-  .keypad .key .n { color: var(--accent); font-size: 10.5px; }
+  .keypad .key .number { color: var(--accent); font-size: 10.5px; }
   .keypad .key .who {
     font-size: 10.5px; line-height: 1.25; color: var(--dim); min-width: 0;
     overflow: hidden; overflow-wrap: anywhere;
@@ -118,50 +114,41 @@
     white-space: pre-wrap; font-size: 10.5px; line-height: 1.6; color: var(--dim);
   }
 
-  /* ---- patch head ----------------------------------------------------- */
-
   .head { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field > span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
   .field input[type=text] { width: 190px; }
 
-  /* ---- set tabs and audition ------------------------------------------ */
-
-  .sets { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
-  .sets .tab {
+  .parts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+  .parts .tab {
     display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
     padding: 6px 12px; min-width: 0;
   }
-  .sets .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
-  .sets .tab.on .badge { color: var(--accent); }
+  .parts .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
+  .parts .tab.on .badge { color: var(--accent); }
 
-  .audition { display: flex; gap: 10px 12px; align-items: center; flex-wrap: wrap; }
-  .audition .scrub { flex: 1 1 100%; display: flex; gap: 9px; align-items: center; }
-  .audition .scrub input[type=range] { flex: 1 1 60px; min-width: 60px; }
-  .audition .end {
+  .transition { display: flex; gap: 10px 12px; align-items: center; flex-wrap: wrap; }
+  .transition .scrub { flex: 1 1 100%; display: flex; gap: 9px; align-items: center; }
+  .transition .scrub input[type=range] { flex: 1 1 60px; min-width: 60px; }
+  .transition .seconds { width: 64px; }
+  .transition .end {
     font-size: 10.5px; color: var(--dim); letter-spacing: .06em;
     flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .audition .readout { min-width: 58px; text-align: right; color: var(--accent); }
-  .audition .field { flex-direction: row; align-items: center; gap: 7px; }
-  .audition .slotmove { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .transition .readout { min-width: 58px; text-align: right; color: var(--accent); }
+  .transition .field { flex-direction: row; align-items: center; gap: 7px; }
+  .transition .target-moves { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
 
-  #surfaceBar[hidden] { display: none; }
-  #surfaceBar .srows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
-  #surfaceBar h2 { display: flex; align-items: baseline; gap: 10px; }
-  #surfaceBar h2 .tiny { margin-left: auto; }
+  #mixBar[hidden] { display: none; }
+  #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
+  #mixBar h2 { display: flex; align-items: baseline; gap: 10px; }
+  #mixBar h2 .tiny { margin-left: auto; }
 
-  /* ---- lanes and groups ------------------------------------------------ */
-
-  .lane { border-left: 3px solid var(--line); border-radius: 6px; }
-  .lane[data-lane=shape] { border-left-color: var(--shape); }
-  .lane-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }
-  .lane-name { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
-  .lane[data-lane=shape] .lane-name { color: var(--shape); }
+  .shape { border-left: 3px solid var(--shape); }
+  .shape-name { font-size: 12px; letter-spacing: .18em; color: var(--shape); margin-bottom: 12px; }
+  .push-right { margin-left: auto; }
 
   .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px 22px; }
-
-  /* ---- a control row ---------------------------------------------------- */
 
   .row {
     display: grid; grid-template-columns: 108px minmax(64px, 1fr) 106px 24px;
@@ -178,8 +165,6 @@
   .track { position: relative; display: flex; align-items: center; height: 20px; }
   .track input[type=range] { width: 100%; margin: 0; }
 
-  /* The track is painted by paintTrack in editor.js, so the routes' band can
-     sit under the handle. */
   input[type=range] {
     -webkit-appearance: none; appearance: none; background: transparent; height: 16px;
     --fill: #1f78f0; --rest: #e6e7ec;
@@ -198,15 +183,15 @@
   }
   .row.changed .track .ghost { display: block; }
 
-  .routesbtn {
+  .routes-button {
     width: 24px; height: 20px; padding: 0; font-size: 13px; line-height: 1;
     color: var(--faint); background: none; border: 1px solid var(--line);
   }
-  .routesbtn.aimed { color: var(--lfo); border-color: var(--lfo); }
-  .routesbtn.aimed.sounding { background: #4a2f38; }
-  .routesbtn.open { color: var(--bg); background: var(--lfo); border-color: var(--lfo); }
+  .routes-button.aimed { color: var(--lfo); border-color: var(--lfo); }
+  .routes-button.aimed.sounding { background: #4a2f38; }
+  .routes-button.open { color: var(--bg); background: var(--lfo); border-color: var(--lfo); }
 
-  .row > output, .audition .readout, .showing { font-variant-numeric: tabular-nums; }
+  .row > output, .transition .readout, .showing { font-variant-numeric: tabular-nums; }
   .row > output { text-align: right; line-height: 1.25; white-space: nowrap; }
   .row > output .cc { display: block; }
   .row > output { display: grid; }
@@ -215,73 +200,67 @@
 
   .picks { display: flex; gap: 5px; flex-wrap: wrap; }
   .picks button { padding: 3px 8px; font-size: 11px; }
-  .swrow {
+  .switch-row {
     display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; align-items: center;
     padding-left: 7px; border-left: 2px solid transparent; margin-left: -9px;
   }
-  .swrow + .swrow, .row + .swrow, .swrow + .row { margin-top: 6px; }
-  .swrow.locked .picks button { opacity: .5; cursor: default; }
-  .swrow.locked .picks button:hover { border-color: var(--line); color: var(--text); }
-  .swrow.locked .picks button.on { border-color: var(--rail); color: var(--dim); background: #22252f; }
-  .swrow > label { line-height: 1.25; }
-  .swrow > label b { font-weight: normal; }
-  .swrow > label .cc { display: block; }
-  .swrow .from { font-size: 10px; color: var(--faint); }
+  .switch-row + .switch-row, .row + .switch-row, .switch-row + .row { margin-top: 6px; }
+  .switch-row.locked .picks button { opacity: .5; cursor: default; }
+  .switch-row.locked .picks button:hover { border-color: var(--line); color: var(--text); }
+  .switch-row.locked .picks button.on { border-color: var(--rail); color: var(--dim); background: #22252f; }
+  .switch-row > label { line-height: 1.25; }
+  .switch-row > label b { font-weight: normal; }
+  .switch-row > label .cc { display: block; }
+  .switch-row .from { font-size: 10px; color: var(--faint); }
 
-  /* ---- modulators ------------------------------------------------------- */
+  .cards { display: flex; flex-direction: column; gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 13px; border-left: 3px solid var(--rail); }
+  .card[data-tone=lfo] { border-left-color: var(--lfo); }
+  .card[data-tone=scatter] { border-left-color: var(--scatter); }
+  .card[data-tone=color] { border-left-color: var(--color); }
+  .card-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 11px; }
+  .card-name { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  .card[data-tone=lfo] .card-name { color: var(--lfo); }
+  .card[data-tone=scatter] .card-name { color: var(--scatter); }
+  .card[data-tone=color] .card-name { color: var(--color); }
+  .card-state { margin-right: auto; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  .card.bypassed .card-body, .card.no-effect .card-body { opacity: .38; }
+  .card-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
+  .card-body.single { grid-template-columns: 1fr; }
 
-  .mods { display: flex; flex-direction: column; gap: 14px; }
-  .mod { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 13px; border-left: 3px solid var(--rail); }
-  .mod[data-tone=lfo] { border-left-color: var(--lfo); }
-  .mod[data-tone=scatter] { border-left-color: var(--scatter); }
-  .mod[data-tone=color] { border-left-color: var(--color); }
-  .mod-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 11px; }
-  .mod-name { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-  .mod[data-tone=lfo] .mod-name { color: var(--lfo); }
-  .mod[data-tone=scatter] .mod-name { color: var(--scatter); }
-  .mod[data-tone=color] .mod-name { color: var(--color); }
-  .mod-state { margin-right: auto; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-  .mod.bypassed .mod-body, .mod.silent .mod-body { opacity: .38; }
-  .mod-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
-
-  .routepanel {
+  .route-panel {
     position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--lfo);
     border-radius: 6px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.55);
   }
-  .routeblock { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
-  .dest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
-  .dest-name { color: var(--lfo); }
-  .dest-buttons { display: flex; gap: 5px; }
-  .routeblock.bypassed > :not(.dest-head) { opacity: .38; }
-  .destwave { width: 100%; height: 46px; display: block; margin-top: 8px; }
-  .routefoot { display: flex; justify-content: space-between; align-items: center; }
-  .routelist { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
-  .routelist summary {
+  .route-block { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .route-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+  .route-name { color: var(--lfo); }
+  .route-buttons { display: flex; gap: 5px; }
+  .route-block.bypassed > :not(.route-head) { opacity: .38; }
+  .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; }
+  .route-foot { display: flex; justify-content: space-between; align-items: center; }
+  .route-list { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
+  .route-list summary {
     cursor: pointer; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint);
   }
-  .mod.bypassed .routelist .routeline, .mod.silent .routelist .routeline { opacity: .38; }
-  .routeline {
+  .card.bypassed .route-list .route-line, .card.no-effect .route-list .route-line { opacity: .38; }
+  .route-line {
     display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 2px 14px;
     align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line);
   }
-  .routeline:last-child { border-bottom: none; }
-  .routeline[hidden] { display: none; }
-  .routeline-target {
+  .route-line:last-child { border-bottom: none; }
+  .route-line[hidden] { display: none; }
+  .route-line-target {
     grid-column: 1; background: none; border: none; padding: 0; text-align: left; color: var(--lfo);
   }
-  .routeline-values { grid-column: 1; }
-  .routeline-wave { grid-column: 2; grid-row: 1 / span 2; height: 34px; margin-top: 0; }
-  .routeline .dest-buttons { grid-column: 3; grid-row: 1 / span 2; }
-  .routeline.bypassed > :not(.dest-buttons) { opacity: .38; }
+  .route-line-values { grid-column: 1; }
+  .route-line-wave { grid-column: 2; grid-row: 1 / span 2; height: 34px; margin-top: 0; }
+  .route-line .route-buttons { grid-column: 3; grid-row: 1 / span 2; }
+  .route-line.bypassed > :not(.route-buttons) { opacity: .38; }
 
-  /* ---- outputs ----------------------------------------------------------- */
-
-  .outs { border-left: 3px solid var(--out); }
-  .outgrid .subhead:not(:first-child) { margin-top: 14px; }
-  .outgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px 22px; }
-
-
-  /* ---- preview dock ------------------------------------------------------ */
+  .outputs { border-left: 3px solid var(--out); }
+  .output-grid .subhead:not(:first-child) { margin-top: 14px; }
+  .output-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px 22px; }
 
   .dock canvas { width: 100%; border-radius: 4px; display: block; background: #0a0b0e; }
   .dockgrid { display: grid; grid-template-columns: 1fr; gap: 0; }
@@ -292,16 +271,10 @@
   .compare figcaption { color: var(--faint); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; text-align: center; }
   .dock .rowline { margin-top: 9px; }
   .dock input[type=text] { width: 84px; }
-
-  /* ---- narrower windows -------------------------------------------------
-     Last in the sheet on purpose. A media query adds no specificity, so these
-     have to come after the rules they override. */
+  .dock input.invalid { border-color: var(--bad); }
 
   @media (max-width: 1120px) {
     .shell { grid-template-columns: minmax(220px, 252px) minmax(0, 1fr); }
-    /* Laid along the top instead of down the side, so the preview is a strip
-       rather than a screenful, and not sticky: a full-width sticky block reads
-       as something pinned over the page. */
     .dock { grid-column: 1 / -1; order: -1; position: static; }
     .dockgrid { grid-template-columns: 172px minmax(0, 1fr); gap: 16px; align-items: start; }
     .dock .compare { margin-top: 0; max-width: 300px; }
@@ -331,8 +304,7 @@
   </div>
   <div class="spacer"></div>
   <div class="group">
-    <button id="rigBlackout" class="tiny" title="Program Change 0. Sends past the patch and leaves it alone.">blackout</button>
-    <button id="rigOrder" class="tiny" title="Program Change 11. A rigging aid: each strip one flat color in data-chain order.">strip order</button>
+    <button id="rigBlackout" class="tiny">blackout</button>
   </div>
 </header>
 
@@ -346,14 +318,14 @@
         <button class="tiny" id="patchSave">save</button>
         <button class="tiny" id="patchDiscard">discard</button>
         <button class="tiny" id="patchNew">new</button>
-        <button class="tiny" id="patchDel">delete</button>
+        <button class="tiny" id="patchDelete">delete</button>
       </div>
       <div class="rowline saveto">
-        <label class="cc">slot <input type="number" id="saveSlot" min="0" max="127"></label>
+        <label class="cc">slot <input type="number" id="saveSlot" min="0"></label>
         <span class="cc" id="saveOccupant"></span>
         <button class="tiny" id="saveHere">save here</button>
       </div>
-      <p class="note" id="libCount"></p>
+      <p class="note" id="libraryCount"></p>
     </section>
 
     <section class="panel">
@@ -382,27 +354,27 @@
   <main class="work">
 
     <section class="panel head">
-      <label class="field"><span>Name</span><input type="text" id="pName" maxlength="16"></label>
-      <label class="field"><span>Journey ramp</span><select id="pRampJourney"></select></label>
-      <label class="field"><span>Accent ramp</span><select id="pRampAccent"></select></label>
-      <label class="field"><span>Tempo division</span><select id="pTempo"></select></label>
+      <label class="field"><span>Name</span><input type="text" id="patchName"></label>
+      <label class="field"><span>Transition time</span><select id="transitionTime"></select></label>
+      <label class="field"><span>Accent time</span><select id="accentTime"></select></label>
+      <label class="field"><span>Tempo division</span><select id="tempoDivision"></select></label>
     </section>
 
-    <nav class="sets" id="setTabs"></nav>
+    <nav class="parts" id="partTabs"></nav>
 
-    <section class="panel audition" id="auditionBar"></section>
-    <section class="panel" id="surfaceBar" hidden></section>
+    <section class="panel transition" id="transitionBar"></section>
+    <section class="panel" id="mixBar" hidden></section>
 
-    <section class="panel outs">
+    <section class="panel outputs">
       <h2>Outputs</h2>
-      <div class="outgrid" id="outputs"></div>
+      <div class="output-grid" id="outputs"></div>
     </section>
 
-    <div class="mods" id="lfo"></div>
+    <div class="cards" id="lfo"></div>
 
-    <section class="panel lane" data-lane="shape" id="laneShape"></section>
+    <section class="panel shape" id="shape"></section>
 
-    <div class="mods" id="mods"></div>
+    <div class="cards" id="modulators"></div>
 
   </main>
 
@@ -411,18 +383,18 @@
       <h2>The wall</h2>
       <div class="dockgrid">
         <div>
-          <canvas id="wallMain" class="wall-main"></canvas>
+          <canvas id="wallMain"></canvas>
           <p class="showing" id="wallShowing"></p>
         </div>
         <div>
           <div class="compare" id="compare" hidden>
             <figure><canvas id="wallBase"></canvas><figcaption>base</figcaption></figure>
-            <figure><canvas id="wallFar"></canvas><figcaption id="farCaption">far end</figcaption></figure>
+            <figure><canvas id="wallTarget"></canvas><figcaption id="targetCaption"></figcaption></figure>
           </div>
           <div class="rowline">
-            <button class="tiny" id="pvFlip">pixel 0 at bottom</button>
-            <button class="tiny" id="pvFan">overlays</button>
-            <label class="cc">order <input type="text" id="pvOrder"></label>
+            <button class="tiny" id="wallFlip">pixel 0 at bottom</button>
+            <button class="tiny" id="wallOverlays">overlays</button>
+            <label class="cc">order <input type="text" id="wallOrder"></label>
           </div>
         </div>
       </div>
@@ -435,7 +407,18 @@
 <script src="render.js"></script>
 <script src="preview.js"></script>
 <script src="patch.js"></script>
+<script src="library-file.js"></script>
 <script src="library.js"></script>
+<script src="link.js"></script>
+<script src="dom.js"></script>
+<script src="session.js"></script>
+<script src="tracks.js"></script>
+<script src="control-rows.js"></script>
+<script src="route-panel.js"></script>
+<script src="transition.js"></script>
+<script src="midi-out.js"></script>
+<script src="library-rail.js"></script>
+<script src="wall.js"></script>
 <script src="editor.js"></script>
 </body>
 </html>

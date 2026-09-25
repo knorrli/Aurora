@@ -1,128 +1,113 @@
 #include "tempo.h"
 
 #include <Arduino.h>
-#include <math.h>
+
 #include "aurora_protocol.h"
 
 namespace tempo {
 
-// A measured tempo outside this range is a burst of ticks or a glitch,
-// not a song — a transport start or a USB reconnect can deliver a whole
-// beat's worth of ticks at once. Same range the controller enforces in
-// controller/src/tempo.cpp.
-static const uint16_t kMinBpm = 20;
-static const uint16_t kMaxBpm = 300;
+static const uint16_t SLOWEST_BPM = 20;
+static const uint16_t FASTEST_BPM = 300;
+static const uint16_t STARTUP_BPM = 120;
+static const uint32_t MICROS_PER_MINUTE = 60000000UL;
+static const uint32_t CLOCK_SILENCE_MICROS = 500000;
+static const uint32_t MOST_TICKS_TO_CATCH_UP = 32;
 
-static const uint32_t kSilenceUs = 500000;
-static const uint16_t kDefaultBpm = 120;
+static uint16_t ticksPerDivisionBeat = AURORA_TICKS_PER_BEAT;
 
-// Catch-up guard: after a stall long enough to owe this many ticks, skip
-// forward instead of manufacturing every one of them.
-static const uint32_t kMaxCatchUpTicks = 32;
+static uint32_t ticks = 0;
+static uint32_t lastTickMicros = 0;
+static uint32_t lastClockMicros = 0;
+static uint32_t microsPerTick = MICROS_PER_MINUTE / STARTUP_BPM / AURORA_TICKS_PER_BEAT;
 
-static uint16_t ticksPerPulse = AURORA_TICKS_PER_BEAT;
-
-static uint32_t ticksReceived = 0;
-static uint32_t lastTickUs = 0;
-static uint32_t lastRealClockUs = 0;
-static uint32_t usPerTick = 0;
-
-static uint16_t ticksSinceBeat = 0;
-static uint32_t lastBeatUs = 0;
+static uint16_t ticksSinceQuarterNote = 0;
+static uint32_t lastQuarterNoteMicros = 0;
 
 static float positionTicks = 0.0f;
-static uint32_t lastPulseIndex = 0;
-static bool pulsedThisFrame = false;
-static bool isRunning = true;
-
-static uint32_t usPerTickForBpm(uint16_t beatsPerMinute) {
-    return 60000000UL / beatsPerMinute / AURORA_TICKS_PER_BEAT;
-}
+static uint32_t lastDivisionBeat = 0;
+static bool divisionBeatStarted = false;
+static bool transportRunning = true;
 
 void begin() {
-    usPerTick = usPerTickForBpm(kDefaultBpm);
-    lastTickUs = micros();
-    lastRealClockUs = lastTickUs;
+    lastTickMicros = micros();
+    lastClockMicros = lastTickMicros;
 }
 
-static void advanceWithoutClock(uint32_t now) {
-    if ((uint32_t)(now - lastRealClockUs) < kSilenceUs) return;
-
-    if ((uint32_t)(now - lastTickUs) > usPerTick * kMaxCatchUpTicks) {
-        lastTickUs = now - usPerTick;
-    }
-    while ((uint32_t)(now - lastTickUs) >= usPerTick) {
-        ticksReceived++;
-        lastTickUs += usPerTick;
+static void freeRunWithoutClock(uint32_t now) {
+    if (now - lastClockMicros < CLOCK_SILENCE_MICROS) return;
+    if (now - lastTickMicros > microsPerTick * MOST_TICKS_TO_CATCH_UP) lastTickMicros = now - microsPerTick;
+    while (now - lastTickMicros >= microsPerTick) {
+        ticks++;
+        lastTickMicros += microsPerTick;
     }
 }
 
-void tick() {
+void advance() {
+    divisionBeatStarted = false;
+    if (!transportRunning) return;
+
     const uint32_t now = micros();
+    freeRunWithoutClock(now);
 
-    if (isRunning) {
-        advanceWithoutClock(now);
+    float withinTick = (float)(now - lastTickMicros) / (float)microsPerTick;
+    if (withinTick > 1.0f) withinTick = 1.0f;
+    positionTicks = (float)ticks + withinTick;
 
-        float withinTick = (float)(uint32_t)(now - lastTickUs) / (float)usPerTick;
-        if (withinTick > 1.0f) withinTick = 1.0f;
-        positionTicks = (float)ticksReceived + withinTick;
+    const uint32_t divisionBeat = ticks / ticksPerDivisionBeat;
+    divisionBeatStarted = divisionBeat != lastDivisionBeat;
+    lastDivisionBeat = divisionBeat;
+}
+
+static void measureTempo(uint32_t now) {
+    if (++ticksSinceQuarterNote < AURORA_TICKS_PER_BEAT) return;
+    ticksSinceQuarterNote = 0;
+    if (lastQuarterNoteMicros != 0) {
+        const uint32_t quarterNoteMicros = now - lastQuarterNoteMicros;
+        if (quarterNoteMicros >= MICROS_PER_MINUTE / FASTEST_BPM
+            && quarterNoteMicros <= MICROS_PER_MINUTE / SLOWEST_BPM) {
+            microsPerTick = quarterNoteMicros / AURORA_TICKS_PER_BEAT;
+        }
     }
-
-    const uint32_t pulseIndex = ticksReceived / ticksPerPulse;
-    pulsedThisFrame = (pulseIndex != lastPulseIndex);
-    lastPulseIndex = pulseIndex;
+    lastQuarterNoteMicros = now;
 }
 
 void onClock() {
     const uint32_t now = micros();
-
-    ticksReceived++;
-    lastTickUs = now;
-    lastRealClockUs = now;
-
-    if (++ticksSinceBeat < AURORA_TICKS_PER_BEAT) return;
-    ticksSinceBeat = 0;
-
-    if (lastBeatUs != 0) {
-        const uint32_t beatUs = now - lastBeatUs;
-        if (beatUs >= 60000000UL / kMaxBpm && beatUs <= 60000000UL / kMinBpm) {
-            usPerTick = beatUs / AURORA_TICKS_PER_BEAT;
-        }
-    }
-    lastBeatUs = now;
+    lastClockMicros = now;
+    measureTempo(now);
+    if (!transportRunning) return;
+    ticks++;
+    lastTickMicros = now;
 }
 
 void onStart() {
-    ticksReceived = 0;
-    ticksSinceBeat = 0;
-    lastBeatUs = 0;
-    lastPulseIndex = 0;
+    ticks = 0;
+    ticksSinceQuarterNote = 0;
+    lastQuarterNoteMicros = 0;
+    lastDivisionBeat = 0;
     positionTicks = 0.0f;
-    lastTickUs = micros();
-    lastRealClockUs = lastTickUs;
-    isRunning = true;
+    lastTickMicros = micros();
+    lastClockMicros = lastTickMicros;
+    transportRunning = true;
 }
 
 void onContinue() {
-    lastTickUs = micros();
-    lastRealClockUs = lastTickUs;
-    isRunning = true;
+    lastTickMicros = micros();
+    lastClockMicros = lastTickMicros;
+    transportRunning = true;
 }
 
 void onStop() {
-    isRunning = false;
+    transportRunning = false;
 }
 
 void setDivision(uint8_t division) {
-    ticksPerPulse = aurora_ticks_per_gate(division);
+    ticksPerDivisionBeat = aurora_ticks_per_division(division);
+    lastDivisionBeat = ticks / ticksPerDivisionBeat;
 }
 
-float quarterNotes() {
-    return positionTicks / (float)AURORA_TICKS_PER_BEAT;
+float quarterNotes() { return positionTicks / (float)AURORA_TICKS_PER_BEAT; }
+bool beatStarted() { return divisionBeatStarted; }
+bool running() { return transportRunning; }
+
 }
-
-bool pulsed() { return pulsedThisFrame; }
-float bpm() { return 60000000.0f / (float)(usPerTick * AURORA_TICKS_PER_BEAT); }
-bool running() { return isRunning; }
-
-} // namespace tempo
