@@ -217,9 +217,10 @@
 
   // ---- what a control is -------------------------------------------------
   //
-  // kind: 'fader' unless stated. 'pick' carries its own options and is for the
-  // handful of values that are an index rather than a position. Options can be
-  // a function, for a list only the renderer knows once it has loaded.
+  // kind: 'fader' unless stated. 'pick' carries its own options, drawn as a
+  // dropdown, and is for the handful of values that are an index rather than a
+  // position. Options can be a function, for a list only the renderer knows
+  // once it has loaded.
 
   const C = (name, label, hint, extra) =>
     Object.assign({ name, label, hint, kind: 'fader' }, extra || {});

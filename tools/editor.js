@@ -229,7 +229,15 @@
     label.title = def.hint;
     const picks = el('div', 'picks');
     const options = typeof def.options === 'function' ? def.options() : def.options;
-    const buttons = options.map(([value, text]) => {
+    const select = def.kind === 'pick' ? el('select') : null;
+    if (select) {
+      for (const [value, text] of options) {
+        const o = el('option', null, text); o.value = value; select.appendChild(o);
+      }
+      select.addEventListener('change', () => { snap(); setValue(name, +select.value); });
+      picks.appendChild(select);
+    }
+    const buttons = select ? [] : options.map(([value, text]) => {
       const b = el('button', null, text);
       b.addEventListener('click', () => {
         if (root.classList.contains('locked')) return;
@@ -247,7 +255,7 @@
     const lit = def.kind === 'pick' ? (value, live) => live === value
       : def.kind === 'three' ? (value, live) => P.band3(live) === P.band3(value)
       : (value, live) => P.isOn(live) === P.isOn(value);
-    rows[name] = { root, buttons, from, def, kind: def.kind, lit };
+    rows[name] = { root, buttons, select, from, def, kind: def.kind, lit };
   }
 
   function controlRow(host, name) {
@@ -306,6 +314,10 @@
         }
       } else {
         for (const [value2, b] of r.buttons) b.classList.toggle('on', r.lit(value2, value));
+        if (r.select) {
+          if (+r.select.value !== value) r.select.value = value;
+          r.select.disabled = farEnd;
+        }
         r.root.classList.toggle('locked', farEnd);
         r.from.textContent = farEnd
           ? (setIndex === P.SET_ACCENT && audition.from != null && audition.from !== slot
