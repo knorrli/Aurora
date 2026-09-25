@@ -103,7 +103,6 @@
   // so these say how far apart the strips stand and not which way.
   const fanAmount = (name, what) => v => percent(Math.abs(real(name, v)) * 2) + ' ' + what;
   const hueReach = (name, suffix) => v => signedInt(Math.round(real(name, v))) + suffix;
-  const swing = name => v => '±' + percent(Math.abs(real(name, v)));
 
   const LFO_PERIODS = A.LFO_PERIODS;
   const PERIOD_NAMES = {
@@ -170,11 +169,11 @@
     scatterDrift: v => signed(real('scatterDrift', v)) + ' of its cell',
     scatterLight: v => signed(real('scatterLight', v)),
     scatterHue: hueReach('scatterHue', ' of 255 at the peak'),
-    scatterWhite: v => signed(real('scatterWhite', v)),
+    scatterWhite: v => percent(real('scatterWhite', v)) + ' toward white',
 
     placedHue: hueReach('placedHue', ' of 255 at one end'),
-    placedWhite: v => signed(real('placedWhite', v)),
-    placedDark: v => signed(real('placedDark', v)),
+    placedWhite: v => percent(real('placedWhite', v)) + ' toward white',
+    placedDark: v => percent(real('placedDark', v)) + ' toward dark',
     placedCount: v => real('placedCount', v) + ' regions',
     placedWidth: v => percent(real('placedWidth', v)) + ' of a cell',
     placedEdge: v => percent(real('placedEdge', v)) + ' soft',
@@ -182,8 +181,8 @@
                         return sign(r) + beatsPer(r) + ' beats per cell'; },
 
     wanderHue: v => '±' + Math.abs(Math.round(real('wanderHue', v))) + ' of 255',
-    wanderWhite: swing('wanderWhite'),
-    wanderDark: swing('wanderDark'),
+    wanderWhite: v => percent(real('wanderWhite', v)) + ' toward white',
+    wanderDark: v => percent(real('wanderDark', v)) + ' toward dark',
     wanderRate: v => { const r = real('wanderRate', v);
                        return (r < 0.004 ? '∞' : (1 / r).toFixed(0)) + ' beats per cycle'; },
     wanderScale: v => { const c = real('wanderScale', v);
@@ -191,7 +190,7 @@
 
     litHue: hueReach('litHue', ' at the core'),
     litWhite: v => percent(real('litWhite', v)) + ' white at the core',
-    litDark: v => signed(real('litDark', v)) + ' at the core',
+    litDark: v => percent(real('litDark', v)) + ' dark at the core',
 
     washLevel: v => ofByte(real('washLevel', v)),
     washHueOffset: v => '+' + real('washHueOffset', v) + ' of 255',
@@ -230,21 +229,21 @@
     genFan: 64, genFanLfo: 64, genFanRate: 64, genFanFreq: 32, genFanPhase: 0, genFanRandom: 0,
     genBounce: OFF,
 
-    palette: 0, hue: 20, saturation: 100, value: 110,
+    palette: 0, hue: 20, saturation: 127, value: 127,
 
     genLfoRate: 64,
 
     scatterRate: 60, scatterCount: 80, scatterWidth: 34, scatterEdge: 40,
     scatterStagger: 110, scatterDrift: 64,
-    scatterLight: 64, scatterHue: 64, scatterWhite: 64,
+    scatterLight: 64, scatterHue: 64, scatterWhite: 0,
 
     colorPrimitive: GRADIENT, colorRuler: ON_STRIP,
-    placedHue: 64, placedWhite: 64, placedDark: 64,
+    placedHue: 64, placedWhite: 0, placedDark: 0,
     placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
 
-    wanderHue: 64, wanderWhite: 64, wanderDark: 64, wanderRate: 50, wanderScale: 20,
+    wanderHue: 64, wanderWhite: 0, wanderDark: 0, wanderRate: 50, wanderScale: 20,
 
-    litHue: 64, litWhite: 0, litDark: 64,
+    litHue: 64, litWhite: 0, litDark: 0,
 
     washLevel: 127, washHueOffset: 0, washSaturation: 127,
   };
@@ -373,7 +372,7 @@
       amounts: define([
         C('scatterLight', 'Brightness', 'plus is toward full light, minus toward dark'),
         C('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
-        C('scatterWhite', 'To white', 'plus is toward white, minus toward a pure hue'),
+        C('scatterWhite', 'To white', 'how far a spot whitens'),
       ]),
     },
     {
@@ -394,8 +393,8 @@
       ]),
       amounts: define([
         C('placedHue', 'Hue', 'how far one end of the ruler departs from the base hue'),
-        C('placedWhite', 'To white', 'how far one end departs; plus is toward white, minus toward a pure hue'),
-        C('placedDark', 'Dark', 'how far one end departs; minus is toward dark, plus toward full light'),
+        C('placedWhite', 'To white', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
+        C('placedDark', 'To dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
       ]),
     },
     {
@@ -406,8 +405,8 @@
       ]),
       amounts: define([
         C('wanderHue', 'Hue', 'how far the hue wanders either side of the base'),
-        C('wanderWhite', 'To white', 'how far whiteness wanders'),
-        C('wanderDark', 'Dark', 'how far darkness wanders'),
+        C('wanderWhite', 'To white', 'how far it whitens where it swings high'),
+        C('wanderDark', 'To dark', 'how far it darkens where it swings high'),
       ]),
     },
     {
@@ -416,7 +415,7 @@
       amounts: define([
         C('litHue', 'Hue', 'how far the brightest part rotates off the base hue'),
         C('litWhite', 'To white', 'how pale the brightest part goes'),
-        C('litDark', 'Dark', 'how the brightest part sits against the base for brightness; minus is toward dark, plus toward full light'),
+        C('litDark', 'To dark', 'how far the brightest part darkens'),
       ]),
     },
   ];

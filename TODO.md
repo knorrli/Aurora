@@ -245,13 +245,12 @@ driven live from the editor.
       which has never been judgeable. Reachable now the scatter is flashed:
       count high, width and edge low, the light amount up. See
       `docs/bench-facts.md`.
-- [ ] **Take Lit White from center down to zero**, on a flat fill with the
-      S fader at full. At zero the wall should be exactly the color on the
-      faders; at center it should wash every lit pixel to about 74 %
-      saturation at nearly double the light. It is the one color control
-      whose neutral is the bottom of the travel rather than the middle, so
-      check what it sits at in the patches actually in use. See
-      `docs/generator.md` § Open, "Five of the six white and dark controls".
+- [ ] **Push white and dark one way.** With S full and V at the top, each of
+      the seven To white and To dark amounts from 0 up: nothing at 0, and
+      every step visible, where half of each travel used to do nothing. Then
+      two at once, Placed and Wander White, which used to partly cancel. And
+      Lit Dark, which still hollows a shape's core at V top: whether it earns
+      its place. See `docs/generator.md` § "White and dark push one way".
 
 - [ ] **Swing a rate.** Two looks, each a patch. The fan's rate spread at
       zero with a sine route on it: the strips should drift apart and come

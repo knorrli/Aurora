@@ -467,22 +467,17 @@ static float placedAt(const PlacedField &field, float u, float drift) {
 
 float lightLeft(float dark) { return powf(DARK_FLOOR, -dark); }
 
-// Pushes arrive summed and normalized. Darkening rides a geometric taper
-// because it is a ratio of light and the eye reads it as one; mapped linearly,
-// nearly the whole travel was imperceptible and everything worth having sat in
-// the last few steps. Brightening is a plain ride to full and only has room
-// when the V fader is left below the top. Both measured on the wall — see
-// docs/bench-facts.md.
+// Pushes arrive summed, and both only ever lead away from a full color: toward
+// white, and toward dark. Darkening rides a geometric taper because it is a
+// ratio of light and the eye reads it as one; mapped linearly, nearly the whole
+// travel was imperceptible and everything worth having sat in the last few
+// steps. Measured on the wall — see docs/bench-facts.md.
 static Hsv applyPushes(Hsv base, float hue, float white, float dark) {
-  if (white < -1.0f) white = -1.0f; else if (white > 1.0f) white = 1.0f;
-  if (dark < -1.0f) dark = -1.0f; else if (dark > 1.0f) dark = 1.0f;
+  if (white > 1.0f) white = 1.0f;
+  if (dark > 1.0f) dark = 1.0f;
 
-  const float satTarget = (white >= 0.0f) ? 0.0f : 255.0f;
-  const float saturation = (float)base.s + fabsf(white) * (satTarget - (float)base.s);
-
-  float value;
-  if (dark >= 0.0f) value = (float)base.v + dark * (255.0f - (float)base.v);
-  else value = (float)base.v * lightLeft(dark);
+  const float saturation = (float)base.s * (1.0f - white);
+  const float value = (float)base.v * lightLeft(-dark);
 
   return { (uint8_t)(base.h + (int16_t)hue), (uint8_t)saturation, (uint8_t)value };
 }
@@ -562,12 +557,18 @@ static Hsv colorAt(const Params &p, float placedLevel, uint8_t stripIndex,
   const float along01 = (float)pixelIndex / (float)(PIXELS - 1);
   const float wander = wanderOn ? wanderAt(p, stripIndex, along01, wanderT) : 0.0f;
 
+  // Hue turns both ways, so a gradient's two ends and the wander's two swings
+  // each have somewhere to go. White and dark go one way, so both ends of a
+  // gradient depart from the fader color at its center, and the wander departs
+  // where it swings high and leaves the rest alone.
+  const float placedAway = fabsf(placedLevel);
+  const float wanderAway = (wander > 0.0f) ? wander : 0.0f;
   return applyPushes(p.color,
       placedLevel * p.placed.hueReach + wander * p.wanderHueReach
           + profile * p.litHueReach + scatter * p.scatterHueReach,
-      placedLevel * p.placed.whiteReach + wander * p.wanderWhiteReach
+      placedAway * p.placed.whiteReach + wanderAway * p.wanderWhiteReach
           + profile * p.litWhiteReach + scatter * p.scatterWhiteReach,
-      placedLevel * p.placed.darkReach + wander * p.wanderDarkReach
+      placedAway * p.placed.darkReach + wanderAway * p.wanderDarkReach
           + profile * p.litDarkReach);
 }
 
@@ -852,17 +853,11 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_SCATTER_RATE:    return squaredUnit(value, SCATTER_MAX_CYCLES_PER_BEAT);
     case CC_SCATTER_HUE:     return ccBipolar(value) * SCATTER_MAX_HUE;
 
-    case CC_PLACED_WHITE:
-    case CC_PLACED_DARK:
-    case CC_WANDER_WHITE:
-    case CC_WANDER_DARK:
-    case CC_LIT_DARK:
     // Drift is a displacement rather than a rate — how far, and which way, a
     // spot slides across its own cell over its life, which is why it is not
     // called speed like everything else here.
     case CC_SCATTER_DRIFT:
-    case CC_SCATTER_LIGHT:
-    case CC_SCATTER_WHITE:   return ccBipolar(value);
+    case CC_SCATTER_LIGHT:   return ccBipolar(value);
 
     case CC_GEN_TAIL:        return squaredUnit(value, (float)PATH_BEATS);
 
@@ -871,7 +866,17 @@ float convert(uint8_t cc, uint8_t value) {
     case CC_GEN_FAN_RANDOM:
     case CC_PLACED_WIDTH:
     case CC_PLACED_EDGE:
+    // Toward white or dark only. The faders live at the ends — S at 0 or full,
+    // V at the top — so a push toward the end already reached did nothing, and
+    // still subtracted from the sources that did. See docs/generator.md
+    // § "White and dark push one way".
+    case CC_PLACED_WHITE:
+    case CC_PLACED_DARK:
+    case CC_WANDER_WHITE:
+    case CC_WANDER_DARK:
     case CC_LIT_WHITE:
+    case CC_LIT_DARK:
+    case CC_SCATTER_WHITE:
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_EDGE:
     case CC_SCATTER_STAGGER: return ccUnit(value);

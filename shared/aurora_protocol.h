@@ -301,18 +301,18 @@ enum AuroraCC : uint8_t {
                                  // 64 = along a strip, 127 = within a shape
     CC_PLACED_HUE          = 38, // [patch] bipolar: how far one end of the
                                  // ruler departs from the base hue
-    CC_PLACED_WHITE        = 39, // [patch] bipolar: toward white, or toward
-                                 // a pure hue
-    CC_PLACED_DARK         = 40, // [patch] bipolar: toward dark, or toward
-                                 // full
+    // Every white and dark amount in the color layer is 0 = none, up = toward
+    // white or toward dark, never the other way.
+    CC_PLACED_WHITE        = 39, // [patch] toward white
+    CC_PLACED_DARK         = 40, // [patch] toward dark
     CC_PLACED_COUNT        = 41, // [patch] regions along the ruler, 1–20
     CC_PLACED_WIDTH        = 42, // [patch]
     CC_PLACED_EDGE         = 43, // [patch] hard through to a fade
     CC_PLACED_SPEED        = 44, // [patch][rate] bipolar: the field drifting
                                  // along its own ruler
     CC_WANDER_HUE          = 45, // [patch] bipolar: how far the hue wanders
-    CC_WANDER_WHITE        = 46, // [patch] bipolar
-    CC_WANDER_DARK         = 47, // [patch] bipolar
+    CC_WANDER_WHITE        = 46, // [patch] toward white where it swings high
+    CC_WANDER_DARK         = 47, // [patch] toward dark where it swings high
     CC_WANDER_RATE         = 48, // [patch][rate] 0 = frozen, up to two beats
                                  // per cycle
     CC_WANDER_SCALE        = 49, // [patch] 0 = the whole wall moving as one,
@@ -321,9 +321,8 @@ enum AuroraCC : uint8_t {
     // the core is the departure.
     CC_LIT_HUE             = 50, // [patch] bipolar: 64 = none, ±64 hue at
                                  // the core
-    CC_LIT_WHITE           = 51, // [patch] 0 = none, up = white at the core
-    CC_LIT_DARK            = 52, // [patch] bipolar: 64 = none, down takes the
-                                 // core toward dark and up toward full
+    CC_LIT_WHITE           = 51, // [patch] toward white at the core
+    CC_LIT_DARK            = 52, // [patch] toward dark at the core
     // Which of the renderer's palettes the hue walks through. The value is
     // an index into shared/render/palettes.cpp, 0 being the rainbow; one past
     // the end reads as the rainbow too.
@@ -437,8 +436,7 @@ enum AuroraCC : uint8_t {
                                  // dark
     CC_SCATTER_HUE         = 78, // [patch] amount, bipolar, up to half the
                                  // wheel
-    CC_SCATTER_WHITE       = 79, // [patch] amount toward white / toward a
-                                 // pure hue
+    CC_SCATTER_WHITE       = 79, // [patch] amount toward white
     // 80–119 routes, see AURORA_ROUTE_BASE.
 };
 

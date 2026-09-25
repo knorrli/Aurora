@@ -199,20 +199,20 @@ Spare: 30, 31.
 | **36** | `COLOR_PRIMITIVE` | [switch] | one gradient across the ruler / regions / regions inside out |
 | **37** | `COLOR_RULER` | [switch] | across the strips / along a strip / within a shape |
 | **38** | `PLACED_HUE` | [patch] | how far one end of the ruler departs |
-| **39** | `PLACED_WHITE` | [patch] | toward white, or toward a pure hue |
-| **40** | `PLACED_DARK` | [patch] | toward dark, or toward full |
+| **39** | `PLACED_WHITE` | [patch] | toward white |
+| **40** | `PLACED_DARK` | [patch] | toward dark |
 | **41** | `PLACED_COUNT` | [patch] | regions along the ruler |
 | **42** | `PLACED_WIDTH` | [patch] | region width |
 | **43** | `PLACED_EDGE` | [patch] | region softness |
 | **44** | `PLACED_SPEED` | [patch][rate] | bipolar; the field drifting along its ruler |
 | **45** | `WANDER_HUE` | [patch] | bipolar; how far the hue wanders |
-| **46** | `WANDER_WHITE` | [patch] | bipolar |
-| **47** | `WANDER_DARK` | [patch] | bipolar |
+| **46** | `WANDER_WHITE` | [patch] | toward white where it swings high |
+| **47** | `WANDER_DARK` | [patch] | toward dark where it swings high |
 | **48** | `WANDER_RATE` | [patch][rate] | 0 = frozen |
 | **49** | `WANDER_SCALE` | [patch] | the whole wall as one, through to fine grain |
 | **50** | `LIT_HUE` | [patch] | bipolar; hue at the core of a shape |
 | **51** | `LIT_WHITE` | [patch] | white at the core |
-| **52** | `LIT_DARK` | [patch] | bipolar; the core toward dark or toward full |
+| **52** | `LIT_DARK` | [patch] | the core toward dark |
 | **53** | `PALETTE` | [switch] | index into `shared/render/palettes.cpp`; 0 is the rainbow |
 
 No spare.
@@ -252,7 +252,7 @@ Spare: 70.
 | **76** | `SCATTER_DRIFT` | [patch] | bipolar; how far a spot slides across its cell |
 | **77** | `SCATTER_LIGHT` | [patch] | bipolar; amount toward full light or toward dark |
 | **78** | `SCATTER_HUE` | [patch] | bipolar; amount, up to half the wheel |
-| **79** | `SCATTER_WHITE` | [patch] | bipolar; toward white or toward a pure hue |
+| **79** | `SCATTER_WHITE` | [patch] | toward white |
 
 No spare.
 
