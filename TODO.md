@@ -235,6 +235,13 @@ live from the editor.
       and stop again, all five together. A tail follows the swing, so a
       shape swung backwards leaves its glow behind it rather than running
       tail-first. See `docs/modulation.md` § "A rate swings both ways".
+- [ ] **Judge the afterglow.** The *Swing* starting points: a tail should
+      stay behind its shape through the swing, shrink as it slows and be
+      gone while it stands. Then whether 8 beats is the right top, whether
+      half a beat sits at a useful place on the fader, and what the brain's
+      frame time does with the path walk. Send two patches in turn from the
+      editor: the second should come up without a streak from the first.
+      See `docs/generator.md` § "The tail is an afterglow".
 
 The pulse's destinations, the anchor against a click and the stepped rate
 are unjudged too, and are listed below.
@@ -550,15 +557,9 @@ it becomes a build item.
         color along a tail follows the glow.
       - **A patch change starts empty**, and so does a jump in the beat
         count. The renderer cannot tell a patch change from fast fader
-        moves, so whoever changes the patch says so. The editor does on
-        choosing a slot or a starting point; the brain has no patch recall
-        yet, and will need to when it does.
-
-- [ ] **Judge the afterglow on the wall.** The *Swing* starting points: a
-      tail should stay behind its shape through the swing, shrink as it
-      slows and be gone while it stands. Also whether 8 beats is the right
-      top and whether half a beat sits at a useful place on the fader, and
-      what the brain's frame time does with the walk.
+        moves, so whoever changes the patch says so: the editor on choosing
+        a slot or a starting point, the brain on the generator's program
+        change.
 
 - [x] **Clear the tails when the brain changes patch.** Done 2026-09-25 on
       the generator's program change, which the editor now sends after a
