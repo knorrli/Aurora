@@ -202,7 +202,8 @@ driven live from the editor.
       beat in an unpredictable order; and the lamps held steady with hue
       shuffle full every bar. Then an LFO spread under a swell with the
       shuffle up, to see whether a new deal jumping the brightness reads as
-      a fault. Needs all four fixtures addressed. Old saved patches read 0
+      a fault. If steady lamps trading the same four colors reads as
+      nothing much, cut the hue shuffle and its period and free CCs 3 and 4. Needs all four fixtures addressed. Old saved patches read 0
       at CCs 30 and 31, which is both spreads at full the other way: reset
       the PAR card on anything saved before 2026-09-25. See `DESIGN.md` §
       "Four lamps in order, not four points on the wall".
