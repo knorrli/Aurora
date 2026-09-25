@@ -346,7 +346,8 @@
 
   // ---- the surface -------------------------------------------------------
 
-  function buildGroup(title, names) {
+  // Sections are subheadings inside the one group, sharing its reset.
+  function buildGroup(title, names, sections = [[null, names]]) {
     const box = el('div');
     const h = el('h3', null, title);
     const reset = el('button', 'reset tiny', 'reset');
@@ -355,7 +356,10 @@
     h.appendChild(reset);
     box.appendChild(h);
     const body = el('div');
-    buildRows(body, names);
+    for (const [heading, list] of sections) {
+      if (heading) body.appendChild(el('h4', 'subhead', heading));
+      buildRows(body, list);
+    }
     box.appendChild(body);
     return box;
   }
@@ -426,9 +430,9 @@
   function buildOutputs() {
     $('outputs').replaceChildren(
       buildGroup('5 strips', P.STRIPS.controls),
-      buildGroup('4 PARs', P.PARS.color),
-      buildGroup('4 PARs \u00b7 hue across them', P.PARS.hue),
-      buildGroup('4 PARs \u00b7 LFO across them', P.PARS.lfo));
+      buildGroup('4 PARs', P.PARS.controls, [
+        ['Color', P.PARS.color], ['Hue across them', P.PARS.hue], ['LFO across them', P.PARS.lfo],
+      ]));
 
   }
 

@@ -442,8 +442,8 @@
     ]),
   };
 
-  // Their color first, beside the strips' own, then what runs across the four
-  // in two groups of its own.
+  // Their color first, level with the strips' own, then what runs across the
+  // four.
   const PARS = {
     color: define([
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
