@@ -519,7 +519,7 @@ the preview had already agreed:
 
 - **Alternate and bounce arrive on their own CCs.** Bars turns at the
   strip's ends; alternate sends the 2nd and 4th columns from the left the
-  other way. So alternate and bounce land on CCs of their own — 60 and 61
+  other way. So alternate and bounce land on CCs of their own — 53 and 54
   since the regroup — and the packed CC that held them is gone.
 - **Bounce is per cell.** Four shapes each turn inside their own quarter.
   Nothing slides through into a neighbor and nothing re-enters at the

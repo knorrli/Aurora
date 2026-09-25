@@ -432,9 +432,15 @@
 
   const WAVE_CYCLES = 2;
 
+  // A rate swings around its dialed value, so its wave is drawn with its
+  // average taken off, the way the renderer applies it.
   function departureAt(route, phase, live) {
-    const ratio = window.AuroraCC.routeRatio(live[route.ratio]);
-    return P.bip(live[route.amount]) * V.pulseWave(phase * ratio, live[route.wave]);
+    const A = window.AuroraCC;
+    const ratio = A.routeRatio(live[route.ratio]);
+    const wave = live[route.wave];
+    const swings = (A.TAGS[A.NAME_BY_CC[live[route.destination]]] || []).includes('rate');
+    const at = V.pulseWave(phase * ratio - live[route.phase] / 128, wave);
+    return P.bip(live[route.amount]) * (swings ? at - V.waveMean(wave) : at);
   }
 
   function drawWave(canvas, dest, live) {
@@ -518,7 +524,7 @@
       buttons.append(bypass, remove);
       head.append(el('span', 'dest-name', route.name), buttons);
       const body = el('div');
-      buildRows(body, [route.amount, route.ratio, route.wave]);
+      buildRows(body, [route.amount, route.ratio, route.wave, route.phase]);
       const canvas = el('canvas', 'destwave');
       block.append(head, body, canvas);
       root.appendChild(block);
@@ -542,7 +548,8 @@
     window.addEventListener('resize', placeRoutePanel);
   }
 
-  const routeFields = route => [route.destination, route.amount, route.ratio, route.wave];
+  const routeFields = route =>
+    [route.destination, route.amount, route.ratio, route.wave, route.phase];
 
   // A control with no route yet is opened to add one, so opening it adds it.
   function toggleRoutePanel(name) {
@@ -573,6 +580,7 @@
       [free.amount]: NEW_ROUTE_AMOUNT,
       [free.ratio]: P.NEUTRAL[free.ratio],
       [free.wave]: P.NEUTRAL[free.wave],
+      [free.phase]: P.NEUTRAL[free.phase],
     });
   }
 
@@ -1301,13 +1309,14 @@
 
   // The values worth a notch in the track: the center of a control that
   // departs both ways from it, read off the renderer as the byte where its
-  // value changes sign; the named shapes on a route's wave; and the steps of
-  // a stepped control.
+  // value changes sign; the named shapes on a route's wave and the quarter
+  // turns of its phase; and the steps of a stepped control.
   function pointsFor(name) {
     const A = window.AuroraCC;
-    const route = P.ROUTES.find(r => [r.amount, r.ratio, r.wave].includes(name));
+    const route = P.ROUTES.find(r => [r.amount, r.ratio, r.wave, r.phase].includes(name));
     if (route) {
       if (name === route.wave) return [A.GEN_WAVE_SWELL, A.GEN_WAVE_SAW_DOWN, A.GEN_WAVE_SQUARE];
+      if (name === route.phase) return [32, 64, 96];
       if (name === route.ratio) return stepPoints(A.routeRatio);
       return [64];
     }

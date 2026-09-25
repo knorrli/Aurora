@@ -1,11 +1,12 @@
 # The CC map, regrouped
 
-**Applied 2026-09-23.** This is the map as it now stands in
-`shared/aurora_protocol.h`, which the browser side now reads through
-`tools/cc.js` rather than keeping its own copy. Drafted
-2026-09-23, after the fan took the last numbers at the end of the map and
-showed that the map is not short of numbers but short of room in the right
-places.
+**Applied 2026-09-23, regrouped again 2026-09-25.** This is the map as it
+now stands in `shared/aurora_protocol.h`, which the browser side reads
+through `tools/cc.js` rather than keeping its own copy. The first regroup
+came after the fan took the last numbers at the end of the map and showed
+that the map is not short of numbers but short of room in the right places.
+The second came when a route grew a fifth byte, its phase, and eight routes
+needed one run of 40 — see `docs/modulation.md` § "A route has a phase".
 
 The rule this exists to serve is at the top of `shared/aurora_protocol.h`:
 *never assign a CC outside its stated range unless you are explicitly
@@ -14,7 +15,9 @@ that rule stays followable instead of being bent one control at a time.
 
 ---
 
-## What is already decided
+## What the first regroup decided
+
+The CC numbers in this section are the ones from before 2026-09-23.
 
 - **CC 40 retires.** The packed bitmap goes. The controller has only ever
   sent `flags = 0`, so `faderAltModeEnabled` and `presetAltModeEnabled` are
@@ -77,9 +80,9 @@ CC 100 and 101 are the sharper of the two, because of the **RPN null**: after
 any RPN operation — setting a keyboard's pitch bend range, which DAWs and
 keyboards do on patch load — the convention is to send `CC 101 = 127,
 CC 100 = 127` to close the RPN so later data entry lands nowhere. Two CCs
-slammed to full. Aurora holds the pulse's width amount and its wave on 100
-and 101 today, so that sequence would push the width to full and the wave to
-a sine.
+slammed to full. Aurora holds route 4's destination and amount on 100 and
+101 today, so that sequence would aim route 4 at CC 127, which no control
+reads, and turn its amount up — the route goes silent rather than wrong.
 
 **But the real fault is that the brain listens to every channel.** The
 convention at the top of `shared/aurora_protocol.h` already says all Aurora
@@ -100,28 +103,23 @@ That leaves **114 usable numbers**: 2–6, 8–9, and 12–119 without 32.
 
 ## The budget
 
-Aurora needs **75 numbers** once CC 40, jitter and the per-preset slots retire
-and the fourth rocker gets a slot. There are 114 safe ones, so the layout
-below spends 112 and leaves 37 spare — about a third of the map.
+Aurora needs **103 numbers**: 63 controls and eight routes of five bytes.
+There are 114 safe ones, so the map spends them all but eleven.
 
-**Where that spare goes is the one real judgement here**, and the evidence
-says it is not the modulation matrix. The scatter's open fork — spots with a
-birth and a death, which is what raindrops and shooting stars need — is
-priced in `docs/generator.md` at **eight to ten new controls**. That is the
-only growth in the rig that anyone has costed. So the ten numbers the preset
-slots give back go to the scatter, not to the pulse.
+**The eleven are 3–6, 8, 9, 30, 31 and 68–70.** Only the generator's three
+are in a block anything is waiting to grow into: a curve on a rate or a bend
+of a ruler, each costed in `docs/modulation.md` at one or two numbers apiece.
 
-The pulse destinations keep four spare, which is one more destination: the
-modulator aimed at the fan's rate amount, and nothing beyond it. A seventh
-destination and the scatter's lifetime fork cannot both happen without the
-ceiling decision below.
+**The scatter's lifetime fork no longer fits.** Spots with a birth and a
+death, which is what raindrops and shooting stars need, is priced in
+`docs/generator.md` at eight to ten new controls. The first regroup kept room
+for it; the route's phase byte took that room. Building it now means the
+ceiling decision below, or fewer routes.
 
 **The ceiling is real and worth naming now.** When 114 runs out the options
 are NRPN, or a second MIDI channel — the brain ignores the channel byte
 entirely today (`handleControlChange` takes it and drops it), so a second
-channel is free for the taking but nothing is built to tell them apart. Not a
-decision for this regroup; a decision that should not arrive as a surprise
-the next time a lane wants three numbers.
+channel is free for the taking but nothing is built to tell them apart.
 
 ---
 
@@ -130,154 +128,152 @@ the next time a lane wants three numbers.
 | Range | Slots | Category | Assigned | Spare |
 |---|---|---|---|---|
 | 2–9 | 7 | Transport / meta | 1 | 6 |
-| 12–31 | 20 | The controller | 15 | 5 |
-| 33–37 | 5 | Washes / DMX | 3 | 2 |
-| 38–59 | 22 | Color | 20 | 2 |
-| 60–75 | 16 | Generator — shape, fan, the one clock | 16 | 0 |
-| 76–79 | 4 | Modulation route 0 | 4 | 0 |
-| 80–82 | 3 | Spare (the generator) | 0 | 3 |
-| 83–91 | 9 | Scatter / texture | 9 | 0 |
-| 92–119 | 28 | Modulation routes 1–7 | 28 | 0 |
+| 12–26 | 15 | The controller | 15 | 0 |
+| 27–31 | 5 | Washes / DMX | 3 | 2 |
+| 33–52 | 20 | Color | 20 | 0 |
+| 53–70 | 18 | Generator — shape, fan, the one clock | 15 | 3 |
+| 71–79 | 9 | Scatter / texture | 9 | 0 |
+| 80–119 | 40 | Modulation routes | 40 | 0 |
 
 0, 1, 7, 10, 11 and 32 are skipped, each for a reason above. Everything else
-between 2 and 119 is in a block.
+between 2 and 119 is in a block, and no block is split.
 
-**One block is split, and it is the routes.** Eight routes at four bytes need
-32 numbers; the longest free run is 28, and 119 is the ceiling because 120–127
-are Channel Mode messages. So route 0 sits in the generator's old pulse
-numbers and the other seven follow the scatter. `AURORA_ROUTE_BASE` in
-`shared/aurora_protocol.h` is the only place that knows, and the map wants
-regrouping again before the block grows.
+**How it got here.** Five-byte routes needed 40 numbers, and the first map
+had 36 where a route could sit without leaving its own block. The washes
+moved beside the controller, into what had been its spare, and color, the
+generator and the scatter slid down to close the gaps. That leaves the
+controller with no spare, which is right for a box whose controls are all
+counted in `docs/controls.md`.
 
 ## The map
 
-Every number, assigned. 95 spoken for, 19 spare.
+Every number, assigned. 103 spoken for, 11 spare.
 
 ### 2–9 · Transport / meta
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **2** | `TEMPO_DIVISION` | [patch] | — | note value one tempo pulse stands for |
+| CC | | | |
+|---|---|---|---|
+| **2** | `TEMPO_DIVISION` | [patch] | note value one tempo pulse stands for |
 
 Spare: 3, 4, 5, 6, 8, 9.
 
-### 12–31 · The controller
+### 12–26 · The controller
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **12** | `FADER_COLOR` | [ambient] | — | fader 1 position — the Color route |
-| **13** | `FADER_EXTENT` | [ambient] | — | fader 2 position — the Extent route |
-| **14** | `FADER_MOTION` | [ambient] | — | fader 3 position — the Motion route |
-| **15** | `PAD_X` | [gesture] | — | touchpad X, a position that persists |
-| **16** | `PAD_Y` | [gesture] | — | touchpad Y, a position that persists |
-| **17** | `PAD_PRESSURE` | [gesture] | — | touchpad pressure, 0-127 |
-| **18** | `PAD_ENGAGE` | [gesture] | — | is the pad's effect live; separate from a finger being down |
-| **19** | `ROCKER_PAD_A` | [ambient] | — | rocker below-left of the pad |
-| **20** | `ROCKER_PAD_B` | [ambient] | — | rocker above the pad, left |
-| **21** | `ROCKER_PAD_C` | [ambient] | — | rocker above the pad, center |
-| **22** | `ROCKER_PAD_D` | [ambient] | — | rocker above the pad, right |
-| **23** | `ROCKER_FADERS` | [ambient] | — | rocker below the fader panel |
-| **24** | `AUDIO_FOLLOWER` | [ambient] | — | peak-follower on/off, if it lands on the Teensy |
-| **25** | `AUDIO_THRESHOLD` | [ambient] | — | audio-in gate threshold, if it lands on the Teensy |
-| **26** | `KEY_HELD` | [gesture] | — | is the key the last Program Change named still down |
+| CC | | | |
+|---|---|---|---|
+| **12** | `FADER_COLOR` | [ambient] | fader 1 position — the Color route |
+| **13** | `FADER_EXTENT` | [ambient] | fader 2 position — the Extent route |
+| **14** | `FADER_MOTION` | [ambient] | fader 3 position — the Motion route |
+| **15** | `PAD_X` | [gesture] | touchpad X, a position that persists |
+| **16** | `PAD_Y` | [gesture] | touchpad Y, a position that persists |
+| **17** | `PAD_PRESSURE` | [gesture] | touchpad pressure, 0-127 |
+| **18** | `PAD_ENGAGE` | [gesture] | is the pad's effect live; separate from a finger being down |
+| **19** | `ROCKER_PAD_A` | [ambient] | rocker below-left of the pad |
+| **20** | `ROCKER_PAD_B` | [ambient] | rocker above the pad, left |
+| **21** | `ROCKER_PAD_C` | [ambient] | rocker above the pad, center |
+| **22** | `ROCKER_PAD_D` | [ambient] | rocker above the pad, right |
+| **23** | `ROCKER_FADERS` | [ambient] | rocker below the fader panel |
+| **24** | `AUDIO_FOLLOWER` | [ambient] | peak-follower on/off, if it lands on the Teensy |
+| **25** | `AUDIO_THRESHOLD` | [ambient] | audio-in gate threshold, if it lands on the Teensy |
+| **26** | `KEY_HELD` | [gesture] | is the key the last Program Change named still down |
 
-Spare: 27, 28, 29, 30, 31.
+No spare.
 
-### 33–37 · Washes / DMX
+### 27–31 · Washes / DMX
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **33** | `WASH_LEVEL` | [patch] | — | wash master |
-| **34** | `WASH_HUE_OFFSET` | [patch] | — | rotates the washes off the strips' hue |
-| **35** | `WASH_SATURATION` | [patch] | — | scales the washes down from the strips' saturation |
+| CC | | | |
+|---|---|---|---|
+| **27** | `WASH_LEVEL` | [patch][plain] | wash master |
+| **28** | `WASH_HUE_OFFSET` | [patch][circular][plain] | rotates the washes off the strips' hue |
+| **29** | `WASH_SATURATION` | [patch][plain] | scales the washes down from the strips' saturation |
 
-Spare: 36, 37.
+Spare: 30, 31.
 
-### 38–59 · Color
+### 33–52 · Color
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **38** | `HUE` | [patch] | — | hue center |
-| **39** | `SATURATION` | [patch] | — | saturation |
-| **40** | `VALUE` | [patch] | — | brightness |
-| **41** | `COLOR_REGION` | [switch] | — | one gradient across the ruler / regions |
-| **42** | `COLOR_RULER` | [switch] | — | across the strips / along a strip / within a shape |
-| **43** | `PLACED_HUE` | [patch] | — | how far one end of the ruler departs |
-| **44** | `PLACED_WHITE` | [patch] | — | toward white, or toward a pure hue |
-| **45** | `PLACED_DARK` | [patch] | — | toward dark, or toward full |
-| **46** | `PLACED_COUNT` | [patch] | — | regions along the ruler |
-| **47** | `PLACED_WIDTH` | [patch] | — | region width |
-| **48** | `PLACED_EDGE` | [patch] | — | region softness |
-| **49** | `PLACED_SPEED` | [patch] | — | bipolar; the field drifting along its ruler |
-| **50** | `WANDER_HUE` | [patch] | — | bipolar; how far the hue wanders |
-| **51** | `WANDER_WHITE` | [patch] | — | bipolar |
-| **52** | `WANDER_DARK` | [patch] | — | bipolar |
-| **53** | `WANDER_RATE` | [patch] | — | 0 = frozen |
-| **54** | `WANDER_SCALE` | [patch] | — | the whole wall as one, through to fine grain |
-| **55** | `LIT_HUE` | [patch] | — | bipolar; hue at the core of a shape |
-| **56** | `LIT_WHITE` | [patch] | — | white at the core |
-| **57** | `LIT_DARK` | [patch] | — | bipolar; the core toward dark or toward full |
+| CC | | | |
+|---|---|---|---|
+| **33** | `HUE` | [patch][circular] | hue center |
+| **34** | `SATURATION` | [patch] | saturation |
+| **35** | `VALUE` | [patch] | brightness |
+| **36** | `COLOR_REGION` | [switch] | one gradient across the ruler / regions |
+| **37** | `COLOR_RULER` | [switch] | across the strips / along a strip / within a shape |
+| **38** | `PLACED_HUE` | [patch] | how far one end of the ruler departs |
+| **39** | `PLACED_WHITE` | [patch] | toward white, or toward a pure hue |
+| **40** | `PLACED_DARK` | [patch] | toward dark, or toward full |
+| **41** | `PLACED_COUNT` | [patch] | regions along the ruler |
+| **42** | `PLACED_WIDTH` | [patch] | region width |
+| **43** | `PLACED_EDGE` | [patch] | region softness |
+| **44** | `PLACED_SPEED` | [patch][rate] | bipolar; the field drifting along its ruler |
+| **45** | `WANDER_HUE` | [patch] | bipolar; how far the hue wanders |
+| **46** | `WANDER_WHITE` | [patch] | bipolar |
+| **47** | `WANDER_DARK` | [patch] | bipolar |
+| **48** | `WANDER_RATE` | [patch][rate] | 0 = frozen |
+| **49** | `WANDER_SCALE` | [patch] | the whole wall as one, through to fine grain |
+| **50** | `LIT_HUE` | [patch] | bipolar; hue at the core of a shape |
+| **51** | `LIT_WHITE` | [patch] | white at the core |
+| **52** | `LIT_DARK` | [patch] | bipolar; the core toward dark or toward full |
 
-Spare: 58, 59.
+No spare.
 
-### 60–82 · Generator — shape, fan, pulse source
+### 53–70 · Generator — shape, fan, the one clock
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **60** | `GEN_ALTERNATE` | [switch] | — | odd strips run the journey backwards |
-| **61** | `GEN_BOUNCE` | [switch] | — | turn at the cell's edge instead of wrapping |
-| **62** | `GEN_WIDTH` | [patch] | — | the solid core, as a proportion of one cell |
-| **63** | `GEN_COUNT` | [patch] | — | shapes along the strip, 1-20 |
-| **64** | `GEN_EDGE` | [patch] | — | glow into the gap, both sides |
-| **65** | `GEN_TAIL` | [patch] | — | trail behind, into the gap |
-| **66** | `GEN_POSITION` | [patch] | — | bipolar; where a still pattern stands in its cell |
-| **67** | `GEN_SPEED` | [patch] | — | bipolar; center is still |
-| **68** | `GEN_FAN_FREQ` | [patch] | — | stepped; 0 to two turns across the wall |
-| **69** | `GEN_FAN_PHASE` | [patch] | — | where the wave sits on the strips |
-| **70** | `GEN_FAN_RANDOM` | [patch] | — | the wave, through to a fixed draw per strip |
-| **71** | `GEN_FAN` | [patch] | — | bipolar; how far apart the strips stand in their cells |
-| **72** | `GEN_FAN_RATE` | [patch] | — | bipolar; how far apart their speeds stand |
-| **73** | `GEN_FAN_PULSE` | [patch] | — | bipolar; how far apart they stand in the swell |
-| **75** | `GEN_PULSE_RATE` | [patch][rate] | — | stepped; beats per swell. The one clock |
+| CC | | | |
+|---|---|---|---|
+| **53** | `GEN_ALTERNATE` | [switch] | odd strips run the journey backwards |
+| **54** | `GEN_BOUNCE` | [switch] | turn at the cell's edge instead of wrapping |
+| **55** | `GEN_WIDTH` | [patch] | the solid core, as a proportion of one cell |
+| **56** | `GEN_COUNT` | [patch][plain] | shapes along the strip, 1-20 |
+| **57** | `GEN_EDGE` | [patch] | glow into the gap, both sides |
+| **58** | `GEN_TAIL` | [patch] | trail behind, into the gap |
+| **59** | `GEN_POSITION` | [patch][circular] | bipolar; where a still pattern stands in its cell |
+| **60** | `GEN_SPEED` | [patch][rate] | bipolar; center is still |
+| **61** | `GEN_FAN_FREQ` | [patch][plain] | stepped; 0 to two turns across the wall |
+| **62** | `GEN_FAN_PHASE` | [patch][circular][plain] | where the wave sits on the strips |
+| **63** | `GEN_FAN_RANDOM` | [patch][plain] | the wave, through to a fixed draw per strip |
+| **64** | `GEN_FAN` | [patch][plain] | bipolar; how far apart the strips stand in their cells |
+| **65** | `GEN_FAN_RATE` | [patch][rate][plain] | bipolar; how far apart their speeds stand |
+| **66** | `GEN_FAN_PULSE` | [patch][plain] | bipolar; how far apart they stand in the swell |
+| **67** | `GEN_PULSE_RATE` | [patch] | stepped; beats per swell. The one clock, and no route may aim at it |
 
-Spare: 74, 80, 81, 82. 76–79 are route 0, below.
+Spare: 68, 69, 70.
 
-### 83–100 · Scatter / texture
+### 71–79 · Scatter / texture
 
-| CC | | | Was | |
-|---|---|---|---|---|
-| **83** | `SCATTER_RATE` | [patch] | — | how often a cell relights |
-| **84** | `SCATTER_COUNT` | [patch] | — | cells along a strip, 1-20 |
-| **85** | `SCATTER_WIDTH` | [patch] | — | the spot's core, in space and in time at once |
-| **86** | `SCATTER_EDGE` | [patch] | — | hard through to a fade, both axes |
-| **87** | `SCATTER_STAGGER` | [patch] | — | one clock for every cell, through to spread |
-| **88** | `SCATTER_DRIFT` | [patch] | — | bipolar; how far a spot slides across its cell |
-| **89** | `SCATTER_LIGHT` | [patch] | — | bipolar; amount toward full light or toward dark |
-| **90** | `SCATTER_HUE` | [patch] | — | bipolar; amount, up to half the wheel |
-| **91** | `SCATTER_WHITE` | [patch] | — | bipolar; toward white or toward a pure hue |
+| CC | | | |
+|---|---|---|---|
+| **71** | `SCATTER_RATE` | [patch][rate] | how often a cell relights |
+| **72** | `SCATTER_COUNT` | [patch] | cells along a strip, 1-20 |
+| **73** | `SCATTER_WIDTH` | [patch] | the spot's core, in space and in time at once |
+| **74** | `SCATTER_EDGE` | [patch] | hard through to a fade, both axes |
+| **75** | `SCATTER_STAGGER` | [patch] | one clock for every cell, through to spread |
+| **76** | `SCATTER_DRIFT` | [patch] | bipolar; how far a spot slides across its cell |
+| **77** | `SCATTER_LIGHT` | [patch] | bipolar; amount toward full light or toward dark |
+| **78** | `SCATTER_HUE` | [patch] | bipolar; amount, up to half the wheel |
+| **79** | `SCATTER_WHITE` | [patch] | bipolar; toward white or toward a pure hue |
 
-No spare: 92 onward is the route block.
+No spare.
 
-### 76–79 and 92–119 · Modulation routes
+### 80–119 · Modulation routes
 
-Four bytes apiece — destination, amount, ratio, wave — laid out by
+Five bytes apiece — destination, amount, ratio, wave, phase — laid out by
 `AURORA_ROUTE_BASE`. The destination names the control it pushes by that
 control's own CC number, and it is a switch: a morph lands it on arrival
 rather than sliding it there.
 
 | Route | CCs |
 |---|---|
-| 0 | 76 destination, 77 amount, 78 ratio, 79 wave |
-| 1 | 92–95 |
-| 2 | 96–99 |
-| 3 | 100–103 |
-| 4 | 104–107 |
-| 5 | 108–111 |
-| 6 | 112–115 |
-| 7 | 116–119 |
+| 0 | 80 destination, 81 amount, 82 ratio, 83 wave, 84 phase |
+| 1 | 85–89 |
+| 2 | 90–94 |
+| 3 | 95–99 |
+| 4 | 100–104 |
+| 5 | 105–109 |
+| 6 | 110–114 |
+| 7 | 115–119 |
 
-No spare: the block is full, and raising the count means finding four more
-numbers in a regroup.
+No spare: raising the count means finding five more numbers per route.
+
 ## What is not a CC, and why
 
 - **Patch selection and the blackout** — Program Change. The keypad and the
@@ -299,7 +295,9 @@ numbers in a regroup.
 
 ---
 
-## What applying it took
+## What applying the first regroup took
+
+The CC numbers in this section are the 2026-09-23 map's.
 
 1. `shared/aurora_protocol.h` — the enum, the range comments, the rule.
 2. `brain/src/midi_in.cpp` — by symbol, so it followed for free; only the
@@ -322,21 +320,28 @@ library has ever reached hardware — "Run the patch sync against the brain" is
 still unchecked on the wall list — and the editor's is disposable. That is why
 now is cheaper than later, and later is only ever more expensive.
 
+## What the second regroup took
+
+Every consumer reads the numbers by symbol, so the enum and the range
+comments in `shared/aurora_protocol.h` were the change, `tools/cc.js` was
+regenerated from it, and both firmwares rebuilt. The prose CC numbers across
+`docs/` and `TODO.md` were renumbered by hand. The editor's stored library
+holds patches by control name, not by number, and there is none worth
+keeping either way.
+
 ---
 
 ## Settled while drafting
 
-- **The scatter keeps nine spare and the destinations four.** Revisit it when
-  the scatter's lifetime fork is actually built, not before.
 - **64 and 96–101 stay inside their blocks.** Filtering the receive channel
   is the fix; fragmenting the map is not.
-- **The fourth rocker gets its slot now**, before its job is decided. The
-  controller block has eleven spare for exactly this reason.
+- **The controller has no spare**, since every control on the box has a
+  number and `docs/controls.md` counts them.
 
 ## To mark up
 
 Nothing. Every control on the box and every parameter in a patch has a
-number. The map is ready to build from.
+number.
 
 **None of it is final.** The model will move again — the scatter has an
 unbuilt fork, the touchpad has no job yet, and the fan has been rebuilt once

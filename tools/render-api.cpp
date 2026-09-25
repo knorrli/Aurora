@@ -62,8 +62,13 @@ EMSCRIPTEN_KEEPALIVE float aurora_pulse_period_beats(int value) {
 // pushed it.
 EMSCRIPTEN_KEEPALIVE int aurora_strip_value(int cc, int strip) {
   render::Pushes pushes;
-  render::gatherRoutes(controls, frame.clock, frame.stripClock[strip], pushes);
-  return render::routed(controls, &pushes, (uint8_t)cc);
+  const float beatsPerCycle = render::convert(CC_GEN_PULSE_RATE, controls[CC_GEN_PULSE_RATE]);
+  render::gatherRoutes(controls, beatsPerCycle, frame.clock, frame.stripClock[strip], pushes);
+  return render::routedForDisplay(controls, &pushes, (uint8_t)cc);
+}
+
+EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave) {
+  return render::waveMean((uint8_t)wave);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }

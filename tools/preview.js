@@ -67,6 +67,7 @@
       makeMotion: () => m._aurora_motion_new(),
       copyMotion: (to, from) => m._aurora_motion_copy(to, from),
       pulseWave: (phase, wave) => m._aurora_pulse_wave(phase, wave),
+      waveMean: wave => m._aurora_wave_mean(wave),
       convert: (cc, value) => m._aurora_convert(cc, value),
       pulsePeriodBeats: value => m._aurora_pulse_period_beats(value),
 

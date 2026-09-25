@@ -34,6 +34,7 @@ const EXPORTS = [
   'aurora_render', 'aurora_render_strip_order', 'aurora_pulse_wave',
   'aurora_convert', 'aurora_pulse_period_beats',
   'aurora_strip_value', 'aurora_route_reach', 'aurora_route_refused',
+  'aurora_wave_mean',
 ];
 
 const FLAGS = [

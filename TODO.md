@@ -31,12 +31,12 @@ Everything lives on **`main`**. The last v1 commit is tagged
   what multiple of the clock and with what wave. Its phase is anchored to the
   bar and its rate is stepped to the periods a bar can hold. **Not yet seen
   on the wall.** See `docs/generator.md` § "Routes".
-- **The washes' own saturation**, 2026-09-22, on CC 35. A scale down from
+- **The washes' own saturation**, 2026-09-22, on CC 29. A scale down from
   the strips' saturation, and the origin the pulse's push toward white
   measures from. Not yet seen on a fixture. See `DESIGN.md` § "The PAR
   cans".
 - **Position**, 2026-09-22. Where a still pattern stands in its cell, on
-  CC 66. What travel left over eases away while the pattern stands still,
+  CC 59. What travel left over eases away while the pattern stands still,
   so a patch saved still comes back to the same place instead of standing
   wherever the last traveling one ran out. See `docs/generator.md` § "A
   still pattern stands where it is told".
@@ -47,7 +47,7 @@ Everything lives on **`main`**. The last v1 commit is tagged
   drawn by the brain's own renderer compiled to WebAssembly, so a look can
   be dialed with nothing plugged in and what lights is what the strips are
   sent.
-- **The scatter**, 2026-09-23. Nine CCs at 83–91: a grid of cells, each on
+- **The scatter**, 2026-09-23. Nine CCs at 71–79: a grid of cells, each on
   its own clock, each lighting a spot that pushes the strips' brightness, hue
   and whiteness. Ported from `tools/preview.js`, where it was designed, and
   checked sample for sample against it. Flashed but **not yet seen on the
@@ -64,6 +64,14 @@ Everything lives on **`main`**. The last v1 commit is tagged
   color source on is heard on the strips whose phase has it on, not on
   none of them.
   See `docs/architecture.md` § "One renderer, compiled twice".
+- **Rates as route destinations, and a route's phase**, 2026-09-25. A route
+  aimed at any of the five rates swings it both ways around its dialed value
+  and averages to nothing, so the wall comes back into line every route
+  cycle — checked in the renderer to the pixel over ten cycles. A route is
+  five bytes now, the fifth delaying its wave into its cycle, and the CC map
+  was regrouped to make room. **Not yet seen on the wall.** See
+  `docs/modulation.md` §§ "A rate swings both ways" and "A route has a
+  phase".
 
 Measurements in `docs/bench-facts.md`.
 
@@ -166,18 +174,8 @@ with the state — all wait on the same thing.
 
 ## On the wall, next session
 
-Built 2026-09-22 and seen by nothing but the preview. One look each — and
-one that is not a look at all, listed first because it gates the rest.
-
-- [ ] **Run the patch sync against the brain.** Nothing below it has ever
-      met hardware. In order, all from `tools/protocol.html` but the last:
-      ask a freshly flashed brain what it holds and confirm it says empty;
-      push eight patches and read them back byte for byte; push a half
-      library and confirm the commit is refused and the previous one
-      survives; save the library to a file and push that same file back;
-      then pull the mains mid-sync and confirm the old library is still
-      whole. Time a full 128 while you are there — the flash write is the
-      likely cost, not the transfer.
+Built 2026-09-22 and seen by nothing but the preview. One look each, driven
+live from the editor.
 
 - [ ] **Try to defeat the blackout gate.** Built 2026-09-23, never seen on
       hardware, and it is the one control that has to work when nothing
@@ -213,7 +211,7 @@ one that is not a look at all, listed first because it gates the rest.
 - [ ] **Wind the placed field's region count up**, on the strip ruler with
       a hard edge. It should wash out smoothly rather than strobe. See
       `docs/bench-facts.md` § "Point-sampling a pattern aliases".
-- [ ] **Pull CC 35 down, then open the pulse's PAR saturation.** Full
+- [ ] **Pull CC 29 down, then open the pulse's PAR saturation.** Full
       should look like the strips as before; pulled down, the flash toward
       white should start from pale. See `DESIGN.md` § "The PAR cans".
 - [ ] **Sweep the V fader under a scattered look.** The white pixels
@@ -228,6 +226,15 @@ one that is not a look at all, listed first because it gates the rest.
       whose neutral is the bottom of the travel rather than the middle, so
       check what it sits at in the patches actually in use. See
       `docs/generator.md` § "Open" item 11.
+
+- [ ] **Swing a rate.** Two looks, each a patch. The fan's rate spread at
+      zero with a sine route on it: the strips should drift apart and come
+      back into line on the bar. And the hypno look: speed dialed still, a
+      four-beat clock, a sine at a quarter-turn phase on speed and a second
+      on the fan's rate spread — the wall should rise, stop on beat 2, fall,
+      and stop again, all five together. Watch for the known wart: a tail
+      stays on the side the dialed speed puts it, so a shape swung backwards
+      runs tail-first. See `docs/modulation.md` § "A rate swings both ways".
 
 The pulse's destinations, the anchor against a click and the stepped rate
 are unjudged too, and are listed below.
@@ -266,7 +273,7 @@ designing there. See `docs/bench-facts.md`.
       Absorbed 2026-09-22 into the scatter, where it is one destination
       rather than a project of its own, and the scatter's hue amount is
       already designed. See `docs/generator.md` § "The scatter".
-- [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 35.
+- [x] **Give the PARs their own saturation.** Done 2026-09-22, on CC 29.
       A scale down from the strips' saturation: full matches them, zero is
       white. The pulse's push toward white measures from it, and the
       "the pulse reaches this" marker now has somewhere to sit for every
@@ -338,6 +345,42 @@ designing there. See `docs/bench-facts.md`.
       a bench. See `docs/generator.md` § Open, item 6.
 - [ ] **Test the touchpad window from the laptop, before any rewire.**
       See `DESIGN.md` § "Which strips — a window, not a selection".
+
+## Deferred until the model is stable
+
+Decided 2026-09-25. The patch model is still being designed, and every patch
+so far is a test that can be thrown away. The moment the brain holds a
+library, a change to the patch format needs a compatibility story, so nothing
+on the brain's side of the wire moves until the model has stopped changing.
+Until then the editor drives the wall live, over CCs. The code already
+written for it — `brain/src/patch_store.cpp`, `brain/src/patch_sync.cpp`,
+`tools/protocol.html` — stays as it is, unrun.
+
+- [ ] **Run the patch sync against the brain.** It has never met
+      hardware. In order, all from `tools/protocol.html` but the last:
+      ask a freshly flashed brain what it holds and confirm it says empty;
+      push eight patches and read them back byte for byte; push a half
+      library and confirm the commit is refused and the previous one
+      survives; save the library to a file and push that same file back;
+      then pull the mains mid-sync and confirm the old library is still
+      whole. Time a full 128 while you are there — the flash write is the
+      likely cost, not the transfer.
+
+- [ ] **Teach the brain to recall a patch.** Storage and the wire exist and
+      nothing puts a patch on the wall — the only reader of the library is
+      the export path. A patch arriving has to write the [patch] and [switch] CCs
+      through the same handlers a live CC goes through, which is what makes
+      the raw bytes worth storing. Needs the keypad-to-patch lookup at the
+      same time — the controller still sends `PC = key number` in
+      `scan_numpad()`, which only works while key N means preset N.
+
+- [ ] **A default set compiled into the firmware**, so an empty brain
+      still lights the wall. See `DESIGN.md` § "Patch storage". It must
+      never be written to storage: the brain reporting an empty library is
+      how the editor tells a fresh flash from a small library, and writing
+      the defaults in would destroy that distinction. It must also leave
+      the brain on a patch other than key 0, or the blackout gate added
+      2026-09-23 holds the wall dark — `selectedPreset` starts at 0.
 
 ## Open discussions
 
@@ -457,10 +500,16 @@ it becomes a build item.
       spaced across the stage against the back wall. Whether that swap is
       an improvement is not obvious — "within a shape" is not a direction
       at all, so the three would stop being one vocabulary.
-- [ ] **Travel easing — is the look wanted?** Built shape is settled in
-      `docs/generator.md` § "Travel easing is a curve, not a modulation
-      route", and it is a build item above. What has never been discussed
-      is whether a band backdrop asks for a thrown-ball traversal.
+- [ ] **Easing — the looks are named, the mechanism is not.** Answered
+      2026-09-25: raindrops falling top to bottom that start slow and pick
+      up speed until they wrap, and bars bouncing that are fast through the
+      middle and slow at the edges. The trip keeps its length and the wave
+      only redistributes speed within it, chosen from the same wave shapes a
+      route uses, with a phase. Open fork: bend the clock of the trip, which
+      at count 3 makes every drop surge together, or bend the ruler, which
+      speeds each drop by where it is and stretches it as it goes. Next is
+      both side by side in the preview. See `docs/generator.md` § "Travel
+      easing is a curve, not a modulation route".
 - [x] **Gate length on the pulse.** Built 2026-09-24 as the top of a
       route's wave byte rather than the bottom of a Shape fader: past the
       square at 96 the flash shortens to a stab at 127, down to
@@ -476,15 +525,11 @@ it becomes a build item.
       every instant — so the switch survives. `DESIGN.md` § "Alternate
       keeps its jump" said it would not; that is corrected there.
 
-- [ ] **The bars drifting apart and back together has no way in.** "Drift
-      apart, come back into alignment, drift the other way" needs the fan's
-      rate amount swinging through zero. The case for it was that a bipolar
-      push integrates back to nothing once a cycle. Routes since settled
-      against it twice: every rate is refused as a destination, and the wave
-      rests at zero and peaks at one, so it is never bipolar and never
-      integrates back. Either the look goes, or it needs its own mechanism —
-      a wave that swings both ways, admitted only for this destination. See
-      `docs/modulation.md` § "Which destinations a route may aim at".
+- [x] **The bars drifting apart and back together has no way in.** Answered
+      2026-09-25 by letting routes aim at rates, where a route swings both
+      ways and averages to nothing: a route on the fan's rate spread with its
+      center at zero is this look. See `docs/modulation.md` § "A rate swings
+      both ways".
 
 - [x] **Apply the regrouped CC map.** Done 2026-09-23, and
       `docs/cc-regroup.md` is the map. Every number assigned, every
@@ -632,20 +677,12 @@ it becomes a build item.
 - [ ] **Use the new editor at the bench.** `tools/editor.html` runs clean in a
       browser and has **never driven the rig**. The old page went anyway, since
       keeping it meant maintaining a second copy of the CC map through the
-      route work and there is no assembled rig to test either against. Three
-      things to watch for when there is: whether pushing a library actually
-      lands (the SysEx path has never run against hardware either), whether
-      driving a morph's CCs at frame rate is too much traffic over USB, and
-      whether the carrier/modulator split reads as well with the wall in front
-      of you as it does on screen.
-
-- [ ] **Teach the brain to recall a patch.** Storage and the wire exist and
-      nothing puts a patch on the wall — the only reader of the library is
-      the export path. A patch arriving has to write the [patch] and [switch] CCs
-      through the same handlers a live CC goes through, which is what makes
-      the raw bytes worth storing. Needs the keypad-to-patch lookup at the
-      same time — the controller still sends `PC = key number` in
-      `scan_numpad()`, which only works while key N means preset N.
+      route work and there is no assembled rig to test either against. Two
+      things to watch for when there is: whether driving a morph's CCs at frame
+      rate is too much traffic over USB, and whether the carrier/modulator
+      split reads as well with the wall in front of you as it does on screen.
+      Pushing a library is deferred with the rest of the brain's side — see
+      § "Deferred until the model is stable".
 
 - [x] **The editor has no patch in the DESIGN sense.** Answered 2026-09-23 by
       a new editor rather than a rework: `tools/editor.html` with
@@ -735,13 +772,6 @@ it becomes a build item.
       it lacks is A and B coming from two named sets of one patch rather
       than from "capture whatever is on screen".
 
-- [ ] **A default set compiled into the firmware**, so an empty brain
-      still lights the wall. See `DESIGN.md` § "Patch storage". It must
-      never be written to storage: the brain reporting an empty library is
-      how the editor tells a fresh flash from a small library, and writing
-      the defaults in would destroy that distinction. It must also leave
-      the brain on a patch other than key 0, or the blackout gate added
-      2026-09-23 holds the wall dark — `selectedPreset` starts at 0.
 - [x] **What a completed morph does.** Settled 2026-09-22. A completed
       morph arrives only if it was going to a patch, so a fader never
       arrives and the surfaces table in `DESIGN.md` § "Switches belong to
@@ -797,7 +827,7 @@ it becomes a build item.
 - [x] **The three faders have no CC.** Fixed 2026-09-23 in the regroup:
       CC 12, 13 and 14 carry their positions, `[ambient]`, so the brain can
       morph toward the patch's Color, Extent and Motion sets. What a patch
-      holds is separate, at 38-40. The controller still sends the sticks to
+      holds is separate, at 33-35. The controller still sends the sticks to
       the color, which is the next thing to change in
       `controller/src/controls.cpp`.
 

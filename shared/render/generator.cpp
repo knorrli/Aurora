@@ -264,11 +264,13 @@ static inline float triangleSwing(float phase) {
 // width of a cell wall, because that is where it turns — a shape standing
 // there snaps out to the wall, by at most half its width. Every strip is
 // solved for separately, so a fanned wall keeps its stagger across the flip
-// rather than only the strip the wave reads zero at.
+// rather than only the strip the wave reads zero at. A swung speed's shift is
+// added on top of the tracker, so it is taken off what the tracker is asked
+// for, in the phase units of the mode being entered.
 static void reanchorTravel(Tracker &tracker, float beats, bool bouncing,
                            float speedPixels, float coreCells,
                            float halfCore, float swingSpan, float direction,
-                           float cellLength, float positionCells) {
+                           float cellLength, float positionCells, float shift) {
   float rate;
   float wanted;
   if (bouncing) {
@@ -286,7 +288,7 @@ static void reanchorTravel(Tracker &tracker, float beats, bool bouncing,
     wanted = coreCells - 0.5f - positionCells;
   }
   tracker.rate = rate;
-  tracker.offset = wanted - beats * rate;
+  tracker.offset = wanted - shift - beats * rate;
 }
 
 // A push is a fraction of the way from the dialed value to one of its two
@@ -791,7 +793,7 @@ Hsv colorFrom(const uint8_t *dialed, const Pushes *pushes) {
 }
 
 // The washes take the strips' dialed color and never its pushes: a push
-// reaches one fixture family, and CC 38-40 are the strips'. Their own three
+// reaches one fixture family, and CC 33-35 are the strips'. Their own three
 // take theirs. Color is converted at full value and the light is carried by
 // the fixture's own dimmer, so the emitters stay near full scale where they
 // have the most resolution.
@@ -824,7 +826,7 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
   for (uint16_t i = 0; i < STRIPS * PIXELS; i++) out.pixels[i] = { 0, 0, 0 };
 
   // Read three times. The first has no pushes in it, which is what the clock's
-  // own rate needs, since a rate is a destination routes refuse. The second
+  // own rate needs, since it is a destination routes refuse. The second
   // takes the plain reading of the clock, and everything the strip loop is
   // built on comes from it. The third is each strip's own reading, so a push
   // rolls across the wall instead of landing on all five at once.
@@ -834,7 +836,7 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
   out.clock = pulse;
 
   Pushes pushes;
-  gatherRoutes(dialed, pulse, pulse, pushes);
+  gatherRoutes(dialed, p.pulseBeats, pulse, pulse, pushes);
   readParams(dialed, &pushes, p);
   out.wash = washFrom(dialed, &pushes);
   readFan(p, out.fan);
@@ -854,9 +856,10 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
 
   // Speed is what the strip the wave reads zero at travels at, and the fan's
   // rate amount is measured from there. So a wall can be turning with Speed
-  // at a standstill, and bounce has to ask the five rather than the one dial.
+  // at a standstill, and bounce has to ask the five rather than the one dial
+  // — and the routes, since a swing moves a wall whose dials are all still.
   float stripSpeeds[STRIPS];
-  bool anyMoving = false;
+  bool anyMoving = routeAims(dialed, CC_GEN_SPEED) || routeAims(dialed, CC_GEN_FAN_RATE);
   for (uint8_t i = 0; i < STRIPS; i++) {
     stripSpeeds[i] = stillBelowThreshold(p.speedPixels + p.fanRate * fanWave(p, i));
     if (stripSpeeds[i] != 0.0f) anyMoving = true;
@@ -868,10 +871,10 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
 
   // Every color rate goes through the tracker for the same reason travel and
   // the pulse do: beats only grows, so a small change of rate multiplied by a
-  // large beat count is a large jump.
-  const float wanderT = trackedPhase(motion.wander, beats, p.wanderCycles);
-  const float placedDrift = trackedPhase(motion.placed, beats, p.placed.cellsPerBeat);
-  const float scatterT = trackedPhase(motion.scatter, beats, p.scatterRate);
+  // large beat count is a large jump. A route's swing is added per strip.
+  const float wanderDialed = trackedPhase(motion.wander, beats, p.wanderCycles);
+  const float placedDialed = trackedPhase(motion.placed, beats, p.placed.cellsPerBeat);
+  const float scatterDialed = trackedPhase(motion.scatter, beats, p.scatterRate);
 
   for (uint8_t stripIndex = 0; stripIndex < STRIPS; stripIndex++) {
     const float wave = fanWave(p, stripIndex);
@@ -888,8 +891,14 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
     out.stripClock[stripIndex] = stripPulse;
 
     Params s;
-    gatherRoutes(dialed, pulse, stripPulse, pushes);
+    gatherRoutes(dialed, p.pulseBeats, pulse, stripPulse, pushes);
     readParams(dialed, &pushes, s);
+
+    const float wanderT = wanderDialed + pushes.shift[CC_WANDER_RATE];
+    const float placedDrift = placedDialed + pushes.shift[CC_PLACED_SPEED];
+    const float scatterT = scatterDialed + pushes.shift[CC_SCATTER_RATE];
+    const float shiftPixels =
+        pushes.shift[CC_GEN_SPEED] + pushes.shift[CC_GEN_FAN_RATE] * wave;
 
     const bool placedOn = placedActive(s);
     const bool wanderOn = wanderActive(s);
@@ -902,11 +911,18 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
     // phase is solved for rather than carried across.
     const float stripSpeed = stripSpeeds[stripIndex];
     const float direction = (stripSpeed >= 0.0f) ? 1.0f : -1.0f;
+    // Under bounce the tracker runs at the speed's magnitude and the direction
+    // is applied after, so a shift toward the dialed direction is more of the
+    // swing and one against it is less.
+    const float shiftCycles = (swingSpan > 0.0001f)
+        ? direction * shiftPixels / (2.0f * swingSpan * cellLength) : 0.0f;
+    const float shiftCells = shiftPixels / cellLength;
     Tracker &tracker = motion.travel[stripIndex];
     if (bouncing != motion.lastBouncing) {
       reanchorTravel(tracker, beats, bouncing, stripSpeed,
                      motion.lastCoreCells[stripIndex], halfCore, swingSpan,
-                     direction, cellLength, s.positionCells);
+                     direction, cellLength, s.positionCells,
+                     bouncing ? shiftCycles : shiftCells);
     }
 
     float travelCycles = 0.0f;
@@ -914,13 +930,14 @@ void renderGenerator(const uint8_t *dialed, float beats, Motion &motion, Frame &
     if (bouncing) {
       const float rate = (swingSpan > 0.0001f)
           ? fabsf(stripSpeed) / (2.0f * swingSpan * cellLength) : 0.0f;
-      travelCycles = trackedPhase(tracker, beats, rate);
+      travelCycles = trackedPhase(tracker, beats, rate) + shiftCycles;
     } else {
       // Half a cell puts a still shape in the middle of its cell rather than
       // straddling the boundary — which at count 1 is the strip's two ends.
       // Position slides it from there.
       centerCells = 0.5f + s.positionCells
-          + settledTravel(tracker, beats, travelElapsed, stripSpeed / cellLength);
+          + settledTravel(tracker, beats, travelElapsed, stripSpeed / cellLength)
+          + shiftCells;
     }
     motion.lastCoreCells[stripIndex] = bouncing
         ? (halfCore + triangleSwing(fract(travelCycles)) * swingSpan)

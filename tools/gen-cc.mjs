@@ -120,7 +120,7 @@ ${body}
 })(typeof window === 'undefined' ? globalThis : window);
 `;
 
-// The renderer cannot read a comment, so routes.cpp restates the tags as three
+// The renderer cannot read a comment, so routes.cpp restates the tags as
 // switches. This is what stops the two from drifting.
 function checkRenderer() {
   const src = readFileSync(join(ROOT, 'shared/render/routes.cpp'), 'utf8');
@@ -131,7 +131,8 @@ function checkRenderer() {
     return new Set([...body.matchAll(/case (CC_[A-Z0-9_]+):/g)].map(m => camel(m[1])));
   };
   const want = {
-    refused: new Set([...tagged('rate'), 'tempoDivision']),
+    refused: new Set(['tempoDivision', 'genPulseRate']),
+    swings: new Set(tagged('rate')),
     circular: new Set(tagged('circular')),
     plainClock: new Set(tagged('plain')),
   };

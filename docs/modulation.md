@@ -1,6 +1,7 @@
 # Modulation routing
 
-Raised 2026-09-23, settled and built 2026-09-24. What sends a modulator at a
+Raised 2026-09-23, settled and built 2026-09-24. Rates as destinations and
+the phase byte settled and built 2026-09-25. What sends a modulator at a
 control, how many can be live at once, and what shape the wave is.
 
 **This file is the record of why.** What a route *is* lives in
@@ -68,12 +69,14 @@ waves" below.
 **A push is a fraction of the distance to a limit**, everywhere except
 controls that wrap, which take a rotation instead. Two routes aimed at one
 destination add their pushes and move it once, capped at the limit. A push
-reaches one fixture family: the strips' three colour controls are CC 38–40
-and the PARs' are CC 33–35. See "How a push lands".
+reaches one fixture family: the strips' three colour controls are CC 33–35
+and the PARs' are CC 27–29. See "How a push lands".
 
 **Which destinations a route may aim at is marked on the enum** — `[rate]`
-is refused, `[circular]` takes a rotation, everything else takes the
-ordinary push. See "Which destinations a route may aim at".
+swings both ways around its dialed value, `[circular]` takes a rotation,
+everything else takes the ordinary push. Only tempo division and the clock's
+own rate are refused. See "Which destinations a route may aim at" and "A
+rate swings both ways".
 
 **Which clock a route reads is decided by its destination**, not by the
 route — a destination on a strip reads that strip's fanned reading, a
@@ -84,10 +87,10 @@ morph never changes a destination mid-journey. Between patches, a route
 whose destination differs at the two ends lands on arrival like any other
 switch. See "What a morph does to a route".
 
-**Eight routes, four bytes each** — destination, amount, ratio, wave. That
-is 32 of the 51 CCs the retirement leaves free, so a source byte per route
-stays affordable and the count can still be raised. See "What it costs,
-measured".
+**Eight routes, five bytes each** — destination, amount, ratio, wave,
+phase. That is 40 of the 51 CCs the map has for routes and anything new, and
+it took a regroup to lay them out. See "What it costs, measured" and "A
+route has a phase".
 
 ## Every amount is a soldered route
 
@@ -115,9 +118,7 @@ The other fifteen stay. Each is **one byte**, always available, costing no
 route slot, with a destination that is the point of the control rather
 than an arbitrary choice. Converting one to a route would pay five bytes
 and a scarce slot to buy the ability to re-aim something mostly aimed
-correctly already. Two of them could not become routes anyway: the fan's
-rate and pulse amounts are aimed at a rate and a phase, which is the
-class that is off-limits.
+correctly already.
 
 **The rule this gives.** A connection whose destination would never change
 stays soldered. A connection that exists only because the destination had
@@ -171,24 +172,26 @@ triple for all 43 reachable controls would be 129 CCs against the 128 that
 exist. That arithmetic is why the fixed list exists.
 
 Routes cost per route instead of per destination. Counted off
-`shared/aurora_protocol.h` rather than off the blocks, which are not
-final:
+`shared/aurora_protocol.h` as regrouped on 2026-09-25:
 
 | | CCs |
 |----|----|
 | CC numbers that exist, 0–127 | 128 |
 | Excluded, never to be assigned | −14 |
-| Assigned today: 2, 12–26, 33–35, 38–57, 60–77, 83–91, 101–115 | −81 |
-| Unassigned and usable | 33 |
-| Reclaimed by retiring the pulse's sends | +18 |
-| **Free** | **51** |
-| Eight routes at four bytes | −32 |
-| **Left over** | **19** |
+| Every control that is not a route: 2, 12–29, 33–67, 71–79 | −63 |
+| **Free for routes and anything new** | **51** |
+| Eight routes at five bytes, 80–119 | −40 |
+| **Left over** | **11** |
 
-The 18 reclaimed are CCs 74, 76, 77 and 101–115: the five destinations in
-the 101 block, plus the strips' own brightness, whose amount, skew and
-shape sit at 74, 76 and 77. **CC 75 stays**, because it is the rate, and
-the rate becomes the clock.
+The eleven are 3–6, 8 and 9 in transport, 30–31 in the washes and 68–70 in
+the generator. The generator's three are where a curve on a rate or a bend of
+a ruler would go.
+
+Five bytes did not fit the map as it stood: the numbers a route could use
+without leaving its own block came to 36. The regroup moved the washes to
+27–29, beside the controller, and slid color, the generator and the scatter
+down to close the gaps, which leaves 80–119 as one run of exactly 40. Nothing
+had been saved against the old numbers, so nothing needed carrying across.
 
 ### The fourteen excluded numbers
 
@@ -218,25 +221,21 @@ by hand, and then 124–127, which DAWs send far less often than the
 change is another opportunity.
 
 **CC 64 fails the same test and is already assigned.** It is Sustain, it
-holds `CC_GEN_EDGE`, and a keyboard with a sustain pedal on channel 1
+holds `CC_GEN_FAN`, and a keyboard with a sustain pedal on channel 1
 would send it unbidden. It is in use rather than up for choice, so it is
 recorded here rather than acted on.
 
-**Raising the count later is safe.** An array size in two renderers and a
-loop bound in the editor. Nothing in storage, nothing on the wire, and
-nothing in patches already written, since an absent route's CCs arrive as
-zero and a zero-amount route does nothing. There is no migration and no
-version byte. What is *not* freely raisable is the ceiling: 19 CCs left
-over is the whole of it, and a source byte would claim eight of them.
+**Raising the count is an array size** in the renderer and a loop bound
+in the editor. What is *not* freely raisable is the ceiling: 11 CCs left
+over is the whole of it, and one more route costs five.
 
-**A source byte is not needed yet.** Adding wander, scatter or fan as
-route sources later costs one more CC per route — eight at this count,
-against the 19 left over. So leaving it out now paints nothing into a
-corner. It is also why the count did not go higher: raising it later is
-safe and lowering it is not, and twelve routes would have left three. The catch when it comes: the wander and the scatter have a
-position, so pointing one at a global control needs a rule for where on
-the wall to sample it — the same unbuilt work `docs/generator.md` already
-records against sampling the color layer at the PARs.
+**A source byte is not affordable at this count.** Adding wander, scatter or
+fan as route sources costs one more CC per route — eight, against the 11 left
+over, which would leave nothing for a curve on a rate or a bend of a ruler.
+The catch when it comes anyway: the wander and the scatter have a position,
+so pointing one at a global control needs a rule for where on the wall to
+sample it — the same unbuilt work `docs/generator.md` already records
+against sampling the color layer at the PARs.
 
 ## Two details that would be found on the wall
 
@@ -291,8 +290,8 @@ span suits every circular control is not settled.
 **Which controls are circular is a per-control fact**, and it belongs next
 to the CC where the `[patch]` and `[switch]` tags already live, never in a
 table somewhere else that can drift out of step. Three read as circular
-today: hue, the pattern's standing position (CC 66, where the pattern
-repeats once per cell), and the fan's phase (CC 69, which runs on 128ths
+today: hue, the pattern's standing position (CC 59, where the pattern
+repeats once per cell), and the fan's phase (CC 62, which runs on 128ths
 of a full turn). Tagging them is the same pass that answers which
 destinations are refused.
 
@@ -322,10 +321,10 @@ nothing could reach this, because each destination had exactly one send
 carrying one amount, and the DMX output capped where the generator did not.
 `routed()` caps it.
 
-**A push lands on one fixture family.** CC 38, 39 and 40 are the strips'
+**A push lands on one fixture family.** CC 33, 34 and 35 are the strips'
 hue, saturation and brightness — the editor already draws the pulse as one
 of the sources pushing them — and a push on them does not reach the PARs.
-The PARs have their own three, CC 33, 34 and 35, expressed as a
+The PARs have their own three, CC 27, 28 and 29, expressed as a
 relationship to the strips' *dialed* colour: an offset is measured from
 where the fader sits, not from where the modulation has it at that
 instant.
@@ -360,7 +359,7 @@ identical — so this is one clock read two ways, not two clocks.
 
 **The route does not choose. Its destination does.** A destination that
 lives on a strip reads that strip's shifted reading; a global one reads
-the plain clock. This costs nothing, keeps a route at four bytes, and
+the plain clock. This costs nothing, costs a route no byte, and
 reproduces exactly what happened before routes, where the choice was made
 only by which line of the frame each send happened to sit on.
 
@@ -375,24 +374,20 @@ is most of the map:
 
 | | CCs |
 |----|----|
-| On a strip | the shape 62–67, the fan 68–73, the placed field 43–49, the wander 50–54, the light level 55–57, the scatter 83–91, the three faders 38–40 |
-| Global | the washes 33–35, tempo division 2 |
+| On a strip | the shape 55–60, the fan 61–66, the placed field 38–44, the wander 45–49, the light level 50–52, the scatter 71–79, the three faders 33–35 |
+| Global | the washes 27–29, tempo division 2 |
 
 Roughly 36 of the 43 sit on a strip. The PARs have three controls of their
 own.
 
 **What this cannot do.** All strip routes are fanned together or none are,
-because CC 73 is a single global amount — brightness rolling across the
+because CC 66 is a single global amount — brightness rolling across the
 wall while width pulses in unison is out of reach. A per-route byte would
-buy it, eight CCs of the nineteen left over. Whether that stays cheap
-depends on a CC layout nobody has chosen: routes laid out as blocks of
-four consecutive numbers make raising the count free and a fifth byte
-expensive, and giving each parameter its own block of eight does the
-reverse. That belongs to the CC map step, not here.
+buy it, eight CCs of the eleven left over.
 
 ## What a morph does to a route
 
-One of a route's four bytes — the destination — is a switch, and
+One of a route's five bytes — the destination — is a switch, and
 `DESIGN.md` § "Switches belong to the patch" allows a switch to move only
 on arrival. That is new ground. Today the two ends of a journey always
 agree about what pushes what, because the six sends are hardwired;
@@ -437,62 +432,139 @@ question for the editor work, which the build order already puts last.
 
 ## Which destinations a route may aim at
 
-Forty-three controls carry `[patch]` once the pulse's block retires, and
-they divide four ways. The marks live on the enum in
-`shared/aurora_protocol.h` beside the numbers they describe, not in a
-table here, so the two cannot drift apart.
+Forty-three controls carry `[patch]`, and they divide five ways. The marks
+live on the enum in `shared/aurora_protocol.h` beside the numbers they
+describe, not in a table here, so the two cannot drift apart.
 
-**Refused: the five rates**, tagged `[rate]`. CC 49 the placed field's
-speed, 53 the wander's rate, 67 the pattern's speed, 72 the fan's rate
-spread, 83 the scatter's rate. Each feeds a `trackedPhase`, so a push
-accumulates and the wall drifts instead of returning.
-
-It is the wave that settles this, not skew. The wave rests at zero and
-peaks at one, so it is one-signed and its integral over a cycle is never
-zero at any setting. Returning would need equal area either side of zero,
-and this wave cannot make it. Drift is correctable in principle —
-`reanchorTravel` and `anchoredPulsePhase` both walk a phase back onto the
-grid — but a correction running continuously against a modulated rate is a
-servo, not a modulation.
-
-**The known exception, left out deliberately.** CC 53 has no grid to fall
-off: the wander is two sine terms at the golden ratio, built never to come
-back into step, so drift there is invisible. It stays refused for v1
-because it is the least interesting of the five to modulate, and admitting
-it later is one row.
-
-**And easing is not this.** Slow at the ends and fast through the middle
-looks like a route on speed and is not one — the travel period is not a
-number anyone dials, so any rate set against it slides. Settled in
-`docs/generator.md` § "Travel easing is a curve, not a modulation route",
-and a build item in `TODO.md`.
+**Refused: CC 67, the clock's own rate.** Every route reads the clock, so a
+route aimed at its rate would modulate its own source. It is also stepped to
+periods a bar holds and anchored to the bar line, and a push would pull it off
+both.
 
 **Refused: CC 2.** Tempo division is an index into six note values, not a
 level, so there is no halfway to travel through.
 
-**Circular**, tagged `[circular]`: CC 34 the wash hue offset, 38 hue, 66
-the pattern's standing position, 69 the fan's phase. Each wraps, so a push
-is a rotation. The hue *amounts* — 43, 50, 55, 90 — are not circular:
+**Rates**, tagged `[rate]`: CC 44 the placed field's speed, 48 the wander's
+rate, 60 the pattern's speed, 65 the fan's rate spread, 71 the scatter's
+rate. They take a swing both ways around the dialed value rather than a push
+toward a limit — see "A rate swings both ways".
+
+**Circular**, tagged `[circular]`: CC 28 the wash hue offset, 33 hue, 59
+the pattern's standing position, 62 the fan's phase. Each wraps, so a push
+is a rotation. The hue *amounts* — 38, 45, 50, 78 — are not circular:
 they are bipolar reaches whose two ends are opposite extremes.
 
-**Stepped, and allowed**: CC 46 and 84 the region and cell counts, 63 the
-shape count, 68 the fan's frequency in eighths. A modulated count steps on
+**Stepped, and allowed**: CC 41 and 72 the region and cell counts, 56 the
+shape count, 61 the fan's frequency in eighths. A modulated count steps on
 the beat, which is a look worth having, and refusing them would buy a
 special case and nothing else. Whether a count change reads as a pulse or
 as the pattern jumping is a wall question, not one to settle here.
 
-**Everything else takes the ordinary push**: 33, 35, 39, 40, 43, 44, 45,
-47, 48, 50, 51, 52, 54, 55, 56, 57, 62, 64, 65, 70, 71, 73, 85, 86, 87,
-88, 89, 90, 91. CC 88 belongs here despite its name — the scatter's drift
+**Everything else takes the ordinary push**: 27, 29, 34, 35, 38, 39, 40,
+42, 43, 45, 46, 47, 49, 50, 51, 52, 55, 57, 58, 63, 64, 66, 73, 74, 75,
+76, 77, 78, 79. CC 76 belongs here despite its name — the scatter's drift
 is a position offset taken from a cell's age (`scatterAt` in
-`shared/render/generator.cpp`), not
-an integrated speed.
+`shared/render/generator.cpp`), not an integrated speed.
 
-**Four of those read the plain clock** although they live on a strip: 68,
-69, 70 and 73. They shape the fan, and the fan is what shifts each strip's
-reading of the clock, so a route aimed at one while reading the fanned
-clock would need its own phase in order to compute what sets its own
-phase. You cannot sample the fan to modulate the fan.
+**Seven of those read the plain clock** although they live on a strip: the
+shape count, 56, and the fan's six, 61–66. The fan is what shifts each
+strip's reading of the clock, so a route aimed at one of its controls while
+reading the fanned clock would need its own phase in order to compute what
+sets its own phase. You cannot sample the fan to modulate the fan. The count
+sets the cells' geometry, which is laid out before the strip loop opens.
+
+## A rate swings both ways
+
+Settled 2026-09-25. A rate is how fast something moves, and what the wall
+shows is where it has got to — the running total of the rate over time. So a
+push on a rate does not come back: turn it up for a while and down again, and
+the shape stands somewhere else with every control where it started. Under
+today's one-way wave the total only ever grows, which is why rates were
+refused until now.
+
+**Outside the rates, "both ways" would add nothing.** A route that swings a
+control 20 either side of 80 draws what a one-way push of 40 from 60 draws.
+The distance-left rule makes it close rather than exact, and the only
+difference is where the fader sits, in the middle of the swing or at its
+bottom. So the ordinary push stays one-way.
+
+**On a rate it is the only thing that works.** For strips to come back into
+line, the speed's average over a cycle has to be exactly the dialed speed.
+One-way could only get there with the base dialed to an exact fraction a byte
+cannot hold, leaving a small drift that never closes. So a route aimed at a
+rate is a property of the destination, the way a rotation is a property of
+hue:
+
+- **It swings around the dialed value**, with the wave's own average taken
+  off, so over one cycle it adds nothing. A sine swings the same distance
+  each way. A stab is a short, strong surge paid back by a long, gentle
+  slowdown.
+- **The sign picks which half comes first.** Positive is faster first,
+  negative the mirror.
+- **The amount runs on the rate's own curve.** Every rate here is squared so
+  the slow end gets most of the travel, and a swing at 30 % is as far as the
+  rate's own fader moves at 30 % of its throw. At full amount a sine swings a
+  rate by its fastest setting either way.
+- **It may run past the fader's ends.** Clipping would break the average, and
+  nothing physical caps how fast a pattern travels. A rate swung through zero
+  runs backwards for a while, which is the point of the hypno look below.
+- **It moves where the thing stands, never its rate.** The swing's running
+  total is a function of the route's phase alone — `gatherRoutes()` in
+  `shared/render/routes.cpp` reads it off a table of the wave's integral —
+  so it returns to exactly zero once a route cycle, with nothing accumulated
+  frame to frame to drift. Every rate still runs through its own tracker at
+  the dialed value, and the swing is added on top.
+
+**Which clock it reads** follows the rule every destination already follows:
+the pattern's speed, the placed field's and the wander's and the scatter's
+rates are on a strip and read that strip's fanned clock, and the fan's rate
+spread reads the plain one like the rest of the fan.
+
+**What it reaches.** Bars drifting apart and back into line is a route on the
+fan's rate spread with its center at zero. A pattern breathing between still,
+up, still and down across four beats is a route on speed with speed dialed
+still. The hypno look — the center strip swinging to ±X while strips 2 and 4
+swing to ±X/2, all five still together — takes two routes with the same ratio,
+wave and phase, one on speed and one on the fan's rate spread, because the
+fan adds its share to speed rather than scaling it.
+
+**What it does not do yet.** A tail sits on the side the dialed speed puts it,
+so a swing that reverses travel runs the shape tail-first until it turns back.
+Putting the tail on the side the shape is actually moving away from needs the
+tail to follow the swing, which is drawing work, not modulation.
+
+**And easing is still not this.** A route is locked to the clock; slow at the
+ends of a trip and fast through the middle has to be locked to the trip, whose
+length falls out of speed, count and width. Settled in `docs/generator.md` §
+"Travel easing is a curve, not a modulation route".
+
+## A route has a phase
+
+Settled 2026-09-25. The fifth byte of a route delays its wave by a fraction of
+the route's own cycle: 0 puts the wave's start on the bar line as before, 64
+half a cycle later, and it runs on 128ths of a turn. It is what moves a jump
+off beat 1 onto beat 3, what lets one route lag another, and what starts a
+speed swing at still rather than at its slowest.
+
+A rising saw on width, dialed at 0 with a half-turn phase, starts at half
+width, grows to full, drops to nothing halfway through and grows back.
+
+**None of the cheaper ways gets there:**
+
+| Instead | Cost | Why it falls short |
+|---|---|---|
+| Pack it into the ratio byte, 8 ratios × 16 phases | 0 | A morph from ×1 to ×2 would roll through every phase of ×1 on the way |
+| Flip the amount's sign | 0 | Half a turn for a sine or a square, never a quarter, and a mirror rather than a shift for a saw |
+| Add two routes | 0 | Two waves in step add up to another wave in step |
+| One phase for the whole patch | 1 | Everything shifts together, so no route can lag another — which is the point |
+
+**Not skew again.** Skew bent the wave's shape; phase slides the whole shape
+in time.
+
+It slides continuously across all 128 values: the route stays locked to the
+bar whatever its phase, so there is no reason to snap it to musical steps. A
+morph interpolates it straight, the way it does hue, so a morph from 7/8 of a
+turn to 1/8 goes the long way round.
 
 ## The waves
 
@@ -556,18 +628,15 @@ dialing.
 **Triangle is not on the sweep, and that is free.** A triangle swell and a
 sine swell look the same on a light fixture. The corner where it would
 show is a destination that reads as motion rather than level, where
-constant travel and eased travel differ — and rates, the obvious such
-destination, are off-limits anyway.
+constant travel and eased travel differ. Rates are that destination, and
+whether a triangle is missed there is for the wall to say.
 
 **Hold and decay are tied**, and that is the price of the byte. One number
 governs both how long the light holds and how fast it falls, so a short
 hold with a long tail is not reachable.
 
-**Everything peaks on the bar line.** No off-beat stab, no route
-deliberately lagging another. The anchor does this rather than the wave,
-and it is the question the fork was always going to hand back: whether a
-route wants its own phase offset. That is one more byte, which would make
-a route five and drop the ceiling to ten.
+**Every wave starts on the bar line**, and the route's phase byte is what
+moves it off. See "A route has a phase".
 
 ## Still open
 
@@ -611,9 +680,11 @@ because its shape depended on what a route turned out to be.
    `shared/render/`, the brain calls them and the editor runs them as
    WebAssembly, so steps 2 and 3 no longer have a second side. See
    `docs/architecture.md` § "One renderer, compiled twice".
+8. **Rates and phase**, 2026-09-25, with the CC regroup that made room for a
+   fifth byte. The CC numbers in steps 1–4 are the ones before that regroup.
 
 **What keeps the seams honest**: `node tools/gen-cc.mjs --check` fails if
-`tools/cc.js` is stale against the header, and if the three switches in
+`tools/cc.js` is stale against the header, and if the switches in
 `shared/render/routes.cpp` disagree with the enum's `[rate]`, `[circular]`
 and `[plain]` tags. `node tools/build-render.mjs --check` fails if
 `tools/render.js` was built from anything other than the current

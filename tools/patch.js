@@ -149,6 +149,7 @@
     genPulseRate: v => PERIOD_NAMES[real('genPulseRate', v)].split(' · ')[0],
     routeAmount: v => signed(bip(v)),
     routeRatio: v => '×' + A.routeRatio(v) + ' the clock',
+    routePhase: v => Math.round(v / 128 * 360) + '° into its cycle',
     // One axis from a build to a stab; the named shapes are notched on the
     // track. See docs/modulation.md § "The fork, settled".
     routeWave: v => v < 32 ? 'builds, ' + pct(v * 4) + ' decay'
@@ -245,12 +246,14 @@
   for (const n of ['slotA', 'slotB', 'slotC', 'slotD', 'slotE',
                    'slotF', 'slotG', 'slotH', 'slotI', 'slotJ']) NEUTRAL[n] = 0;
 
-  // Aimed nowhere, pushing nothing, at the clock's own rate, on the swell.
+  // Aimed nowhere, pushing nothing, at the clock's own rate, on the swell,
+  // starting on the bar line.
   for (let r = 0; r < A.ROUTES; r++) {
     NEUTRAL[routeName(r, 'destination')] = 0;
     NEUTRAL[routeName(r, 'amount')] = 64;
     NEUTRAL[routeName(r, 'ratio')] = 0;
     NEUTRAL[routeName(r, 'wave')] = A.GEN_WAVE_SWELL;
+    NEUTRAL[routeName(r, 'phase')] = 0;
   }
 
   // A new patch is one shape traveling across a lit wall: something on the
@@ -338,13 +341,15 @@
     amount: routeName(r, 'amount'),
     ratio: routeName(r, 'ratio'),
     wave: routeName(r, 'wave'),
+    phase: routeName(r, 'phase'),
   }));
 
   for (const route of ROUTES) {
     define([
-      C(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom'),
+      C(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom. On a rate, how wide the swing either side, and which half comes first'),
       C(route.ratio, 'Ratio', 'whole multiples of the clock'),
       C(route.wave, 'Wave', 'a build \u2192 swell \u2192 snap \u2192 hard half-bar \u2192 stab'),
+      C(route.phase, 'Phase', 'how far into its own cycle the wave starts after the bar line'),
     ]);
   }
 

@@ -127,7 +127,7 @@ Everything on the panel has a number since the regroup of 2026-09-23.
 - **The three faders** are CC 12, 13 and 14 — their *positions*, which the
   brain morphs from. `DESIGN.md` § "The three faders are three routes to
   'more'" makes each one a per-patch route, and the patch carries their far
-  ends as its Color, Extent and Motion sets. The color at 38–40 is a separate
+  ends as its Color, Extent and Motion sets. The color at 33–35 is a separate
   thing: what a patch holds, not where a hand left a stick.
 - **The keypad's hold** is CC 26. Which key it names is a Program Change;
   whether that key is still down is a state, so it is a gate rather than a

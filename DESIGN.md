@@ -679,7 +679,7 @@ these three times over, once for each of level, hue and saturation. All of
 it relative to what the strips are doing — a relationship, not a second
 look.
 
-**Saturation is a scale rather than a setting**, on CC 35 since
+**Saturation is a scale rather than a setting**, on CC 29 since
 2026-09-22, and that is what makes it a relationship: full is whatever the
 strips are, zero is white, and nothing in between names a color of its
 own. It is also where the pulse's push toward white measures from. Without

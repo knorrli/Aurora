@@ -47,26 +47,22 @@ That is the whole thing. Everything below is a parameter of it.
 
 | CC | Control | Meaning | Range |
 |----|---------|---------|-------|
-| 45 | Alternate | Odd strips run against the even ones | switch |
-| 46 | Bounce | Reverse at the strip end instead of wrapping | switch |
-| 70 | Width | The solid core, as a proportion of one cell | 0–100 % |
-| 71 | Count | How many shapes along the strip | 1–20 |
-| 72 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
-| 73 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
-| 74 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
-| 75 | Fan · Position | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
-| 99 | Fan · Pulse | How far apart they stand in the swell | bipolar, ±100 % of a swell |
-| 119 | Fan · Rate | How far apart their speeds stand, either side of Speed | bipolar, ±60 px/beat |
-| 116 | Fan · Frequency | All five alike → every strip opposite its neighbors | 0 – ½ cycle per strip |
-| 117 | Fan · Phase | Where the wave sits on the strips | one turn |
-| 118 | Fan · Randomize | The wave → a fixed draw per strip | 0–100 % |
-| 76 | Jitter | Randomness in position and brightness, re-rolled once per swell | 0–100 % |
-| 77 | Pulse depth | How far the trough digs below full light | 0–100 % |
-| 78 | Pulse rate | How long one swell takes. Stepped | 16 → 0.25 beats |
-| 79 | Pulse skew | Bipolar — center is an even rise and fall, either side slides the peak toward a ramp | — |
-| 80 | Pulse shape | Hard on/off square through to smooth sine | — |
-| 115 | Position | Where a still pattern stands in its cell. Bipolar — center is the middle | ±half a cell |
-| 100–114 | Pulse destinations | Where else the swell reaches, three apiece | see below |
+| 53 | Alternate | Odd strips run against the even ones | switch |
+| 54 | Bounce | Reverse at the strip end instead of wrapping | switch |
+| 55 | Width | The solid core, as a proportion of one cell | 0–100 % |
+| 56 | Count | How many shapes along the strip | 1–20 |
+| 57 | Edge | How far the glow reaches into the gap, both sides | 0–100 % of the gap |
+| 58 | Tail | How far the trail reaches behind, into the gap | 0–100 % of the gap |
+| 60 | Speed | Travel along the strip. Bipolar — center is still, either side travels | ±60 px/beat |
+| 64 | Fan · Position | How far apart the five strips stand in their cells | bipolar, ±100 % of a cell |
+| 66 | Fan · Pulse | How far apart they stand in the swell | bipolar, ±100 % of a swell |
+| 65 | Fan · Rate | How far apart their speeds stand, either side of Speed | bipolar, ±60 px/beat |
+| 61 | Fan · Frequency | All five alike → every strip opposite its neighbors | 0 – ½ cycle per strip |
+| 62 | Fan · Phase | Where the wave sits on the strips | one turn |
+| 63 | Fan · Randomize | The wave → a fixed draw per strip | 0–100 % |
+| 67 | Pulse rate | How long one cycle of the clock takes. Stepped | 16 → 0.25 beats |
+| 59 | Position | Where a still pattern stands in its cell. Bipolar — center is the middle | ±half a cell |
+| 80–119 | Routes | Eight of five bytes: destination, amount, ratio, wave, phase | see "Routes" |
 
 Color is hue, whiteness and darkness, and sits downstream of all of this —
 this branch decides whether a pixel is lit, never what color it is.
@@ -152,9 +148,9 @@ as wide as the strip.
 
 ### Routes, built 2026-09-24
 
-One clock, and eight routes off it. A route is four bytes — which control it
-pushes, how far, at what whole multiple of the clock, and what wave does the
-pushing — so where modulation lands is part of the patch rather than fixed in
+One clock, and eight routes off it. A route is five bytes — which control it
+pushes, how far, at what whole multiple of the clock, what wave does the
+pushing, and how far into its own cycle the wave starts — so where modulation lands is part of the patch rather than fixed in
 the firmware. The layout is `shared/aurora_protocol.h` § "Modulation routes";
 `docs/modulation.md` is the record of why each of these is what it is.
 
@@ -178,15 +174,15 @@ and the fan's phase, all tagged `[circular]`. Half the wheel at a full amount.
 The hue *amounts* are not among them: their two ends are opposite extremes,
 not the same color.
 
-**Rates are refused**, and tagged `[rate]`. Speed, placed speed, wander rate,
-the fan's rate spread and the scatter's rate all feed a running total, so a
-push on one shifts position permanently: turn the amount up and back down and
-the shape sits somewhere else with every control where it started. The looks
-that wanted them want easing, which is locked to the traversal and cannot
-drift. Tempo division is refused for its own reason — an index into six note
-values, not a level, so there is no halfway. The wander's rate is the honest
-exception, having no grid to fall off, and is left out for now because it is
-the least interesting of the five.
+**Rates swing both ways**, and are tagged `[rate]`, since 2026-09-25. Speed,
+placed speed, wander rate, the fan's rate spread and the scatter's rate all
+feed a running total, so a one-way push would shift position permanently. A
+route aimed at one swings it above and below its dialed value with the wave's
+average taken off, so it adds nothing over a cycle and the wall comes back
+into line once a route cycle. `docs/modulation.md` § "A rate swings both ways".
+
+**Two controls are refused.** The clock's own rate, because every route reads
+it, and tempo division, an index into six note values with no halfway.
 
 **Which reading of the clock a destination takes is the destination's own
 property**, not the route's, and is tagged `[plain]`. A destination on a strip
@@ -197,8 +193,8 @@ clock would need its own phase to compute what sets its own phase — and so
 does the shape count, which sets the cell geometry the strip loop is built on
 before that loop opens.
 
-**A push reaches one fixture family.** CC 38–40 are the strips' hue,
-saturation and brightness; CC 33–35 are the washes', expressed as a
+**A push reaches one fixture family.** CC 33–35 are the strips' hue,
+saturation and brightness; CC 27–29 are the washes', expressed as a
 relationship to the strips' *dialed* color. Swinging both together therefore
 takes two routes, which is usually what you want anyway, since the two rarely
 ask for the same depth.
@@ -209,9 +205,12 @@ nothing is traveling, so a swell read as a fill creeping in from that end. A
 shape is anchored by its center now, so growing it is a breath outward. Under
 bounce the turn stays where the *dialed* width puts it.
 
-**The wave is one byte**, one axis: the peak never leaves the bar line and
-what moves is how the bar fills around it. Every named shape lands on a value
-a fader can reach exactly.
+**The wave is one byte**, one axis: what moves is how the cycle fills around
+its peak. Every named shape lands on a value a fader can reach exactly.
+
+**The phase is one byte too**, 128ths of the route's own cycle by which the
+wave starts after the bar line. It is what puts a stab on beat 3 and lets one
+route lag another. `docs/modulation.md` § "A route has a phase".
 
 | Value | Wave | Lit above half |
 |----|----|----|
@@ -684,7 +683,7 @@ working.
 
 The parameter-count objection was the other half, and the wave answered it.
 Three bytes per destination for all 43 reachable controls is 129 CCs against
-the 128 that exist; four bytes per *route* for eight routes is 32.
+the 128 that exist; five bytes per *route* for eight routes is 40.
 
 ### Travel easing is a curve, not a modulation route
 
@@ -792,7 +791,7 @@ over both, **the scatter is random over both**. "Sparkle" was the other
 candidate and was dropped for naming the cheerful end of a range whose other
 end is a thunderstorm and rain running down a strip.
 
-Nine CCs at 83–91 in `shared/aurora_protocol.h`: Rate, Count, Width, Edge,
+Nine CCs at 71–79 in `shared/aurora_protocol.h`: Rate, Count, Width, Edge,
 Stagger and Drift shape the source, and three amounts aim it at the strips'
 brightness, at hue and at whiteness. It is nine rather than the eight to ten the
 fork below priced because of one move.
@@ -924,8 +923,8 @@ number could carry them.
 is full and 116–119 held four of the five, so the pulse amount sits alone
 at 99 — inside the color layer's range, which breaks the map's own rule
 about staying in your category. It is a stated debt rather than a
-precedent: it came home to CC 73 in the regroup. See TODO.md
-§ "Regroup the CC map".
+precedent: it came home to CC 73 in the regroup (numbers from before the
+2026-09-25 regroup). See TODO.md § "Regroup the CC map".
 
 **Not built: a modulator aimed at the fan.** "The bars drift apart, come
 back into alignment, drift the other way" needs the rate amount swinging
@@ -1128,9 +1127,7 @@ nearly free and the question shrinks to what 4 and 5 need.
    when S crosses from one end to the other.
 
    **The proposal, not built.** Split the family on whether the source is
-   aimed at something, which is the split the CC map already draws:
-   `shared/aurora_protocol.h` calls 23–29 the placed field and 90–99
-   "everything that is not aimed anywhere".
+   aimed at something.
 
    | Source | Sign means | Fader |
    |----|----|----|
