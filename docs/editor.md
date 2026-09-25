@@ -191,9 +191,11 @@ that control's routes in one panel floating under the row, so the row stays in
 view while a route is dialed and the page below does not move. One panel is
 open at a time. It lists the routes aimed here with their amount, LFO
 multiple and wave, adds one from the eight shared slots, and frees one. A
-destination has no middle, so like every switch it belongs to the patch:
-routes are added and freed on the base, and a far end overrides only how far
-and how fast. **bypass** silences a route while you listen and is
+destination has no middle, so like every switch it belongs to the patch: a
+route is freed on the base, and a far end overrides only how far and how fast.
+One added on a far end is aimed on the base at zero amount, with the amount
+on that far end, so only the far end pushes and the route need not be set up
+from the base first. **bypass** silences a route while you listen and is
 never saved: the wall and the brain are sent a free slot, and the patch keeps
 the route. Choosing another patch clears it. The rates have no **~**, since the renderer refuses them.
 

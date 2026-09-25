@@ -583,7 +583,7 @@
     if (routePanel.target === name) { closeRoutePanel(); return; }
     routePanel.target = name;
     const base = L.namedFromSet(baseSet());
-    if (!isFarEnd() && !P.ROUTES.some(route => base[route.destination] === P.CC[name])) {
+    if (!P.ROUTES.some(route => base[route.destination] === P.CC[name])) {
       snap();
       addRoute();
     }
@@ -596,12 +596,20 @@
   }
 
   // A destination has no middle, so like every switch it belongs to the patch:
-  // routes are added and freed on the base, and a far end only overrides how
-  // far and how fast.
+  // a route is freed on the base, and a far end overrides how far and how fast.
+  // Added on a far end, the route is aimed on the base at zero, so only that
+  // far end pushes: the destination is a switch and belongs to the patch, but
+  // the amount is an ordinary override.
   function addRoute() {
     const base = L.namedFromSet(baseSet());
     const free = P.ROUTES.find(route => !base[route.destination]);
     if (!free) return;
+    if (isFarEnd()) {
+      const patch = editing();
+      for (const name of [free.amount, free.ratio, free.wave, free.phase]) {
+        L.writeCC(patch.base, name, P.NEUTRAL[name]);
+      }
+    }
     applyNamed({
       [free.destination]: P.CC[routePanel.target],
       [free.amount]: NEW_ROUTE_AMOUNT,
@@ -631,12 +639,13 @@
       block.classList.toggle('bypassed', bypassed.has(route));
       bypass.classList.toggle('on', bypassed.has(route));
       remove.disabled = farEnd;
+      remove.title = farEnd ? 'freed on the base: a route belongs to the whole patch' : 'free this route';
       if (!block.hidden) drawWave(canvas, route, live);
     }
-    routePanel.add.disabled = farEnd || free === 0;
+    routePanel.add.disabled = free === 0;
     routePanel.free.textContent = `${free} of ${P.ROUTES.length} free`;
     routePanel.add.title = farEnd
-      ? 'Routes are added and freed on the base. Here you can override how far and how fast.'
+      ? 'Added here, the route sits on the base at zero and only this far end pushes.'
       : '';
     placeRoutePanel();
   }
