@@ -210,7 +210,6 @@
 
     const routes = routable(name) ? el('button', 'routesbtn', '~') : null;
     if (routes) {
-      routes.title = 'routes on this control';
       routes.addEventListener('click', () => toggleRoutePanel(name));
     }
 
@@ -723,10 +722,15 @@
 
   function paintRoutePanel(live) {
     const target = routePanel.target;
+    const lfoBypassed = bypassedCards.has(P.LFO);
     for (const r of Object.values(rows)) {
       if (!r.routes) continue;
-      const aimed = P.ROUTES.filter(route => live[route.destination] === P.CC[r.def.name]).length;
+      const here = P.ROUTES.filter(route => live[route.destination] === P.CC[r.def.name]);
+      const aimed = here.length;
+      const sounding = !lfoBypassed && here.some(route => !bypassed.has(route));
       r.routes.classList.toggle('aimed', aimed > 0);
+      r.routes.classList.toggle('sounding', sounding);
+      r.routes.title = aimed && !sounding ? 'routes on this control, all bypassed' : 'routes on this control';
       r.routes.classList.toggle('open', r.def.name === target);
       r.routes.textContent = aimed > 1 ? '~' + aimed : '~';
     }
