@@ -348,7 +348,7 @@
   // the reason is short enough to say.
   const gradientInert = {
     inertWhen: s => band3(s.colorPrimitive) === band3(GRADIENT),
-    inertWhy: 'a gradient spans its ruler once, so there is nothing here to repeat, size or move',
+    inertWhy: 'a gradient spans its direction once, so there is nothing here to repeat, size or move',
   };
 
   const LFO = {
@@ -360,9 +360,9 @@
 
   const MODULATORS = [
     {
-      key: 'scatter', name: 'The scatter', tone: 'scatter',
+      key: 'scatter', name: 'Scatter', tone: 'scatter',
       source: define([
-        C('scatterRate', 'Rate', 'how often a cell relights'),
+        C('scatterRate', 'Speed', 'how often a cell relights'),
         C('scatterCount', 'Count', 'cells along a strip. The same unit as the shape lane\u2019s Count'),
         C('scatterWidth', 'Width', 'the spot\u2019s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
         C('scatterEdge', 'Edge', 'hard through to a fade \u2014 in space and in time alike'),
@@ -376,31 +376,30 @@
       ]),
     },
     {
-      key: 'placed', name: 'The placed field', tone: 'color',
+      key: 'placed', name: 'Field', tone: 'color',
       switches: define([
-        C('colorPrimitive', 'Primitive', 'one ramp across the ruler, a bump sitting on it, or everything but the bump departing',
-          { kind: 'three', options: [[GRADIENT, 'gradient'], [REGION, 'region'], [INSIDE_OUT, 'inside out']] }),
-        C('colorRuler', 'Ruler', 'what the position is measured against',
+        C('colorPrimitive', 'Form', 'one ramp along the direction, a region sitting on it, or everything but the region departing',
+          { kind: 'three', options: [[GRADIENT, 'gradient'], [REGION, 'region'], [INSIDE_OUT, 'all but region']] }),
+        C('colorRuler', 'Direction', 'which way the field runs: across the five strips, up a strip, or along a shape from its tip to the end of its tail',
           { kind: 'three',
-            options: [[ON_WALL, 'across the strips'], [ON_STRIP, 'along a strip'],
-                      [IN_SHAPE, 'within a shape']] }),
+            options: [[ON_WALL, 'horizontal'], [ON_STRIP, 'vertical'], [IN_SHAPE, 'shape']] }),
       ]),
       source: define([
-        C('placedCount', 'Count', 'how many regions along the ruler', gradientInert),
+        C('placedCount', 'Count', 'how many regions along the direction', gradientInert),
         C('placedWidth', 'Width', 'a region\u2019s solid core, as a proportion of one cell', gradientInert),
         C('placedEdge', 'Edge', 'hard-edged cell through to a smooth fade', gradientInert),
-        C('placedSpeed', 'Speed', 'center is still; plus drifts the regions along the ruler, minus back', gradientInert),
+        C('placedSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back', gradientInert),
       ]),
       amounts: define([
-        C('placedHue', 'Hue', 'how far one end of the ruler departs from the base hue'),
+        C('placedHue', 'Hue', 'how far the hue turns, opposite ways at the two ends of a gradient'),
         C('placedWhite', 'To white', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
         C('placedDark', 'To dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
       ]),
     },
     {
-      key: 'wander', name: 'The wander', tone: 'color',
+      key: 'wander', name: 'Wander', tone: 'color',
       source: define([
-        C('wanderRate', 'Rate', 'frozen, through a slow ocean swell, to a nervous flicker'),
+        C('wanderRate', 'Speed', 'frozen, through a slow ocean swell, to a nervous flicker'),
         C('wanderScale', 'Density', 'the whole wall moving as one, down to individual pixels'),
       ]),
       amounts: define([
@@ -410,7 +409,7 @@
       ]),
     },
     {
-      key: 'lit', name: 'The light level', tone: 'color',
+      key: 'lit', name: 'Light', tone: 'color',
       source: [],
       amounts: define([
         C('litHue', 'Hue', 'how far the brightest part rotates off the base hue'),

@@ -343,9 +343,17 @@ rather than answering it.
 
 A color is **hue, whiteness and darkness**. Everything else is a push on
 those three, measured from the three faders, and the pushes add. With
-every control centered the wall is exactly the color on the faders — which
-is what makes the dialing order work: set the color flat, then open a
-push and watch it depart from something you chose.
+every push at rest — hue centered, white and dark at 0 — the wall is exactly
+the color on the faders, which is what makes the dialing order work: set the
+color flat, then open a push and watch it depart from something you chose.
+
+**The editor's names, renamed 2026-09-25.** What these docs and the code call
+the placed field, the wander, the light level and the scatter, the editor
+labels **Field**, **Wander**, **Light** and **Scatter**. The field's primitive
+is its **Form** (gradient, region, all but region) and its ruler its
+**Direction** (horizontal, vertical, shape — across the strips, along a strip,
+within a shape). The wander's and the scatter's Rate are **Speed**; Rate is
+the LFO's alone.
 
 Three things push, and what separates them is what each is anchored to.
 
