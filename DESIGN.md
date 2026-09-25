@@ -887,13 +887,22 @@ at the top of its range, where every strip sits opposite its neighbors —
 and a continuous control has nothing to flip. See `docs/generator.md`
 § "The fan is a wave".
 
-**It does not replace the switch, though, and the two docs that said it
-would were both wrong.** A rate of the opposite sign matches alternate
-only while the shapes wrap. Under bounce the swing is symmetric inside its
-cell, so a strip running backwards stands in the same place at every
-instant as one running forwards, and reversing it is visible on nothing
-but a tail — the same fact two paragraphs above. The switch still does
-something bounce-only that the fader cannot.
+**On a moving pattern it does replace the switch.** Measured 2026-09-25:
+odd strips reversed by the fan's rate — Speed still, rate spread up,
+frequency at the top, phase a quarter turn — draw the same wall as
+Alternate pixel for pixel over twenty beats, under wrap and under bounce,
+tails included, whether bounce was on from the start or switched on
+mid-run. What once made bounce the exception is gone: entering bounce puts
+each strip on the half of its swing it is heading along, so a strip
+running backwards swings opposite its neighbors. One gap is left inside
+bounce: flipping a rate's sign while already bouncing reverses nothing,
+since the swing runs at the speed's size and only a switch re-solves it.
+
+**What only the switch does is mirror a still pattern.** With Speed at
+center there is no rate to reverse, and Alternate still flips the odd
+strips end for end: Position lands at the other end, and a lopsided shape —
+a tail on a still bar — points the other way. No fan setting turns a
+shape round. Whether that is worth a switch is `TODO.md`'s to decide.
 
 ## Open
 

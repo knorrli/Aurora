@@ -493,6 +493,37 @@
     'Hypno center':   { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108, genFanPhase: 32 },
     'Alternate by rate': { genWidth: 40, genCount: 68, genEdge: 0, genTail: 0, genSpeed: 64, genFanRate: 108,
                            genFanFreq: 127, genFanPhase: 64 },
+    // Whether the Alternate switch still earns its place. The first two draw
+    // the same wall, one with the switch and one with the fan; the third is
+    // what only the switch can do, a still shape turned round.
+    'Alternate: switch, bounce': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 60, genSpeed: 88,
+                                   genBounce: ON, genAlternate: ON },
+    'Alternate: fan, bounce': { genWidth: 25, genCount: 0, genEdge: 10, genTail: 60, genSpeed: 64,
+                                genFanRate: 88, genFanFreq: 127, genFanPhase: 64, genBounce: ON },
+    'Alternate: still shape': { genWidth: 25, genCount: 0, genEdge: 0, genTail: 90, genSpeed: 64,
+                                genPosition: 40, genAlternate: ON },
+  };
+
+  // For judging a tail under a swung speed: it stays on the side the dialed
+  // speed puts it, so a swing that reverses the shape runs it tail-first. One
+  // comet per strip, a one-bar clock and a sine on Speed, with the fan's pulse
+  // spread at full so the five strips stand at five points of the swing and
+  // forward and backward show side by side. The first stands still and swings
+  // ±20 px/beat; the second runs forward at 20 and swings ±10, so it slows and
+  // never reverses, which is the same tail with nothing wrong; the third is
+  // the first under bounce. Every other route is freed, since a look that left
+  // one running would be judged against it.
+  const route0 = field => routeName(0, field);
+  const SWING = {
+    genWidth: 10, genCount: 0, genEdge: 6, genTail: 56, genSpeed: 64, genPulseRate: 38,
+    genFanPulse: 127,
+    [route0('destination')]: A.CC.genSpeed, [route0('amount')]: 100,
+    [route0('ratio')]: 0, [route0('wave')]: A.GEN_WAVE_SWELL, [route0('phase')]: 32,
+  };
+  const SWING_LOOKS = {
+    'Tail, swung backwards': SWING,
+    'Tail, slowed only': Object.assign({}, SWING, { genSpeed: 100, [route0('amount')]: 90 }),
+    'Tail, swung under bounce': Object.assign({}, SWING, { genBounce: ON }),
   };
 
   const COLOR_FLAT = {
@@ -526,6 +557,13 @@
   for (const name of Object.keys(FAN_LOOKS)) {
     FAN_LOOKS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, FAN_LOOKS[name]);
   }
+  const ROUTES_FREE = {};
+  for (const route of ROUTES) {
+    for (const field of ROUTE_FIELDS) ROUTES_FREE[route[field]] = NEUTRAL[route[field]];
+  }
+  for (const name of Object.keys(SWING_LOOKS)) {
+    SWING_LOOKS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, ROUTES_FREE, SWING_LOOKS[name]);
+  }
 
   for (const name of Object.keys(ANCHORS)) {
     ANCHORS[name] = Object.assign({}, SHAPE_FLAT, { genPosition: 64 }, ANCHORS[name]);
@@ -539,6 +577,6 @@
     unit, bip, PULSE_PERIODS, PULSE_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
     LANES, MODULATORS, ROUTES, PARS, TIMING,
-    ANCHORS, FAN_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
+    ANCHORS, FAN_LOOKS, SWING_LOOKS, COLOR_LOOKS, SHAPE_FLAT, COLOR_FLAT,
   };
 })(window);

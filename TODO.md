@@ -525,6 +525,39 @@ it becomes a build item.
       every instant — so the switch survives. `DESIGN.md` § "Alternate
       keeps its jump" said it would not; that is corrected there.
 
+- [ ] **Tail has three meanings, on a 3-way switch.** Raised 2026-09-25,
+      when a route that swings speed through zero showed that today's tail
+      stays on the dialed speed's side and runs a reversed shape tail-first.
+      Settled: a switch on the tail, banded in thirds like the ruler, on a
+      spare generator CC.
+
+      - **Shape**, today's: the tail is part of the shape's outline, a fixed
+        length with no memory, so a still bar with a tail is a lopsided shape.
+      - **Trail**: a record per pixel of how far the comet has traveled since
+        it last covered it. The comet walks back out through its own trail
+        when it reverses, and a stopped comet keeps its tail. What bounce
+        draws today, for any motion.
+      - **Afterglow**: the same record, kept in time instead of distance. The
+        tail shrinks as the comet slows, is gone while it stands, and grows
+        again with speed, so Tail becomes a time — beats is the proposal, so
+        it follows tempo.
+
+      The last two share one mechanism and differ only in the counter. A jump
+      — a patch change, a scrub, a morph moving Position — streaks across
+      rather than restarting empty, to be judged on the wall; which it does is
+      one condition to flip. Judge the three with the *Swing* starting points
+      in the editor.
+
+- [ ] **Is Alternate still worth its switch?** Raised 2026-09-25. The fan's
+      rate spread was expected to supersede it, and does under wrap. It was
+      kept for bounce, and measured 2026-09-25 that reason no longer holds: a
+      moving pattern with its odd strips reversed by the fan matches
+      Alternate pixel for pixel, bounce and tails included. What only the
+      switch does is mirror a *still* pattern — Position at the other end, a
+      still bar's tail pointing the other way. See `DESIGN.md` § "Alternate
+      keeps its jump". Compare the three *Alternate* fan looks in the editor,
+      then decide whether mirroring a still shape earns a switch.
+
 - [x] **The bars drifting apart and back together has no way in.** Answered
       2026-09-25 by letting routes aim at rates, where a route swings both
       ways and averages to nothing: a route on the fan's rate spread with its

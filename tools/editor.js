@@ -416,6 +416,7 @@
     };
     add('shapeStarts', P.ANCHORS);
     add('fanStarts', P.FAN_LOOKS);
+    add('swingStarts', P.SWING_LOOKS);
     add('colorStarts', P.COLOR_LOOKS);
   }
 
