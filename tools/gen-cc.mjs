@@ -70,6 +70,8 @@ for (const match of enumBody('AuroraCC').matchAll(/^\s*CC_([A-Z0-9_]+)\s*=\s*(\d
 }
 const tagged = tag => Object.keys(tags).filter(name => tags[name].includes(tag));
 
+const SENT_BY_DAWS = new Set([0, 1, 7, 10, 11, 32, 64]);
+
 const defaultsBody = header.match(/AURORA_CONTROL_DEFAULTS\[\]\s*=\s*\{([\s\S]*?)\n\};/);
 if (!defaultsBody) fail('AURORA_CONTROL_DEFAULTS');
 const controlDefaults = {};
@@ -84,6 +86,11 @@ if (routeBase.length !== routeCount) throw new Error('AURORA_ROUTE_BASE does not
 const routeField = Object.fromEntries(enumEntries('AuroraRouteField')
   .filter(([key]) => key !== 'ROUTE_FIELDS')
   .map(([key, value]) => [camel(key.replace(/^ROUTE_/, '')), value]));
+
+const routeNumbers = routeBase.flatMap(base => Array.from({ length: Object.keys(routeField).length }, (_, field) => base + field));
+for (const [name, number] of [...Object.entries(cc), ...routeNumbers.map(number => ['a route', number])]) {
+  if (SENT_BY_DAWS.has(number)) throw new Error(`${HEADER}: ${name} is on CC ${number}, which DAWs send on their own`);
+}
 
 const routeDefaultValues = (header.match(/AURORA_ROUTE_DEFAULTS\[ROUTE_FIELDS\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_ROUTE_DEFAULTS'))[1]
   .split(',').map(text => text.trim()).filter(Boolean)

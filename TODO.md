@@ -26,7 +26,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Flash the brain; if the wall ignores a sender, check it is on MIDI channel 1.
 - Time a frame at eight samples per pixel; if well past 7–8 ms, go back to four.
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
-- PARs alone, strips dark: stepped hue spread, 25% LFO spread chase, the same shuffled, steady lamps with hue shuffle every bar, a swell with the shuffle up. Cut the hue shuffle (frees CCs 3 and 4) if it reads as nothing.
+- PARs alone, strips dark: stepped hue spread, 25% LFO spread chase, the same shuffled, steady lamps with hue shuffle every bar, a swell with the shuffle up. Cut the hue shuffle (frees CCs 28 and 29) if it reads as nothing.
 - Pull the PARs' Saturation down, then open the LFO on PAR saturation: the flash toward white should start from pale.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.

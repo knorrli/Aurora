@@ -11,11 +11,14 @@ enum AuroraProgram : uint8_t {
 };
 
 enum AuroraCC : uint8_t {
-    CC_TEMPO_DIVISION        = 2,  // [switch]
+    CC_ROCKER_TOUCHPAD_A     = 2,  // [ambient]
+    CC_ROCKER_TOUCHPAD_B     = 3,  // [ambient]
+    CC_ROCKER_TOUCHPAD_C     = 4,  // [ambient]
+    CC_ROCKER_TOUCHPAD_D     = 5,  // [ambient]
+    CC_ROCKER_FADERS         = 6,  // [ambient]
 
-    CC_PAR_HUE_SHUFFLE       = 3,  // [patch][plain]
-    CC_PAR_HUE_SHUFFLE_EVERY = 4,  // [patch]
-    CC_PAR_LFO_SHUFFLE       = 5,  // [patch][plain]
+    CC_AUDIO_FOLLOWER        = 8,  // [ambient]
+    CC_AUDIO_THRESHOLD       = 9,  // [ambient]
 
     CC_FADER_COLOR           = 12, // [ambient]
     CC_FADER_EXTENT          = 13, // [ambient]
@@ -26,75 +29,73 @@ enum AuroraCC : uint8_t {
     CC_TOUCHPAD_PRESSURE     = 17, // [gesture]
     CC_TOUCHPAD_ENGAGE       = 18, // [gesture]
 
-    CC_ROCKER_TOUCHPAD_A     = 19, // [ambient]
-    CC_ROCKER_TOUCHPAD_B     = 20, // [ambient]
-    CC_ROCKER_TOUCHPAD_C     = 21, // [ambient]
-    CC_ROCKER_TOUCHPAD_D     = 22, // [ambient]
-    CC_ROCKER_FADERS         = 23, // [ambient]
+    CC_KEY_HELD              = 19, // [gesture]
 
-    CC_AUDIO_FOLLOWER        = 24, // [ambient]
-    CC_AUDIO_THRESHOLD       = 25, // [ambient]
+    CC_PALETTE               = 20, // [switch]
+    CC_HUE                   = 21, // [patch][circular]
+    CC_SATURATION            = 22, // [patch]
+    CC_VALUE                 = 23, // [patch]
 
-    CC_KEY_HELD              = 26, // [gesture]
-    CC_PAR_VALUE             = 27, // [patch][plain]
-    CC_PAR_HUE_OFFSET        = 28, // [patch][circular][plain]
-    CC_PAR_SATURATION        = 29, // [patch][plain]
-    CC_PAR_HUE_SPREAD        = 30, // [patch][plain]
-    CC_PAR_LFO_SPREAD        = 31, // [patch][plain]
+    CC_PAR_HUE_OFFSET        = 24, // [patch][circular][plain]
+    CC_PAR_SATURATION        = 25, // [patch][plain]
+    CC_PAR_VALUE             = 26, // [patch][plain]
+    CC_PAR_HUE_SPREAD        = 27, // [patch][plain]
+    CC_PAR_HUE_SHUFFLE       = 28, // [patch][plain]
+    CC_PAR_HUE_SHUFFLE_EVERY = 29, // [patch]
+    CC_PAR_LFO_SPREAD        = 30, // [patch][plain]
+    CC_PAR_LFO_SHUFFLE       = 31, // [patch][plain]
 
-    CC_HUE                   = 33, // [patch][circular]
-    CC_SATURATION            = 34, // [patch]
-    CC_VALUE                 = 35, // [patch]
+    CC_TEMPO_DIVISION        = 33, // [switch]
+    CC_LFO_RATE              = 34, // [patch]
 
-    CC_FIELD_FORM            = 36, // [switch]
-    CC_FIELD_DIRECTION       = 37, // [switch]
-    CC_FIELD_HUE             = 38, // [patch]
-    CC_FIELD_WHITE           = 39, // [patch]
-    CC_FIELD_DARK            = 40, // [patch]
-    CC_FIELD_COUNT           = 41, // [patch]
-    CC_FIELD_WIDTH           = 42, // [patch]
-    CC_FIELD_EDGE            = 43, // [patch]
-    CC_FIELD_SPEED           = 44, // [patch][rate]
-    CC_FLOW_HUE              = 45, // [patch]
-    CC_FLOW_WHITE            = 46, // [patch]
-    CC_FLOW_DARK             = 47, // [patch]
-    CC_FLOW_RATE             = 48, // [patch][rate]
-    CC_FLOW_DENSITY          = 49, // [patch]
-    CC_LIGHT_HUE             = 50, // [patch]
-    CC_LIGHT_WHITE           = 51, // [patch]
-    CC_LIGHT_DARK            = 52, // [patch]
-    CC_PALETTE               = 53, // [switch]
+    CC_SHAPE_COUNT           = 35, // [patch][plain]
+    CC_SHAPE_WIDTH           = 36, // [patch]
+    CC_SHAPE_EDGE            = 37, // [patch]
+    CC_SHAPE_TAIL            = 38, // [patch]
 
-    CC_SHAPE_BOUNCE          = 54, // [switch]
-    CC_SHAPE_WIDTH           = 55, // [patch]
-    CC_SHAPE_COUNT           = 56, // [patch][plain]
-    CC_SHAPE_EDGE            = 57, // [patch]
-    CC_SHAPE_TAIL            = 58, // [patch]
-    CC_SHAPE_POSITION        = 59, // [patch][circular]
-    CC_SHAPE_SPEED           = 60, // [patch][rate]
+    CC_SHAPE_BOUNCE          = 39, // [switch]
+    CC_SHAPE_SPEED           = 40, // [patch][rate]
+    CC_SHAPE_POSITION        = 41, // [patch][circular]
+    CC_SHAPE_BEND            = 42, // [patch][plain]
+    CC_SHAPE_BEND_AT         = 43, // [patch][plain]
 
-    CC_FAN_FREQUENCY         = 61, // [patch][plain]
-    CC_FAN_PHASE             = 62, // [patch][circular][plain]
-    CC_FAN_RANDOMIZE         = 63, // [patch][plain]
-    CC_FAN_SPREAD            = 64, // [patch][plain]
-    CC_FAN_SPEED             = 65, // [patch][rate][plain]
-    CC_FAN_LFO               = 66, // [patch][plain]
+    CC_FAN_SPREAD            = 44, // [patch][plain]
+    CC_FAN_SPEED             = 45, // [patch][rate][plain]
+    CC_FAN_LFO               = 46, // [patch][plain]
+    CC_FAN_FREQUENCY         = 47, // [patch][plain]
+    CC_FAN_PHASE             = 48, // [patch][circular][plain]
+    CC_FAN_RANDOMIZE         = 49, // [patch][plain]
 
-    CC_LFO_RATE              = 67, // [patch]
+    CC_SCATTER_COUNT         = 50, // [patch]
+    CC_SCATTER_WIDTH         = 51, // [patch]
+    CC_SCATTER_EDGE          = 52, // [patch]
+    CC_SCATTER_RATE          = 53, // [patch][rate]
+    CC_SCATTER_RANDOMIZE     = 54, // [patch]
+    CC_SCATTER_SPREAD        = 55, // [patch]
+    CC_SCATTER_SLIDE         = 56, // [patch]
+    CC_SCATTER_HUE           = 57, // [patch]
+    CC_SCATTER_WHITE         = 58, // [patch]
+    CC_SCATTER_VALUE         = 59, // [patch]
 
-    CC_SHAPE_BEND            = 68, // [patch][plain]
-    CC_SHAPE_BEND_AT         = 69, // [patch][plain]
+    CC_FIELD_FORM            = 60, // [switch]
+    CC_FIELD_DIRECTION       = 61, // [switch]
+    CC_FIELD_COUNT           = 62, // [patch]
+    CC_FIELD_WIDTH           = 63, // [patch]
+    CC_FIELD_EDGE            = 65, // [patch]
+    CC_FIELD_SPEED           = 66, // [patch][rate]
+    CC_FIELD_HUE             = 67, // [patch]
+    CC_FIELD_WHITE           = 68, // [patch]
+    CC_FIELD_DARK            = 69, // [patch]
 
-    CC_SCATTER_SPREAD        = 70, // [patch]
-    CC_SCATTER_RATE          = 71, // [patch][rate]
-    CC_SCATTER_COUNT         = 72, // [patch]
-    CC_SCATTER_WIDTH         = 73, // [patch]
-    CC_SCATTER_EDGE          = 74, // [patch]
-    CC_SCATTER_RANDOMIZE     = 75, // [patch]
-    CC_SCATTER_SLIDE         = 76, // [patch]
-    CC_SCATTER_VALUE         = 77, // [patch]
-    CC_SCATTER_HUE           = 78, // [patch]
-    CC_SCATTER_WHITE         = 79, // [patch]
+    CC_FLOW_DENSITY          = 70, // [patch]
+    CC_FLOW_RATE             = 71, // [patch][rate]
+    CC_FLOW_HUE              = 72, // [patch]
+    CC_FLOW_WHITE            = 73, // [patch]
+    CC_FLOW_DARK             = 74, // [patch]
+
+    CC_LIGHT_HUE             = 75, // [patch]
+    CC_LIGHT_WHITE           = 76, // [patch]
+    CC_LIGHT_DARK            = 77, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -103,42 +104,42 @@ struct AuroraControlDefault {
 };
 
 static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
-    { CC_PAR_HUE_SHUFFLE_EVERY,   42 },
-    { CC_PAR_VALUE,              127 },
-    { CC_PAR_SATURATION,         127 },
-    { CC_PAR_HUE_SPREAD,          64 },
-    { CC_PAR_LFO_SPREAD,          64 },
     { CC_HUE,                     20 },
     { CC_SATURATION,             127 },
     { CC_VALUE,                  127 },
-    { CC_FIELD_DIRECTION,         64 },
-    { CC_FIELD_HUE,               64 },
-    { CC_FIELD_WIDTH,             64 },
-    { CC_FIELD_EDGE,              64 },
-    { CC_FIELD_SPEED,             64 },
-    { CC_FLOW_HUE,                64 },
-    { CC_FLOW_RATE,               50 },
-    { CC_FLOW_DENSITY,            20 },
-    { CC_LIGHT_HUE,               64 },
+    { CC_PAR_SATURATION,         127 },
+    { CC_PAR_VALUE,              127 },
+    { CC_PAR_HUE_SPREAD,          64 },
+    { CC_PAR_HUE_SHUFFLE_EVERY,   42 },
+    { CC_PAR_LFO_SPREAD,          64 },
+    { CC_LFO_RATE,                64 },
     { CC_SHAPE_WIDTH,             40 },
     { CC_SHAPE_EDGE,              18 },
-    { CC_SHAPE_POSITION,          64 },
     { CC_SHAPE_SPEED,             80 },
-    { CC_FAN_FREQUENCY,           32 },
+    { CC_SHAPE_POSITION,          64 },
+    { CC_SHAPE_BEND,              64 },
+    { CC_SHAPE_BEND_AT,           64 },
     { CC_FAN_SPREAD,              64 },
     { CC_FAN_SPEED,               64 },
     { CC_FAN_LFO,                 64 },
-    { CC_LFO_RATE,                64 },
-    { CC_SHAPE_BEND,              64 },
-    { CC_SHAPE_BEND_AT,           64 },
-    { CC_SCATTER_RATE,            60 },
+    { CC_FAN_FREQUENCY,           32 },
     { CC_SCATTER_COUNT,           80 },
     { CC_SCATTER_WIDTH,           34 },
     { CC_SCATTER_EDGE,            40 },
+    { CC_SCATTER_RATE,            60 },
     { CC_SCATTER_RANDOMIZE,      110 },
     { CC_SCATTER_SLIDE,           64 },
-    { CC_SCATTER_VALUE,           64 },
     { CC_SCATTER_HUE,             64 },
+    { CC_SCATTER_VALUE,           64 },
+    { CC_FIELD_DIRECTION,         64 },
+    { CC_FIELD_WIDTH,             64 },
+    { CC_FIELD_EDGE,              64 },
+    { CC_FIELD_SPEED,             64 },
+    { CC_FIELD_HUE,               64 },
+    { CC_FLOW_DENSITY,            20 },
+    { CC_FLOW_RATE,               50 },
+    { CC_FLOW_HUE,                64 },
+    { CC_LIGHT_HUE,               64 },
 };
 
 static const uint8_t WAVE_SWELL  = 32;
@@ -271,7 +272,7 @@ enum AuroraLibraryState : uint8_t {
     LIBRARY_UNREADABLE = 2,
 };
 
-static const uint8_t AURORA_PATCH_FORMAT    = 1;
+static const uint8_t AURORA_PATCH_FORMAT    = 2;
 static const uint8_t AURORA_PATCH_MAX       = 128;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
@@ -298,6 +299,6 @@ static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_PARTS * AURORA_PATCH_CC_COUNT;
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 11
+#define AURORA_PROTOCOL_VERSION_MINOR 12
 
 #endif

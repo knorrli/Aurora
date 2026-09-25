@@ -14,7 +14,7 @@
 - The controller is the clock source. It tracks tempo from incoming clock or from tap tempo and always emits its own fresh 24 PPQN.
 - External clock is never passed through. Tapping switches source with no discontinuity at the brain; an upstream dropout keeps the last tempo running.
 - The controller's tempo LED flashes from that clock.
-- Tempo division is the 12-position rotary, sent on CC 2 separately. The clock itself is never divided.
+- Tempo division is the 12-position rotary, sent on CC 33 separately. The clock itself is never divided.
 - The `TEMPO_DIV_*` list in `shared/aurora_protocol.h` is matched to the rotary's real positions once the box is rebuilt.
 
 ## Patch storage
@@ -43,7 +43,7 @@
 - Hold past arrival: the morph pushes on toward that patch's Accent target over its accent time.
 - Release during the accent: hold course to the next beat, then drop to the patch in one step.
 - Holding the key of the patch already playing goes straight to the accent.
-- CC 26 reads 127 while the key the last Program Change named is down, and 0 on release.
+- CC 19 reads 127 while the key the last Program Change named is down, and 0 on release.
 - Every keypad effect lands on a beat. A press is snapped to the nearest beat, not the next; tap versus hold is judged a short fixed time after that beat.
 - Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`.
 - A morph interpolates the raw CC bytes, all together, linearly.
@@ -73,7 +73,7 @@
 ## Touchpad and rockers
 
 - The pad sends X, Y, pressure and engage as raw values on CC 15–18. X and Y are positions that persist when the finger lifts; engage is separate from a finger being down.
-- The rockers report where they stand on CC 19–23. What that does belongs to the patch.
+- The rockers report where they stand on CC 2–6. What that does belongs to the patch.
 - The pad never sets a value and never arrives on its own. Switches never move during a pad gesture.
 - Nothing depends on pressure until it has been measured on this pad.
 
@@ -120,5 +120,4 @@
 - Should each route choose the plain or fanned LFO, rather than its destination deciding?
 - Do the PARs want a palette of their own?
 - Does Bend want a curve other than the cosine?
-- When the three spare CCs (6, 8, 9) run out: NRPN or a second MIDI channel?
-- CC 64 is Sustain and holds the fan's position spread; does it move?
+- When the two spare CCs (78, 79) run out: NRPN or a second MIDI channel?
