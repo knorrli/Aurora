@@ -446,7 +446,7 @@
     controls: define([
       C('washHueOffset', 'Hue offset', 'rotates the PARs off the strips\u2019 hue. Zero matches them'),
       C('washSaturation', 'Saturation', 'scales the PARs down from the strips\u2019 saturation. Full matches them, zero is white'),
-      C('washLevel', 'Level', 'the PARs\u2019 master, independent of the strips'),
+      C('washLevel', 'Brightness', 'the PARs\u2019 master, independent of the strips'),
       C('washHueSpread', 'Hue spread', 'each PAR further round the palette than the one before: halfway up is four colors evenly round, either end two alternating. The first PAR sits on Hue offset'),
       C('washHueShuffle', 'Hue shuffle', 'the chance the four colors are dealt out to the PARs in a new order, once every period'),
       C('washHuePeriod', 'Shuffle every', 'how often the hue shuffle rolls. Stepped, so it can sit on the bar'),
