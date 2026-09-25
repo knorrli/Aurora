@@ -539,6 +539,8 @@
         snap();
         bypassed.delete(route);
         resetNames(routeFields(route));
+        const aimed = L.namedFromSet(baseSet());
+        if (!P.ROUTES.some(r => aimed[r.destination] === P.CC[routePanel.target])) closeRoutePanel();
       });
       const bypass = el('button', 'tiny', 'bypass');
       bypass.title = 'silence this route while you listen; not saved';
