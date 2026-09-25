@@ -136,7 +136,7 @@ enum ColorRuler : uint8_t {
 // strip painted with a gradient and shapes crossing it carrying their own —
 // is the look that wants one.
 struct PlacedField {
-  bool isRegion;
+  uint8_t primitive;  // AuroraColorPrimitive
   uint8_t ruler;
   float hueReach;
   float whiteReach;
@@ -451,9 +451,10 @@ static float wanderAt(const Params &p, uint8_t stripIndex, float along01, float 
 // own core and fades, which is what makes count, width and edge mean the same
 // thing in both branches.
 static float placedAt(const PlacedField &field, float u, float drift) {
-  if (!field.isRegion) return (u - 0.5f) * 2.0f;
+  if (field.primitive == COLOR_PRIMITIVE_GRADIENT) return (u - 0.5f) * 2.0f;
   const float cell = u * (float)field.count + drift;
-  return coreAt(fract(cell) - 0.5f, field.width, field.edge);
+  const float bump = coreAt(fract(cell) - 0.5f, field.width, field.edge);
+  return field.primitive == COLOR_PRIMITIVE_INSIDE_OUT ? 1.0f - bump : bump;
 }
 
 float lightLeft(float dark) { return powf(DARK_FLOOR, -dark); }
@@ -892,7 +893,7 @@ static void readParams(const uint8_t *dialed, const Pushes *pushes, Params &p) {
 
   // A switch has no middle for a push to land in, so it is read as dialed.
   p.bounce = aurora_cc_is_on(dialed[CC_GEN_BOUNCE]);
-  p.placed.isRegion = aurora_cc_is_on(dialed[CC_COLOR_REGION]);
+  p.placed.primitive = aurora_cc_band3(dialed[CC_COLOR_PRIMITIVE]);
   const uint8_t ruler = aurora_cc_band3(dialed[CC_COLOR_RULER]);
   p.placed.ruler = (ruler > RULER_SHAPE) ? RULER_SHAPE : ruler;
 

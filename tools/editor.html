@@ -254,8 +254,6 @@
   .outs { border-left: 3px solid var(--out); }
   .outgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px 22px; }
 
-  details.slots summary { cursor: pointer; color: var(--dim); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-  details.slots[open] summary { margin-bottom: 10px; }
 
   /* ---- preview dock ------------------------------------------------------ */
 
@@ -360,6 +358,7 @@
       <label class="field"><span>Name</span><input type="text" id="pName" maxlength="16"></label>
       <label class="field"><span>Journey ramp</span><select id="pRampJourney"></select></label>
       <label class="field"><span>Accent ramp</span><select id="pRampAccent"></select></label>
+      <label class="field"><span>Tempo division</span><select id="pTempo"></select></label>
     </section>
 
     <nav class="sets" id="setTabs"></nav>
@@ -377,15 +376,6 @@
     <section class="panel lane" data-lane="shape" id="laneShape"></section>
 
     <div class="mods" id="mods"></div>
-
-    <section class="panel">
-      <details class="slots">
-        <summary>Timing</summary>
-        <div class="groups">
-          <div><h3>Timing</h3><div id="timingGroup"></div></div>
-        </div>
-      </details>
-    </section>
 
   </main>
 

@@ -204,7 +204,7 @@ enum AuroraCC : uint8_t {
     //
     // The 12-position rotary on the box is this control; it has no CC of its
     // own. Moved off 10, where it shared a number with pan.
-    CC_TEMPO_DIVISION      = 2,  // [patch] note value one tempo pulse stands
+    CC_TEMPO_DIVISION      = 2,  // [switch] note value one tempo pulse stands
                                  // for; value is an AuroraTempoDivision index
     // 3–9 reserved (transport / meta), skipping 7. 10 and 11 excluded
 
@@ -303,12 +303,14 @@ enum AuroraCC : uint8_t {
     // change any one of them. Splitting them also makes each one an ordinary
     // switch lane in a DAW rather than a number to be looked up.
     //
-    // Off below 64 and on from 64 up, except the ruler, which is banded into
-    // thirds. These two, the palette at 53 and the generator's at 54 are what
+    // Off below 64 and on from 64 up, except the primitive and the ruler,
+    // which are banded into thirds. These two, the palette at 53 and the
+    // generator's at 54 are what
     // DESIGN.md § "Switches belong to the patch" argues about: saved and
     // recalled, never interpolated.
-    CC_COLOR_REGION        = 36, // [switch] 0 = one gradient across the
-                                 // ruler, 127 = regions
+    CC_COLOR_PRIMITIVE     = 36, // [switch] 0 = one gradient across the
+                                 // ruler, 64 = regions, 127 = regions
+                                 // inside out
     CC_COLOR_RULER         = 37, // [switch] 0 = across the five strips,
                                  // 64 = along a strip, 127 = within a shape
     CC_PLACED_HUE          = 38, // [patch] bipolar: how far one end of the
@@ -608,6 +610,15 @@ static inline uint8_t aurora_cc_band3(uint8_t value) {
     if (value < 86) return 1;
     return 2;
 }
+
+// A region inside out departs everywhere but the region, so the faders stay
+// the patch's color — the one the washes, the wander and the light level
+// measure from — while the wall around the region leaves it.
+enum AuroraColorPrimitive : uint8_t {
+    COLOR_PRIMITIVE_GRADIENT   = 0,
+    COLOR_PRIMITIVE_REGION     = 1,
+    COLOR_PRIMITIVE_INSIDE_OUT = 2,
+};
 
 enum AuroraColorRuler : uint8_t {
     COLOR_RULER_WALL  = 0, // position is which of the five strips a pixel is on

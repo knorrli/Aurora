@@ -259,9 +259,6 @@ session. Ordered by what blocks what. Reasoning in `docs/generator.md`.
       else about the morph is worth judging until these exist. See
       `docs/generator.md` § "The panel's roster settings are guesses".
 
-- [ ] **Turn a region inside out.** One boolean, and it is what "base
-      color on the center strip, outer ones departing" needs. See
-      `docs/generator.md` § Open, "A region can only push inward".
 - [ ] **Reach the PARs with more than a hue offset.** The PARs following
       a gradient with the strips, which needs the color layer sampled at
       each PAR's position — today all four are one color. The white flash

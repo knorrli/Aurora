@@ -69,7 +69,7 @@
   const OFF = 0, ON = 127;
   const isOn = v => v >= 64;
   const band3 = v => (v < 43 ? 0 : v < 86 ? 1 : 2);
-  const GRADIENT = OFF, REGION = ON;
+  const GRADIENT = 0, REGION = 64, INSIDE_OUT = 127;
   const ON_WALL = 0, ON_STRIP = 64, IN_SHAPE = 127;
 
   const clamp7 = v => (v < 0 ? 0 : v > 127 ? 127 : v | 0);
@@ -125,7 +125,6 @@
   // One pattern per control, with only the number moving: a readout that
   // changes shape as the fader moves reflows the rows below it.
   const DERIVED = {
-    tempoDivision: v => (DIVISIONS.find(d => d[0] === v) || [0, 'quarter'])[1],
 
     genWidth: v => percent(real('genWidth', v)),
     genEdge: v => percent(real('genEdge', v)) + ' into the gap',
@@ -239,7 +238,7 @@
     scatterStagger: 110, scatterDrift: 64,
     scatterLight: 64, scatterHue: 64, scatterWhite: 64,
 
-    colorRegion: GRADIENT, colorRuler: ON_STRIP,
+    colorPrimitive: GRADIENT, colorRuler: ON_STRIP,
     placedHue: 64, placedWhite: 64, placedDark: 64,
     placedCount: 0, placedWidth: 64, placedEdge: 64, placedSpeed: 64,
 
@@ -349,7 +348,7 @@
   // and dimmed rather than hidden: a control that vanishes reads as a bug, and
   // the reason is short enough to say.
   const gradientInert = {
-    inertWhen: s => !isOn(s.colorRegion),
+    inertWhen: s => band3(s.colorPrimitive) === band3(GRADIENT),
     inertWhy: 'a gradient spans its ruler once, so there is nothing here to repeat, size or move',
   };
 
@@ -380,8 +379,8 @@
     {
       key: 'placed', name: 'The placed field', tone: 'color',
       switches: define([
-        C('colorRegion', 'Primitive', 'one ramp across the ruler, or a bump sitting on it',
-          { kind: 'two', options: [[GRADIENT, 'gradient'], [REGION, 'region']] }),
+        C('colorPrimitive', 'Primitive', 'one ramp across the ruler, a bump sitting on it, or everything but the bump departing',
+          { kind: 'three', options: [[GRADIENT, 'gradient'], [REGION, 'region'], [INSIDE_OUT, 'inside out']] }),
         C('colorRuler', 'Ruler', 'what the position is measured against',
           { kind: 'three',
             options: [[ON_WALL, 'across the strips'], [ON_STRIP, 'along a strip'],
@@ -440,20 +439,13 @@
     ]),
   };
 
-  const TIMING = {
-    controls: define([
-      C('tempoDivision', 'Tempo division', 'what one tempo pulse stands for. Every rate below scales with it',
-        { kind: 'pick', options: DIVISIONS }),
-    ]),
-  };
-
   global.AuroraPatch = {
     PATCH_FORMAT, CC_COUNT, NAME_LEN, SETS, KEYS, PATCH_MAX,
     SET_BASE, SET_COLOR, SET_EXTENT, SET_MOTION, SET_ACCENT, SET_NAMES, SET_BLURB,
     CC, NAMES, SWITCHES, CONTINUOUS, CONTROLS, DERIVED, NEUTRAL, DEFAULT,
-    OFF, ON, isOn, band3, GRADIENT, REGION, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
+    OFF, ON, isOn, band3, GRADIENT, REGION, INSIDE_OUT, ON_WALL, ON_STRIP, IN_SHAPE, clamp7,
     unit, bip, LFO_PERIODS, LFO_PERIOD_NAMES, periodStep, periodByte,
     DIVISIONS,
-    SHAPE, LFO, MODULATORS, ROUTES, STRIPS, PARS, TIMING,
+    SHAPE, LFO, MODULATORS, ROUTES, STRIPS, PARS,
   };
 })(window);

@@ -153,7 +153,7 @@ Every number, assigned. 105 spoken for, 9 spare.
 
 | CC | | | |
 |---|---|---|---|
-| **2** | `TEMPO_DIVISION` | [patch] | note value one tempo pulse stands for |
+| **2** | `TEMPO_DIVISION` | [switch] | note value one tempo pulse stands for |
 
 Spare: 3, 4, 5, 6, 8, 9.
 
@@ -196,7 +196,7 @@ Spare: 30, 31.
 | **33** | `HUE` | [patch][circular] | hue center |
 | **34** | `SATURATION` | [patch] | saturation |
 | **35** | `VALUE` | [patch] | brightness |
-| **36** | `COLOR_REGION` | [switch] | one gradient across the ruler / regions |
+| **36** | `COLOR_PRIMITIVE` | [switch] | one gradient across the ruler / regions / regions inside out |
 | **37** | `COLOR_RULER` | [switch] | across the strips / along a strip / within a shape |
 | **38** | `PLACED_HUE` | [patch] | how far one end of the ruler departs |
 | **39** | `PLACED_WHITE` | [patch] | toward white, or toward a pure hue |

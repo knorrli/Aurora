@@ -416,8 +416,6 @@
       buildGroup('5 strips', P.STRIPS.controls),
       buildGroup('4 PARs', P.PARS.controls));
 
-    $('timingGroup').innerHTML = '';
-    buildRows($('timingGroup'), P.TIMING.controls);
   }
 
   // ---- a route's push, drawn ---------------------------------------------
@@ -929,6 +927,13 @@
       sel.addEventListener('change', () => { editing()[field] = +sel.value; save(); });
     }
 
+    const tempo = $('pTempo');
+    P.DIVISIONS.forEach(([value, text]) => {
+      const o = el('option', null, text); o.value = value; tempo.appendChild(o);
+    });
+    tempo.title = `What one tempo pulse stands for. Every rate scales with it. CC ${P.CC.tempoDivision}`;
+    tempo.addEventListener('change', () => { snap(); setValue('tempoDivision', +tempo.value); });
+
     $('pName').addEventListener('input', () => {
       editing().name = $('pName').value.slice(0, P.NAME_LEN);
       save(); paintList();
@@ -940,6 +945,7 @@
     if ($('pName').value !== p.name) $('pName').value = p.name;
     $('pRampJourney').value = String(P.periodByte(P.periodStep(p.rampJourney)));
     $('pRampAccent').value = String(P.periodByte(P.periodStep(p.rampAccent)));
+    $('pTempo').value = String(liveNamed().tempoDivision);
   }
 
   // ---- the library rail --------------------------------------------------

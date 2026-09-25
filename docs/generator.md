@@ -358,7 +358,7 @@ the wall down for a quiet verse and the hue would slide with it.
 
 ### What you place
 
-Two primitives, either of them measured against one of three rulers.
+Three primitives, any of them measured against one of three rulers.
 
 - A **gradient** runs one way across its ruler with the base color at the
   center. The amount is how far *one* end departs, so the two ends land
@@ -366,6 +366,11 @@ Two primitives, either of them measured against one of three rulers.
 - A **region** is a bump — base, departure, back to base — built from the
   shape branch's own core and fades. Count, width and edge therefore mean
   the same thing in both branches.
+- A **region inside out** is the same bump with the departure everywhere
+  but the region: base on the center strip, the outer ones departing. The
+  swapped region draws the same strips, but its faders are then the outer
+  color, so the washes, the wander and the light level follow that — and the
+  dark case needs V pulled off the top, where it is never kept.
 
 The ruler is **across the five strips**, **along a strip**, or **within a
 shape** — a shape's leading tip through to the end of its tail, traveling
@@ -1160,19 +1165,7 @@ nearly free and the question shrinks to what 4 and 5 need.
    playing. The test is a set, not a bench.
 6. **Whether the roster survives at all**, or becomes a set of named
    points in this space. Nothing forces the choice yet.
-7. **A region can only push inward, so one asked-for look is inverted.**
-   "Base color on the center strip, the outer ones departing" needs a
-   bump turned inside out — base within the core, the departure outside
-   it. What comes out instead is the complement: the center strip
-   departing and the outer ones on the base color.
-
-   One boolean on the region covers it and is not a crutch, since "a
-   place that differs" and "everywhere except a place" are both real
-   descriptions. Not added, because the design conversation was careful
-   about controls arriving without a look behind them, and this one has
-   not been looked at on the wall yet.
-
-8. **A second placed field was designed for and not built.** Both rulers
+7. **A second placed field was designed for and not built.** Both rulers
    at once — a strip painted with a gradient *and* shapes crossing it
    carrying their own — was agreed as the thing to leave until wanted,
    on the argument that the first one would be written so the second cost
@@ -1183,7 +1176,7 @@ nearly free and the question shrinks to what 4 and 5 need.
    takes it as an argument. A second field is a second instance and a
    second block of CCs; what is still unanswered is what the two sum to,
    since two fields pushing the same three qualities can cancel.
-9. **Five of the six white and dark controls read the fader as bipolar,
+8. **Five of the six white and dark controls read the fader as bipolar,
    and the sign buys something different in each of the three sources.**
    Placed, wander and light level each push whiteness and darkness, two
    controls apiece. Only Lit White is read as a plain 0–1 amount; the
