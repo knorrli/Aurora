@@ -1398,7 +1398,10 @@
     return { spans, marks: READ_PER_WASH.has(name) ? V.washValues(cc) : V.stripValues(cc) };
   }
 
-  function paintTrack(input, swing, points) {
+  // A fill from zero up to the handle means nothing where 0 and 127 are the
+  // same place, and a route band wrapping round the end leaves a piece of it
+  // showing as if it were a range.
+  function paintTrack(input, swing, points, circular) {
     const layers = [];
     if (swing) for (const v of swing.marks) layers.push(markLayer(along(input, v)));
     for (const v of points) layers.push(pointLayer(along(input, v)));
@@ -1410,7 +1413,8 @@
       }
     }
     const at = reaching(input, +input.value);
-    layers.push(stops(['var(--fill)', '0%', at], ['var(--rest)', at, '100%']));
+    layers.push(circular ? stops(['var(--rest)', '0%', '100%'])
+                         : stops(['var(--fill)', '0%', at], ['var(--rest)', at, '100%']));
     const track = layers.join(', ');
     if (input.dataset.track !== track) {
       input.dataset.track = track;
@@ -1423,7 +1427,8 @@
   function paintTracks() {
     for (const input of document.querySelectorAll('input[type=range]')) {
       const r = rows[input.closest('.row')?.dataset.name];
-      paintTrack(input, r ? swingOf(r.def.name) : null, r ? r.points : []);
+      paintTrack(input, r ? swingOf(r.def.name) : null, r ? r.points : [],
+                 r ? (A.TAGS[r.def.name] || []).includes('circular') : false);
     }
   }
 
