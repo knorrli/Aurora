@@ -1,24 +1,5 @@
-# PlatformIO
 .pio/
-.pioenvs/
-.piolibdeps/
 .vscode/
-*.pyc
-
-# Arduino CLI / IDE build artifacts
-build/
-*.hex
-*.elf
-*.eep
-*.bin
-*.with_bootloader.bin
-*.with_bootloader.hex
-
-# OS / editor detritus
-.DS_Store
-*.swp
 .claude/
-
-# Photos of the rig — kept locally, too large for the repo.
-# Force one in with `git add -f` if a specific image is worth keeping.
+.DS_Store
 images/
