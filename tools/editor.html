@@ -141,8 +141,8 @@
 
   #mixBar[hidden] { display: none; }
   #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
-  #mixBar h2 { display: flex; align-items: baseline; gap: 10px; }
-  #mixBar h2 .tiny { margin-left: auto; }
+  #mixBar h2, .dock h2 { display: flex; align-items: baseline; gap: 10px; }
+  #mixBar h2 .tiny, .dock h2 .tiny { margin-left: auto; }
 
   .shape { border-left: 3px solid var(--shape); }
   .shape-name { font-size: 12px; letter-spacing: .18em; color: var(--shape); margin-bottom: 12px; }
@@ -384,7 +384,7 @@
 
   <aside class="dock">
     <section class="panel">
-      <h2>The wall</h2>
+      <h2>The wall <button class="tiny" id="wallOverlays">overlays</button></h2>
       <div class="dockgrid">
         <div>
           <canvas id="wallMain"></canvas>
@@ -397,7 +397,6 @@
           </div>
           <div class="rowline">
             <button class="tiny" id="wallFlip">pixel 0 at bottom</button>
-            <button class="tiny" id="wallOverlays">overlays</button>
             <label class="cc">order <input type="text" id="wallOrder"></label>
           </div>
         </div>
