@@ -40,7 +40,7 @@ enum AuroraCC : uint8_t {
     CC_PAR_SATURATION        = 25, // [patch][plain]
     CC_PAR_VALUE             = 26, // [patch][plain]
     CC_PAR_HUE_RANGE         = 27, // [patch][plain]
-    CC_PAR_HUE_SOURCE        = 28, // [switch]
+    CC_PAR_HUE_LAYOUT        = 28, // [switch]
 
     CC_ARP_MODE              = 29, // [switch]
     CC_ARP_REVERSE           = 30, // [switch]
@@ -222,6 +222,21 @@ enum AuroraArpMode : uint8_t {
 
 static inline uint8_t aurora_arp_mode(uint8_t value) {
     const uint8_t last = ARP_MODES - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return step > last ? last : step;
+}
+
+enum AuroraHueLayout : uint8_t {
+    HUE_LAYOUT_ACROSS     = 0,
+    HUE_LAYOUT_EVENS_ODDS = 1,
+    HUE_LAYOUT_PAIRS      = 2,
+    HUE_LAYOUT_MIRROR     = 3,
+    HUE_LAYOUT_RANDOM     = 4,
+    HUE_LAYOUTS           = 5,
+};
+
+static inline uint8_t aurora_hue_layout(uint8_t value) {
+    const uint8_t last = HUE_LAYOUTS - 1;
     const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
     return step > last ? last : step;
 }

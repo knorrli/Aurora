@@ -76,14 +76,23 @@ static float drawnHue(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t 
   return 2.0f * draw - 1.0f;
 }
 
+static uint8_t groupingOf(uint8_t layout) {
+  switch (layout) {
+    case HUE_LAYOUT_EVENS_ODDS: return ARP_MODE_EVENS_ODDS;
+    case HUE_LAYOUT_PAIRS: return ARP_MODE_PAIRS;
+    case HUE_LAYOUT_MIRROR: return ARP_MODE_MIRROR;
+    default: return ARP_MODE_SEQUENCE;
+  }
+}
+
 static float bandPlace(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t par,
                        float range) {
-  if (aurora_switch_is_on(dialed[CC_PAR_HUE_SOURCE])) {
-    return fabsf(range) * drawnHue(dialed, arp, lfo, par);
-  }
-  const uint8_t groups = arpGroupCount(arp);
+  const uint8_t layout = aurora_hue_layout(dialed[CC_PAR_HUE_LAYOUT]);
+  if (layout == HUE_LAYOUT_RANDOM) return fabsf(range) * drawnHue(dialed, arp, lfo, par);
+  const Arp grouping = { groupingOf(layout), false };
+  const uint8_t groups = arpGroupCount(grouping);
   if (groups < 2) return 0.0f;
-  return range * (2.0f * (float)arpGroupOf(arp, par) / (float)(groups - 1) - 1.0f);
+  return range * (2.0f * (float)arpGroupOf(grouping, par) / (float)(groups - 1) - 1.0f);
 }
 
 static void parPushes(const uint8_t *dialed, const Pushes &pushes, const Arp &arp, float lfo,

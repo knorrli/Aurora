@@ -25,7 +25,7 @@
     parSaturation:    25,
     parValue:         26,
     parHueRange:      27,
-    parHueSource:     28,
+    parHueLayout:     28,
     arpMode:          29,
     arpReverse:       30,
     tempoDivision:    33,
@@ -74,7 +74,7 @@
     lightDark:        77,
   };
 
-  const TAGS = {"rockerTouchpadA":["ambient"],"rockerTouchpadB":["ambient"],"rockerTouchpadC":["ambient"],"rockerTouchpadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"touchpadX":["gesture"],"touchpadY":["gesture"],"touchpadPressure":["gesture"],"touchpadEngage":["gesture"],"keyHeld":["gesture"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","plain"],"parSaturation":["patch","plain"],"parValue":["patch","plain"],"parHueRange":["patch","plain"],"parHueSource":["switch"],"arpMode":["switch"],"arpReverse":["switch"],"tempoDivision":["switch"],"lfoRate":["patch"],"shapeCount":["patch","plain"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch","circular"],"shapeBend":["patch","plain"],"shapeBendAt":["patch","plain"],"fanSpread":["patch","plain"],"fanSpeed":["patch","rate","plain"],"fanLfo":["patch","plain"],"fanFrequency":["patch","plain"],"fanPhase":["patch","circular","plain"],"fanRandomize":["patch","plain"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterRandomize":["patch"],"scatterSpread":["patch"],"scatterSlide":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"lightHue":["patch"],"lightWhite":["patch"],"lightDark":["patch"]};
+  const TAGS = {"rockerTouchpadA":["ambient"],"rockerTouchpadB":["ambient"],"rockerTouchpadC":["ambient"],"rockerTouchpadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"touchpadX":["gesture"],"touchpadY":["gesture"],"touchpadPressure":["gesture"],"touchpadEngage":["gesture"],"keyHeld":["gesture"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","plain"],"parSaturation":["patch","plain"],"parValue":["patch","plain"],"parHueRange":["patch","plain"],"parHueLayout":["switch"],"arpMode":["switch"],"arpReverse":["switch"],"tempoDivision":["switch"],"lfoRate":["patch"],"shapeCount":["patch","plain"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch","circular"],"shapeBend":["patch","plain"],"shapeBendAt":["patch","plain"],"fanSpread":["patch","plain"],"fanSpeed":["patch","rate","plain"],"fanLfo":["patch","plain"],"fanFrequency":["patch","plain"],"fanPhase":["patch","circular","plain"],"fanRandomize":["patch","plain"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterRandomize":["patch"],"scatterSpread":["patch"],"scatterSlide":["patch"],"scatterHue":["patch"],"scatterWhite":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"lightHue":["patch"],"lightWhite":["patch"],"lightDark":["patch"]};
   const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"value":127,"parSaturation":127,"parValue":127,"parHueRange":64,"lfoRate":64,"shapeWidth":40,"shapeEdge":18,"shapeSpeed":80,"shapePosition":64,"shapeBend":64,"shapeBendAt":64,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":60,"scatterRandomize":110,"scatterSlide":64,"scatterHue":64,"scatterValue":64,"fieldDirection":64,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"lightHue":64};
 
   const MIDI_CHANNEL = 1;
@@ -90,6 +90,8 @@
   const ARP = {"off":0,"turns":1,"ripple":2};
   const ARP_MODE = {"together":0,"sequence":1,"bounce":2,"evensOdds":3,"pairs":4,"mirror":5,"random":6};
   const ARP_MODE_COUNT = 7;
+  const HUE_LAYOUT = {"across":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
+  const HUE_LAYOUT_COUNT = 5;
   const ARP_DESTINATION_BASE = 120;
   const ARP_CONTROLS = ["parHueOffset","parSaturation","parValue"];
   const WAVE_SWELL = 32;
@@ -136,6 +138,8 @@
 
   const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
   const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
+  const hueLayout = value => steppedIndex(value, HUE_LAYOUT_COUNT);
+  const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
 
   const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.off
     : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
@@ -166,6 +170,7 @@
     THREE_WAY_VALUES,
     ARP,
     ARP_MODE,
+    HUE_LAYOUT,
     ARP_CONTROLS,
     WAVE_SWELL,
     WAVE_SNAP,
@@ -195,6 +200,6 @@
     SYSEX_STATUS,
     LIBRARY_STATE,
     steppedIndex, routeCC, routeRatio, isOn, threeWayPosition,
-    arpMode, arpModeValue, routeArp, routeTarget, routeDestination,
+    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

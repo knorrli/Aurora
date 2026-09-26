@@ -54,7 +54,7 @@ static bool refused(uint8_t cc) {
     case CC_FIELD_FORM:
     case CC_FIELD_DIRECTION:
     case CC_LFO_RATE:
-    case CC_PAR_HUE_SOURCE:
+    case CC_PAR_HUE_LAYOUT:
     case CC_ARP_MODE:
     case CC_ARP_REVERSE:
       return true;

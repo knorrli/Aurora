@@ -329,6 +329,11 @@
     pairs: 'pairs', mirror: 'mirror', random: 'random',
   };
 
+  const HUE_LAYOUT_NAMES = {
+    across: 'across', evensOdds: 'evens / odds', pairs: 'pairs', mirror: 'mirror',
+    random: 'random per pulse',
+  };
+
   const PARS = {
     title: '4 PARs',
     sections: [
@@ -339,8 +344,10 @@
       ]],
       ['Hue across them', [
         control('parHueRange', 'Hue range', 'a band of hue either side of Hue offset. Plus puts the first group at the low end, minus at the high end'),
-        control('parHueSource', 'Hue source', 'each group at its place in the band, or a new hue from anywhere in it every time a PAR’s turn comes',
-          { kind: 'two', options: [[OFF, 'gradient'], [ON, 'random per pulse']] }),
+        control('parHueLayout', 'Hue layout', 'how the band is laid across the PARs: groups from one end to the other, or a new hue from anywhere in it every time a PAR’s turn comes',
+          { kind: 'steps', step: Protocol.hueLayout,
+            options: Object.entries(Protocol.HUE_LAYOUT)
+              .map(([key, layout]) => [Protocol.hueLayoutValue(layout), HUE_LAYOUT_NAMES[key]]) }),
       ]],
       ['Arpeggiator', [
         control('arpMode', 'Mode', 'how the PARs are grouped, and the order the groups take their turns in',

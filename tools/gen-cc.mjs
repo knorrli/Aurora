@@ -105,7 +105,7 @@ const lfoPeriods = (header.match(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/) || 
   .split(',').map(text => text.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
 const STEPPED = /step = \(uint8_t\)\(\(\(uint16_t\)value \* last \+ 63\) \/ 127\);/;
-for (const name of ['aurora_route_ratio', 'aurora_lfo_period', 'aurora_arp_mode']) {
+for (const name of ['aurora_route_ratio', 'aurora_lfo_period', 'aurora_arp_mode', 'aurora_hue_layout']) {
   if (!STEPPED.test(functionBody(name))) {
     throw new Error(`${HEADER}: ${name}() no longer steps as steppedIndex() in tools/cc.js does`);
   }
@@ -133,6 +133,7 @@ for (const [name, shape] of ARP_PAIRING) {
 }
 const arpModeEntries = enumEntries('AuroraArpMode');
 const arpModeCount = (arpModeEntries.find(([key]) => key === 'ARP_MODES') || fail('ARP_MODES'))[1];
+const hueLayoutCount = (enumEntries('AuroraHueLayout').find(([key]) => key === 'HUE_LAYOUTS') || fail('HUE_LAYOUTS'))[1];
 
 const programs = Object.fromEntries(enumEntries('AuroraProgram'));
 const patchParts = Object.fromEntries(enumEntries('AuroraPatchPart'));
@@ -151,6 +152,8 @@ const generated = {
   ARP: enumByPrefix('AuroraArp', 'ARP_'),
   ARP_MODE: enumByPrefix('AuroraArpMode', 'ARP_MODE_'),
   ARP_MODE_COUNT: arpModeCount,
+  HUE_LAYOUT: enumByPrefix('AuroraHueLayout', 'HUE_LAYOUT_'),
+  HUE_LAYOUT_COUNT: hueLayoutCount,
   ARP_DESTINATION_BASE: constant('AURORA_ARP_DESTINATION_BASE'),
   ARP_CONTROLS: arpControls,
   WAVE_SWELL: constant('WAVE_SWELL'),
@@ -188,7 +191,7 @@ const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
 const width = Math.max(...pairs.map(([name]) => name.length));
 const ccBody = pairs.map(([name, number]) => `    ${name}:${' '.repeat(width - name.length)} ${number},`).join('\n');
 const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE', 'ROUTE_MAX_RATIO',
-  'ARP_DESTINATION_BASE', 'ARP_MODE_COUNT']);
+  'ARP_DESTINATION_BASE', 'ARP_MODE_COUNT', 'HUE_LAYOUT_COUNT']);
 const constantLines = Object.entries(generated)
   .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');
 
@@ -218,6 +221,8 @@ ${constantLines}
 
   const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
   const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
+  const hueLayout = value => steppedIndex(value, HUE_LAYOUT_COUNT);
+  const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
 
   const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.off
     : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
@@ -240,7 +245,7 @@ ${constantLines}
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
 ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
     steppedIndex, routeCC, routeRatio, isOn, threeWayPosition,
-    arpMode, arpModeValue, routeArp, routeTarget, routeDestination,
+    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);
 `;
