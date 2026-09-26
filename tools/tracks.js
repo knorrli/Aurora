@@ -34,25 +34,54 @@
                                 ['#fff', offset(at, -1), offset(at, 1)], ['var(--bg)', offset(at, 1), offset(at, 2)],
                                 ['transparent', offset(at, 2), '100%']);
 
+  const HUE_STEPS_PER_FADER_STEP = 2;
+
+  function wrappedSpans(low, high) {
+    const spans = [[Math.max(0, low), Math.min(127, high)]];
+    if (low < 0) spans.push([low + 128, 127]);
+    if (high > 127) spans.push([0, high - 128]);
+    return spans;
+  }
+
+  function hueBandOf(input) {
+    const live = Editor.session.liveNamed();
+    const reach = Math.abs(Preview.convert(Patch.CC.parHueRange, live.parHueRange)) / HUE_STEPS_PER_FADER_STEP;
+    if (reach < 0.5) return null;
+    const center = +input.value;
+    const offsets = Preview.controlAtPars(Patch.CC.parHueOffset);
+    const places = Preview.parHuePlaces();
+    return {
+      spans: wrappedSpans(center - reach, center + reach),
+      marks: offsets.map((offset, par) => (((offset + places[par] / HUE_STEPS_PER_FADER_STEP) % 128) + 128) % 128),
+    };
+  }
+
   function swingOf(name) {
     const cc = Patch.CC[name];
     const reach = Preview.routeReach(cc);
     if (!reach) return null;
     const [low, high] = reach;
-    const spans = [[Math.max(0, low), Math.min(127, high)]];
-    if (low < 0) spans.push([low + 128, 127]);
-    if (high > 127) spans.push([0, high - 128]);
-    return { spans, marks: READ_AT_PARS.has(name) ? Preview.controlAtPars(cc) : Preview.controlAtStrips(cc) };
+    return {
+      spans: wrappedSpans(low, high),
+      marks: READ_AT_PARS.has(name) ? Preview.controlAtPars(cc) : Preview.controlAtStrips(cc),
+    };
   }
 
-  function paintTrack(input, swing, points, circular) {
+  function paintTrack(input, swing, points, circular, band) {
     const layers = [];
-    if (swing) for (const value of swing.marks) layers.push(markLayer(along(input, value)));
+    const marks = band ? band.marks : swing ? swing.marks : [];
+    for (const value of marks) layers.push(markLayer(along(input, value)));
     for (const value of points) layers.push(pointLayer(along(input, value)));
     if (swing) {
       for (const [low, high] of swing.spans) {
         const from = reaching(input, low), to = reaching(input, high);
         layers.push(stops(['transparent', '0%', from], ['var(--lfo)', from, to], ['transparent', to, '100%']));
+      }
+    }
+    if (band) {
+      for (const [low, high] of band.spans) {
+        const from = reaching(input, low), to = reaching(input, high);
+        layers.push(stops(['transparent', '0%', from], ['var(--color)', from, to], ['transparent', to, '100%']));
       }
     }
     const at = reaching(input, +input.value);
@@ -68,8 +97,12 @@
   function paint() {
     for (const input of document.querySelectorAll('input[type=range]')) {
       const row = Editor.rows.rows[input.closest('.row') && input.closest('.row').dataset.name];
-      if (row) paintTrack(input, swingOf(row.control.name), row.points, row.circular);
-      else paintTrack(input, null, [], false);
+      if (!row) {
+        paintTrack(input, null, [], false, null);
+        continue;
+      }
+      const name = row.control.name;
+      paintTrack(input, swingOf(name), row.points, row.circular, name === 'parHueOffset' ? hueBandOf(input) : null);
     }
   }
 

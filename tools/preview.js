@@ -17,6 +17,8 @@
     const pixelsAt = renderer._aurora_pixels();
     const pixels = renderer.HEAPU8.subarray(pixelsAt, pixelsAt + STRIPS * PIXELS * 3);
     const parColors = renderer._aurora_pars();
+    const huePlacesAt = renderer._aurora_par_hue_places() >> 2;
+    const huePlaces = renderer.HEAPF32.subarray(huePlacesAt, huePlacesAt + PARS);
     const fanAt = renderer._aurora_fan() >> 2;
     const fan = renderer.HEAPF32.subarray(fanAt, fanAt + STRIPS + CURVE_POINTS + 6);
     const bendAt = renderer._aurora_bend() >> 2;
@@ -56,11 +58,16 @@
         const at = renderer._aurora_palette_name(i);
         return String.fromCharCode(...renderer.HEAPU8.subarray(at, renderer.HEAPU8.indexOf(0, at)));
       }),
+      paletteColor(palette, hue, saturation) {
+        const packed = renderer._aurora_palette_color(palette, hue, saturation);
+        return [packed >> 16 & 255, packed >> 8 & 255, packed & 255];
+      },
       lfoWave: (phase, wave) => renderer._aurora_lfo_wave(phase, wave),
       waveMean: wave => renderer._aurora_wave_mean(wave),
       convert: (cc, value) => renderer._aurora_convert(cc, value),
 
       controlAtStrips: cc => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_control_at_strip(cc, i)),
+      parHuePlaces: () => Array.from(huePlaces),
       controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
       routeRefused: cc => !!renderer._aurora_route_refused(cc),
       routeReach(cc) {

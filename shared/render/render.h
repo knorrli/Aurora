@@ -85,6 +85,7 @@ struct FanReading {
 struct Frame {
   Rgb pixels[STRIPS * PIXELS];
   Par pars[PARS];
+  float parHuePlaces[PARS];
   FanReading fan;
   float bend[BEND_POINTS];
   float lfo;

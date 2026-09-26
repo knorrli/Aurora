@@ -20,6 +20,8 @@
 
     const label = controlLabel(name);
     label.addEventListener('click', () => { Editor.transition.snap(); session.resetNames([name]); });
+    const swatch = control.swatch ? element('i', 'swatch') : null;
+    if (swatch) label.firstChild.appendChild(swatch);
 
     const track = element('div', 'track');
     const slider = dom.rangeInput(127);
@@ -43,7 +45,7 @@
     root.append(label, track, readout, routes || element('span'));
     host.appendChild(root);
     rows[name] = {
-      kind: 'fader', control, root, label, slider, ghost, now, routes,
+      kind: 'fader', control, root, label, slider, ghost, now, routes, swatch,
       points: Patch.pointsFor(name), circular: Patch.isCircular(name),
     };
   }
@@ -192,6 +194,7 @@
     row.root.classList.toggle('changed', overridden);
     if (overridden) row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, base[name])} - 1px)`;
     row.label.title = faderTitle(row, overridden, base[name]);
+    if (row.swatch) row.swatch.style.background = `rgb(${row.control.swatch(live).join(',')})`;
     const inert = !!(row.control.inertWhen && row.control.inertWhen(live));
     row.root.classList.toggle('inert', inert);
     if (row.control.inertWhen) row.root.title = inert ? 'Reaches nothing here — ' + row.control.inertWhy : '';

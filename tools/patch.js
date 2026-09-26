@@ -167,6 +167,10 @@
     parValue: value => ofByte(real('parValue', value)),
     parHueOffset: value => '+' + real('parHueOffset', value) + ' of 255',
     parSaturation: value => ofByte(real('parSaturation', value)) + ' of theirs',
+    arpSpread: value => {
+      const spread = real('arpSpread', value);
+      return Math.abs(spread) < 0.005 ? 'together' : `${percent(Math.abs(spread))} ${spread < 0 ? 'reverse' : 'forward'}`;
+    },
     parHueRange: value => {
       const reach = Math.round(real('parHueRange', value));
       return reach === 0 ? 'one hue' : `±${Math.abs(reach)}, first ${reach < 0 ? 'high' : 'low'}`;
@@ -313,12 +317,16 @@
     },
   ];
 
+  const FULL_SATURATION = 255;
+  const hueSwatch = (live, hue) => preview().paletteColor(live.palette, hue & 255, FULL_SATURATION);
+
   const STRIPS = {
     title: '5 strips',
     sections: [[null, [
       control('palette', 'Palette', 'what the hue walks through: the rainbow, or a set of colors that loops',
         { kind: 'pick', options: () => preview().paletteNames().map((name, index) => [index, name]) }),
-      control('hue', 'Hue', 'the center hue everything else is measured from, around the palette’s loop'),
+      control('hue', 'Hue', 'the center hue everything else is measured from, around the palette’s loop',
+        { swatch: live => hueSwatch(live, real('hue', live.hue)) }),
       control('saturation', 'Saturation', 'full is a pure hue, zero is white'),
       control('value', 'Value', 'the ceiling everything below scales against'),
     ]]],
@@ -338,7 +346,8 @@
     title: '4 PARs',
     sections: [
       ['Color', [
-        control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue, as routes move it. Zero matches them'),
+        control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue, as routes move it. Zero matches them',
+          { swatch: live => hueSwatch(live, real('hue', live.hue) + real('parHueOffset', live.parHueOffset)) }),
         control('parSaturation', 'Saturation', 'scales the PARs down from the strips’ saturation. Full matches them, zero is white'),
         control('parValue', 'Value', 'the PARs’ master, independent of the strips'),
       ]],
@@ -354,8 +363,7 @@
           { kind: 'steps', step: Protocol.arpMode,
             options: Object.entries(Protocol.ARP_MODE)
               .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]) }),
-        control('arpReverse', 'Reverse', 'runs the groups last to first. Never changes their colors',
-          { kind: 'two', options: [[OFF, 'forward'], [ON, 'reverse']] }),
+        control('arpSpread', 'Spread', 'how far apart the groups take their turns within a pass. Center is all at once; plus runs first to last, minus last to first'),
       ]],
     ],
   };

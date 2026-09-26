@@ -22,6 +22,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return controls; }
 EMSCRIPTEN_KEEPALIVE render::Rgb *aurora_pixels() { return frame.pixels; }
 EMSCRIPTEN_KEEPALIVE render::Par *aurora_pars() { return frame.pars; }
+EMSCRIPTEN_KEEPALIVE float *aurora_par_hue_places() { return frame.parHuePlaces; }
 EMSCRIPTEN_KEEPALIVE render::FanReading *aurora_fan() { return &frame.fan; }
 EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
 
@@ -50,6 +51,11 @@ EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount();
 
 EMSCRIPTEN_KEEPALIVE const char *aurora_palette_name(int index) {
   return render::paletteName((uint8_t)index);
+}
+
+EMSCRIPTEN_KEEPALIVE int aurora_palette_color(int palette, int hue, int saturation) {
+  const render::Rgb rgb = render::paletteColor((uint8_t)palette, (uint8_t)hue, (uint8_t)saturation);
+  return (rgb.r << 16) | (rgb.g << 8) | rgb.b;
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave) {

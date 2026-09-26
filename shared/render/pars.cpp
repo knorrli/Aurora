@@ -10,6 +10,7 @@
 namespace render {
 
 static const uint8_t HUE_DRAW_SALT = 29;
+static const uint8_t CYCLE_DRAW_SALT = 97;
 
 struct ArpRoute {
   uint8_t route;
@@ -72,7 +73,8 @@ static float drawnHue(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t 
     latest = litAt;
     seed = (uint32_t)lit * AURORA_ROUTES + route;
   }
-  const float draw = drawn ? unitHash(seed, par, HUE_DRAW_SALT) : unitHash(par, 0, HUE_DRAW_SALT);
+  const float draw = drawn ? unitHash(seed, par, HUE_DRAW_SALT)
+                           : unitHash((uint32_t)(int32_t)floorf(lfo), par, CYCLE_DRAW_SALT);
   return 2.0f * draw - 1.0f;
 }
 
@@ -89,7 +91,7 @@ static float bandPlace(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t
                        float range) {
   const uint8_t layout = aurora_hue_layout(dialed[CC_PAR_HUE_LAYOUT]);
   if (layout == HUE_LAYOUT_RANDOM) return fabsf(range) * drawnHue(dialed, arp, lfo, par);
-  const Arp grouping = { groupingOf(layout), false };
+  const Arp grouping = { groupingOf(layout), 1.0f };
   const uint8_t groups = arpGroupCount(grouping);
   if (groups < 2) return 0.0f;
   return range * (2.0f * (float)arpGroupOf(grouping, par) / (float)(groups - 1) - 1.0f);
@@ -104,12 +106,12 @@ static void parPushes(const uint8_t *dialed, const Pushes &pushes, const Arp &ar
 uint8_t routedAtPar(const uint8_t *dialed, const Pushes &pushes, float lfo, uint8_t cc,
                     uint8_t par) {
   Pushes atPar;
-  parPushes(dialed, pushes, readArp(dialed), lfo, par, atPar);
+  parPushes(dialed, pushes, readArp(dialed, &pushes), lfo, par, atPar);
   return routed(dialed, &atPar, cc);
 }
 
 void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out) {
-  const Arp arp = readArp(dialed);
+  const Arp arp = readArp(dialed, &pushes);
   const Hsv dialedStrips = dialedColor(dialed);
   const uint8_t stripsHue = routedColor(dialed, &pushes).h;
 
@@ -118,6 +120,7 @@ void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out
     parPushes(dialed, pushes, arp, lfo, par, atPar);
     auto at = [&](uint8_t cc) { return dialedValue(cc, routed(dialed, &atPar, cc)); };
     const float place = bandPlace(dialed, arp, lfo, par, at(CC_PAR_HUE_RANGE));
+    out.parHuePlaces[par] = place;
     const int32_t hue = (int32_t)stripsHue + (int32_t)at(CC_PAR_HUE_OFFSET) + (int32_t)lroundf(place);
     const uint8_t saturation = scale8(dialedStrips.s, (uint8_t)at(CC_PAR_SATURATION));
     out.pars[par] = { paletteColor(dialed[CC_PALETTE], (uint8_t)(hue & 255), saturation),

@@ -68,7 +68,8 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FIELD_COUNT:
     case CC_SCATTER_COUNT: return countOf(value);
 
-    case CC_SHAPE_BEND: return bipolarOf(value);
+    case CC_SHAPE_BEND:
+    case CC_ARP_SPREAD: return bipolarOf(value);
     case CC_SHAPE_BEND_AT: return 0.5f + 0.5f * bipolarOf(value);
     case CC_SHAPE_POSITION:
     case CC_FAN_SPREAD:

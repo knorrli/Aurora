@@ -43,7 +43,7 @@ enum AuroraCC : uint8_t {
     CC_PAR_HUE_LAYOUT        = 28, // [switch]
 
     CC_ARP_MODE              = 29, // [switch]
-    CC_ARP_REVERSE           = 30, // [switch]
+    CC_ARP_SPREAD            = 30, // [patch][plain]
 
     CC_TEMPO_DIVISION        = 33, // [switch]
     CC_LFO_RATE              = 34, // [patch]
@@ -110,6 +110,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_PAR_SATURATION,         127 },
     { CC_PAR_VALUE,              127 },
     { CC_PAR_HUE_RANGE,           64 },
+    { CC_ARP_SPREAD,             127 },
     { CC_LFO_RATE,                64 },
     { CC_SHAPE_WIDTH,             40 },
     { CC_SHAPE_EDGE,              18 },

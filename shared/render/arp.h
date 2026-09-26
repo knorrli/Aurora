@@ -2,14 +2,16 @@
 
 #include <stdint.h>
 
+#include "routes.h"
+
 namespace render {
 
 struct Arp {
   uint8_t mode;
-  bool reverse;
+  float spread;
 };
 
-Arp readArp(const uint8_t *dialed);
+Arp readArp(const uint8_t *dialed, const Pushes *pushes);
 
 uint8_t arpGroupCount(const Arp &arp);
 

@@ -56,7 +56,6 @@ static bool refused(uint8_t cc) {
     case CC_LFO_RATE:
     case CC_PAR_HUE_LAYOUT:
     case CC_ARP_MODE:
-    case CC_ARP_REVERSE:
       return true;
     default:
       return false;
@@ -96,6 +95,7 @@ static bool plainLfo(uint8_t cc) {
     case CC_PAR_HUE_OFFSET:
     case CC_PAR_SATURATION:
     case CC_PAR_HUE_RANGE:
+    case CC_ARP_SPREAD:
     case CC_SHAPE_COUNT:
     case CC_SHAPE_BEND:
     case CC_SHAPE_BEND_AT:

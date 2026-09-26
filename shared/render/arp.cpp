@@ -1,6 +1,9 @@
 #include "arp.h"
 
+#include <math.h>
+
 #include "aurora_protocol.h"
+#include "reading.h"
 #include "render.h"
 #include "render_math.h"
 
@@ -9,8 +12,9 @@ namespace render {
 static const uint8_t SHUFFLE_SALT = 71;
 static const uint8_t RIPPLE_SALT = 113;
 
-Arp readArp(const uint8_t *dialed) {
-  return { aurora_arp_mode(dialed[CC_ARP_MODE]), aurora_switch_is_on(dialed[CC_ARP_REVERSE]) };
+Arp readArp(const uint8_t *dialed, const Pushes *pushes) {
+  return { aurora_arp_mode(dialed[CC_ARP_MODE]),
+           dialedValue(CC_ARP_SPREAD, routed(dialed, pushes, CC_ARP_SPREAD)) };
 }
 
 static bool hasDirection(uint8_t mode) {
@@ -45,6 +49,13 @@ static uint8_t passLength(const Arp &arp) {
   return arpGroupCount(arp);
 }
 
+static bool reversed(const Arp &arp) { return arp.spread < 0.0f && hasDirection(arp.mode); }
+
+static int32_t turnsPerPass(const Arp &arp) {
+  const long turns = lroundf(fabsf(arp.spread) * (float)passLength(arp));
+  return turns < 1 ? 1 : (int32_t)turns;
+}
+
 static int32_t wrapped(int32_t value, int32_t length) {
   const int32_t rest = value % length;
   return rest < 0 ? rest + length : rest;
@@ -60,30 +71,35 @@ static void shuffledPass(int32_t pass, uint8_t *order) {
   }
 }
 
-static uint8_t randomTurn(int32_t turn) {
-  const int32_t step = wrapped(turn, PARS);
-  const int32_t pass = (turn - step) / PARS;
-  uint8_t order[PARS];
+static void randomPass(int32_t pass, uint8_t *order) {
   shuffledPass(pass, order);
-  if (PARS > 2 && step < 2) {
-    uint8_t before[PARS];
-    shuffledPass(pass - 1, before);
-    if (order[0] == before[PARS - 1]) return order[1 - step];
-  }
-  return order[step];
+  if (PARS < 3) return;
+  uint8_t before[PARS];
+  shuffledPass(pass - 1, before);
+  if (order[0] != before[PARS - 1]) return;
+  order[0] = order[1];
+  order[1] = before[PARS - 1];
 }
 
-static uint8_t groupAtTurn(const Arp &arp, int32_t turn) {
-  const uint8_t length = passLength(arp);
-  int32_t step = wrapped(turn, length);
-  if (arp.reverse && hasDirection(arp.mode)) step = length - 1 - step;
-  if (arp.mode == ARP_MODE_BOUNCE && step >= PARS) return (uint8_t)(2 * PARS - 2 - step);
-  return (uint8_t)step;
+static uint8_t groupAtStep(const Arp &arp, uint8_t step) {
+  const uint8_t group =
+      (arp.mode == ARP_MODE_BOUNCE && step >= PARS) ? (uint8_t)(2 * PARS - 2 - step) : step;
+  return reversed(arp) ? (uint8_t)(arpGroupCount(arp) - 1 - group) : group;
 }
 
 bool arpTurnLights(const Arp &arp, int32_t turn, uint8_t par) {
-  if (arp.mode == ARP_MODE_RANDOM) return randomTurn(turn) == par;
-  return groupAtTurn(arp, turn) == arpGroupOf(arp, par);
+  const uint8_t steps = passLength(arp);
+  const int32_t turns = turnsPerPass(arp);
+  const int32_t place = wrapped(turn, turns);
+  uint8_t order[PARS];
+  if (arp.mode == ARP_MODE_RANDOM) randomPass((turn - place) / turns, order);
+  for (uint8_t step = 0; step < steps; step++) {
+    if ((int32_t)step * turns / steps != place) continue;
+    const bool lights = arp.mode == ARP_MODE_RANDOM
+        ? order[step] == par : groupAtStep(arp, step) == arpGroupOf(arp, par);
+    if (lights) return true;
+  }
+  return false;
 }
 
 bool lastTurnOf(const Arp &arp, int32_t turn, uint8_t par, int32_t &lit) {
@@ -97,13 +113,14 @@ bool lastTurnOf(const Arp &arp, int32_t turn, uint8_t par, int32_t &lit) {
 }
 
 float rippleDelay(const Arp &arp, uint8_t par) {
-  if (arp.mode == ARP_MODE_RANDOM) return unitHash(par, 0, RIPPLE_SALT);
+  const float reach = fabsf(arp.spread);
+  if (arp.mode == ARP_MODE_RANDOM) return reach * unitHash(par, 0, RIPPLE_SALT);
   const Arp flowing = { arp.mode == ARP_MODE_BOUNCE ? (uint8_t)ARP_MODE_SEQUENCE : arp.mode,
-                        arp.reverse };
+                        arp.spread };
   const uint8_t count = arpGroupCount(flowing);
   uint8_t group = arpGroupOf(flowing, par);
-  if (flowing.reverse && hasDirection(flowing.mode)) group = count - 1 - group;
-  return (float)group / (float)count;
+  if (reversed(flowing)) group = (uint8_t)(count - 1 - group);
+  return reach * (float)group / (float)count;
 }
 
 }
