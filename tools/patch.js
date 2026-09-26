@@ -338,7 +338,7 @@
   };
 
   const HUE_LAYOUT_NAMES = {
-    across: 'across', evensOdds: 'evens / odds', pairs: 'pairs', mirror: 'mirror',
+    gradient: 'gradient', evensOdds: 'evens / odds', pairs: 'pairs', mirror: 'mirror',
     random: 'random per pulse',
   };
 

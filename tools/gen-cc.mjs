@@ -224,7 +224,7 @@ ${constantLines}
   const hueLayout = value => steppedIndex(value, HUE_LAYOUT_COUNT);
   const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
 
-  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.off
+  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
     : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
   const routeTarget = destination => {
     if (destination < ARP_DESTINATION_BASE) return destination;
@@ -233,7 +233,7 @@ ${constantLines}
   };
   const routeDestination = (target, arp) => {
     const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
-    if (arp === ARP.off || index < 0) return target;
+    if (arp === ARP.unison || index < 0) return target;
     return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.turns);
   };
 

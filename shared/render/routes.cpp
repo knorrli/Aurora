@@ -173,7 +173,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
 
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
-    if (aurora_route_arp(aimedAt) != ARP_OFF) continue;
+    if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
     if (routeRefused(destination)) continue;
 

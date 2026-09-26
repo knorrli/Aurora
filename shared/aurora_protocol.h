@@ -177,7 +177,7 @@ static inline uint8_t aurora_route_ratio(uint8_t value) {
 }
 
 enum AuroraArp : uint8_t {
-    ARP_OFF    = 0,
+    ARP_UNISON = 0,
     ARP_TURNS  = 1,
     ARP_RIPPLE = 2,
 };
@@ -191,7 +191,7 @@ static const uint8_t AURORA_ARP_CONTROL_COUNT =
     sizeof(AURORA_ARP_CONTROLS) / sizeof(AURORA_ARP_CONTROLS[0]);
 
 static inline uint8_t aurora_route_arp(uint8_t destination) {
-    if (destination < AURORA_ARP_DESTINATION_BASE) return ARP_OFF;
+    if (destination < AURORA_ARP_DESTINATION_BASE) return ARP_UNISON;
     return (uint8_t)(ARP_TURNS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
 }
 
@@ -202,7 +202,7 @@ static inline uint8_t aurora_route_target(uint8_t destination) {
 }
 
 static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp) {
-    if (arp == ARP_OFF) return target;
+    if (arp == ARP_UNISON) return target;
     for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
         if (AURORA_ARP_CONTROLS[index] != target) continue;
         return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_TURNS));
@@ -228,7 +228,7 @@ static inline uint8_t aurora_arp_mode(uint8_t value) {
 }
 
 enum AuroraHueLayout : uint8_t {
-    HUE_LAYOUT_ACROSS     = 0,
+    HUE_LAYOUT_GRADIENT   = 0,
     HUE_LAYOUT_EVENS_ODDS = 1,
     HUE_LAYOUT_PAIRS      = 2,
     HUE_LAYOUT_MIRROR     = 3,

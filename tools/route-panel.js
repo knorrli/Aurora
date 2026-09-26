@@ -187,7 +187,7 @@
     const control = Patch.CONTROLS[name];
     if (!control) return `CC ${destination}`;
     const arp = Object.keys(Protocol.ARP).find(key => Protocol.ARP[key] === Protocol.routeArp(destination));
-    return `${Patch.PLACES[name]} · ${control.label}` + (arp === 'off' ? '' : ` · ${arp}`);
+    return `${Patch.PLACES[name]} · ${control.label}` + (arp === 'unison' ? '' : ` · ${arp}`);
   }
 
   function paintList(live) {

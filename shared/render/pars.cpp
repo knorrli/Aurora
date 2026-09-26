@@ -27,7 +27,7 @@ static bool readArpRoute(const uint8_t *dialed, uint8_t route, ArpRoute &out) {
   out.route = route;
   out.arp = aurora_route_arp(aimedAt);
   out.target = aurora_route_target(aimedAt);
-  if (out.arp == ARP_OFF || !out.target) return false;
+  if (out.arp == ARP_UNISON || !out.target) return false;
   out.amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
   if (fabsf(out.amount) < 0.001f) return false;
   out.ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);

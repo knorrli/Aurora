@@ -87,10 +87,10 @@
   const SWITCH_ON_AT = 64;
   const THREE_WAY_STARTS = [0,43,86];
   const THREE_WAY_VALUES = [0,64,127];
-  const ARP = {"off":0,"turns":1,"ripple":2};
+  const ARP = {"unison":0,"turns":1,"ripple":2};
   const ARP_MODE = {"together":0,"sequence":1,"bounce":2,"evensOdds":3,"pairs":4,"mirror":5,"random":6};
   const ARP_MODE_COUNT = 7;
-  const HUE_LAYOUT = {"across":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
+  const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
   const HUE_LAYOUT_COUNT = 5;
   const ARP_DESTINATION_BASE = 120;
   const ARP_CONTROLS = ["parHueOffset","parSaturation","parValue"];
@@ -141,7 +141,7 @@
   const hueLayout = value => steppedIndex(value, HUE_LAYOUT_COUNT);
   const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
 
-  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.off
+  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
     : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
   const routeTarget = destination => {
     if (destination < ARP_DESTINATION_BASE) return destination;
@@ -150,7 +150,7 @@
   };
   const routeDestination = (target, arp) => {
     const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
-    if (arp === ARP.off || index < 0) return target;
+    if (arp === ARP.unison || index < 0) return target;
     return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.turns);
   };
 
