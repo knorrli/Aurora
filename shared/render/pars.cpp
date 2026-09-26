@@ -46,11 +46,15 @@ static bool lastPulseOf(const ArpRoute &route, const Arp &arp, float lfo, uint8_
 }
 
 static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par) {
-  Pulse pulse;
-  if (!lastPulseOf(route, arp, lfo, par, pulse)) return 0.0f;
-  const float into = (turnsAt(route, lfo) - pulse.start) / pulse.length;
-  if (into >= 1.0f) return 0.0f;
-  return lfoWave(into - waveRise(route.wave), route.wave);
+  const float turns = turnsAt(route, lfo);
+  Pulse pulses[LIVE_PULSES];
+  const uint8_t count = livePulses(arp, route.arp == ARP_RIPPLE, turns, par, pulses);
+  float level = 0.0f;
+  for (uint8_t i = 0; i < count; i++) {
+    const float into = (turns - pulses[i].start) / pulses[i].length;
+    level = fmaxf(level, lfoWave(into - waveRise(route.wave), route.wave));
+  }
+  return level;
 }
 
 static void pushArpRoutes(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t par,
@@ -106,6 +110,16 @@ static void parPushes(const uint8_t *dialed, const Pushes &pushes, const Arp &ar
                       uint8_t par, Pushes &out) {
   out = pushes;
   pushArpRoutes(dialed, arp, lfo, par, out);
+}
+
+bool firstArpPass(const uint8_t *dialed, const Pushes &pushes, float lfo, ArpPass &out) {
+  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+    ArpRoute arpRoute;
+    if (!readArpRoute(dialed, route, arpRoute)) continue;
+    passAt(readArp(dialed, &pushes), arpRoute.arp == ARP_RIPPLE, turnsAt(arpRoute, lfo), out);
+    return true;
+  }
+  return false;
 }
 
 uint8_t routedAtPar(const uint8_t *dialed, const Pushes &pushes, float lfo, uint8_t cc,

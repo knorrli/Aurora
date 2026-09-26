@@ -31,6 +31,20 @@
       });
     }
 
+    const PASS_MARKS = renderer._aurora_arp_pass_marks();
+
+    function readArpPass() {
+      const at = renderer._aurora_arp_pass();
+      if (!at) return null;
+      const floats = renderer.HEAPF32.subarray(at >> 2, (at >> 2) + 4 + PASS_MARKS);
+      const count = renderer.HEAPU8[at + 12];
+      const parsAt = at + 4 * (4 + PASS_MARKS);
+      return {
+        turns: floats[0], at: floats[1], length: floats[2],
+        marks: Array.from({ length: count }, (_, i) => ({ start: floats[4 + i], par: renderer.HEAPU8[parsAt + i] })),
+      };
+    }
+
     function readFan() {
       const after = STRIPS + CURVE_POINTS;
       const stepsPerStrip = (CURVE_POINTS - 1) / (STRIPS - 1);
@@ -78,7 +92,7 @@
       render(bytes, quarterNotes, motion, wallState) {
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_render(motion, wallState, quarterNotes);
-        return { pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend) };
+        return { pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass() };
       },
       draw,
     });
@@ -144,6 +158,53 @@
 
     if (showOverlays && frame.fan) drawFan(context, frame.fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (showOverlays && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (showOverlays && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
+  }
+
+  function drawArpPass(context, pass, pars, width, top, bandHeight) {
+    const left = width * 0.04;
+    const span = width * 0.92;
+    const rowHeight = bandHeight * 0.5 / pars;
+    const first = top + bandHeight * 0.3;
+    const xAt = turns => left + span * turns / pass.turns;
+
+    context.save();
+    context.fillStyle = 'rgba(10,11,14,0.55)';
+    context.fillRect(left - 4, first - 4, span + 8, rowHeight * pars + 8);
+    context.beginPath();
+    context.rect(left, first - 4, span, rowHeight * pars + 8);
+    context.clip();
+
+    for (const { start, par } of pass.marks) {
+      const y = first + par * rowHeight;
+      const tail = context.createLinearGradient(xAt(start), 0, xAt(start + pass.length), 0);
+      tail.addColorStop(0, 'rgba(150,215,255,0.4)');
+      tail.addColorStop(1, 'rgba(150,215,255,0)');
+      context.fillStyle = tail;
+      context.fillRect(xAt(start), y + 1, xAt(start + pass.length) - xAt(start), rowHeight - 2);
+      context.save();
+      context.translate(-span, 0);
+      context.fillRect(xAt(start), y + 1, xAt(start + pass.length) - xAt(start), rowHeight - 2);
+      context.restore();
+      context.fillStyle = 'rgba(150,215,255,0.95)';
+      context.fillRect(xAt(start) - 1, y, 2.5, rowHeight - 1);
+    }
+
+    const cursor = xAt(pass.at);
+    context.strokeStyle = 'rgba(232,168,90,0.9)';
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(cursor, first - 3);
+    context.lineTo(cursor, first + rowHeight * pars + 3);
+    context.stroke();
+
+    context.restore();
+    context.save();
+    context.fillStyle = 'rgba(150,215,255,0.75)';
+    context.font = '10px ui-monospace, monospace';
+    const turns = Math.round(pass.turns * 100) / 100;
+    context.fillText(`${turns} ${turns === 1 ? 'turn' : 'turns'} a pass`, left, first - 7);
+    context.restore();
   }
 
   function drawFan(context, fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT) {

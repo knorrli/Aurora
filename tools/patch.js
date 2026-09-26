@@ -352,11 +352,11 @@
         control('parValue', 'Value', 'the PARs’ master, independent of the strips'),
       ]],
       ['Hue across them', [
-        control('parHueRange', 'Hue range', 'a band of hue either side of Hue offset. Plus puts the first group at the low end, minus at the high end'),
         control('parHueLayout', 'Hue layout', 'how the band is laid across the PARs: groups from one end to the other, or a new hue from anywhere in it every time a PAR’s turn comes',
           { kind: 'steps', step: Protocol.hueLayout,
             options: Object.entries(Protocol.HUE_LAYOUT)
               .map(([key, layout]) => [Protocol.hueLayoutValue(layout), HUE_LAYOUT_NAMES[key]]) }),
+        control('parHueRange', 'Hue range', 'a band of hue either side of Hue offset. Plus puts the first group at the low end, minus at the high end'),
       ]],
       ['Arpeggiator', [
         control('arpMode', 'Mode', 'how the PARs are grouped, and the order the groups take their turns in',

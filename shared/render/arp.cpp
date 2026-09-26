@@ -134,8 +134,59 @@ static bool lastRipple(const Arp &arp, float turns, uint8_t par, Pulse &out) {
   return found;
 }
 
+uint8_t livePulses(const Arp &arp, bool ripple, float turns, uint8_t par, Pulse *out) {
+  if (!ripple) {
+    Pulse pulse;
+    if (!lastTurn(arp, turns, par, pulse) || turns - pulse.start >= 1.0f) return 0;
+    out[0] = pulse;
+    return 1;
+  }
+  const uint8_t steps = passLength(arp);
+  const float apart = fabsf(arp.spread);
+  const int32_t pass = (int32_t)floorf(turns / (float)steps);
+  uint8_t count = 0;
+  for (int32_t which = pass; which >= pass - 1; which--) {
+    uint8_t order[PARS];
+    if (arp.mode == ARP_MODE_RANDOM) randomPass(which, order);
+    for (uint8_t step = 0; step < steps && count < LIVE_PULSES; step++) {
+      if (!stepLights(arp, order, step, par)) continue;
+      const float start = (float)(which * steps) + (float)step * apart;
+      if (start > turns || turns - start >= (float)steps) continue;
+      out[count++] = { start, (float)steps, (uint32_t)(which * steps + step) };
+    }
+  }
+  return count;
+}
+
 bool lastPulse(const Arp &arp, bool ripple, float turns, uint8_t par, Pulse &out) {
   return ripple ? lastRipple(arp, turns, par, out) : lastTurn(arp, turns, par, out);
+}
+
+static void mark(ArpPass &out, float start, uint8_t par) {
+  if (out.count >= PASS_MARKS) return;
+  out.starts[out.count] = start;
+  out.pars[out.count] = par;
+  out.count++;
+}
+
+void passAt(const Arp &arp, bool ripple, float turns, ArpPass &out) {
+  const uint8_t steps = passLength(arp);
+  const int32_t length = ripple ? steps : turnsPerPass(arp);
+  const int32_t pass = (int32_t)floorf(turns / (float)length);
+  out.turns = (float)length;
+  out.at = turns - (float)(pass * length);
+  out.length = ripple ? (float)steps : 1.0f;
+  out.count = 0;
+
+  uint8_t order[PARS];
+  if (arp.mode == ARP_MODE_RANDOM) randomPass(pass, order);
+  for (uint8_t step = 0; step < steps; step++) {
+    const float start = ripple ? (float)step * fabsf(arp.spread)
+                               : (float)((int32_t)step * length / steps);
+    for (uint8_t par = 0; par < PARS; par++) {
+      if (stepLights(arp, order, step, par)) mark(out, start, par);
+    }
+  }
 }
 
 }

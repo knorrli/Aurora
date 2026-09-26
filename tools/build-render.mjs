@@ -22,7 +22,7 @@ const EXPORTS = [
   'aurora_render', 'aurora_palette_count', 'aurora_palette_name', 'aurora_palette_color', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats',
   'aurora_control_at_strip', 'aurora_control_at_par', 'aurora_route_reach', 'aurora_route_refused',
-  'aurora_wave_mean',
+  'aurora_wave_mean', 'aurora_arp_pass', 'aurora_arp_pass_marks',
 ];
 
 const FLAGS = [

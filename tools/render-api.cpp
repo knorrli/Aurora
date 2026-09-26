@@ -9,11 +9,16 @@
 static uint8_t controls[AURORA_PATCH_CC_COUNT];
 static render::Frame frame;
 static float reach[2];
+static render::ArpPass arpPass;
 
 static_assert(offsetof(render::FanReading, curve) == sizeof(float) * render::STRIPS, "");
 static_assert(offsetof(render::FanReading, turns)
                   == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS), "");
 static_assert(sizeof(render::Par) == 4, "");
+static_assert(offsetof(render::ArpPass, count) == sizeof(float) * 3, "");
+static_assert(offsetof(render::ArpPass, starts) == sizeof(float) * 4, "");
+static_assert(offsetof(render::ArpPass, pars)
+                  == sizeof(float) * (4 + render::PASS_MARKS), "");
 static_assert(sizeof(render::FanReading)
                   == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS + 6), "");
 
@@ -83,6 +88,15 @@ EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.lfo, pushes);
   return render::routedAtPar(controls, pushes, frame.lfo, (uint8_t)cc, (uint8_t)par);
 }
+
+EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
+  render::Pushes pushes;
+  const float beatsPerCycle = render::dialedValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.lfo, pushes);
+  return render::firstArpPass(controls, pushes, frame.lfo, arpPass) ? &arpPass : nullptr;
+}
+
+EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_marks() { return render::PASS_MARKS; }
 
 EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave) {
   return render::waveMean((uint8_t)wave);

@@ -39,8 +39,8 @@ enum AuroraCC : uint8_t {
     CC_PAR_HUE_OFFSET        = 24, // [patch][circular][plain]
     CC_PAR_SATURATION        = 25, // [patch][plain]
     CC_PAR_VALUE             = 26, // [patch][plain]
-    CC_PAR_HUE_RANGE         = 27, // [patch][plain]
-    CC_PAR_HUE_LAYOUT        = 28, // [switch]
+    CC_PAR_HUE_LAYOUT        = 27, // [switch]
+    CC_PAR_HUE_RANGE         = 28, // [patch][plain]
 
     CC_ARP_MODE              = 29, // [switch]
     CC_ARP_SPREAD            = 30, // [patch][plain]
