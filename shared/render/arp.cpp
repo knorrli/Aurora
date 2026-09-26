@@ -10,7 +10,6 @@
 namespace render {
 
 static const uint8_t SHUFFLE_SALT = 71;
-static const uint8_t RIPPLE_SALT = 113;
 
 Arp readArp(const uint8_t *dialed, const Pushes *pushes) {
   return { aurora_arp_mode(dialed[CC_ARP_MODE]),
@@ -87,7 +86,12 @@ static uint8_t groupAtStep(const Arp &arp, uint8_t step) {
   return reversed(arp) ? (uint8_t)(arpGroupCount(arp) - 1 - group) : group;
 }
 
-bool arpTurnLights(const Arp &arp, int32_t turn, uint8_t par) {
+static bool stepLights(const Arp &arp, const uint8_t *order, uint8_t step, uint8_t par) {
+  return arp.mode == ARP_MODE_RANDOM ? order[step] == par
+                                     : groupAtStep(arp, step) == arpGroupOf(arp, par);
+}
+
+static bool turnLights(const Arp &arp, int32_t turn, uint8_t par) {
   const uint8_t steps = passLength(arp);
   const int32_t turns = turnsPerPass(arp);
   const int32_t place = wrapped(turn, turns);
@@ -95,32 +99,43 @@ bool arpTurnLights(const Arp &arp, int32_t turn, uint8_t par) {
   if (arp.mode == ARP_MODE_RANDOM) randomPass((turn - place) / turns, order);
   for (uint8_t step = 0; step < steps; step++) {
     if ((int32_t)step * turns / steps != place) continue;
-    const bool lights = arp.mode == ARP_MODE_RANDOM
-        ? order[step] == par : groupAtStep(arp, step) == arpGroupOf(arp, par);
-    if (lights) return true;
+    if (stepLights(arp, order, step, par)) return true;
   }
   return false;
 }
 
-bool lastTurnOf(const Arp &arp, int32_t turn, uint8_t par, int32_t &lit) {
+static bool lastTurn(const Arp &arp, float turns, uint8_t par, Pulse &out) {
+  const int32_t turn = (int32_t)floorf(turns);
   const int32_t reach = 2 * (int32_t)passLength(arp);
   for (int32_t back = 0; back < reach; back++) {
-    if (!arpTurnLights(arp, turn - back, par)) continue;
-    lit = turn - back;
+    if (!turnLights(arp, turn - back, par)) continue;
+    out = { (float)(turn - back), 1.0f, (uint32_t)(turn - back) };
     return true;
   }
   return false;
 }
 
-float rippleDelay(const Arp &arp, uint8_t par) {
-  const float reach = fabsf(arp.spread);
-  if (arp.mode == ARP_MODE_RANDOM) return reach * unitHash(par, 0, RIPPLE_SALT);
-  const Arp flowing = { arp.mode == ARP_MODE_BOUNCE ? (uint8_t)ARP_MODE_SEQUENCE : arp.mode,
-                        arp.spread };
-  const uint8_t count = arpGroupCount(flowing);
-  uint8_t group = arpGroupOf(flowing, par);
-  if (reversed(flowing)) group = (uint8_t)(count - 1 - group);
-  return reach * (float)group / (float)count;
+static bool lastRipple(const Arp &arp, float turns, uint8_t par, Pulse &out) {
+  const uint8_t steps = passLength(arp);
+  const float apart = fabsf(arp.spread);
+  const int32_t pass = (int32_t)floorf(turns / (float)steps);
+  bool found = false;
+  for (int32_t which = pass; which >= pass - 1; which--) {
+    uint8_t order[PARS];
+    if (arp.mode == ARP_MODE_RANDOM) randomPass(which, order);
+    for (uint8_t step = 0; step < steps; step++) {
+      if (!stepLights(arp, order, step, par)) continue;
+      const float start = (float)(which * steps) + (float)step * apart;
+      if (start > turns || (found && start <= out.start)) continue;
+      out = { start, (float)steps, (uint32_t)(which * steps + step) };
+      found = true;
+    }
+  }
+  return found;
+}
+
+bool lastPulse(const Arp &arp, bool ripple, float turns, uint8_t par, Pulse &out) {
+  return ripple ? lastRipple(arp, turns, par, out) : lastTurn(arp, turns, par, out);
 }
 
 }

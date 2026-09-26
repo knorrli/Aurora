@@ -74,4 +74,5 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 ## Editor
 
+- Overlay the arp's pass under the PARs: a tick where each PAR fires, a cursor sweeping across.
 - Use it at the bench: is driving a morph's CCs at frame rate too much USB traffic?

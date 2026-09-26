@@ -17,10 +17,12 @@ uint8_t arpGroupCount(const Arp &arp);
 
 uint8_t arpGroupOf(const Arp &arp, uint8_t par);
 
-bool arpTurnLights(const Arp &arp, int32_t turn, uint8_t par);
+struct Pulse {
+  float start;
+  float length;
+  uint32_t id;
+};
 
-bool lastTurnOf(const Arp &arp, int32_t turn, uint8_t par, int32_t &lit);
-
-float rippleDelay(const Arp &arp, uint8_t par);
+bool lastPulse(const Arp &arp, bool ripple, float turns, uint8_t par, Pulse &out);
 
 }

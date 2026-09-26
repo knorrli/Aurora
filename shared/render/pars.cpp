@@ -40,13 +40,17 @@ static float turnsAt(const ArpRoute &route, float lfo) {
   return lfo * (float)route.ratio - route.delay;
 }
 
-static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par) {
-  const float turns = turnsAt(route, lfo);
-  if (route.arp == ARP_RIPPLE) return lfoWave(turns - rippleDelay(arp, par), route.wave);
+static bool lastPulseOf(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par,
+                        Pulse &pulse) {
+  return lastPulse(arp, route.arp == ARP_RIPPLE, turnsAt(route, lfo), par, pulse);
+}
 
-  const float turn = floorf(turns);
-  if (!arpTurnLights(arp, (int32_t)turn, par)) return 0.0f;
-  return lfoWave(turns - turn - waveRise(route.wave), route.wave);
+static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par) {
+  Pulse pulse;
+  if (!lastPulseOf(route, arp, lfo, par, pulse)) return 0.0f;
+  const float into = (turnsAt(route, lfo) - pulse.start) / pulse.length;
+  if (into >= 1.0f) return 0.0f;
+  return lfoWave(into - waveRise(route.wave), route.wave);
 }
 
 static void pushArpRoutes(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t par,
@@ -64,14 +68,15 @@ static float drawnHue(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t 
   uint32_t seed = 0;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     ArpRoute arpRoute;
-    if (!readArpRoute(dialed, route, arpRoute) || arpRoute.arp != ARP_TURNS) continue;
-    int32_t lit;
-    if (!lastTurnOf(arp, (int32_t)floorf(turnsAt(arpRoute, lfo)), par, lit)) continue;
-    const float litAt = ((float)lit + arpRoute.delay) / (float)arpRoute.ratio;
+    Pulse pulse;
+    if (!readArpRoute(dialed, route, arpRoute) || !lastPulseOf(arpRoute, arp, lfo, par, pulse)) {
+      continue;
+    }
+    const float litAt = (pulse.start + arpRoute.delay) / (float)arpRoute.ratio;
     if (drawn && litAt <= latest) continue;
     drawn = true;
     latest = litAt;
-    seed = (uint32_t)lit * AURORA_ROUTES + route;
+    seed = pulse.id * AURORA_ROUTES + route;
   }
   const float draw = drawn ? unitHash(seed, par, HUE_DRAW_SALT)
                            : unitHash((uint32_t)(int32_t)floorf(lfo), par, CYCLE_DRAW_SALT);

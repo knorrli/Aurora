@@ -119,6 +119,7 @@
 - Should Flow or Scatter be route sources? That costs a byte per route and a rule for where on the wall to sample.
 - Should each route choose the plain or fanned LFO, rather than its destination deciding?
 - Do the PARs want a palette of their own?
+- Should Spread have a stepped form that flips whole at a threshold when a route moves it, rather than squeezing turns through the middle?
 - Do the PARs want different speeds, for an oscillation that looks random? Decide once ripple in random mode has been seen on the wall.
 - Does Bend want a curve other than the cosine?
 - When the two spare CCs (78, 79) run out: NRPN or a second MIDI channel?
