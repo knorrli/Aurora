@@ -166,7 +166,7 @@
 
     parValue: value => ofByte(real('parValue', value)),
     parHueOffset: value => '+' + real('parHueOffset', value) + ' of 255',
-    parSaturation: value => ofByte(real('parSaturation', value)) + ' of theirs',
+    parSaturation: value => ofByte(real('parSaturation', value)),
     arpSpread: value => {
       const spread = real('arpSpread', value);
       return Math.abs(spread) < 0.005 ? 'together' : `${percent(Math.abs(spread))} ${spread < 0 ? 'reverse' : 'forward'}`;
@@ -348,7 +348,7 @@
       ['Color', [
         control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue, as routes move it. Zero matches them',
           { swatch: live => hueSwatch(live, real('hue', live.hue) + real('parHueOffset', live.parHueOffset)) }),
-        control('parSaturation', 'Saturation', 'scales the PARs down from the strips’ saturation. Full matches them, zero is white'),
+        control('parSaturation', 'Saturation', 'independent of the strips. Zero is white'),
         control('parValue', 'Value', 'the PARs’ master, independent of the strips'),
       ]],
       ['Hue across them', [

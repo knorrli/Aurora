@@ -131,7 +131,6 @@ uint8_t routedAtPar(const uint8_t *dialed, const Pushes &pushes, float lfo, uint
 
 void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out) {
   const Arp arp = readArp(dialed, &pushes);
-  const Hsv dialedStrips = dialedColor(dialed);
   const uint8_t stripsHue = routedColor(dialed, &pushes).h;
 
   Pushes atPar;
@@ -141,9 +140,8 @@ void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out
     const float place = bandPlace(dialed, arp, lfo, par, at(CC_PAR_HUE_RANGE));
     out.parHuePlaces[par] = place;
     const int32_t hue = (int32_t)stripsHue + (int32_t)at(CC_PAR_HUE_OFFSET) + (int32_t)lroundf(place);
-    const uint8_t saturation = scale8(dialedStrips.s, (uint8_t)at(CC_PAR_SATURATION));
-    out.pars[par] = { paletteColor(dialed[CC_PALETTE], (uint8_t)(hue & 255), saturation),
-                      scale8(dialedStrips.v, (uint8_t)at(CC_PAR_VALUE)) };
+    out.pars[par] = { paletteColor(dialed[CC_PALETTE], (uint8_t)(hue & 255), (uint8_t)at(CC_PAR_SATURATION)),
+                      (uint8_t)at(CC_PAR_VALUE) };
   }
 }
 
