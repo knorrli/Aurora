@@ -23,7 +23,6 @@
 
 Seen only in the preview so far. One look each, driven from the editor.
 
-- Flash the brain; if the wall ignores a sender, check it is on MIDI channel 1.
 - Time a frame at eight samples per pixel; if well past 7–8 ms, go back to four.
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
 - PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a turns strobe over each of those, random per pulse on turns.
@@ -32,11 +31,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Swipe Position with a build wave: climbs, snaps back on the bar, tail drops at the snap. Try Bend on it.
-- Bounce on and off at count 1 and with the fan up: every shape stands still across the flip.
 - The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize (wants a seed?).
 - Frequency fader at the top, sweep the phase: does the fan going quiet read as a fault?
-- Field region count wound up in the vertical direction with a hard edge: washes out, does not strobe.
-- V fader under a scattered look: white pixels dim with the colored ones.
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Light Dark earn its place?
 - Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
 - Morph between patches of different tempo divisions: does the jump read as a glitch?
