@@ -76,10 +76,11 @@ A 5 V WS2812 needs about 3.5 V for a high. Unshifted 3.3 V data gives random spe
 
 ## Measured
 
-- Frame: 7–8 ms, almost all FastLED pushing 225 pixels. Firmware is well under a tenth of flash.
+- Frame: 7.05 ms (142 per second), set by FastLED pushing 225 pixels. The next frame renders while the last is still on the wire, so rendering is free until it passes 7 ms. Firmware is well under a tenth of flash.
+- Render at 8 samples per pixel: about 1 ms with Field and Scatter off, about 2.5 ms with every layer on (worst seen 2.6 ms).
 - PAR flash: clean down to 25 ms on / off, no visible latency against the strips. At 12 ms it no longer returns to black. Build against 25 ms.
 - USB MIDI clock at 140 BPM: no lost ticks, under 1 ms jitter, triplets exact. `sendmidi clock` bursts and doubles ticks; use a DAW to test timing.
-- Pixel sampling: point-sampling aliases (strobes) once a shape is a pixel or two wide. A shape a third of a pixel wide sliding slowly swings total brightness 50 % at 4 samples per pixel, 34 % at 8. Cost of 8 samples not yet timed on the Teensy.
+- Pixel sampling: point-sampling aliases (strobes) once a shape is a pixel or two wide. A shape a third of a pixel wide sliding slowly swings total brightness 50 % at 4 samples per pixel, 34 % at 8.
 - Low brightness: converting HSV at low value shifts hue (dim yellow goes red). Convert at full value and scale the RGB with `nscale8_video`.
 - Near black, 8-bit channels step unevenly: a pixel whose hue moves at under about 2 % brightness jitters between colors. Single-channel colors (pure red) never show it.
 - A smooth brightness gradient is nearly invisible at any depth, even 50:1; the same depth with a hard edge is obvious. Saturation changes read far more than equal brightness changes.

@@ -23,7 +23,6 @@
 
 Seen only in the preview so far. One look each, driven from the editor.
 
-- Time a frame at eight samples per pixel; if well past 7–8 ms, go back to four.
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
 - PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a turns strobe over each of those, random per pulse on turns.
 - Arp modes on turns, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
