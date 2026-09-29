@@ -8,6 +8,7 @@
 namespace render {
 
 static const float MAX_SPEED_PIXELS_PER_BEAT = 60.0f;
+static const uint8_t MAX_COUNT = 20;
 
 struct Shape {
   float width;
@@ -58,7 +59,7 @@ struct Light {
 
 struct Scatter {
   float rate;
-  uint8_t count;
+  float count;
   float width;
   float edge;
   float randomize;

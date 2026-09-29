@@ -33,7 +33,8 @@ struct Motion {
   Clock flow = {};
   Clock field = {};
   Clock scatter = {};
-  Clock scatterSpread[STRIPS] = {};
+  float scatterSpread[STRIPS] = {};
+  float lastScatterBeats = 0.0f;
   float lastLfoBeats = 0.0f;
 };
 

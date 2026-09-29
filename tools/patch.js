@@ -124,14 +124,11 @@
     lfoRate: value => shortPeriodName(real('lfoRate', value)),
 
     scatterRate: value => 'every ' + beatsPer(real('scatterRate', value)) + ' beats',
-    scatterCount: value => {
-      const count = real('scatterCount', value);
-      return count + ' × ' + (preview().PIXELS / count).toFixed(1) + ' px';
-    },
-    scatterWidth: value => percent(real('scatterWidth', value)) + ' of a cell',
+    scatterCount: value => real('scatterCount', value).toFixed(1) + ' spots',
+    scatterWidth: value => percent(real('scatterWidth', value)) + ' of the spacing',
     scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
     scatterRandomize: value => percent(real('scatterRandomize', value)) + ' scrambled',
-    scatterSlide: value => signed(real('scatterSlide', value)) + ' of a cell',
+    scatterSlide: value => signed(real('scatterSlide', value)) + ' of the spacing',
     scatterSpread: value => percent(real('scatterSpread', value)) + ' random',
     scatterValue: value => signed(real('scatterValue', value)),
     scatterHue: hueReach('scatterHue'),
@@ -260,13 +257,13 @@
     {
       name: 'Scatter', tone: 'scatter',
       source: [
-        control('scatterCount', 'Count', 'cells along a strip. The same unit as the shape’s Count'),
-        control('scatterWidth', 'Width', 'the spot’s core on both axes at once: how much of its cell it covers, and how much of its cycle it is lit'),
+        control('scatterCount', 'Count', 'how many spots each strip has, 1–20. They sit in fixed places; a higher count lights more of them'),
+        control('scatterWidth', 'Width', 'the spot’s core on both axes at once: how much of the spacing between spots it covers, and how much of its cycle it is lit'),
         control('scatterEdge', 'Edge', 'hard through to a fade — in space and in time alike'),
-        control('scatterRate', 'Rate', 'how often a cell relights'),
-        control('scatterRandomize', 'Randomize', 'zero puts every cell on one clock and the whole wall flashes as one; full scatters their phases and rates'),
-        control('scatterSpread', 'Spread', 'where a spot lands each time its cell relights: 0 is the middle of the cell, full anywhere in it'),
-        control('scatterSlide', 'Slide', 'how far a spot slides across its own cell over its life; plus is up the strip, minus down'),
+        control('scatterRate', 'Rate', 'how often a spot relights'),
+        control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall flashes as one; full scatters their phases and rates'),
+        control('scatterSpread', 'Spread', 'how far a spot lands from its place each time it relights: 0 is right on it'),
+        control('scatterSlide', 'Slide', 'how far a spot slides over its life; plus is up the strip, minus down'),
       ],
       amounts: [
         control('scatterHue', 'Hue', 'how far the hue departs where a spot is'),

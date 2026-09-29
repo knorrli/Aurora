@@ -15,7 +15,16 @@ bool scatterActive(const Reading &reading);
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
               float drift);
 
-float scatterAt(const Scatter &scatter, uint8_t stripIndex, float alongPixels, float time, float spreadTime);
+struct ScatterSpots {
+  uint8_t count;
+  float reach;
+  float centers[MAX_COUNT];
+  float levels[MAX_COUNT];
+};
+
+void placeScatter(const Scatter &scatter, uint8_t stripIndex, float time, float spreadTime,
+                  ScatterSpots &out);
+float scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels);
 
 Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,
            float shape, float scatter, bool flowOn, float flowTime);

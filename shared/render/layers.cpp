@@ -64,27 +64,63 @@ float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float s
   return field.form == FIELD_FORM_ALL_BUT_REGION ? 1.0f - bump : bump;
 }
 
-float scatterAt(const Scatter &scatter, uint8_t stripIndex, float alongPixels, float time, float spreadTime) {
-  const float cellAt = (alongPixels / (float)PIXELS) * (float)scatter.count;
-  const uint8_t cell = (uint8_t)cellAt;
-  const float u = cellAt - (float)cell;
+static const float PLACE_JITTER = 0.7f;
 
-  const float rateSpread = (float)hash8(stripIndex, cell, 17) / 255.0f - 0.5f;
-  const float phaseOffset = (float)hash8(stripIndex, cell, 43) / 255.0f;
-  const float clock = time + rateSpread * spreadTime + scatter.randomize * phaseOffset;
-  const float age = fract(clock);
+static uint8_t placeRank(uint8_t stripIndex, uint8_t place) {
+  static uint8_t ranks[STRIPS][MAX_COUNT];
+  static bool ranked = false;
+  if (!ranked) {
+    for (uint8_t strip = 0; strip < STRIPS; strip++) {
+      for (uint8_t k = 0; k < MAX_COUNT; k++) {
+        const uint8_t order = hash8(strip, k, 7);
+        uint8_t rank = 0;
+        for (uint8_t j = 0; j < MAX_COUNT; j++) {
+          const uint8_t other = hash8(strip, j, 7);
+          if (other < order || (other == order && j < k)) rank++;
+        }
+        ranks[strip][k] = rank;
+      }
+    }
+    ranked = true;
+  }
+  return ranks[stripIndex][place];
+}
 
-  const float alive = bumpAt(age - 0.5f, scatter.width, scatter.edge);
-  if (alive <= 0.0001f) return 0.0f;
+void placeScatter(const Scatter &scatter, uint8_t stripIndex, float time, float spreadTime,
+                  ScatterSpots &out) {
+  out.count = 0;
+  out.reach = (float)PIXELS / scatter.count;
+  for (uint8_t place = 0; place < MAX_COUNT; place++) {
+    const float lit = clampUnit(scatter.count - (float)placeRank(stripIndex, place));
+    if (lit <= 0.0f) continue;
 
-  const uint32_t life = (uint32_t)(int32_t)floorf(clock);
-  const float room = 0.5f - 0.5f * scatter.width;
-  const float landing = (room > 0.0f)
-      ? scatter.spread * room
-            * ((float)hash8(stripIndex, cell * 131u + life, 61) / 255.0f * 2.0f - 1.0f)
-      : 0.0f;
-  const float center = 0.5f + landing + scatter.slide * (age - 0.5f);
-  return alive * bumpAt(u - center, scatter.width, scatter.edge);
+    const float rateSpread = (float)hash8(stripIndex, place, 17) / 255.0f - 0.5f;
+    const float phaseOffset = (float)hash8(stripIndex, place, 43) / 255.0f;
+    const float clock = time + rateSpread * spreadTime + scatter.randomize * phaseOffset;
+    const float age = fract(clock);
+    const float alive = bumpAt(age - 0.5f, scatter.width, scatter.edge);
+    if (alive <= 0.0001f) continue;
+
+    const uint32_t life = (uint32_t)(int32_t)floorf(clock);
+    if (lit < 1.0f && (float)hash8(stripIndex, place * 131u + life, 97) >= lit * 256.0f) continue;
+    const float jitter = ((float)hash8(stripIndex, place, 29) / 255.0f - 0.5f) * PLACE_JITTER;
+    const float home = ((float)place + 0.5f + jitter) / (float)MAX_COUNT * (float)PIXELS;
+    const float landing = scatter.spread * out.reach
+        * ((float)hash8(stripIndex, place * 131u + life, 61) / 255.0f * 2.0f - 1.0f);
+    out.centers[out.count] = home + landing + scatter.slide * out.reach * (age - 0.5f);
+    out.levels[out.count] = alive;
+    out.count++;
+  }
+}
+
+float scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels) {
+  float level = 0.0f;
+  for (uint8_t i = 0; i < spots.count; i++) {
+    const float offset = (alongPixels - spots.centers[i]) / spots.reach;
+    if (fabsf(offset) >= 0.5f) continue;
+    level = fmaxf(level, spots.levels[i] * bumpAt(offset, scatter.width, scatter.edge));
+  }
+  return level;
 }
 
 static float valueLeftAfterDark(float dark) { return powf(DARK_FLOOR, dark); }

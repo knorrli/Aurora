@@ -43,6 +43,7 @@ struct StripContext {
   float fieldDrift;
   float scatterTime;
   float scatterSpreadTime;
+  ScatterSpots scatterSpots;
   StripTravel travel;
   float center;
   float tailCenter;
@@ -230,9 +231,8 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
                             clampUnit(sample.across), strip.fieldDrift);
     }
     if (layers.scatterOn) {
-      scatterTotal += scatterAt(reading.scatter, strip.index,
-                                (float)pixelIndex + 0.5f + acrossPixel, strip.scatterTime,
-                                strip.scatterSpreadTime);
+      scatterTotal += scatterAt(reading.scatter, strip.scatterSpots,
+                                (float)pixelIndex + 0.5f + acrossPixel);
     }
   }
 
@@ -297,14 +297,18 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   context.flowTime = clockPhase(motion.flow, context.beats, context.plain.flow.cyclesPerBeat);
   context.fieldDrift = clockPhase(motion.field, context.beats, context.plain.field.cellsPerBeat);
   context.scatterTime = clockPhase(motion.scatter, context.beats, context.plain.scatter.rate);
+  const float scatterElapsed = context.beats - motion.lastScatterBeats;
+  motion.lastScatterBeats = context.beats;
 
   for (uint8_t index = 0; index < STRIPS; index++) {
     StripContext strip;
     readStrip(context, index, pushes, strip, out);
     const float randomize = strip.reading.scatter.randomize;
     strip.scatterSpreadTime =
-        clockPhase(motion.scatterSpread[index], context.beats, context.plain.scatter.rate * randomize)
+        pulledSpread(motion.scatterSpread[index], scatterElapsed, context.plain.scatter.rate, randomize)
         + pushes.shift[CC_SCATTER_RATE] * randomize;
+    placeScatter(strip.reading.scatter, index, strip.scatterTime, strip.scatterSpreadTime,
+                 strip.scatterSpots);
     strip.center = travelCenter(motion.travel[index], motion.swing[index], wall.anchors[index],
                                 context.travel, strip.travel);
     TailHistory &history = wall.tails.strips[index];

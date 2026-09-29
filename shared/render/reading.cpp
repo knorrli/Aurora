@@ -4,7 +4,6 @@
 
 namespace render {
 
-static const uint8_t MAX_COUNT = 20;
 static const float STILL_PIXELS_PER_BEAT = 0.05f;
 
 static const float FAN_FREQUENCY_STEPS = 16.0f;
@@ -28,6 +27,10 @@ float bipolarOf(uint8_t value) {
 
 static inline uint8_t byteOf(uint8_t value) {
   return (uint8_t)(((uint16_t)value * 255 + 63) / 127);
+}
+
+static float smoothCountOf(uint8_t value) {
+  return powf((float)MAX_COUNT, unitOf(value));
 }
 
 static uint8_t countOf(uint8_t value) {
@@ -65,8 +68,8 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_PAR_HUE_RANGE: return bipolarOf(value) * 128.0f;
 
     case CC_SHAPE_COUNT:
-    case CC_FIELD_COUNT:
-    case CC_SCATTER_COUNT: return countOf(value);
+    case CC_FIELD_COUNT: return countOf(value);
+    case CC_SCATTER_COUNT: return smoothCountOf(value);
 
     case CC_SHAPE_BEND:
     case CC_ARP_SPREAD: return bipolarOf(value);
@@ -169,7 +172,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
 
   Scatter &scatter = out.scatter;
   scatter.rate = at(CC_SCATTER_RATE);
-  scatter.count = (uint8_t)at(CC_SCATTER_COUNT);
+  scatter.count = at(CC_SCATTER_COUNT);
   scatter.width = at(CC_SCATTER_WIDTH);
   scatter.edge = at(CC_SCATTER_EDGE);
   scatter.randomize = at(CC_SCATTER_RANDOMIZE);
