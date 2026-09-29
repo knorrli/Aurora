@@ -46,7 +46,7 @@
 - CC 19 reads 127 while the key the last Program Change named is down, and 0 on release.
 - Every keypad effect lands on a beat. A press is snapped to the nearest beat, not the next; tap versus hold is judged a short fixed time after that beat.
 - Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`.
-- A morph interpolates the raw CC bytes, all together, linearly.
+- A morph interpolates the raw CC bytes, all together, linearly. Circular controls (hue, PAR hue offset, fan phase) take the short way around.
 - Switches (and route destinations) never interpolate. The destination patch's land on the release, not on arrival.
 - During an accent the source patch's switches are still in force.
 - A route whose destination differs between two patches holds whole (destination, amount, ratio, wave, phase) and lands with the switches.
@@ -62,7 +62,7 @@
 - A fader never arrives: it never moves a switch, whatever its position.
 - A fader's position is its push. A patch change does not reset it: the new patch arrives pushed by wherever the faders sit. The controller sends every fader's position when it starts.
 - A patch and its targets share switches.
-- Several targets at once add: each contributes its fader position times the distance from the patch to that target, and the sum is clamped per byte. The brain matches the editor's rule.
+- Several targets at once add: each contributes its fader position times the distance from the patch to that target, and the sum is clamped per byte; a circular control takes the short way and wraps. The brain matches the editor's rule.
 - Faders move energy; the keypad moves character. Mid-song lifts are fader moves; sideways changes at the same energy are patch changes.
 
 ## Blackout
@@ -108,6 +108,7 @@
 ### Generator
 
 - Does the morph need per-parameter timing rather than every parameter in lockstep?
+- A count moving mid-morph or on a fader re-cuts every cell, so the scatter flickers and shapes jump. How does a count change smoothly?
 - Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
 - Should the jump when tempo division changes at the end of a morph carry position across instead?
 - What would a second Field sum to with the first?

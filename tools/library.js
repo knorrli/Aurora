@@ -7,6 +7,18 @@
 
   const byteOf = (bytes, name) => bytes[Patch.CC[name]] | 0;
 
+  const TURN = 128;
+
+  function distance(name, from, to) {
+    if (!Patch.isCircular(name)) return to - from;
+    return ((to - from + TURN * 1.5) % TURN) - TURN / 2;
+  }
+
+  function settle(name, value) {
+    const rounded = Math.round(value);
+    return Patch.isCircular(name) ? ((rounded % TURN) + TURN) % TURN : Patch.clampToSevenBits(rounded);
+  }
+
   function bytesFromNamed(named) {
     const bytes = new Array(Protocol.PATCH_CC_COUNT).fill(0);
     for (const name of Patch.NAMES) {
@@ -76,8 +88,8 @@
     const switches = switchesFrom || fromBytes;
     const named = {};
     for (const name of Patch.CONTINUOUS) {
-      const from = byteOf(fromBytes, name), to = byteOf(toBytes, name);
-      named[name] = Math.round(from + (to - from) * position);
+      const from = byteOf(fromBytes, name);
+      named[name] = settle(name, from + distance(name, from, byteOf(toBytes, name)) * position);
     }
     return holdRoutesChangingDestination(switchesInto(named, switches), switches, toBytes);
   }
@@ -89,9 +101,9 @@
       let value = from;
       for (const [part, position] of positions) {
         const over = patch.overrides[part];
-        if (position && over && over[name] !== undefined) value += position * (over[name] - from);
+        if (position && over && over[name] !== undefined) value += position * distance(name, from, over[name]);
       }
-      named[name] = Patch.clampToSevenBits(Math.round(value));
+      named[name] = settle(name, value);
     }
     return switchesInto(named, patch.base);
   }
