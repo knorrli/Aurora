@@ -34,11 +34,10 @@
   }
 
   function snap() {
-    if (!session.previewing()) return;
+    if (session.transition.position === session.restPosition()) return;
     stop();
-    session.resetPreview();
+    session.resetTransition();
     showPosition();
-    paintMix();
     Editor.refresh();
   }
 

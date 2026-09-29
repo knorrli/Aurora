@@ -109,7 +109,6 @@
     (session.transition.to === null ? null : patchAt(session.transition.to));
   const transitioning = () =>
     !isTarget() && !!transitionDestination() && session.transition.position > 0;
-  const previewing = () => session.transition.position !== restPosition() || mixing();
 
   function liveNamed() {
     const current = patch();
@@ -235,8 +234,12 @@
     resetPreview();
   }
 
-  function resetPreview() {
+  function resetTransition() {
     session.transition.position = restPosition();
+  }
+
+  function resetPreview() {
+    resetTransition();
     for (const part of Object.keys(session.mix)) session.mix[part] = 0;
   }
 
@@ -249,10 +252,10 @@
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
     patch, patchAt, isTarget, overrides, editing, heldAt,
-    restPosition, mixing, transitionDestination, transitioning, previewing,
+    restPosition, mixing, transitionDestination, transitioning,
     liveNamed, targetNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    freeRoute, addRoute, setRouteArp, select, selectPart, resetPreview, forgetMissingPatches,
+    freeRoute, addRoute, setRouteArp, select, selectPart, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });
