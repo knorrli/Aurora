@@ -214,28 +214,53 @@
   }
 
   function drawCenters(context, centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
-    const { STRIPS, PIXELS } = api;
+    const { PIXELS } = api;
+    const SEAM_PIXELS = 0.5;
     const xAt = column => columnWidth * (column + 1);
     const yAt = pixel => WALL_TOP + (flipped ? pixel : PIXELS - pixel) * WALL_HEIGHT / PIXELS;
-    const points = order.map((strip, column) => [xAt(column), yAt(centers[strip])]);
+    const nearest = (pixels, to) =>
+      pixels.reduce((best, pixel) => (Math.abs(pixel - to) < Math.abs(best - to) ? pixel : best));
+
+    const onWall = pixel => pixel >= -SEAM_PIXELS && pixel <= PIXELS + SEAM_PIXELS;
+    const chainFrom = first => order.reduce((chain, strip, column) => {
+      const center = centers[strip];
+      const pixel = column === 0 ? first : nearest([center - PIXELS, center, center + PIXELS], chain[column - 1].pixel);
+      return [...chain, { x: xAt(column), pixel }];
+    }, []);
+    const firstCenter = centers[order[0]];
+    const points = [firstCenter, firstCenter + PIXELS, firstCenter - PIXELS]
+      .map(chainFrom)
+      .reduce((best, chain) =>
+        (chain.filter(point => onWall(point.pixel)).length > best.filter(point => onWall(point.pixel)).length ? chain : best));
 
     context.save();
+    context.beginPath();
+    context.rect(0, WALL_TOP, xAt(order.length), WALL_HEIGHT);
+    context.clip();
     context.strokeStyle = 'rgba(255,255,255,0.7)';
     context.lineWidth = 1.5;
     context.beginPath();
-    points.forEach(([x, y], column) => { if (column === 0) context.moveTo(x, y); else context.lineTo(x, y); });
+    points.forEach(({ x, pixel }, column) => {
+      if (column === 0) context.moveTo(x, yAt(pixel)); else context.lineTo(x, yAt(pixel));
+    });
     context.stroke();
+    context.restore();
 
-    for (const [x, y] of points) {
-      context.strokeStyle = 'rgba(10,11,14,0.9)';
-      context.lineWidth = 4;
-      context.beginPath();
-      context.moveTo(x - stripWidth * 0.75, y);
-      context.lineTo(x + stripWidth * 0.75, y);
-      context.stroke();
-      context.strokeStyle = 'rgba(255,255,255,0.95)';
-      context.lineWidth = 2;
-      context.stroke();
+    context.save();
+    for (const { x, pixel } of points) {
+      for (const seen of [pixel - PIXELS, pixel, pixel + PIXELS]) {
+        if (!onWall(seen)) continue;
+        const y = yAt(Math.min(PIXELS, Math.max(0, seen)));
+        context.strokeStyle = 'rgba(10,11,14,0.9)';
+        context.lineWidth = 4;
+        context.beginPath();
+        context.moveTo(x - stripWidth * 0.75, y);
+        context.lineTo(x + stripWidth * 0.75, y);
+        context.stroke();
+        context.strokeStyle = 'rgba(255,255,255,0.95)';
+        context.lineWidth = 2;
+        context.stroke();
+      }
     }
     context.restore();
   }
