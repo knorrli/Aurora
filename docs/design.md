@@ -108,6 +108,7 @@
 ### Generator
 
 - Does the morph need per-parameter timing rather than every parameter in lockstep?
+- Should a layer that shows nothing at one end of a morph take the other end's values at once, switches included, so its counts and switches never step where they can be seen? Visible switches keep landing on the release. Later, perhaps a per-patch choice of landing visible switches on the press instead. Try it in the editor's morph first.
 - A count moving mid-morph or on a fader re-cuts every cell, so the scatter flickers and shapes jump. How does a count change smoothly?
 - Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
 - Should the jump when tempo division changes at the end of a morph carry position across instead?

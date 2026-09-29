@@ -13,6 +13,50 @@ static bool pushesColor(float hue, float white, float dark) {
   return fabsf(hue) > 0.5f || fabsf(white) > 0.001f || fabsf(dark) > 0.001f;
 }
 
+uint8_t layerOf(uint8_t cc) {
+  if (cc >= CC_SHAPE_COUNT && cc <= CC_SHAPE_BEND_AT) return LAYER_SHAPE;
+  if (cc >= CC_LIGHT_HUE && cc <= CC_LIGHT_DARK) return LAYER_SHAPE;
+  if (cc >= CC_SCATTER_COUNT && cc <= CC_SCATTER_VALUE) return LAYER_SCATTER;
+  if (cc >= CC_FIELD_FORM && cc <= CC_FIELD_DARK) return LAYER_FIELD;
+  if (cc >= CC_FLOW_DENSITY && cc <= CC_FLOW_DARK) return LAYER_FLOW;
+  return 0;
+}
+
+bool showsLayer(uint8_t cc) {
+  switch (cc) {
+    case CC_SHAPE_WIDTH:
+    case CC_SHAPE_EDGE:
+    case CC_SCATTER_HUE:
+    case CC_SCATTER_WHITE:
+    case CC_SCATTER_VALUE:
+    case CC_FIELD_HUE:
+    case CC_FIELD_WHITE:
+    case CC_FIELD_DARK:
+    case CC_FLOW_HUE:
+    case CC_FLOW_WHITE:
+    case CC_FLOW_DARK:
+      return true;
+    default:
+      return false;
+  }
+}
+
+uint8_t hiddenLayers(const uint8_t *dialed) {
+  Reading reading;
+  readControls(dialed, nullptr, reading);
+  uint8_t hidden = 0;
+  if (reading.shape.width <= 0.0001f && reading.shape.edge <= 0.0001f) hidden |= LAYER_SHAPE;
+  if (!fieldActive(reading)) hidden |= LAYER_FIELD;
+  if (!flowActive(reading)) hidden |= LAYER_FLOW;
+  if (!scatterActive(reading)) hidden |= LAYER_SCATTER;
+  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+    const uint8_t target = aurora_route_target(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]);
+    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    if (fabsf(amount) > 0.001f && showsLayer(target)) hidden &= (uint8_t)~layerOf(target);
+  }
+  return hidden;
+}
+
 bool fieldActive(const Reading &reading) {
   return pushesColor(reading.field.hue, reading.field.white, reading.field.dark);
 }

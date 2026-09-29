@@ -84,14 +84,37 @@
     return named;
   }
 
+  function unseenLayers(fromBytes, toBytes) {
+    const preview = global.AuroraPreview;
+    if (!preview.hiddenLayers) return { appearing: 0, vanishing: 0, layerOf: () => 0, shows: () => true };
+    const hiddenFrom = preview.hiddenLayers(fromBytes);
+    const hiddenTo = preview.hiddenLayers(toBytes);
+    return {
+      appearing: hiddenFrom & ~hiddenTo,
+      vanishing: hiddenTo & ~hiddenFrom,
+      layerOf: name => preview.layerOf(Patch.CC[name]),
+      shows: name => preview.showsLayer(Patch.CC[name]),
+    };
+  }
+
   function blend(fromBytes, toBytes, position, switchesFrom) {
     const switches = switchesFrom || fromBytes;
+    const unseen = unseenLayers(fromBytes, toBytes);
     const named = {};
     for (const name of Patch.CONTINUOUS) {
-      const from = byteOf(fromBytes, name);
-      named[name] = settle(name, from + distance(name, from, byteOf(toBytes, name)) * position);
+      const from = byteOf(fromBytes, name), to = byteOf(toBytes, name);
+      const layer = unseen.shows(name) ? 0 : unseen.layerOf(name);
+      if (layer & unseen.appearing) named[name] = to;
+      else if ((layer & unseen.vanishing) && position < 1) named[name] = from;
+      else named[name] = settle(name, from + distance(name, from, to) * position);
     }
-    return holdRoutesChangingDestination(switchesInto(named, switches), switches, toBytes);
+    switchesInto(named, switches);
+    if (switches === fromBytes) {
+      for (const name of Patch.NAMES) {
+        if (Patch.isSwitch(name) && (unseen.layerOf(name) & unseen.appearing)) named[name] = byteOf(toBytes, name);
+      }
+    }
+    return holdRoutesChangingDestination(named, switches, toBytes);
   }
 
   function mix(patch, positions) {

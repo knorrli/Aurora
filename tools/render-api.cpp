@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include <emscripten/emscripten.h>
+#include <layers.h>
 #include <palettes.h>
 #include <pars.h>
 #include <render.h>
@@ -104,6 +105,12 @@ EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave) {
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }
+
+EMSCRIPTEN_KEEPALIVE int aurora_layer_of(int cc) { return render::layerOf((uint8_t)cc); }
+
+EMSCRIPTEN_KEEPALIVE int aurora_shows_layer(int cc) { return render::showsLayer((uint8_t)cc); }
+
+EMSCRIPTEN_KEEPALIVE int aurora_hidden_layers() { return render::hiddenLayers(controls); }
 
 EMSCRIPTEN_KEEPALIVE float *aurora_route_reach(int cc) {
   int16_t low, high;

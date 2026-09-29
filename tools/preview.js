@@ -92,6 +92,12 @@
       parHuePlaces: () => Array.from(huePlaces),
       controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
       routeRefused: cc => !!renderer._aurora_route_refused(cc),
+      layerOf: cc => renderer._aurora_layer_of(cc),
+      showsLayer: cc => !!renderer._aurora_shows_layer(cc),
+      hiddenLayers(bytes) {
+        renderer.HEAPU8.set(bytes, controls);
+        return renderer._aurora_hidden_layers();
+      },
       routeReach(cc) {
         const at = renderer._aurora_route_reach(cc);
         return at ? [renderer.HEAPF32[at >> 2], renderer.HEAPF32[(at >> 2) + 1]] : null;
