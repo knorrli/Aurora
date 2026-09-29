@@ -300,6 +300,8 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
     TailHistory &history = wall.tails.strips[index];
     strip.tailCenter =
         recordTail(history, context.tail, strip.center, placementOf(context, strip));
+    out.centers[index] = pixelOfCells(context.bend, shape.bounce, fract(strip.center),
+                                      context.cellLength, shape.count);
     drawStrip(context, strip, history, out.pixels + index * PIXELS);
   }
 

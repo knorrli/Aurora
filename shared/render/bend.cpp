@@ -54,6 +54,15 @@ static float unbend(const BendTable &table, float along) {
   return table.inverse[i] + t * (table.inverse[i + 1] - table.inverse[i]);
 }
 
+static float bendAlong(const BendTable &table, float time) {
+  const float wanted = clampUnit(time);
+  uint8_t i = 0;
+  while (i < BEND_STEPS - 1 && table.inverse[i + 1] < wanted) i++;
+  const float span = table.inverse[i + 1] - table.inverse[i];
+  const float t = (span > 0.0f) ? (wanted - table.inverse[i]) / span : 0.0f;
+  return ((float)i + clampUnit(t)) / (float)BEND_STEPS;
+}
+
 static float cellAt(float cells, uint8_t count) {
   const float cell = floorf(cells);
   if (cell < 0.0f) return 0.0f;
@@ -67,6 +76,13 @@ float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLeng
   if (!perCell) return (float)count * unbend(*bend, pixel / (float)PIXELS);
   const float cell = cellAt(cells, count);
   return cell + unbend(*bend, cells - cell);
+}
+
+float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, uint8_t count) {
+  if (!bend) return cells * cellLength;
+  if (!perCell) return (float)PIXELS * bendAlong(*bend, cells / (float)count);
+  const float cell = cellAt(cells, count);
+  return (cell + bendAlong(*bend, cells - cell)) * cellLength;
 }
 
 void readBend(const BendTable *bend, bool perCell, float cellLength, uint8_t count, float *out) {

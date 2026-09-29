@@ -10,6 +10,8 @@ const BendTable *bendFor(float amount, float at);
 
 float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength, uint8_t count);
 
+float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, uint8_t count);
+
 void readBend(const BendTable *bend, bool perCell, float cellLength, uint8_t count, float *out);
 
 }

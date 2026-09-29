@@ -70,3 +70,4 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 ## Editor
 
 - Use it at the bench: is driving a morph's CCs at frame rate too much USB traffic?
+- Match the colors of the wall's overlays to the controls they show.

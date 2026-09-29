@@ -11,8 +11,29 @@
   const BEAT_FLASH = 0.15;
 
   const walls = {};
-  const view = { flipped: false, overlays: true, order: null };
+  const OVERLAYS = ['centers', 'fan', 'bend', 'arp'];
+  const STORE_OVERLAYS = 'aurora.editor.overlays';
+
+  const view = { flipped: false, overlays: readOverlays(), order: null };
   const beats = { position: 0, lastFrameAt: 0, dots: [] };
+
+  function readOverlays() {
+    let stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem(STORE_OVERLAYS));
+    } catch {
+      stored = null;
+    }
+    return Object.fromEntries(OVERLAYS.map(name => [name, stored?.[name] ?? true]));
+  }
+
+  function writeOverlays() {
+    try {
+      localStorage.setItem(STORE_OVERLAYS, JSON.stringify(view.overlays));
+    } catch {
+      return;
+    }
+  }
 
   function makeWall(id, width, height) {
     const canvas = byId(id);
@@ -49,7 +70,7 @@
     const frame = Preview.render(Library.bytesFromNamed(session.sounding(named)), beats.position,
                                  wall.motion, wall.wallState);
     Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height,
-                 view.overlays && wall === walls.main);
+                 wall === walls.main ? view.overlays : {});
   }
 
   function paintBeats() {
@@ -92,11 +113,15 @@
     byId('wallOrder').value = Preview.WALL_STRIP_ORDER.join(',');
     byId('wallOrder').addEventListener('input', readOrder);
     readOrder();
-    byId('wallOverlays').classList.toggle('on', view.overlays);
-    byId('wallOverlays').addEventListener('click', () => {
-      view.overlays = !view.overlays;
-      byId('wallOverlays').classList.toggle('on', view.overlays);
-    });
+    for (const button of document.querySelectorAll('#wallOverlays button')) {
+      const name = button.dataset.overlay;
+      button.classList.toggle('on', view.overlays[name]);
+      button.addEventListener('click', () => {
+        view.overlays[name] = !view.overlays[name];
+        button.classList.toggle('on', view.overlays[name]);
+        writeOverlays();
+      });
+    }
     byId('wallFlip').addEventListener('click', () => {
       view.flipped = !view.flipped;
       byId('wallFlip').textContent = view.flipped ? 'pixel 0 at top' : 'pixel 0 at bottom';

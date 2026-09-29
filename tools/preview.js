@@ -23,6 +23,8 @@
     const fan = renderer.HEAPF32.subarray(fanAt, fanAt + STRIPS + CURVE_POINTS + 6);
     const bendAt = renderer._aurora_bend() >> 2;
     const bend = renderer.HEAPF32.subarray(bendAt, bendAt + renderer._aurora_bend_points());
+    const centersAt = renderer._aurora_centers() >> 2;
+    const centers = renderer.HEAPF32.subarray(centersAt, centersAt + STRIPS);
 
     function seenPars() {
       return Array.from({ length: PARS }, (_, par) => {
@@ -92,14 +94,17 @@
       render(bytes, quarterNotes, motion, wallState) {
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_render(motion, wallState, quarterNotes);
-        return { pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass() };
+        return {
+          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(),
+          centers: Array.from(centers),
+        };
       },
       draw,
     });
     return api;
   }
 
-  function draw(context, glow, frame, order, flipped, width, height, showOverlays) {
+  function draw(context, glow, frame, order, flipped, width, height, overlays) {
     const { STRIPS, PIXELS } = api;
     const PAR_BAND = height * 0.2;
     const WALL_TOP = height * 0.025;
@@ -156,9 +161,10 @@
     context.lineTo(width, height - PAR_BAND);
     context.stroke();
 
-    if (showOverlays && frame.fan) drawFan(context, frame.fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
-    if (showOverlays && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
-    if (showOverlays && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
+    if (overlays.fan && frame.fan) drawFan(context, frame.fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.bend && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
+    if (overlays.centers) drawCenters(context, frame.centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
 
   function drawArpPass(context, pass, pars, width, top, bandHeight) {
@@ -204,6 +210,33 @@
     context.font = '10px ui-monospace, monospace';
     const turns = Math.round(pass.turns * 100) / 100;
     context.fillText(`${turns} ${turns === 1 ? 'turn' : 'turns'} a pass`, left, first - 7);
+    context.restore();
+  }
+
+  function drawCenters(context, centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+    const { STRIPS, PIXELS } = api;
+    const xAt = column => columnWidth * (column + 1);
+    const yAt = pixel => WALL_TOP + (flipped ? pixel : PIXELS - pixel) * WALL_HEIGHT / PIXELS;
+    const points = order.map((strip, column) => [xAt(column), yAt(centers[strip])]);
+
+    context.save();
+    context.strokeStyle = 'rgba(255,255,255,0.7)';
+    context.lineWidth = 1.5;
+    context.beginPath();
+    points.forEach(([x, y], column) => { if (column === 0) context.moveTo(x, y); else context.lineTo(x, y); });
+    context.stroke();
+
+    for (const [x, y] of points) {
+      context.strokeStyle = 'rgba(10,11,14,0.9)';
+      context.lineWidth = 4;
+      context.beginPath();
+      context.moveTo(x - stripWidth * 0.75, y);
+      context.lineTo(x + stripWidth * 0.75, y);
+      context.stroke();
+      context.strokeStyle = 'rgba(255,255,255,0.95)';
+      context.lineWidth = 2;
+      context.stroke();
+    }
     context.restore();
   }
 
