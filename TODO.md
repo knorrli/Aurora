@@ -8,7 +8,7 @@
 - Socket both Teensys rather than soldering them down.
 - Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`).
 - Build the foot pedal.
-- When the keypad is off the box: confirm the idle code and what produces `0b00111111` and `0b00111101`.
+- When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
 - Press two keys at once on the old box and watch the wall: does 2+3 black it out?
 - Buy real 110 Ω DMX cable for stage.
 
@@ -23,6 +23,7 @@
 
 Seen only in the preview so far. One look each, driven from the editor.
 
+- Reflash the brain first: it runs an uncommitted frame-timing build, so the wall lags the preview.
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
 - PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a turns strobe over each of those, random per pulse on turns.
 - Arp modes on turns, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
@@ -69,4 +70,13 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 ## Editor
 
 - Use it at the bench: is driving a morph's CCs at frame rate too much USB traffic?
-- Match the colors of the wall's overlays to the controls they show.
+- Overlays: match their colors to the controls they show; add ones for the fan controls and scatter spread.
+- Mark the center on the Position slider.
+- Morph-target bar order: base, color, motion, extent, accent.
+- Toggling wrap / bounce seems to reset the morph target's mix faders. Reproduce first.
+- Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
+- Let a morph target set a "from the patch" switch by writing it into the base patch: setting arp mode while routing PAR hue range on the accent should not need a trip to base. Failing that, show the selected option clearly while it is disabled.
+- A morph target's copy from / move onto / swap with offer too many choices. Drop the ones that go unused, or find a plainer way to shift overrides between targets.
+- Every control's readout and tooltip: does it tell a patch designer something? Fan Frequency: why 32 is the default, what "turns" means, what the track's segments are; its tooltip describes a different control.
+- Rebuild starting-point looks on routes, the LFO and the scatter. The old tables (shapes, fan looks, swing looks, color looks) are in `git show 21a435c:tools/patch.js`.
+- Patch management: a scrolling list does not work for 128 patches, and the keypad spends a lot of room on switches that only hold patch mappings.

@@ -134,8 +134,6 @@ Ten keys (no `*` / `#` — those are blank inlays). Each key presents a fixed 5-
 | 11001 | 9 |
 | 10011 | 0 |
 
-- Meter the lines before rewiring: confirm D8 is common and the contacts are passive.
-
 ### Box pixels
 
 One WS2812 chain inside the box, driven ahead of the strips in v1: index 0 right indicator, 1–10 touchpad grid (5 columns × 2 rows), 11 left indicator. On a 3.3 V Teensy it needs its own 74AHCT125.
