@@ -128,6 +128,10 @@
     scatterWidth: value => (value === 0 ? '1 px' : percent(real('scatterWidth', value)) + ' of the gap'),
     scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
     scatterRandomize: value => percent(real('scatterRandomize', value)) + ' scrambled',
+    scatterSpeed: value => {
+      const speed = real('scatterSpeed', value);
+      return sign(speed) + Math.abs(speed).toFixed(1) + ' px/beat';
+    },
     scatterPosition: value => signed(real('scatterPosition', value)) + ' of the gap',
     scatterValue: value => signed(real('scatterValue', value)),
     scatterHue: hueReach('scatterHue'),
@@ -261,6 +265,7 @@
         control('scatterEdge', 'Edge', 'hard through to a fade at the spot’s sides'),
         control('scatterRate', 'Rate', 'how often a spot lands somewhere new. A route onto Width, Position, Hue, White or Value runs once per spot on this clock'),
         control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall moves as one; full scatters their phases and rates'),
+        control('scatterSpeed', 'Speed', 'center is still; either side moves each spot from where it landed, steadily up or down the strip'),
         control('scatterPosition', 'Position', 'how far a spot sits from where it landed, against the gap between spots; plus is up the strip. Route a saw here to slide it'),
       ],
       amounts: [

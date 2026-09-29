@@ -189,7 +189,8 @@ void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute
     if (fabsf(value) <= 0.001f && fabsf(hue) <= 0.5f && white <= 0.001f) continue;
 
     const float landing = (float)hash8(stripIndex, place * 131u + life, 61) / 255.0f * (float)PIXELS;
-    out.centers[out.count] = landing + control(CC_SCATTER_POSITION) * out.reach;
+    const float beatsSinceLanding = (fabsf(scatter.rate) > 0.0001f) ? fract(clock) / fabsf(scatter.rate) : 0.0f;
+    out.centers[out.count] = landing + scatter.speed * beatsSinceLanding + control(CC_SCATTER_POSITION) * out.reach;
     out.widths[out.count] = fmaxf(control(CC_SCATTER_WIDTH), 1.0f / out.reach);
     out.values[out.count] = value;
     out.hues[out.count] = hue;

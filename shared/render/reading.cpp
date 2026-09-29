@@ -78,6 +78,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FAN_SPREAD:
     case CC_FAN_LFO: return bipolarOf(value) * 0.5f;
     case CC_SHAPE_SPEED:
+    case CC_SCATTER_SPEED:
     case CC_FAN_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
     case CC_FAN_FREQUENCY: return fanFrequencyOf(value);
     case CC_FAN_PHASE: return (float)value / 128.0f;
@@ -175,6 +176,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   scatter.width = at(CC_SCATTER_WIDTH);
   scatter.edge = at(CC_SCATTER_EDGE);
   scatter.randomize = at(CC_SCATTER_RANDOMIZE);
+  scatter.speed = at(CC_SCATTER_SPEED);
   scatter.value = at(CC_SCATTER_VALUE);
   scatter.hue = at(CC_SCATTER_HUE);
   scatter.white = at(CC_SCATTER_WHITE);
