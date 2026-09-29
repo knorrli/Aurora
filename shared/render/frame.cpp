@@ -32,6 +32,8 @@ struct FrameContext {
   float flowTime;
   float fieldDrift;
   float scatterTime;
+  SpotRoute spotRoutes[AURORA_ROUTES];
+  uint8_t spotRouteCount;
   float stripSpeeds[STRIPS];
 };
 
@@ -217,7 +219,7 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
   const Shape &plain = context.plain.shape;
   float shapeTotal = 0.0f;
   float fieldTotal = 0.0f;
-  float scatterTotal = 0.0f;
+  ScatterSample scatterTotal = { 0.0f, 0.0f, 0.0f };
   for (uint8_t sampleIndex = 0; sampleIndex < SAMPLES_PER_PIXEL; sampleIndex++) {
     const float acrossPixel = ((float)sampleIndex + 0.5f) / (float)SAMPLES_PER_PIXEL - 0.5f;
     const float cells = bentCells(context.bend, plain.bounce,
@@ -231,17 +233,24 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
                             clampUnit(sample.across), strip.fieldDrift);
     }
     if (layers.scatterOn) {
-      scatterTotal += scatterAt(reading.scatter, strip.scatterSpots,
-                                (float)pixelIndex + 0.5f + acrossPixel);
+      const ScatterSample spot = scatterAt(reading.scatter, strip.scatterSpots,
+                                           (float)pixelIndex + 0.5f + acrossPixel);
+      scatterTotal.value += spot.value;
+      scatterTotal.hue += spot.hue;
+      scatterTotal.white += spot.white;
     }
   }
 
   const float shape = shapeTotal / (float)SAMPLES_PER_PIXEL;
-  const float scatter = scatterTotal / (float)SAMPLES_PER_PIXEL;
+  const ScatterSample scatter = {
+    scatterTotal.value / (float)SAMPLES_PER_PIXEL,
+    scatterTotal.hue / (float)SAMPLES_PER_PIXEL,
+    scatterTotal.white / (float)SAMPLES_PER_PIXEL,
+  };
 
   float intensity = shape;
   if (layers.scatterOn) {
-    intensity = pushToward(intensity, scatter * reading.scatter.value, 0.0f, 1.0f);
+    intensity = pushToward(intensity, scatter.value, 0.0f, 1.0f);
   }
   if (intensity <= DARKEST_DRAWN) return { 0, 0, 0 };
 
@@ -262,9 +271,10 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   PixelLayers layers;
   layers.fieldOn = fieldActive(reading);
   layers.flowOn = flowActive(reading);
-  layers.scatterOn = scatterActive(reading);
+  layers.scatterOn = scatterActive(reading, context.dialed);
   layers.flat =
-      !layers.fieldOn && !layers.flowOn && !lightActive(reading) && !scatterTints(reading);
+      !layers.fieldOn && !layers.flowOn && !lightActive(reading)
+      && !scatterTints(reading, context.dialed);
 
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
     pixels[pixelIndex] = drawPixel(context, strip, look, tail, layers, pixelIndex);
@@ -297,6 +307,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   context.flowTime = clockPhase(motion.flow, context.beats, context.plain.flow.cyclesPerBeat);
   context.fieldDrift = clockPhase(motion.field, context.beats, context.plain.field.cellsPerBeat);
   context.scatterTime = clockPhase(motion.scatter, context.beats, context.plain.scatter.rate);
+  context.spotRouteCount = gatherSpotRoutes(controls, context.spotRoutes);
   const float scatterElapsed = context.beats - motion.lastScatterBeats;
   motion.lastScatterBeats = context.beats;
 
@@ -308,7 +319,8 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
         pulledDrift(motion.scatterDrift[index], scatterElapsed, context.plain.scatter.rate, randomize)
         + pushes.shift[CC_SCATTER_RATE] * randomize;
     const ScatterClock scatterNow = { strip.scatterTime, strip.scatterDriftTime, randomize };
-    placeScatter(strip.reading.scatter, index, scatterNow, motion.lastScatter[index], strip.scatterSpots);
+    placeScatter(strip.reading.scatter, context.dialed, context.spotRoutes, context.spotRouteCount,
+                 index, scatterNow, motion.lastScatter[index], strip.scatterSpots);
     motion.lastScatter[index] = scatterNow;
     strip.center = travelCenter(motion.travel[index], motion.swing[index], wall.anchors[index],
                                 context.travel, strip.travel);

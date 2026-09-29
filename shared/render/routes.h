@@ -11,6 +11,20 @@ struct Pushes {
   float shift[AURORA_PATCH_CC_COUNT];
 };
 
+struct SpotRoute {
+  uint8_t cc;
+  float amount;
+  uint8_t ratio;
+  uint8_t wave;
+  float delay;
+};
+
+bool spotDestination(uint8_t cc);
+
+uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out);
+
+uint8_t landedByte(uint8_t cc, uint8_t base, float amount);
+
 void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
                   float stripPhase, Pushes &out);
 

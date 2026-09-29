@@ -88,6 +88,19 @@ static bool circular(uint8_t cc) {
   }
 }
 
+bool spotDestination(uint8_t cc) {
+  switch (cc) {
+    case CC_SCATTER_VALUE:
+    case CC_SCATTER_HUE:
+    case CC_SCATTER_WHITE:
+    case CC_SCATTER_WIDTH:
+    case CC_SCATTER_POSITION:
+      return true;
+    default:
+      return false;
+  }
+}
+
 static bool plainLfo(uint8_t cc) {
   switch (cc) {
     case CC_PAR_VALUE:
@@ -174,7 +187,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
     const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
-    if (routeRefused(destination)) continue;
+    if (routeRefused(destination) || spotDestination(destination)) continue;
 
     const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
@@ -208,6 +221,32 @@ static int16_t landing(uint8_t cc, uint8_t base, float amount) {
   const float limit = (amount >= 0.0f) ? 127.0f : 0.0f;
   const long reached = lroundf((float)base + fabsf(amount) * (limit - (float)base));
   return (int16_t)(reached < 0 ? 0 : (reached > 127 ? 127 : reached));
+}
+
+uint8_t landedByte(uint8_t cc, uint8_t base, float amount) {
+  if (amount > -0.001f && amount < 0.001f) return base;
+  const int16_t landed = landing(cc, base, amount);
+  return circular(cc) ? (uint8_t)((landed % 128 + 128) % 128) : (uint8_t)landed;
+}
+
+uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
+  uint8_t count = 0;
+  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+    const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
+    if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
+    const uint8_t destination = aurora_route_target(aimedAt);
+    if (!spotDestination(destination)) continue;
+    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    if (amount > -0.001f && amount < 0.001f) continue;
+    out[count++] = {
+      destination,
+      amount,
+      aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]),
+      dialed[aurora_route_cc(route, ROUTE_WAVE)],
+      (float)dialed[aurora_route_cc(route, ROUTE_PHASE)] / 128.0f,
+    };
+  }
+  return count;
 }
 
 uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {

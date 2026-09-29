@@ -71,8 +71,7 @@ enum AuroraCC : uint8_t {
     CC_SCATTER_EDGE          = 52, // [patch]
     CC_SCATTER_RATE          = 53, // [patch][rate]
     CC_SCATTER_RANDOMIZE     = 54, // [patch]
-    CC_SCATTER_GATE          = 55, // [patch]
-    CC_SCATTER_SLIDE         = 56, // [patch]
+    CC_SCATTER_POSITION      = 56, // [patch]
     CC_SCATTER_HUE           = 57, // [patch]
     CC_SCATTER_WHITE         = 58, // [patch]
     CC_SCATTER_VALUE         = 59, // [patch]
@@ -126,8 +125,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_SCATTER_EDGE,            40 },
     { CC_SCATTER_RATE,            60 },
     { CC_SCATTER_RANDOMIZE,      110 },
-    { CC_SCATTER_GATE,            34 },
-    { CC_SCATTER_SLIDE,           64 },
+    { CC_SCATTER_POSITION,        64 },
     { CC_SCATTER_HUE,             64 },
     { CC_SCATTER_VALUE,           64 },
     { CC_FIELD_DIRECTION,         64 },

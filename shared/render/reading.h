@@ -63,8 +63,6 @@ struct Scatter {
   float width;
   float edge;
   float randomize;
-  float slide;
-  float gate;
   float value;
   float hue;
   float white;

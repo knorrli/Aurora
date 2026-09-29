@@ -115,11 +115,10 @@
 - Should the jump when tempo division changes at the end of a morph carry position across instead?
 - What would a second Field sum to with the first?
 - Should a white patch get a push toward color, set by a switch from the patch's own saturation?
-- Should the scatter's Slide be a speed rather than a distance per pulse, so it no longer follows Rate?
 - Do scatter spots need a lifetime so they can travel past their cell (raindrops)? It costs eight to ten CCs.
 - Should Flow or Scatter be route sources? That costs a byte per route and a rule for where on the wall to sample.
 - Should each route choose the plain or fanned LFO, rather than its destination deciding?
 - Do the PARs want a palette of their own?
 - Should Spread have a stepped form that flips whole at a threshold when a route moves it, rather than squeezing turns through the middle?
 - Do the PARs want different speeds, for an oscillation that looks random? Decide once ripple in random mode has been seen on the wall.
-- When the two spare CCs (78, 79) run out: NRPN or a second MIDI channel?
+- When the spare CCs (55, 78, 79) run out: NRPN or a second MIDI channel?

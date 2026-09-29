@@ -29,8 +29,6 @@ static inline uint8_t byteOf(uint8_t value) {
   return (uint8_t)(((uint16_t)value * 255 + 63) / 127);
 }
 
-static const float SHORTEST_GATE = 0.05f;
-
 static float smoothCountOf(uint8_t value) {
   return powf((float)MAX_COUNT, unitOf(value));
 }
@@ -94,7 +92,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_SCATTER_RATE: return squaredUnit(value, SCATTER_MAX_CYCLES_PER_BEAT);
     case CC_SCATTER_HUE: return bipolarOf(value) * SCATTER_MAX_HUE;
 
-    case CC_SCATTER_SLIDE:
+    case CC_SCATTER_POSITION:
     case CC_SCATTER_VALUE: return bipolarOf(value);
 
     case CC_SHAPE_TAIL: return squaredUnit(value, (float)TAIL_MAX_BEATS);
@@ -114,7 +112,6 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_EDGE:
     case CC_SCATTER_RANDOMIZE: return unitOf(value);
-    case CC_SCATTER_GATE: return SHORTEST_GATE + (1.0f - SHORTEST_GATE) * unitOf(value);
 
     default: return (float)value;
   }
@@ -178,8 +175,6 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   scatter.width = at(CC_SCATTER_WIDTH);
   scatter.edge = at(CC_SCATTER_EDGE);
   scatter.randomize = at(CC_SCATTER_RANDOMIZE);
-  scatter.slide = at(CC_SCATTER_SLIDE);
-  scatter.gate = at(CC_SCATTER_GATE);
   scatter.value = at(CC_SCATTER_VALUE);
   scatter.hue = at(CC_SCATTER_HUE);
   scatter.white = at(CC_SCATTER_WHITE);
