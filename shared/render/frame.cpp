@@ -44,7 +44,6 @@ struct StripContext {
   float flowTime;
   float fieldDrift;
   float scatterTime;
-  float scatterDriftTime;
   ScatterSpots scatterSpots;
   StripTravel travel;
   float center;
@@ -308,19 +307,24 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   context.fieldDrift = clockPhase(motion.field, context.beats, context.plain.field.cellsPerBeat);
   context.scatterTime = clockPhase(motion.scatter, context.beats, context.plain.scatter.rate);
   context.spotRouteCount = gatherSpotRoutes(controls, context.spotRoutes);
-  const float scatterElapsed = context.beats - motion.lastScatterBeats;
+  float scatterElapsed = context.beats - motion.lastScatterBeats;
   motion.lastScatterBeats = context.beats;
+  if (scatterElapsed < 0.0f) {
+    for (auto &drifts : motion.spotDrift) {
+      for (float &drift : drifts) drift = 0.0f;
+    }
+    scatterElapsed = 0.0f;
+  }
+  const float scatterCycles = scatterElapsed * context.plain.scatter.rate;
 
   for (uint8_t index = 0; index < STRIPS; index++) {
     StripContext strip;
     readStrip(context, index, pushes, strip, out);
     const float randomize = strip.reading.scatter.randomize;
-    strip.scatterDriftTime =
-        pulledDrift(motion.scatterDrift[index], scatterElapsed, context.plain.scatter.rate, randomize)
-        + pushes.shift[CC_SCATTER_RATE] * randomize;
-    const ScatterClock scatterNow = { strip.scatterTime, strip.scatterDriftTime, randomize };
+    const ScatterClock scatterNow = { strip.scatterTime, randomize };
     placeScatter(strip.reading.scatter, context.dialed, context.spotRoutes, context.spotRouteCount,
-                 index, scatterNow, motion.lastScatter[index], strip.scatterSpots);
+                 index, scatterNow, motion.lastScatter[index], motion.spotDrift[index], scatterCycles,
+                 strip.scatterSpots);
     motion.lastScatter[index] = scatterNow;
     strip.center = travelCenter(motion.travel[index], motion.swing[index], wall.anchors[index],
                                 context.travel, strip.travel);

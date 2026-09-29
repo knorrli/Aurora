@@ -9,6 +9,7 @@ namespace render {
 static const uint8_t STRIPS = 5;
 static const uint8_t PARS = 4;
 static const uint8_t PIXELS = 45;
+static const uint8_t MAX_COUNT = 20;
 static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
 static const uint8_t BEND_POINTS = PIXELS + 1;
@@ -28,7 +29,6 @@ struct Clock {
 
 struct ScatterClock {
   float time;
-  float drift;
   float randomize;
 };
 
@@ -39,7 +39,7 @@ struct Motion {
   Clock flow = {};
   Clock field = {};
   Clock scatter = {};
-  float scatterDrift[STRIPS] = {};
+  float spotDrift[STRIPS][MAX_COUNT] = {};
   ScatterClock lastScatter[STRIPS] = {};
   float lastScatterBeats = 0.0f;
   float lastLfoBeats = 0.0f;

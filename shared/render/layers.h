@@ -44,7 +44,8 @@ struct ScatterSample {
 
 void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute *routes,
                   uint8_t routeCount, uint8_t stripIndex, const ScatterClock &now,
-                  const ScatterClock &before, ScatterSpots &out);
+                  const ScatterClock &before, float *drifts, float elapsedCycles,
+                  ScatterSpots &out);
 ScatterSample scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels);
 
 Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,

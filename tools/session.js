@@ -186,11 +186,13 @@
       return !Patch.ROUTES.some(route =>
         live[route.destination] !== 0 && live[route.amount] !== Patch.NEUTRAL[route.amount]);
     }
-    return card.amounts.every(name => live[name] === Patch.NEUTRAL[name]);
+    return card.amounts.every(name => live[name] === Patch.NEUTRAL[name]
+      && !routesOn(name, live).some(route => live[route.amount] !== Patch.NEUTRAL[route.amount]));
   }
 
-  const routesOn = (name, live) =>
-    Patch.ROUTES.filter(route => Protocol.routeTarget(live[route.destination]) === Patch.CC[name]);
+  function routesOn(name, live) {
+    return Patch.ROUTES.filter(route => Protocol.routeTarget(live[route.destination]) === Patch.CC[name]);
+  }
 
   function setRouteArp(route, arp) {
     const target = Protocol.routeTarget(editing().base[Patch.CC[route.destination]] | 0);

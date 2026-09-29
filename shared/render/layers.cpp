@@ -130,8 +130,16 @@ static uint8_t placeRank(uint8_t stripIndex, uint8_t place) {
   return ranks[stripIndex][place];
 }
 
-static float spotClock(const ScatterClock &clock, float rateSpread, float phaseOffset) {
-  return clock.time + rateSpread * clock.drift + clock.randomize * phaseOffset;
+static const float DRIFT_PULL_PER_CYCLE = 0.5f;
+
+static float pulledToWholePulse(float drift, float rateSpread, float randomize, float elapsedCycles) {
+  drift += rateSpread * randomize * elapsedCycles;
+  const float whole = roundf(drift);
+  return whole + (drift - whole) * expf(-DRIFT_PULL_PER_CYCLE * (1.0f - randomize) * fabsf(elapsedCycles));
+}
+
+static float spotClock(const ScatterClock &clock, float drift, float phaseOffset) {
+  return clock.time + drift + clock.randomize * phaseOffset;
 }
 
 static float spotWave(const SpotRoute &route, float clock, float before) {
@@ -156,17 +164,19 @@ static float spotControl(uint8_t cc, const uint8_t *dialed, const SpotRoute *rou
 
 void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute *routes,
                   uint8_t routeCount, uint8_t stripIndex, const ScatterClock &now,
-                  const ScatterClock &before, ScatterSpots &out) {
+                  const ScatterClock &before, float *drifts, float elapsedCycles,
+                  ScatterSpots &out) {
   out.count = 0;
   out.reach = (float)PIXELS / scatter.count;
   for (uint8_t place = 0; place < MAX_COUNT; place++) {
-    const float lit = clampUnit(scatter.count - (float)placeRank(stripIndex, place));
-    if (lit <= 0.0f) continue;
-
     const float rateSpread = (float)hash8(stripIndex, place, 17) / 255.0f - 0.5f;
     const float phaseOffset = (float)hash8(stripIndex, place, 43) / 255.0f;
-    const float clock = spotClock(now, rateSpread, phaseOffset);
-    const float earlier = spotClock(before, rateSpread, phaseOffset);
+    const float earlier = spotClock(before, drifts[place], phaseOffset);
+    drifts[place] = pulledToWholePulse(drifts[place], rateSpread, now.randomize, elapsedCycles);
+    const float clock = spotClock(now, drifts[place], phaseOffset);
+
+    const float lit = clampUnit(scatter.count - (float)placeRank(stripIndex, place));
+    if (lit <= 0.0f) continue;
     const uint32_t life = (uint32_t)(int32_t)floorf(clock);
     if (lit < 1.0f && (float)hash8(stripIndex, place * 131u + life, 97) >= lit * 256.0f) continue;
 
