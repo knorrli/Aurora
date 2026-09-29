@@ -264,5 +264,5 @@
   }
 
   Editor.say = say;
-  Editor.rail = { wire, paintList };
+  Editor.rail = { wire, paintList, leaveDraft };
 })(window);

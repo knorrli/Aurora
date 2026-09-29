@@ -10,9 +10,8 @@
 
   const SCRUB_STEPS = 1000;
   const SPRING_BACK_MILLISECONDS = 180;
-  const MINIMUM_SECONDS = 0.2;
 
-  const bar = { scrub: null, run: null, readout: null, comingFrom: null, transitionTo: null };
+  const bar = { scrub: null, run: null, runTime: null, readout: null, comingFrom: null, transitionTo: null };
   const mixBar = { sliders: {}, readouts: {} };
   let animationFrame = null;
 
@@ -68,23 +67,43 @@
     animate(session.transition.position, rest, SPRING_BACK_MILLISECONDS, Editor.paint);
   }
 
+  const transitionStep = patch => Patch.periodStep(patch.transitionTime);
+
+  function transitionMilliseconds(patch) {
+    return Protocol.LFO_PERIODS[transitionStep(patch)] * 60000 / Editor.midi.bpm();
+  }
+
   function run() {
     if (animationFrame) {
       stop();
       springBack();
       return;
     }
-    const milliseconds = Math.max(MINIMUM_SECONDS, session.transition.seconds) * 1000;
+    const destination = session.transitionDestination();
+    if (!destination || !Editor.rail.leaveDraft()) return;
+    const slot = session.transition.to;
     bar.run.classList.add('on');
-    const leg = (from, to) => animate(from, to, milliseconds, () => {
-      if (session.transition.loop) {
-        leg(to, from);
-        return;
-      }
-      bar.run.classList.remove('on');
-      Editor.paint();
+    animate(0, 1, transitionMilliseconds(destination), () => Editor.show(slot));
+  }
+
+  function paintRun() {
+    if (!bar.run) return;
+    const destination = session.transitionDestination();
+    bar.run.disabled = !destination;
+    bar.runTime.disabled = !destination;
+    bar.runTime.value = destination ? String(Patch.periodValue(transitionStep(destination))) : '';
+  }
+
+  function buildRunTime() {
+    const select = element('select');
+    dom.setOptions(select, Patch.LFO_PERIOD_NAMES.map((text, step) => [Patch.periodValue(step), text]), '');
+    select.title = 'The transition time of the patch you named. Changing it here changes that patch.';
+    select.addEventListener('change', () => {
+      session.transitionDestination().transitionTime = +select.value;
+      session.saveLibrary();
     });
-    leg(0, 1);
+    bar.runTime = select;
+    return labeledField('over', select);
   }
 
   function showingText() {
@@ -132,6 +151,7 @@
         [['', '— nowhere —'], ...patchOptions(filled.filter(slot => slot !== session.slot))],
         to === null ? '' : to);
     }
+    paintRun();
   }
 
   function buildComingFrom() {
@@ -150,6 +170,7 @@
     const select = element('select');
     select.addEventListener('change', () => {
       session.transition.to = select.value === '' ? null : +select.value;
+      paintRun();
       Editor.refresh();
     });
     bar.transitionTo = select;
@@ -206,7 +227,7 @@
   function build() {
     const host = byId('transitionBar');
     const target = session.isTarget();
-    Object.assign(bar, { comingFrom: null, transitionTo: null });
+    Object.assign(bar, { run: null, runTime: null, comingFrom: null, transitionTo: null });
 
     const scrub = element('div', 'scrub');
     bar.scrub = dom.rangeInput(SCRUB_STEPS);
@@ -220,27 +241,14 @@
     scrub.append(element('span', 'end', target ? 'base' : 'this patch'), bar.scrub,
                  element('span', 'end', target ? Patch.PART_NAMES[session.partIndex] : 'the patch you named'));
 
-    bar.run = element('button', null, 'run');
-    bar.run.id = 'transitionRun';
-    bar.run.addEventListener('click', run);
-
-    const seconds = element('input');
-    Object.assign(seconds, { type: 'number', min: MINIMUM_SECONDS, max: 60, step: MINIMUM_SECONDS });
-    seconds.value = session.transition.seconds;
-    seconds.className = 'seconds';
-    seconds.addEventListener('input', () => { session.transition.seconds = +seconds.value || 2; });
-
-    const loop = element('button', 'tiny', 'loop');
-    loop.classList.toggle('on', session.transition.loop);
-    loop.addEventListener('click', () => {
-      session.transition.loop = !session.transition.loop;
-      loop.classList.toggle('on', session.transition.loop);
-    });
-
     bar.readout = element('output', 'readout');
-    host.replaceChildren(scrub, bar.run, seconds, element('span', 'cc', 'seconds'), loop, bar.readout);
-    if (!target) host.appendChild(buildTransitionTo());
-    else {
+    host.replaceChildren(scrub, bar.readout);
+    if (!target) {
+      bar.run = element('button', null, 'run');
+      bar.run.id = 'transitionRun';
+      bar.run.addEventListener('click', run);
+      host.append(bar.run, buildRunTime(), buildTransitionTo());
+    } else {
       if (session.partIndex === Protocol.PATCH_TARGET_ACCENT) host.appendChild(buildComingFrom());
       host.appendChild(targetMoves());
     }

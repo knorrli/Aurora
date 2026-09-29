@@ -14,7 +14,7 @@
     slot: null,
     draft: null,
     partIndex: Protocol.PATCH_BASE,
-    transition: { position: 0, seconds: 2, loop: false, from: null, to: null },
+    transition: { position: 0, from: null, to: null },
     mix: Object.fromEntries(Patch.TARGETS.map(part => [part, 0])),
     bypassedRoutes: new Set(),
     bypassedCards: new Set(),

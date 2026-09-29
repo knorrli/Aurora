@@ -32,7 +32,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize (wants a seed?).
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Light Dark earn its place?
 - Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
-- Morph between patches of different tempo divisions: does the jump read as a glitch? Needs the editor's morph to end in a patch change.
+- Morph between patches of different tempo divisions: does the jump read as a glitch?
 - Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
 - LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
 - Anchor against a click track: should the peak or the leading edge land on the beat?
@@ -68,7 +68,6 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 - Overlays: match their colors to the controls they show; add ones for the fan controls and scatter spread.
 - Mark the center on the Position slider.
-- The editor's morph: drop the loop, end in a real patch change on the destination, and time it in beats, not seconds.
 - Morph-target bar order: base, color, motion, extent, accent.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
 - Toggle buttons hover in the same orange as on, so a button just switched off still looks on until the pointer leaves. Give them the route buttons' treatment (filled on, outlined hover, dark off) or a hover of their own, such as a paler orange.
