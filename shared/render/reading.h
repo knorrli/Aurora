@@ -14,7 +14,7 @@ struct Shape {
   uint8_t count;
   float edge;
   float tailBeats;
-  float positionCells;
+  float position;
   float speedPixels;
   float bend;
   float bendAt;

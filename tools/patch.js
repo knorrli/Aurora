@@ -92,6 +92,9 @@
     wave: waveText,
   };
 
+  const upTheStrip = at =>
+    (at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up');
+
   const READOUTS = {
     shapeWidth: value => percent(real('shapeWidth', value)),
     shapeEdge: value => percent(real('shapeEdge', value)) + ' of the gap',
@@ -100,16 +103,13 @@
       return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats';
     },
     shapeCount: value => real('shapeCount', value) + ' shapes',
-    shapePosition: value => signed(real('shapePosition', value)) + ' of a cell',
+    shapePosition: value => upTheStrip(real('shapePosition', value)),
     shapeSpeed: value => {
       const speed = real('shapeSpeed', value);
       return sign(speed) + Math.abs(speed).toFixed(1) + ' px/beat';
     },
     shapeBend: value => signed(real('shapeBend', value)) + ' bent',
-    shapeBendAt: value => {
-      const at = real('shapeBendAt', value);
-      return at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up';
-    },
+    shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
     fanSpread: fanAmount('fanSpread', 'of a cell'),
     fanLfo: fanAmount('fanLfo', 'of a cycle'),
     fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
@@ -219,7 +219,7 @@
           control('shapeBounce', 'Bounce', 'turn at the cell’s edge instead of wrapping',
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
           control('shapeSpeed', 'Speed', 'center is still; either side travels'),
-          control('shapePosition', 'Position', 'where a still pattern stands in its cell'),
+          control('shapePosition', 'Position', 'where a still pattern rests in its cell, from against the bottom end to against the top'),
           control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
           control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own cell'),
         ],

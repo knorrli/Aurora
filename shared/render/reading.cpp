@@ -70,8 +70,8 @@ float controlValue(uint8_t cc, uint8_t value) {
 
     case CC_SHAPE_BEND:
     case CC_ARP_SPREAD: return bipolarOf(value);
-    case CC_SHAPE_BEND_AT: return 0.5f + 0.5f * bipolarOf(value);
-    case CC_SHAPE_POSITION:
+    case CC_SHAPE_BEND_AT:
+    case CC_SHAPE_POSITION: return 0.5f + 0.5f * bipolarOf(value);
     case CC_FAN_SPREAD:
     case CC_FAN_LFO: return bipolarOf(value) * 0.5f;
     case CC_SHAPE_SPEED:
@@ -128,7 +128,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   shape.edge = at(CC_SHAPE_EDGE);
   shape.tailBeats = at(CC_SHAPE_TAIL);
   shape.count = (uint8_t)at(CC_SHAPE_COUNT);
-  shape.positionCells = at(CC_SHAPE_POSITION);
+  shape.position = at(CC_SHAPE_POSITION);
   shape.speedPixels = at(CC_SHAPE_SPEED);
   shape.bend = at(CC_SHAPE_BEND);
   shape.bendAt = at(CC_SHAPE_BEND_AT);

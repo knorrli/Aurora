@@ -55,7 +55,7 @@ enum AuroraCC : uint8_t {
 
     CC_SHAPE_BOUNCE          = 39, // [switch]
     CC_SHAPE_SPEED           = 40, // [patch][rate]
-    CC_SHAPE_POSITION        = 41, // [patch][circular]
+    CC_SHAPE_POSITION        = 41, // [patch]
     CC_SHAPE_BEND            = 42, // [patch][plain]
     CC_SHAPE_BEND_AT         = 43, // [patch][plain]
 

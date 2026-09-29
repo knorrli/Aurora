@@ -81,7 +81,6 @@ static bool circular(uint8_t cc) {
   switch (cc) {
     case CC_HUE:
     case CC_PAR_HUE_OFFSET:
-    case CC_SHAPE_POSITION:
     case CC_FAN_PHASE:
       return true;
     default:
@@ -203,8 +202,7 @@ static int16_t landing(uint8_t cc, uint8_t base, float amount) {
   else if (amount < -1.0f) amount = -1.0f;
 
   if (circular(cc)) {
-    const float span = (cc == CC_SHAPE_POSITION) ? 128.0f : 64.0f;
-    return (int16_t)base + (int16_t)lroundf(amount * span);
+    return (int16_t)base + (int16_t)lroundf(amount * 64.0f);
   }
 
   const float limit = (amount >= 0.0f) ? 127.0f : 0.0f;
