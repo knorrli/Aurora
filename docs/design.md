@@ -48,6 +48,7 @@
 - Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`.
 - A morph interpolates the raw CC bytes, all together, linearly. Circular controls (hue, PAR hue offset, fan phase) take the short way around.
 - Switches (and route destinations) never interpolate. The destination patch's land on the release, not on arrival.
+- A layer that shows nothing at one end of a morph takes the other end's values at once, its switches included; only the controls that make it visible blend (`hiddenLayers` in `shared/render/layers.cpp`).
 - During an accent the source patch's switches are still in force.
 - A route whose destination differs between two patches holds whole (destination, amount, ratio, wave, phase) and lands with the switches.
 - A code arriving within a few tens of milliseconds of another key's is a fumbled two-key press and is ignored.
@@ -108,7 +109,7 @@
 ### Generator
 
 - Does the morph need per-parameter timing rather than every parameter in lockstep?
-- Should a layer that shows nothing at one end of a morph take the other end's values at once, switches included, so its counts and switches never step where they can be seen? Visible switches keep landing on the release. Later, perhaps a per-patch choice of landing visible switches on the press instead. Try it in the editor's morph first.
+- Should a patch choose to land its visible switches on the press rather than the release?
 - A count moving mid-morph or on a fader re-cuts every cell, so the scatter flickers and shapes jump. How does a count change smoothly?
 - Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
 - Should the jump when tempo division changes at the end of a morph carry position across instead?
