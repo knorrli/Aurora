@@ -6,7 +6,7 @@
 - Build DIN MIDI in on the brain: 6N138 on `Serial1`.
 - Cut the brain's enclosure around the finished perfboard.
 - Socket both Teensys rather than soldering them down.
-- Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`).
+- Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
 - Build the foot pedal.
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
 - Press two keys at once on the old box and watch the wall: does 2+3 black it out?
@@ -23,30 +23,26 @@
 
 Seen only in the preview so far. One look each, driven from the editor.
 
-- Reflash the brain first: it runs an uncommitted frame-timing build, so the wall lags the preview.
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
 - PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a turns strobe over each of those, random per pulse on turns.
 - Arp modes on turns, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
-- Pull the PARs' Saturation down, then open the LFO on PAR saturation: the flash toward white should start from pale.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Swipe Position with a build wave: climbs, snaps back on the bar, tail drops at the snap. Try Bend on it.
 - The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize (wants a seed?).
-- Frequency fader at the top, sweep the phase: does the fan going quiet read as a fault?
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Light Dark earn its place?
 - Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
-- Morph between patches of different tempo divisions: does the jump read as a glitch?
-- Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; is 8 beats the right top; brain frame time; no streak across a patch change.
+- Morph between patches of different tempo divisions: does the jump read as a glitch? Needs the editor's morph to end in a patch change.
+- Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
 - LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
 - Anchor against a click track: should the peak or the leading edge land on the beat?
-- Stepped LFO rate: do the dotted values read as adrift? Cutting them leaves seven.
-- Bend at full: do shapes squashed at the slow end shimmer?
 - The scatter on the strips, and whether spots need to outlive their cell.
 - Play a set to find where the color layer's controls should stop.
 - Dial five or six endpoints by eye and save them; nothing about the morph is worth judging before.
 
 ## Generator
 
+- Rainbow hue at 127 reads pinkish on the wall against red at 0, far more than the preview's (253, 0, 2) against (255, 0, 0) suggests. Full-width still patch, sweep Hue. Find why the strips exaggerate it, then decide whether the ends should differ on purpose, as v1's did by stopping short of a full turn.
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
 - Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
 
@@ -69,12 +65,12 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 ## Editor
 
-- Use it at the bench: is driving a morph's CCs at frame rate too much USB traffic?
 - Overlays: match their colors to the controls they show; add ones for the fan controls and scatter spread.
 - Mark the center on the Position slider.
+- The editor's morph: drop the loop, end in a real patch change on the destination, and time it in beats, not seconds.
 - Morph-target bar order: base, color, motion, extent, accent.
-- Toggling wrap / bounce seems to reset the morph target's mix faders. Reproduce first.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
+- Toggle buttons hover in the same orange as on, so a button just switched off still looks on until the pointer leaves. Give them the route buttons' treatment (filled on, outlined hover, dark off) or a hover of their own, such as a paler orange.
 - Let a morph target set a "from the patch" switch by writing it into the base patch: setting arp mode while routing PAR hue range on the accent should not need a trip to base. Failing that, show the selected option clearly while it is disabled.
 - A morph target's copy from / move onto / swap with offer too many choices. Drop the ones that go unused, or find a plainer way to shift overrides between targets.
 - Every control's readout and tooltip: does it tell a patch designer something? Fan Frequency: why 32 is the default, what "turns" means, what the track's segments are; its tooltip describes a different control.

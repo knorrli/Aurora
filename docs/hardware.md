@@ -83,6 +83,7 @@ A 5 V WS2812 needs about 3.5 V for a high. Unshifted 3.3 V data gives random spe
 - Pixel sampling: point-sampling aliases (strobes) once a shape is a pixel or two wide. A shape a third of a pixel wide sliding slowly swings total brightness 50 % at 4 samples per pixel, 34 % at 8.
 - Low brightness: converting HSV at low value shifts hue (dim yellow goes red). Convert at full value and scale the RGB with `nscale8_video`.
 - Near black, 8-bit channels step unevenly: a pixel whose hue moves at under about 2 % brightness jitters between colors. Single-channel colors (pure red) never show it.
+- A 128-step control ramped over 30 s steps visibly: hue green to red throughout, value from black until about 35 %.
 - A smooth brightness gradient is nearly invisible at any depth, even 50:1; the same depth with a hard edge is obvious. Saturation changes read far more than equal brightness changes.
 - Hue alone changes light output up to 5.4:1 (yellow-green brightest, blue dimmest), computed from WS2812B datasheet intensities, not metered.
 - The preview in `tools/preview.js` matches the wall; the wall reads slightly paler because of the diffuser.

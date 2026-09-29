@@ -13,9 +13,9 @@
 
 - The controller is the clock source. It tracks tempo from incoming clock or from tap tempo and always emits its own fresh 24 PPQN.
 - External clock is never passed through. Tapping switches source with no discontinuity at the brain; an upstream dropout keeps the last tempo running.
+- The source picks itself: the controller follows incoming clock whenever it arrives, and switches to tap tempo as soon as the button is tapped. No control selects it.
 - The controller's tempo LED flashes from that clock.
-- Tempo division is the 12-position rotary, sent on CC 33 separately. The clock itself is never divided.
-- The `TEMPO_DIV_*` list in `shared/aurora_protocol.h` is matched to the rotary's real positions once the box is rebuilt.
+- Tempo division is a patch switch on CC 33. The clock itself is never divided.
 
 ## Patch storage
 
@@ -60,6 +60,7 @@
   - **Motion**: faster, harder, more agitated.
 - A target is per patch and covers every control, the PARs included.
 - A fader never arrives: it never moves a switch, whatever its position.
+- A fader's position is its push. A patch change does not reset it: the new patch arrives pushed by wherever the faders sit. The controller sends every fader's position when it starts.
 - A patch and its targets share switches.
 - Several targets at once add: each contributes its fader position times the distance from the patch to that target, and the sum is clamped per byte. The brain matches the editor's rule.
 - Faders move energy; the keypad moves character. Mid-song lifts are fader moves; sideways changes at the same energy are patch changes.
@@ -68,6 +69,7 @@
 
 - Key 0 is the blackout (PC 0): not a patch, no slot, never in the keymap. It holds until the next key press.
 - The phone's hook switch is the master kill. It works on any patch and is pressed by a finger; the handset almost never rests on it.
+- The hook is a mute, not a latch: the wall is dark while it is held and back on the playing patch when it is released.
 - The hook shares the keypad's lines; its code is the blackout.
 
 ## Touchpad and rockers
@@ -91,20 +93,16 @@
 
 ### Playing
 
-- What does a fader do when it disagrees with the state: jump on touch, pickup, or scaled takeover?
-- Do three faders adding their departures still read right with all three up?
 - How does a key press reach the brain distinct from a Program Change naming a slot, and what becomes of slot 0 while PC 0 is blackout?
-- What does releasing the hook switch do: back to the patch that was playing, or stay dark?
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
 - How does a pad-driven transition land its switches, with no key release left?
 - What does the fourth rocker do?
 - Which of the scatter's amounts does a fader route reach: is scatter a lift or a character change?
 - What do the indicator pixels show?
-- Does tempo division want a knob of its own apart from the rotary?
-- Does the peak-follower switch land on a controller pin or stay in-circuit?
+- What does the 12-position rotary do? Lead: a patch bank, turned between songs. Nine patch keys per bank (0 is the blackout) reach 108 of the 128 slots; the rest are Program Change only.
+- Is the mic trigger a clock source or a flash?
 - What are the foot pedal's four jobs?
-- Does a DAW-driven 128-step morph stair-step visibly, and does the brain need to smooth incoming values?
-- May the PARs carry a look the strips cannot, or must every look survive with the PARs dead?
+- A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
 - Should a patch have variants (one patch, a few overrides) resolved in the editor before sync? Tags and grouping likewise.
 
 ### Generator
@@ -120,5 +118,4 @@
 - Do the PARs want a palette of their own?
 - Should Spread have a stepped form that flips whole at a threshold when a route moves it, rather than squeezing turns through the middle?
 - Do the PARs want different speeds, for an oscillation that looks random? Decide once ripple in random mode has been seen on the wall.
-- Does Bend want a curve other than the cosine?
 - When the two spare CCs (78, 79) run out: NRPN or a second MIDI channel?
