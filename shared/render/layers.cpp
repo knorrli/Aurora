@@ -64,15 +64,14 @@ float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float s
   return field.form == FIELD_FORM_ALL_BUT_REGION ? 1.0f - bump : bump;
 }
 
-float scatterAt(const Scatter &scatter, uint8_t stripIndex, float alongPixels, float time) {
+float scatterAt(const Scatter &scatter, uint8_t stripIndex, float alongPixels, float time, float spreadTime) {
   const float cellAt = (alongPixels / (float)PIXELS) * (float)scatter.count;
   const uint8_t cell = (uint8_t)cellAt;
   const float u = cellAt - (float)cell;
 
   const float rateSpread = (float)hash8(stripIndex, cell, 17) / 255.0f - 0.5f;
   const float phaseOffset = (float)hash8(stripIndex, cell, 43) / 255.0f;
-  const float clock = time * (1.0f + scatter.randomize * rateSpread)
-                    + scatter.randomize * phaseOffset;
+  const float clock = time + rateSpread * spreadTime + scatter.randomize * phaseOffset;
   const float age = fract(clock);
 
   const float alive = bumpAt(age - 0.5f, scatter.width, scatter.edge);
