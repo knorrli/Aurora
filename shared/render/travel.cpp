@@ -40,7 +40,12 @@ static float wrapCenter(float cellsTravelled, Anchor &anchor, const Travel &trav
                      + strip.shiftPixels / travel.cellLength + strip.fanOffset;
   if (travel.flipped) anchor.travelCells = anchor.lastCenter - dialed;
   else if (strip.speedPixels == 0.0f) settle(anchor.travelCells, cellsTravelled, travel.elapsed);
-  return dialed + anchor.travelCells;
+  const float center = dialed + anchor.travelCells;
+  if (!travel.walled) return center;
+
+  const float lap = roundf(cellsTravelled + anchor.travelCells);
+  const float halfCore = strip.width * 0.5f;
+  return lap + fminf(fmaxf(center - lap, halfCore), 1.0f - halfCore);
 }
 
 static float bounceCenter(float swingCycles, Anchor &anchor, const Travel &travel,

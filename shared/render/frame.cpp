@@ -94,6 +94,7 @@ static void startTravel(FrameContext &context, const Wall &wall) {
   Travel &travel = context.travel;
   travel.beats = context.beats;
   travel.bouncing = plain.shape.bounce && anyMoving;
+  travel.walled = plain.shape.bounce;
   travel.flipped = travel.bouncing != wall.lastBouncing;
   travel.elapsed = context.beats - wall.lastBeats;
   travel.cellLength = context.cellLength;
@@ -131,7 +132,9 @@ static void readStrip(const FrameContext &context, uint8_t index, Pushes &pushes
   strip.travel.shiftPixels = pushes.shift[CC_SHAPE_SPEED] + pushes.shift[CC_FAN_SPEED] * wave;
   strip.travel.positionCells =
       (strip.reading.shape.position - 0.5f) * (1.0f - strip.reading.shape.width);
-  strip.travel.fanOffset = fan.spread * wave;
+  const bool restsWalled = context.travel.walled && !context.travel.bouncing;
+  const float freeSpace = restsWalled ? 1.0f - strip.reading.shape.width : 1.0f;
+  strip.travel.fanOffset = fan.spread * wave * freeSpace;
   strip.travel.width = strip.reading.shape.width;
 }
 

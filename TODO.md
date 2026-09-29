@@ -41,7 +41,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Stepped LFO rate: do the dotted values read as adrift? Cutting them leaves seven.
 - Bend at full: do shapes squashed at the slow end shimmer?
 - The scatter on the strips, and whether spots need to outlive their cell.
-- A wrapping strip: loop, clip, or boundary fade?
 - Play a set to find where the color layer's controls should stop.
 - Dial five or six endpoints by eye and save them; nothing about the morph is worth judging before.
 

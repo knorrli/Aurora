@@ -8,6 +8,7 @@ struct Travel {
   float beats;
   float elapsed;
   bool bouncing;
+  bool walled;
   bool flipped;
   float cellLength;
 };

@@ -109,7 +109,6 @@
 
 ### Generator
 
-- Does a shape wrapping off one end of a strip reappear at the other, get clipped, or fade at the boundary?
 - Does the morph need per-parameter timing rather than every parameter in lockstep?
 - Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
 - Should the jump when tempo division changes at the end of a morph carry position across instead?
