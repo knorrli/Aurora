@@ -108,8 +108,6 @@ float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float s
   return field.form == FIELD_FORM_ALL_BUT_REGION ? 1.0f - bump : bump;
 }
 
-static const float PLACE_JITTER = 0.7f;
-
 static uint8_t placeRank(uint8_t stripIndex, uint8_t place) {
   static uint8_t ranks[STRIPS][MAX_COUNT];
   static bool ranked = false;
@@ -130,28 +128,42 @@ static uint8_t placeRank(uint8_t stripIndex, uint8_t place) {
   return ranks[stripIndex][place];
 }
 
-void placeScatter(const Scatter &scatter, uint8_t stripIndex, float time, float spreadTime,
-                  ScatterSpots &out) {
+static float spotClock(const ScatterClock &clock, float rateSpread, float phaseOffset) {
+  return clock.time + rateSpread * clock.drift + clock.randomize * phaseOffset;
+}
+
+static float missedFlash(float clock, float before, float gate) {
+  const float middle = floorf(clock - 0.5f) + 0.5f;
+  const float half = gate * 0.5f;
+  const bool steppedOver = clock - before < 1.0f && before < middle - half && clock > middle + half;
+  return steppedOver ? middle : -1.0f;
+}
+
+void placeScatter(const Scatter &scatter, uint8_t stripIndex, const ScatterClock &now,
+                  const ScatterClock &before, ScatterSpots &out) {
   out.count = 0;
   out.reach = (float)PIXELS / scatter.count;
+  out.width = fmaxf(scatter.width, 1.0f / out.reach);
   for (uint8_t place = 0; place < MAX_COUNT; place++) {
     const float lit = clampUnit(scatter.count - (float)placeRank(stripIndex, place));
     if (lit <= 0.0f) continue;
 
     const float rateSpread = (float)hash8(stripIndex, place, 17) / 255.0f - 0.5f;
     const float phaseOffset = (float)hash8(stripIndex, place, 43) / 255.0f;
-    const float clock = time + rateSpread * spreadTime + scatter.randomize * phaseOffset;
+    float clock = spotClock(now, rateSpread, phaseOffset);
+    float alive = bumpAt(fract(clock) - 0.5f, scatter.gate, scatter.edge);
+    if (alive <= 0.0001f) {
+      const float missed = missedFlash(clock, spotClock(before, rateSpread, phaseOffset), scatter.gate);
+      if (missed < 0.0f) continue;
+      clock = missed;
+      alive = 1.0f;
+    }
     const float age = fract(clock);
-    const float alive = bumpAt(age - 0.5f, scatter.width, scatter.edge);
-    if (alive <= 0.0001f) continue;
 
     const uint32_t life = (uint32_t)(int32_t)floorf(clock);
     if (lit < 1.0f && (float)hash8(stripIndex, place * 131u + life, 97) >= lit * 256.0f) continue;
-    const float jitter = ((float)hash8(stripIndex, place, 29) / 255.0f - 0.5f) * PLACE_JITTER;
-    const float home = ((float)place + 0.5f + jitter) / (float)MAX_COUNT * (float)PIXELS;
-    const float landing = scatter.spread * out.reach
-        * ((float)hash8(stripIndex, place * 131u + life, 61) / 255.0f * 2.0f - 1.0f);
-    out.centers[out.count] = home + landing + scatter.slide * out.reach * (age - 0.5f);
+    const float landing = (float)hash8(stripIndex, place * 131u + life, 61) / 255.0f * (float)PIXELS;
+    out.centers[out.count] = landing + scatter.slide * out.reach * (age - 0.5f);
     out.levels[out.count] = alive;
     out.count++;
   }
@@ -162,7 +174,7 @@ float scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPi
   for (uint8_t i = 0; i < spots.count; i++) {
     const float offset = (alongPixels - spots.centers[i]) / spots.reach;
     if (fabsf(offset) >= 0.5f) continue;
-    level = fmaxf(level, spots.levels[i] * bumpAt(offset, scatter.width, scatter.edge));
+    level = fmaxf(level, spots.levels[i] * bumpAt(offset, spots.width, scatter.edge));
   }
   return level;
 }

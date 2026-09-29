@@ -66,7 +66,7 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 ## Editor
 
-- Overlays: match their colors to the controls they show; add ones for the fan controls and scatter spread.
+- Overlays: match their colors to the controls they show; add ones for the fan controls and the scatter.
 - Mark the center on the Position slider.
 - Morph-target bar order: base, color, motion, extent, accent.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.

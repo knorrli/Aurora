@@ -42,7 +42,7 @@ struct StripContext {
   float flowTime;
   float fieldDrift;
   float scatterTime;
-  float scatterSpreadTime;
+  float scatterDriftTime;
   ScatterSpots scatterSpots;
   StripTravel travel;
   float center;
@@ -304,11 +304,12 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
     StripContext strip;
     readStrip(context, index, pushes, strip, out);
     const float randomize = strip.reading.scatter.randomize;
-    strip.scatterSpreadTime =
-        pulledSpread(motion.scatterSpread[index], scatterElapsed, context.plain.scatter.rate, randomize)
+    strip.scatterDriftTime =
+        pulledDrift(motion.scatterDrift[index], scatterElapsed, context.plain.scatter.rate, randomize)
         + pushes.shift[CC_SCATTER_RATE] * randomize;
-    placeScatter(strip.reading.scatter, index, strip.scatterTime, strip.scatterSpreadTime,
-                 strip.scatterSpots);
+    const ScatterClock scatterNow = { strip.scatterTime, strip.scatterDriftTime, randomize };
+    placeScatter(strip.reading.scatter, index, scatterNow, motion.lastScatter[index], strip.scatterSpots);
+    motion.lastScatter[index] = scatterNow;
     strip.center = travelCenter(motion.travel[index], motion.swing[index], wall.anchors[index],
                                 context.travel, strip.travel);
     TailHistory &history = wall.tails.strips[index];

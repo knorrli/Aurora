@@ -125,11 +125,11 @@
 
     scatterRate: value => 'every ' + beatsPer(real('scatterRate', value)) + ' beats',
     scatterCount: value => real('scatterCount', value).toFixed(1) + ' spots',
-    scatterWidth: value => percent(real('scatterWidth', value)) + ' of the spacing',
+    scatterWidth: value => (value === 0 ? '1 px' : percent(real('scatterWidth', value)) + ' of the gap'),
     scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
     scatterRandomize: value => percent(real('scatterRandomize', value)) + ' scrambled',
-    scatterSlide: value => signed(real('scatterSlide', value)) + ' of the spacing',
-    scatterSpread: value => percent(real('scatterSpread', value)) + ' random',
+    scatterSlide: value => signed(real('scatterSlide', value)) + ' of the gap',
+    scatterGate: value => percent(real('scatterGate', value)) + ' lit',
     scatterValue: value => signed(real('scatterValue', value)),
     scatterHue: hueReach('scatterHue'),
     scatterWhite: value => percent(real('scatterWhite', value)) + ' white',
@@ -257,13 +257,13 @@
     {
       name: 'Scatter', tone: 'scatter',
       source: [
-        control('scatterCount', 'Count', 'how many spots each strip has, 1–20. They sit in fixed places; a higher count lights more of them'),
-        control('scatterWidth', 'Width', 'the spot’s core on both axes at once: how much of the spacing between spots it covers, and how much of its cycle it is lit'),
-        control('scatterEdge', 'Edge', 'hard through to a fade — in space and in time alike'),
+        control('scatterCount', 'Count', 'how many spots each strip has, 1–20. Raising it adds spots and keeps the ones already there'),
+        control('scatterWidth', 'Width', 'how much of the gap between spots each spot covers, never less than a pixel'),
+        control('scatterEdge', 'Edge', 'hard through to a fade, at the spot’s sides and as it lights and goes out'),
         control('scatterRate', 'Rate', 'how often a spot relights'),
+        control('scatterGate', 'Gate', 'how much of each pulse a spot is lit'),
         control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall flashes as one; full scatters their phases and rates'),
-        control('scatterSpread', 'Spread', 'how far a spot lands from its place each time it relights: 0 is right on it'),
-        control('scatterSlide', 'Slide', 'how far a spot slides over its life; plus is up the strip, minus down'),
+        control('scatterSlide', 'Slide', 'how far a spot slides over its life, measured against the gap between spots; plus is up the strip, minus down'),
       ],
       amounts: [
         control('scatterHue', 'Hue', 'how far the hue departs where a spot is'),

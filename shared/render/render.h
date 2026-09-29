@@ -26,6 +26,12 @@ struct Clock {
   float rate;
 };
 
+struct ScatterClock {
+  float time;
+  float drift;
+  float randomize;
+};
+
 struct Motion {
   Clock travel[STRIPS] = {};
   Clock swing[STRIPS] = {};
@@ -33,7 +39,8 @@ struct Motion {
   Clock flow = {};
   Clock field = {};
   Clock scatter = {};
-  float scatterSpread[STRIPS] = {};
+  float scatterDrift[STRIPS] = {};
+  ScatterClock lastScatter[STRIPS] = {};
   float lastScatterBeats = 0.0f;
   float lastLfoBeats = 0.0f;
 };

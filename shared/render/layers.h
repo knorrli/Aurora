@@ -29,12 +29,13 @@ float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float s
 struct ScatterSpots {
   uint8_t count;
   float reach;
+  float width;
   float centers[MAX_COUNT];
   float levels[MAX_COUNT];
 };
 
-void placeScatter(const Scatter &scatter, uint8_t stripIndex, float time, float spreadTime,
-                  ScatterSpots &out);
+void placeScatter(const Scatter &scatter, uint8_t stripIndex, const ScatterClock &now,
+                  const ScatterClock &before, ScatterSpots &out);
 float scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels);
 
 Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,

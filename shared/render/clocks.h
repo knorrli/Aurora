@@ -8,6 +8,6 @@ float clockPhase(Clock &clock, float beats, float rate);
 
 float anchoredLfoPhase(Motion &motion, float beats, float rate);
 
-float pulledSpread(float &spread, float elapsed, float rate, float randomize);
+float pulledDrift(float &drift, float elapsed, float rate, float randomize);
 
 }

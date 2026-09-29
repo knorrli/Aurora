@@ -115,7 +115,7 @@
 - Should the jump when tempo division changes at the end of a morph carry position across instead?
 - What would a second Field sum to with the first?
 - Should a white patch get a push toward color, set by a switch from the patch's own saturation?
-- Should the scatter's Spread give way to a gate time, so Width only sets size and the new control sets how long a spot is lit? And should Slide be a speed rather than a distance per pulse, so it no longer follows Rate?
+- Should the scatter's Slide be a speed rather than a distance per pulse, so it no longer follows Rate?
 - Do scatter spots need a lifetime so they can travel past their cell (raindrops)? It costs eight to ten CCs.
 - Should Flow or Scatter be route sources? That costs a byte per route and a rule for where on the wall to sample.
 - Should each route choose the plain or fanned LFO, rather than its destination deciding?
