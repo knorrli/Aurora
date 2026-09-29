@@ -38,11 +38,12 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Anchor against a click track: should the peak or the leading edge land on the beat?
 - The scatter on the strips, and whether spots need to outlive their cell.
 - Play a set to find where the color layer's controls should stop.
+- Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
 - Dial five or six endpoints by eye and save them; nothing about the morph is worth judging before.
 
 ## Generator
 
-- Rainbow hue at 127 reads pinkish on the wall against red at 0, far more than the preview's (253, 0, 2) against (255, 0, 0) suggests. Full-width still patch, sweep Hue. Find why the strips exaggerate it, then decide whether the ends should differ on purpose, as v1's did by stopping short of a full turn.
+- Hue's ends differ: 127 lands one wheel step short of red, so it reads pinkish on the strips. Keep that, as v1 did, or make the top meet red.
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
 - Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
 

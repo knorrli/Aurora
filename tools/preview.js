@@ -3,6 +3,12 @@
 
   const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
 
+  const SCREEN_LEVEL_OF_STRIP_BYTE = Array.from({ length: 256 }, (_, byte) => {
+    const light = byte / 255;
+    const encoded = light <= 0.0031308 ? 12.92 * light : 1.055 * Math.pow(light, 1 / 2.4) - 0.055;
+    return Math.round(255 * encoded);
+  });
+
   const api = {
     WALL_STRIP_ORDER,
     ready: global.AuroraRenderModule().then(connect),
@@ -125,7 +131,7 @@
         const red = frame.pixels[at], green = frame.pixels[at + 1], blue = frame.pixels[at + 2];
         if (red + green + blue === 0) continue;
         const row = flipped ? pixelIndex : PIXELS - 1 - pixelIndex;
-        glowContext.fillStyle = `rgb(${red},${green},${blue})`;
+        glowContext.fillStyle = `rgb(${SCREEN_LEVEL_OF_STRIP_BYTE[red]},${SCREEN_LEVEL_OF_STRIP_BYTE[green]},${SCREEN_LEVEL_OF_STRIP_BYTE[blue]})`;
         glowContext.fillRect(x, WALL_TOP + row * pitch, stripWidth, pixelHeight);
       }
     }
