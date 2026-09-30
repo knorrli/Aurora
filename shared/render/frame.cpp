@@ -75,11 +75,6 @@ struct PixelLayers {
   bool flat;
 };
 
-static inline float pushToward(float base, float push, float low, float high) {
-  const float limit = (push >= 0.0f) ? high : low;
-  return base + fabsf(push) * (limit - base);
-}
-
 static float beatsAt(float quarterNotes, uint8_t division) {
   return quarterNotes * (float)AURORA_TICKS_PER_BEAT / (float)aurora_ticks_per_division(division);
 }
@@ -218,7 +213,8 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
   const Shape &plain = context.plain.shape;
   float shapeTotal = 0.0f;
   float fieldTotal = 0.0f;
-  ScatterSample scatterTotal = { 0.0f, 0.0f, 0.0f };
+  float scatterCover = 0.0f;
+  ScatterSample spot = { 0.0f, 0.0f, 0.0f, 0.0f };
   for (uint8_t sampleIndex = 0; sampleIndex < SAMPLES_PER_PIXEL; sampleIndex++) {
     const float acrossPixel = ((float)sampleIndex + 0.5f) / (float)SAMPLES_PER_PIXEL - 0.5f;
     const float cells = bentCells(context.bend, plain.bounce,
@@ -232,33 +228,33 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
                             clampUnit(sample.across), strip.fieldDrift);
     }
     if (layers.scatterOn) {
-      const ScatterSample spot = scatterAt(reading.scatter, strip.scatterSpots,
+      const ScatterSample here = scatterAt(reading.scatter, strip.scatterSpots,
                                            (float)pixelIndex + 0.5f + acrossPixel);
-      scatterTotal.value += spot.value;
-      scatterTotal.hue += spot.hue;
-      scatterTotal.white += spot.white;
+      scatterCover += here.cover;
+      if (here.cover > spot.cover) spot = here;
     }
   }
 
   const float shape = shapeTotal / (float)SAMPLES_PER_PIXEL;
-  const ScatterSample scatter = {
-    scatterTotal.value / (float)SAMPLES_PER_PIXEL,
-    scatterTotal.hue / (float)SAMPLES_PER_PIXEL,
-    scatterTotal.white / (float)SAMPLES_PER_PIXEL,
-  };
+  const float cover = scatterCover / (float)SAMPLES_PER_PIXEL;
+  const bool baseLit = shape > DARKEST_DRAWN;
+  if (!baseLit && cover <= DARKEST_DRAWN) return { 0, 0, 0 };
 
-  float intensity = shape;
-  if (layers.scatterOn) {
-    intensity = pushToward(intensity, scatter.value, 0.0f, 1.0f);
-  }
-  if (intensity <= DARKEST_DRAWN) return { 0, 0, 0 };
-
-  const Hsv tint = layers.flat
+  const Hsv tint = (layers.flat || !baseLit)
       ? reading.color
       : tintAt(reading, strip.index, pixelIndex, fieldTotal / (float)SAMPLES_PER_PIXEL, shape,
-               scatter, layers.flowOn, strip.flowTime);
-  return scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s),
-                    (uint8_t)((float)tint.v * intensity));
+               layers.flowOn, strip.flowTime);
+  const float baseValue = baseLit ? (float)tint.v * shape : 0.0f;
+  if (cover <= DARKEST_DRAWN) {
+    return scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s), (uint8_t)baseValue);
+  }
+
+  const float spotLight = spot.value * 255.0f * cover;
+  const float baseLight = baseValue * (1.0f - cover);
+  const uint8_t hue = (spotLight >= baseLight) ? (uint8_t)(reading.color.h + lroundf(spot.hue)) : tint.h;
+  const float saturation = (float)tint.s + (spot.saturation * 255.0f - (float)tint.s) * cover;
+  const float value = baseLight + spotLight;
+  return scaleVideo(paletteColor(context.dialed[CC_PALETTE], hue, (uint8_t)saturation), (uint8_t)value);
 }
 
 static void drawStrip(const FrameContext &context, const StripContext &strip,
@@ -272,8 +268,7 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   layers.flowOn = flowActive(reading);
   layers.scatterOn = scatterActive(reading, context.dialed);
   layers.flat =
-      !layers.fieldOn && !layers.flowOn && !lightActive(reading)
-      && !scatterTints(reading, context.dialed);
+      !layers.fieldOn && !layers.flowOn && !lightActive(reading);
 
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
     pixels[pixelIndex] = drawPixel(context, strip, look, tail, layers, pixelIndex);
@@ -305,10 +300,11 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   startTails(context, wall, quarterNotes);
   context.flowTime = clockPhase(motion.flow, context.beats, context.plain.flow.cyclesPerBeat);
   context.fieldDrift = clockPhase(motion.field, context.beats, context.plain.field.cellsPerBeat);
-  context.scatterTime = clockPhase(motion.scatter, context.beats, context.plain.scatter.rate);
-  context.spotRouteCount = gatherSpotRoutes(controls, context.spotRoutes);
   float scatterElapsed = context.beats - motion.lastScatterBeats;
   motion.lastScatterBeats = context.beats;
+  context.scatterTime =
+      anchoredPhase(motion.scatter, context.beats, scatterElapsed, context.plain.scatter.rate);
+  context.spotRouteCount = gatherSpotRoutes(controls, context.spotRoutes);
   if (scatterElapsed < 0.0f) {
     for (auto &drifts : motion.spotDrift) {
       for (float &drift : drifts) drift = 0.0f;

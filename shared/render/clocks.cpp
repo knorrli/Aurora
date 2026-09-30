@@ -14,24 +14,27 @@ float clockPhase(Clock &clock, float beats, float rate) {
   return beats * rate + clock.offset;
 }
 
-float anchoredLfoPhase(Motion &motion, float beats, float rate) {
-  const float elapsed = beats - motion.lastLfoBeats;
-  motion.lastLfoBeats = beats;
-
+float anchoredPhase(Clock &clock, float beats, float elapsed, float rate) {
   if (elapsed < 0.0f) {
-    motion.lfo.offset = 0.0f;
-    motion.lfo.rate = rate;
+    clock.offset = 0.0f;
+    clock.rate = rate;
     return beats * rate;
   }
 
-  const float phase = clockPhase(motion.lfo, beats, rate);
-  const float drift = motion.lfo.offset - roundf(motion.lfo.offset);
+  const float phase = clockPhase(clock, beats, rate);
+  const float drift = clock.offset - roundf(clock.offset);
   if (fabsf(drift) < 0.0001f) return phase;
 
   float pull = elapsed * rate / LFO_ANCHOR_CYCLES;
   if (pull > 1.0f) pull = 1.0f;
-  motion.lfo.offset -= drift * pull;
+  clock.offset -= drift * pull;
   return phase - drift * pull;
+}
+
+float anchoredLfoPhase(Motion &motion, float beats, float rate) {
+  const float elapsed = beats - motion.lastLfoBeats;
+  motion.lastLfoBeats = beats;
+  return anchoredPhase(motion.lfo, beats, elapsed, rate);
 }
 
 }

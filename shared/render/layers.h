@@ -20,7 +20,6 @@ uint8_t hiddenLayers(const uint8_t *dialed);
 bool fieldActive(const Reading &reading);
 bool flowActive(const Reading &reading);
 bool lightActive(const Reading &reading);
-bool scatterTints(const Reading &reading, const uint8_t *dialed);
 bool scatterActive(const Reading &reading, const uint8_t *dialed);
 
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
@@ -31,15 +30,17 @@ struct ScatterSpots {
   float reach;
   float centers[MAX_COUNT];
   float widths[MAX_COUNT];
-  float values[MAX_COUNT];
+  float mixes[MAX_COUNT];
   float hues[MAX_COUNT];
-  float whites[MAX_COUNT];
+  float saturations[MAX_COUNT];
+  float values[MAX_COUNT];
 };
 
 struct ScatterSample {
-  float value;
+  float cover;
   float hue;
-  float white;
+  float saturation;
+  float value;
 };
 
 void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute *routes,
@@ -49,6 +50,6 @@ void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute
 ScatterSample scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels);
 
 Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,
-           float shape, const ScatterSample &scatter, bool flowOn, float flowTime);
+           float shape, bool flowOn, float flowTime);
 
 }

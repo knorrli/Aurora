@@ -17,6 +17,7 @@ uint8_t layerOf(uint8_t cc) {
   if (cc >= CC_SHAPE_COUNT && cc <= CC_SHAPE_BEND_AT) return LAYER_SHAPE;
   if (cc >= CC_LIGHT_HUE && cc <= CC_LIGHT_DARK) return LAYER_SHAPE;
   if (cc >= CC_SCATTER_COUNT && cc <= CC_SCATTER_VALUE) return LAYER_SCATTER;
+  if (cc == CC_SCATTER_MIX) return LAYER_SCATTER;
   if (cc >= CC_FIELD_FORM && cc <= CC_FIELD_DARK) return LAYER_FIELD;
   if (cc >= CC_FLOW_DENSITY && cc <= CC_FLOW_DARK) return LAYER_FLOW;
   return 0;
@@ -26,9 +27,7 @@ bool showsLayer(uint8_t cc) {
   switch (cc) {
     case CC_SHAPE_WIDTH:
     case CC_SHAPE_EDGE:
-    case CC_SCATTER_HUE:
-    case CC_SCATTER_WHITE:
-    case CC_SCATTER_VALUE:
+    case CC_SCATTER_MIX:
     case CC_FIELD_HUE:
     case CC_FIELD_WHITE:
     case CC_FIELD_DARK:
@@ -69,14 +68,8 @@ bool lightActive(const Reading &reading) {
   return pushesColor(reading.light.hue, reading.light.white, reading.light.dark);
 }
 
-bool scatterTints(const Reading &reading, const uint8_t *dialed) {
-  return fabsf(reading.scatter.hue) > 0.5f || fabsf(reading.scatter.white) > 0.001f
-      || routeAims(dialed, CC_SCATTER_HUE) || routeAims(dialed, CC_SCATTER_WHITE);
-}
-
 bool scatterActive(const Reading &reading, const uint8_t *dialed) {
-  return fabsf(reading.scatter.value) > 0.001f || routeAims(dialed, CC_SCATTER_VALUE)
-      || scatterTints(reading, dialed);
+  return reading.scatter.mix > 0.001f || routeAims(dialed, CC_SCATTER_MIX);
 }
 
 static float flowAt(const Flow &flow, uint8_t stripIndex, float along, float time) {
@@ -131,6 +124,7 @@ static uint8_t placeRank(uint8_t stripIndex, uint8_t place) {
 }
 
 static const float DRIFT_PULL_PER_CYCLE = 0.5f;
+static const float POSITION_REACH_PIXELS = (float)PIXELS * 0.5f;
 
 static float pulledToWholePulse(float drift, float rateSpread, float randomize, float elapsedCycles) {
   drift += rateSpread * randomize * elapsedCycles;
@@ -146,7 +140,7 @@ static float spotWave(const SpotRoute &route, float clock, float before) {
   const float phase = clock * (float)route.ratio - route.delay;
   const float now = lfoWave(phase, route.wave);
   const bool brightens = route.amount > 0.0f
-      && (route.cc == CC_SCATTER_VALUE || route.cc == CC_SCATTER_WHITE);
+      && (route.cc == CC_SCATTER_MIX || route.cc == CC_SCATTER_VALUE);
   const float earlier = before * (float)route.ratio - route.delay;
   if (!brightens || earlier >= phase) return now;
   if (phase - earlier >= 1.0f || floorf(phase) > floorf(earlier)) return 1.0f;
@@ -183,32 +177,29 @@ void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute
     const auto control = [&](uint8_t cc) {
       return spotControl(cc, dialed, routes, routeCount, clock, earlier);
     };
-    const float value = control(CC_SCATTER_VALUE);
-    const float hue = control(CC_SCATTER_HUE);
-    const float white = control(CC_SCATTER_WHITE);
-    if (fabsf(value) <= 0.001f && fabsf(hue) <= 0.5f && white <= 0.001f) continue;
+    const float mix = control(CC_SCATTER_MIX);
+    if (mix <= 0.001f) continue;
 
     const float landing = (float)hash8(stripIndex, place * 131u + life, 61) / 255.0f * (float)PIXELS;
     const float beatsSinceLanding = (fabsf(scatter.rate) > 0.0001f) ? fract(clock) / fabsf(scatter.rate) : 0.0f;
-    out.centers[out.count] = landing + scatter.speed * beatsSinceLanding + control(CC_SCATTER_POSITION) * out.reach;
+    out.centers[out.count] = landing + scatter.speed * beatsSinceLanding + control(CC_SCATTER_POSITION) * POSITION_REACH_PIXELS;
     out.widths[out.count] = fmaxf(control(CC_SCATTER_WIDTH), 1.0f / out.reach);
-    out.values[out.count] = value;
-    out.hues[out.count] = hue;
-    out.whites[out.count] = white;
+    out.mixes[out.count] = mix;
+    out.hues[out.count] = control(CC_SCATTER_HUE);
+    out.saturations[out.count] = control(CC_SCATTER_SATURATION);
+    out.values[out.count] = control(CC_SCATTER_VALUE);
     out.count++;
   }
 }
 
 ScatterSample scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels) {
-  ScatterSample sample = { 0.0f, 0.0f, 0.0f };
-  float strongest = 0.0f;
+  ScatterSample sample = { 0.0f, 0.0f, 0.0f, 0.0f };
   for (uint8_t i = 0; i < spots.count; i++) {
     const float offset = (alongPixels - spots.centers[i]) / spots.reach;
     if (fabsf(offset) >= 0.5f) continue;
-    const float cover = bumpAt(offset, spots.widths[i], scatter.edge);
-    if (cover <= strongest) continue;
-    strongest = cover;
-    sample = { cover * spots.values[i], cover * spots.hues[i], cover * spots.whites[i] };
+    const float cover = spots.mixes[i] * bumpAt(offset, spots.widths[i], scatter.edge);
+    if (cover <= sample.cover) continue;
+    sample = { cover, spots.hues[i], spots.saturations[i], spots.values[i] };
   }
   return sample;
 }
@@ -227,7 +218,7 @@ static Hsv pushed(Hsv base, float hue, float white, float dark) {
 
 
 Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,
-           float shape, const ScatterSample &scatter, bool flowOn, float flowTime) {
+           float shape, bool flowOn, float flowTime) {
   const float along = (float)pixelIndex / (float)(PIXELS - 1);
   const float flow = flowOn ? flowAt(reading.flow, stripIndex, along, flowTime) : 0.0f;
 
@@ -235,9 +226,9 @@ Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float
   const float flowAway = (flow > 0.0f) ? flow : 0.0f;
   return pushed(reading.color,
       field * reading.field.hue + flow * reading.flow.hue
-          + shape * reading.light.hue + scatter.hue,
+          + shape * reading.light.hue,
       fieldAway * reading.field.white + flowAway * reading.flow.white
-          + shape * reading.light.white + scatter.white,
+          + shape * reading.light.white,
       fieldAway * reading.field.dark + flowAway * reading.flow.dark
           + shape * reading.light.dark);
 }

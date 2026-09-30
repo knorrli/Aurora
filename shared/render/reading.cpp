@@ -16,7 +16,6 @@ static const float LIGHT_MAX_HUE = 64.0f;
 
 static const float FIELD_MAX_CELLS_PER_BEAT = 1.0f;
 static const float FLOW_MAX_CYCLES_PER_BEAT = 0.5f;
-static const float SCATTER_MAX_CYCLES_PER_BEAT = 4.0f;
 
 static inline float unitOf(uint8_t value) { return (float)value / 127.0f; }
 
@@ -90,11 +89,10 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FLOW_RATE: return squaredUnit(value, FLOW_MAX_CYCLES_PER_BEAT);
     case CC_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
     case CC_LIGHT_HUE: return bipolarOf(value) * LIGHT_MAX_HUE;
-    case CC_SCATTER_RATE: return squaredUnit(value, SCATTER_MAX_CYCLES_PER_BEAT);
+    case CC_SCATTER_RATE: return 1.0f / aurora_lfo_period(value);
     case CC_SCATTER_HUE: return bipolarOf(value) * SCATTER_MAX_HUE;
 
-    case CC_SCATTER_POSITION:
-    case CC_SCATTER_VALUE: return bipolarOf(value);
+    case CC_SCATTER_POSITION: return bipolarOf(value);
 
     case CC_SHAPE_TAIL: return squaredUnit(value, (float)TAIL_MAX_BEATS);
 
@@ -109,7 +107,9 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FLOW_DARK:
     case CC_LIGHT_WHITE:
     case CC_LIGHT_DARK:
-    case CC_SCATTER_WHITE:
+    case CC_SCATTER_SATURATION:
+    case CC_SCATTER_VALUE:
+    case CC_SCATTER_MIX:
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_EDGE:
     case CC_SCATTER_RANDOMIZE: return unitOf(value);
@@ -177,9 +177,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   scatter.edge = at(CC_SCATTER_EDGE);
   scatter.randomize = at(CC_SCATTER_RANDOMIZE);
   scatter.speed = at(CC_SCATTER_SPEED);
-  scatter.value = at(CC_SCATTER_VALUE);
-  scatter.hue = at(CC_SCATTER_HUE);
-  scatter.white = at(CC_SCATTER_WHITE);
+  scatter.mix = at(CC_SCATTER_MIX);
 
   out.color = routedColor(dialed, pushes);
 }

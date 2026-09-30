@@ -123,7 +123,7 @@
 
     lfoRate: value => shortPeriodName(real('lfoRate', value)),
 
-    scatterRate: value => 'every ' + beatsPer(real('scatterRate', value)) + ' beats',
+    scatterRate: value => 'every ' + shortPeriodName(Protocol.LFO_PERIODS[periodStep(value)]),
     scatterCount: value => real('scatterCount', value).toFixed(1) + ' spots',
     scatterWidth: value => (value === 0 ? '1 px' : percent(real('scatterWidth', value)) + ' of the gap'),
     scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
@@ -132,10 +132,11 @@
       const speed = real('scatterSpeed', value);
       return sign(speed) + Math.abs(speed).toFixed(1) + ' px/beat';
     },
-    scatterPosition: value => signed(real('scatterPosition', value)) + ' of the gap',
-    scatterValue: value => signed(real('scatterValue', value)),
+    scatterPosition: value => signed(real('scatterPosition', value) * 0.5) + ' of the strip',
+    scatterMix: value => percent(real('scatterMix', value)) + ' painted',
     scatterHue: hueReach('scatterHue'),
-    scatterWhite: value => percent(real('scatterWhite', value)) + ' white',
+    scatterSaturation: value => percent(real('scatterSaturation', value)),
+    scatterValue: value => percent(real('scatterValue', value)),
 
     fieldHue: hueReach('fieldHue'),
     fieldWhite: value => percent(real('fieldWhite', value)) + ' white',
@@ -263,16 +264,18 @@
         control('scatterCount', 'Count', 'how many spots each strip has, 1–20. Raising it adds spots and keeps the ones already there'),
         control('scatterWidth', 'Width', 'how much of the gap between spots each spot covers, never less than a pixel'),
         control('scatterEdge', 'Edge', 'hard through to a fade at the spot’s sides'),
-        control('scatterRate', 'Rate', 'how often a spot lands somewhere new. A route onto Width, Position, Hue, White or Value runs once per spot on this clock'),
+        control('scatterRate', 'Rate', 'how often a spot lands somewhere new, stepped so it sits on the beat. A route onto Mix, Hue, Saturation, Value, Width or Position runs once per spot on this clock'),
         control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall moves as one; full scatters their phases and rates'),
         control('scatterSpeed', 'Speed', 'center is still; either side moves each spot from where it landed, steadily up or down the strip'),
-        control('scatterPosition', 'Position', 'how far a spot sits from where it landed, against the gap between spots; plus is up the strip. Route a saw here to slide it'),
+        control('scatterPosition', 'Position', 'how far a spot sits from where it landed, up to half the strip either way; plus is up. Route a build here to move each spot over its life'),
       ],
       amounts: [
-        control('scatterHue', 'Hue', 'how far the hue departs where a spot is'),
-        control('scatterWhite', 'White', 'how far a spot whitens'),
-        control('scatterValue', 'Value', 'plus lights a spot up, minus darkens it: on a shape, in a gap or on its tail. Route a pulse here to flash each spot'),
+        control('scatterMix', 'Mix', 'how much the spots paint over what is below; zero is no scatter. Route a pulse here to flash each spot'),
+        control('scatterHue', 'Hue', 'the spot’s hue, measured from the patch’s hue'),
+        control('scatterSaturation', 'Saturation', 'the spot’s own saturation, whatever is below it'),
+        control('scatterValue', 'Value', 'the spot’s own brightness, whatever is below it; zero paints a dark hole'),
       ],
+      shownBy: ['scatterMix'],
     },
     {
       name: 'Field', tone: 'color',
@@ -420,7 +423,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt') return [64];
-    if (name === 'lfoRate' || name === 'fanFrequency') return steps(at);
+    if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
   }

@@ -74,7 +74,7 @@ enum AuroraCC : uint8_t {
     CC_SCATTER_SPEED         = 55, // [patch]
     CC_SCATTER_POSITION      = 56, // [patch]
     CC_SCATTER_HUE           = 57, // [patch]
-    CC_SCATTER_WHITE         = 58, // [patch]
+    CC_SCATTER_SATURATION    = 58, // [patch]
     CC_SCATTER_VALUE         = 59, // [patch]
 
     CC_FIELD_FORM            = 60, // [switch]
@@ -96,6 +96,8 @@ enum AuroraCC : uint8_t {
     CC_LIGHT_HUE             = 75, // [patch]
     CC_LIGHT_WHITE           = 76, // [patch]
     CC_LIGHT_DARK            = 77, // [patch]
+
+    CC_SCATTER_MIX           = 78, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -124,12 +126,13 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_SCATTER_COUNT,           80 },
     { CC_SCATTER_WIDTH,           34 },
     { CC_SCATTER_EDGE,            40 },
-    { CC_SCATTER_RATE,            60 },
+    { CC_SCATTER_RATE,            80 },
     { CC_SCATTER_RANDOMIZE,      110 },
     { CC_SCATTER_SPEED,           64 },
     { CC_SCATTER_POSITION,        64 },
     { CC_SCATTER_HUE,             64 },
-    { CC_SCATTER_VALUE,           64 },
+    { CC_SCATTER_SATURATION,     127 },
+    { CC_SCATTER_VALUE,          127 },
     { CC_FIELD_DIRECTION,         64 },
     { CC_FIELD_WIDTH,             64 },
     { CC_FIELD_EDGE,              64 },

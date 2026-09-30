@@ -63,9 +63,7 @@ struct Scatter {
   float edge;
   float randomize;
   float speed;
-  float value;
-  float hue;
-  float white;
+  float mix;
 };
 
 struct Reading {

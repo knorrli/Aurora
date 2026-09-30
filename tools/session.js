@@ -186,7 +186,7 @@
       return !Patch.ROUTES.some(route =>
         live[route.destination] !== 0 && live[route.amount] !== Patch.NEUTRAL[route.amount]);
     }
-    return card.amounts.every(name => live[name] === Patch.NEUTRAL[name]
+    return (card.shownBy || card.amounts).every(name => live[name] === Patch.NEUTRAL[name]
       && !routesOn(name, live).some(route => live[route.amount] !== Patch.NEUTRAL[route.amount]));
   }
 

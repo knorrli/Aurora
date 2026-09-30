@@ -90,9 +90,10 @@ static bool circular(uint8_t cc) {
 
 bool spotDestination(uint8_t cc) {
   switch (cc) {
+    case CC_SCATTER_MIX:
     case CC_SCATTER_VALUE:
     case CC_SCATTER_HUE:
-    case CC_SCATTER_WHITE:
+    case CC_SCATTER_SATURATION:
     case CC_SCATTER_WIDTH:
     case CC_SCATTER_POSITION:
       return true;
