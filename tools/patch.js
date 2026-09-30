@@ -138,9 +138,8 @@
     shapeSpeed: (value, live) => {
       const beats = travelBeats(value, live);
       if (beats === null) return 'still';
-      const every = beats.toFixed(beats < 10 ? 2 : beats < 100 ? 1 : 0) + ' beats';
-      if (Protocol.isOn(live.shapeBounce)) return 'up and back every ' + every;
-      return (real('shapeSpeed', value) > 0 ? 'up' : 'down') + ', repeats every ' + every;
+      const arrow = Protocol.isOn(live.shapeBounce) ? '↕' : real('shapeSpeed', value) > 0 ? '↑' : '↓';
+      return arrow + ' ' + beats.toFixed(beats < 10 ? 2 : beats < 100 ? 1 : 0) + ' beats';
     },
     shapeBend: value => signed(real('shapeBend', value)) + ' bent',
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
@@ -253,7 +252,7 @@
         names: [
           control('shapeBounce', 'Bounce', 'turn at the cell’s edge instead of wrapping',
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
-          control('shapeSpeed', 'Speed', 'center is still; either side travels'),
+          control('shapeSpeed', 'Speed', 'center is still; either side travels. The readout is the beats until the pattern repeats: ↑ up, ↓ down, ↕ there and back'),
           control('shapePosition', 'Position', 'where a still pattern rests in its cell, from against the bottom end to against the top'),
           control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
           control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own cell'),
