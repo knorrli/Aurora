@@ -423,7 +423,7 @@
       return [64];
     }
     const at = value => real(name, value);
-    if (name === 'shapeBendAt') return [64];
+    if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
     if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
