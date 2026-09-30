@@ -43,7 +43,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ## Generator
 
-- Hue's ends differ: 127 lands one wheel step short of red, so it reads pinkish on the strips. Keep that, as v1 did, or make the top meet red.
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
 - Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
 

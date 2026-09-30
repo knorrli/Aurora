@@ -28,6 +28,10 @@ static inline uint8_t byteOf(uint8_t value) {
   return (uint8_t)(((uint16_t)value * 255 + 63) / 127);
 }
 
+static inline uint8_t hueOf(uint8_t value) {
+  return (uint8_t)(((uint16_t)value * 256 + 63) / 127);
+}
+
 static float smoothCountOf(uint8_t value) {
   return powf((float)MAX_COUNT, unitOf(value));
 }
@@ -58,7 +62,7 @@ static float fanFrequencyOf(uint8_t value) {
 
 float controlValue(uint8_t cc, uint8_t value) {
   switch (cc) {
-    case CC_HUE:
+    case CC_HUE: return hueOf(value);
     case CC_SATURATION:
     case CC_VALUE:
     case CC_PAR_VALUE:
