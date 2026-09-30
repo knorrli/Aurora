@@ -2,6 +2,8 @@
   'use strict';
 
   const Protocol = global.AuroraProtocol;
+  const Patch = global.AuroraPatch;
+  const Preview = global.AuroraPreview;
   const Library = global.AuroraLibrary;
   const LibraryFile = global.AuroraLibraryFile;
   const Editor = global.AuroraEditor;
@@ -19,34 +21,110 @@
 
   const leaveDraft = () => !session.draft || confirm(`Discard your changes to "${session.draft.name}"?`);
 
+  let target = null;
+  let dragged = null;
+
   function keysOn(slot) {
     return session.library.keymap.flatMap((keySlot, index) => (keySlot === slot ? [index + 1] : []));
   }
 
-  function listItem(slot, patch) {
-    const keys = slot === null ? [] : keysOn(slot);
+  function patchColor(patch) {
+    const named = Library.namedFromBytes(patch.base);
+    const hue = Preview.convert(Patch.CC.hue, named.hue) & 255;
+    const saturation = Preview.convert(Patch.CC.saturation, named.saturation);
+    return `rgb(${Preview.paletteColor(named.palette, hue, saturation).join(',')})`;
+  }
+
+  function firstEmptySlot() {
+    const slot = session.library.slots.findIndex(patch => !patch);
+    return slot < 0 ? null : slot;
+  }
+
+  function saveTarget() {
+    if (target !== null && target !== session.slot) return target;
+    return session.slot === null ? firstEmptySlot() : null;
+  }
+
+  function cell(slot) {
     const current = slot === session.slot;
-    const item = element('button', 'item');
-    item.classList.toggle('on', current);
-    item.classList.toggle('dirty', current && !!session.draft);
-    const name = (current ? session.patch() : patch).name;
-    item.append(
-      element('span', 'slot', slot === null ? 'new' : String(slot)),
-      element('span', 'name', name || '(unnamed)'),
-      element('span', 'keys', !keys.length ? '' : keys.length > 3 ? `${keys.length} keys` : 'key ' + keys.join(',')));
-    item.title = keys.length ? `${name} — on keypad ${keys.join(', ')}` : name;
-    if (slot !== null) item.addEventListener('click', () => selectPatch(slot));
-    return item;
+    const patch = current ? session.patch() : session.library.slots[slot];
+    const keys = keysOn(slot);
+    const button = element('button', 'cell');
+    button.classList.toggle('empty', !patch);
+    button.classList.toggle('on', current);
+    button.classList.toggle('dirty', current && !!session.draft);
+    button.classList.toggle('target', slot === saveTarget());
+
+    const head = element('span', 'cell-head');
+    head.append(element('span', 'slot', String(slot)), element('span', 'keys', keys.length > 2 ? keys[0] + '+' : keys.join('')));
+    const name = element('span', 'name', patch ? patch.name || '(unnamed)' : slot === saveTarget() ? 'new' : '');
+    if (patch) {
+      const color = element('i', 'color');
+      color.style.background = patchColor(patch);
+      button.appendChild(color);
+    }
+    button.append(head, name);
+    button.title = patch
+      ? `${slot} · ${patch.name}${keys.length ? ` · key ${keys.join(', ')}` : ''}\nClick to open. Drag onto another slot to move it there.`
+      : `${slot} · empty\nClick to pick it for "save to slot".`;
+
+    button.addEventListener('click', event => {
+      if (patch && !event.shiftKey) selectPatch(slot);
+      else pickTarget(slot);
+    });
+    wireDrag(button, slot, !!session.library.slots[slot]);
+    return button;
+  }
+
+  function pickTarget(slot) {
+    target = slot === target ? null : slot;
+    paintList();
+  }
+
+  function wireDrag(button, slot, filled) {
+    button.draggable = filled;
+    button.addEventListener('dragstart', event => {
+      dragged = slot;
+      event.dataTransfer.effectAllowed = 'move';
+      button.classList.add('dragging');
+    });
+    button.addEventListener('dragend', () => {
+      dragged = null;
+      button.classList.remove('dragging');
+    });
+    button.addEventListener('dragover', event => {
+      if (dragged === null || dragged === slot) return;
+      event.preventDefault();
+      button.classList.add('drop');
+    });
+    button.addEventListener('dragleave', () => button.classList.remove('drop'));
+    button.addEventListener('drop', event => {
+      event.preventDefault();
+      if (dragged !== null && dragged !== slot) swapSlots(dragged, slot);
+    });
+  }
+
+  function swapSlots(from, to) {
+    const { slots, keymap } = session.library;
+    [slots[from], slots[to]] = [slots[to], slots[from]];
+    keymap.forEach((slot, index) => {
+      if (slot === from) keymap[index] = to;
+      else if (slot === to) keymap[index] = from;
+    });
+    if (session.slot === from) session.slot = to;
+    else if (session.slot === to) session.slot = from;
+    if (target === from || target === to) target = null;
+    session.saveLibrary();
+    paintList();
+    say(slots[from] ? `swapped slots ${from} and ${to}` : `moved "${slots[to].name}" to slot ${to}`);
   }
 
   function paintList() {
     const filled = Library.filledSlots(session.library);
-    const items = filled.map(slot => listItem(slot, session.library.slots[slot]));
-    if (session.slot === null) items.unshift(listItem(null, session.draft));
-    byId('patchList').replaceChildren(...items);
+    byId('patchGrid').replaceChildren(...Array.from({ length: Protocol.PATCH_MAX }, (_, slot) => cell(slot)));
     byId('libraryCount').textContent = `${filled.length} / ${Protocol.PATCH_MAX}`;
     paintSaving();
-    paintKeypad();
+    paintKeys();
     Editor.transition.refreshPatchChoices();
   }
 
@@ -54,37 +132,24 @@
     byId('patchSave').disabled = !session.draft || session.slot === null;
     byId('patchDiscard').disabled = !session.draft;
     byId('patchDelete').disabled = session.slot === null;
-    const target = byId('saveSlot');
-    if (target.value === '' || !target.dataset.touched) {
-      target.value = session.slot !== null ? session.slot : session.library.slots.findIndex(patch => !patch);
-    }
-    paintSaveTarget();
-  }
-
-  function saveTarget() {
-    const input = byId('saveSlot');
-    const slot = +input.value;
-    return input.value !== '' && Number.isInteger(slot) && slot >= 0 && slot < Protocol.PATCH_MAX ? slot : null;
-  }
-
-  function paintSaveTarget() {
     const slot = saveTarget();
-    byId('saveHere').disabled = slot === null;
-    byId('saveOccupant').textContent = slot === null ? ''
-      : slot === session.slot ? 'this patch'
-      : session.library.slots[slot] ? session.library.slots[slot].name : 'empty';
+    const saveHere = byId('saveHere');
+    saveHere.disabled = slot === null;
+    saveHere.textContent = slot === null ? 'save to slot' : `save to slot ${slot}`;
+    const occupant = slot === null ? null : session.library.slots[slot];
+    saveHere.title = slot === null ? 'Shift-click or click an empty slot to pick where a copy goes.'
+      : occupant ? `Replaces "${occupant.name}".` : 'Slot is empty.';
   }
 
-  function paintKeypad() {
+  function paintKeys() {
     const keys = [];
     for (let key = 1; key <= Protocol.KEYPAD_KEYS; key++) {
       const slot = session.library.keymap[key - 1];
       const patch = session.library.slots[slot];
-      const button = element('button', 'key');
-      button.append(element('span', 'number', String(key)),
-                    element('span', 'who', patch ? patch.name : `${slot} · empty`));
-      button.title = (patch ? `Key ${key} plays slot ${slot}, "${patch.name}". ` : `Key ${key} plays slot ${slot}, which is empty. `)
-        + (session.slot === null ? 'Save this patch into a slot to put it on a key.' : `Click to put slot ${session.slot} here.`);
+      const button = element('button', null, String(key));
+      button.classList.toggle('on', session.slot !== null && slot === session.slot);
+      button.title = (patch ? `Key ${key} plays slot ${slot}, "${patch.name}".` : `Key ${key} plays slot ${slot}, which is empty.`)
+        + (session.slot === null ? '' : `\nClick to put this patch on key ${key}.`);
       button.addEventListener('click', () => {
         if (session.slot === null) {
           say('save the patch into a slot first', 'bad');
@@ -97,7 +162,7 @@
       });
       keys.push(button);
     }
-    byId('keypad').replaceChildren(...keys);
+    byId('keyStrip').replaceChildren(...keys);
   }
 
   function selectPatch(slot) {
@@ -225,11 +290,6 @@
       if (session.slot === null) showFirstOrNew();
       else Editor.show(session.slot);
     });
-    byId('saveSlot').max = Protocol.PATCH_MAX - 1;
-    byId('saveSlot').addEventListener('input', () => {
-      byId('saveSlot').dataset.touched = '1';
-      paintSaveTarget();
-    });
     byId('saveHere').addEventListener('click', () => {
       const slot = saveTarget();
       const occupant = session.library.slots[slot];
@@ -237,7 +297,7 @@
       session.library.slots[slot] = Library.clonePatch(session.patch());
       session.slot = slot;
       session.draft = null;
-      delete byId('saveSlot').dataset.touched;
+      target = null;
       session.saveLibrary();
       Editor.paint();
       paintList();

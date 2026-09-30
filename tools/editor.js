@@ -98,8 +98,6 @@
 
   function show(slot, draft) {
     session.select(slot, draft);
-    delete byId('saveSlot').dataset.touched;
-    byId('saveSlot').value = '';
     Editor.transition.rebuild();
     paint();
     Editor.rail.paintList();

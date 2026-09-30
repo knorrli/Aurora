@@ -72,38 +72,30 @@
   .panel + .panel { margin-top: 14px; }
   .work > * + * { margin-top: 16px; }
 
-  .patchlist { max-height: 34vh; overflow-y: auto; margin: 0 -4px; }
-  .patchlist .item {
-    display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left;
-    background: none; border: 1px solid transparent; border-radius: 4px;
-    padding: 4px 7px; color: var(--text);
+.library-head { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .library-head h2 { margin: 0; }
+  .key-strip { display: flex; gap: 3px; }
+  .key-strip button { padding: 1px 0; width: 22px; font-size: 10.5px; }
+  .patch-grid { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; }
+  .patch-grid .cell {
+    position: relative; min-width: 0; height: 34px; padding: 5px 4px 2px; border-radius: 3px;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
+    background: var(--sunk); border: 1px solid var(--line); color: var(--text); text-align: left;
+    font-size: 10px; line-height: 1.2; overflow: hidden;
   }
-  .patchlist .item:hover { background: #22252f; color: var(--text); border-color: transparent; }
-  .patchlist .item.on, .patchlist .item.on:hover { background: #2b2f3c; border-color: var(--rail); color: var(--text); }
-  .patchlist .item .slot { color: var(--faint); font-size: 10.5px; flex: 0 0 auto; min-width: 22px; }
-  .patchlist .item .name {
-    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .patch-grid .cell.empty { background: none; color: var(--faint); }
+  .patch-grid .cell .color { position: absolute; left: 0; right: 0; top: 0; height: 4px; }
+  .patch-grid .cell .cell-head { display: flex; justify-content: space-between; gap: 2px; }
+  .patch-grid .cell .slot { color: var(--faint); }
+  .patch-grid .cell .keys { color: var(--accent); white-space: nowrap; overflow: hidden; }
+  .patch-grid .cell .name { overflow: hidden; white-space: nowrap; text-overflow: clip; }
+  .patch-grid .cell.on, .patch-grid .cell.on:hover:not(:disabled) {
+    background: #2f2921; border-color: var(--accent); color: var(--text);
   }
-  .patchlist .item .keys { flex: 0 0 auto; color: var(--accent); font-size: 10.5px; white-space: nowrap; }
-  .patchlist .item.dirty .name::after { content: ' \2022'; color: var(--accent); }
-  .saveto { margin-top: 7px; flex-wrap: nowrap; }
-  .saveto input { width: 52px; }
-  .saveto #saveOccupant { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .keypad .key {
-    background: var(--sunk); border: 1px solid var(--line); border-radius: 4px;
-    padding: 5px 6px; min-height: 52px; min-width: 0;
-    display: flex; flex-direction: column; gap: 2px;
-    cursor: pointer; text-align: left; color: var(--text);
-  }
-  .keypad .key:hover { border-color: var(--accent); }
-  .keypad .key .number { color: var(--accent); font-size: 10.5px; }
-  .keypad .key .who {
-    font-size: 10.5px; line-height: 1.25; color: var(--dim); min-width: 0;
-    overflow: hidden; overflow-wrap: anywhere;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  }
+  .patch-grid .cell.target { border-style: dashed; border-color: var(--accent); }
+  .patch-grid .cell.dirty .name::after { content: ' \2022'; color: var(--accent); }
+  .patch-grid .cell.dragging { opacity: .4; }
+  .patch-grid .cell.drop { border-color: var(--text); }
 
   .stack { display: flex; flex-direction: column; gap: 7px; }
   .rowline { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
@@ -316,28 +308,6 @@
 
   <aside class="rail">
     <section class="panel">
-      <h2>Library</h2>
-      <div class="patchlist" id="patchList"></div>
-      <div class="rowline" style="margin-top:10px">
-        <button class="tiny" id="patchSave">save</button>
-        <button class="tiny" id="patchDiscard">discard</button>
-        <button class="tiny" id="patchNew">new</button>
-        <button class="tiny" id="patchDelete">delete</button>
-      </div>
-      <div class="rowline saveto">
-        <label class="cc">slot <input type="number" id="saveSlot" min="0"></label>
-        <span class="cc" id="saveOccupant"></span>
-        <button class="tiny" id="saveHere">save here</button>
-      </div>
-      <p class="note" id="libraryCount"></p>
-    </section>
-
-    <section class="panel">
-      <h2>The keypad</h2>
-      <div class="keypad" id="keypad"></div>
-    </section>
-
-    <section class="panel">
       <h2>The brain</h2>
       <div class="stack">
         <div class="rowline">
@@ -356,6 +326,25 @@
   </aside>
 
   <main class="work">
+
+    <section class="panel library">
+      <div class="library-head">
+        <h2>Library</h2>
+        <span class="cc" id="libraryCount"></span>
+        <div class="rowline">
+          <button class="tiny" id="patchNew">new</button>
+          <button class="tiny" id="patchSave">save</button>
+          <button class="tiny" id="patchDiscard">discard</button>
+          <button class="tiny" id="saveHere">save to slot</button>
+          <button class="tiny" id="patchDelete">delete</button>
+        </div>
+        <div class="rowline push-right">
+          <span class="cc">keys</span>
+          <div class="key-strip" id="keyStrip"></div>
+        </div>
+      </div>
+      <div class="patch-grid" id="patchGrid"></div>
+    </section>
 
     <section class="panel head">
       <label class="field"><span>Name</span><input type="text" id="patchName"></label>
