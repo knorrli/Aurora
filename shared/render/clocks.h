@@ -8,6 +8,8 @@ float clockPhase(Clock &clock, float beats, float rate);
 
 float anchoredPhase(Clock &clock, float beats, float elapsed, float rate);
 
+void pullToWhole(float &cycles, float elapsed, float rate);
+
 float anchoredLfoPhase(Motion &motion, float beats, float rate);
 
 }

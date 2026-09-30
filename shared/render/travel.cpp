@@ -35,6 +35,7 @@ static float wrapCenter(float cellsTravelled, Anchor &anchor, const Travel &trav
                      + strip.shiftLaps + strip.fanOffset;
   if (travel.flipped) anchor.travelCells = anchor.lastCenter - dialed;
   else if (strip.lapsPerBeat == 0.0f) settle(anchor.travelCells, cellsTravelled, travel.elapsed);
+  else pullToWhole(anchor.travelCells, travel.elapsed, strip.lapsPerBeat);
   const float center = dialed + anchor.travelCells;
   if (!travel.walled) return center;
 
@@ -51,14 +52,18 @@ static float bounceCenter(float swingCycles, Anchor &anchor, const Travel &trave
   const float cycles = swingCycles + direction * strip.shiftLaps + strip.fanOffset;
   if (travel.flipped) {
     anchor.swingCycles = swingPhaseAt(anchor.lastCenter, halfCore, swingSpan, direction) - cycles;
+  } else {
+    pullToWhole(anchor.swingCycles, travel.elapsed, strip.lapsPerBeat);
   }
   return halfCore + triangleSwing(fract(cycles + anchor.swingCycles)) * swingSpan;
 }
 
 float travelCenter(Clock &travelClock, Clock &swingClock, Anchor &anchor, const Travel &travel,
                    const StripTravel &strip) {
-  const float cellsTravelled = clockPhase(travelClock, travel.beats, strip.lapsPerBeat);
-  const float swingCycles = clockPhase(swingClock, travel.beats, fabsf(strip.lapsPerBeat));
+  const float cellsTravelled =
+      anchoredPhase(travelClock, travel.beats, travel.elapsed, strip.lapsPerBeat);
+  const float swingCycles =
+      anchoredPhase(swingClock, travel.beats, travel.elapsed, fabsf(strip.lapsPerBeat));
   if (travel.bouncing) {
     const float center = bounceCenter(swingCycles, anchor, travel, strip);
     anchor.lastCenter = center;
