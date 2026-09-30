@@ -125,6 +125,7 @@
   .transition .scrub input[type=range] { flex: 1 1 60px; min-width: 60px; }
   .fields { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; }
   .fields .field { display: contents; }
+  .fields .field.inert > * { opacity: .38; }
   .fields select { width: 100%; }
   .transition .fields { margin-top: 9px; }
   .transition .target-moves { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-top: 9px; }

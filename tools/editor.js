@@ -4,6 +4,7 @@
   const Protocol = global.AuroraProtocol;
   const Patch = global.AuroraPatch;
   const LibraryFile = global.AuroraLibraryFile;
+  const Library = global.AuroraLibrary;
   const Editor = global.AuroraEditor;
   const { session, dom } = Editor;
   const { element, byId } = dom;
@@ -26,7 +27,7 @@
     for (const { part, button, badge } of tabs) {
       button.classList.toggle('on', part === session.partIndex);
       badge.textContent = Patch.isTarget(part)
-        ? Editor.transition.overriddenText(part, 'follows the patch') : 'the look itself';
+        ? Editor.transition.changesText(part) : '';
     }
   }
 
@@ -39,6 +40,7 @@
   }
 
   const TIME_FIELDS = ['transitionTime', 'accentTime'];
+  const NAME_LENGTH = 13;
 
   function buildHead() {
     for (const field of TIME_FIELDS) {
@@ -58,7 +60,7 @@
     });
 
     const name = byId('patchName');
-    name.maxLength = Protocol.PATCH_NAME_LENGTH;
+    name.maxLength = NAME_LENGTH;
     name.addEventListener('input', () => {
       const printable = LibraryFile.printableName(name.value);
       if (printable !== name.value) name.value = printable;
@@ -68,13 +70,15 @@
     });
   }
 
-  function paintHead(live) {
+  function paintHead() {
     const patch = session.patch();
     if (byId('patchName').value !== patch.name) byId('patchName').value = patch.name;
     for (const field of TIME_FIELDS) {
       byId(field).value = String(Patch.periodValue(Patch.periodStep(patch[field])));
     }
-    byId('tempoDivision').value = String(live.tempoDivision);
+    byId('tempoDivision').value = String(Library.namedFromBytes(patch.base).tempoDivision);
+    const accentReachesNothing = !Library.overriddenIn(patch, Protocol.PATCH_TARGET_ACCENT).length;
+    byId('accentTime').closest('.field').classList.toggle('inert', accentReachesNothing);
   }
 
   function paint() {
@@ -82,7 +86,7 @@
     Editor.rows.paint(live);
     paintTabs();
     Editor.routes.paint(live);
-    paintHead(live);
+    paintHead();
     Editor.wall.paint();
     Editor.transition.paintShowing();
     Editor.transition.paintMix();

@@ -69,5 +69,5 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
 - Let a morph target set a "from the patch" switch by writing it into the base patch: setting arp mode while routing PAR hue range on the accent should not need a trip to base. Failing that, show the selected option clearly while it is disabled.
 - Save what the wall shows as any part, base or a target, of this patch or a new one, then keep refining and save it again anywhere. Replaces copy from / move onto / swap with.
-- The Transition panel's "over" edits the transition time of the patch it goes to, from inside this one.
+- Shrink `AURORA_PATCH_NAME_LENGTH` to 13 at the next patch format change; the editor already stops at 13.
 - Rebuild starting-point looks on routes, the LFO and the scatter. The old tables (shapes, fan looks, swing looks, color looks) are in `git show 21a435c:tools/patch.js`.

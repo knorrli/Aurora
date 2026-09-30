@@ -11,15 +11,23 @@
   const SCRUB_STEPS = 1000;
   const SPRING_BACK_MILLISECONDS = 180;
 
-  const bar = { scrub: null, run: null, runTime: null, comingFrom: null, transitionTo: null };
+  const bar = { scrub: null, run: null, from: null };
   const mixBar = { sliders: {}, readouts: {} };
   let animationFrame = null;
 
+  const MIX_CONTROLS = {
+    [Protocol.PATCH_TARGET_COLOR]: 'faderColor',
+    [Protocol.PATCH_TARGET_MOTION]: 'faderMotion',
+    [Protocol.PATCH_TARGET_EXTENT]: 'faderExtent',
+    [Protocol.PATCH_TARGET_ACCENT]: 'keyHeld',
+  };
+
   const percentOf = position => Math.round(position * 100) + '%';
 
-  function overriddenText(part, otherwise) {
+  function changesText(part) {
     const count = Library.overriddenIn(session.patch(), part).length;
-    return count ? `${count} overridden` : otherwise;
+    if (!count) return 'no changes';
+    return `${count} change${count === 1 ? '' : 's'}`;
   }
 
   function stop() {
@@ -33,7 +41,7 @@
   }
 
   function snap() {
-    if (session.transition.position === session.restPosition()) return;
+    if (session.transition.position === 1) return;
     stop();
     session.resetTransition();
     showPosition();
@@ -58,19 +66,16 @@
   }
 
   function springBack() {
-    const rest = session.restPosition();
-    if (session.transition.position === rest) {
+    if (session.transition.position === 1) {
       Editor.paint();
       return;
     }
     stop();
-    animate(session.transition.position, rest, SPRING_BACK_MILLISECONDS, Editor.paint);
+    animate(session.transition.position, 1, SPRING_BACK_MILLISECONDS, Editor.paint);
   }
 
-  const transitionStep = patch => Patch.periodStep(patch.transitionTime);
-
   function transitionMilliseconds(patch) {
-    return Protocol.LFO_PERIODS[transitionStep(patch)] * 60000 / Editor.midi.bpm();
+    return Protocol.LFO_PERIODS[Patch.periodStep(patch.transitionTime)] * 60000 / Editor.midi.bpm();
   }
 
   function run() {
@@ -79,36 +84,22 @@
       springBack();
       return;
     }
-    const destination = session.transitionDestination();
-    if (!destination || !Editor.rail.leaveDraft()) return;
-    const slot = session.transition.to;
+    if (!session.comingFrom()) return;
     bar.run.classList.add('on');
-    animate(0, 1, transitionMilliseconds(destination), () => Editor.show(slot));
+    animate(0, 1, transitionMilliseconds(session.patch()), () => {
+      stop();
+      Editor.paint();
+    });
   }
 
   function paintRun() {
-    if (!bar.run) return;
-    const destination = session.transitionDestination();
-    bar.run.disabled = !destination;
-    bar.runTime.disabled = !destination;
-    bar.runTime.value = destination ? String(Patch.periodValue(transitionStep(destination))) : '';
-  }
-
-  function buildRunTime() {
-    const select = element('select');
-    dom.setOptions(select, Patch.LFO_PERIOD_NAMES.map((text, step) => [Patch.periodValue(step), text]), '');
-    select.addEventListener('change', () => {
-      session.transitionDestination().transitionTime = +select.value;
-      session.saveLibrary();
-    });
-    bar.runTime = select;
-    return labeledField('over', select);
+    if (bar.run) bar.run.disabled = !session.comingFrom();
   }
 
   function showingText() {
     const position = session.transition.position;
     if (session.isTarget()) return `${Patch.PART_NAMES[session.partIndex]} ${percentOf(position)}`;
-    if (session.transitioning()) return `"${session.transitionDestination().name}" ${percentOf(position)}`;
+    if (session.transitioning()) return `from "${session.comingFrom().name}" ${percentOf(position)}`;
     if (session.mixing()) {
       return Object.entries(session.mix).filter(([, amount]) => amount > 0)
         .map(([part, amount]) => `${Patch.PART_NAMES[part]} ${percentOf(amount)}`).join(' + ');
@@ -138,40 +129,24 @@
 
   function refreshPatchChoices() {
     session.forgetMissingPatches();
-    const filled = Library.filledSlots(session.library);
-    if (bar.comingFrom) {
+    if (bar.from) {
       const from = session.transition.from;
-      dom.setOptions(bar.comingFrom, patchOptions(filled), from === null ? '' : from);
-    }
-    if (bar.transitionTo) {
-      const to = session.transition.to;
-      dom.setOptions(bar.transitionTo,
-        [['', '— nowhere —'], ...patchOptions(filled.filter(slot => slot !== session.slot))],
-        to === null ? '' : to);
+      const others = Library.filledSlots(session.library).filter(slot => slot !== session.slot);
+      dom.setOptions(bar.from, [['', '— nowhere —'], ...patchOptions(others)],
+        from === null || from === session.slot ? '' : from);
     }
     paintRun();
   }
 
-  function buildComingFrom() {
+  function buildFrom() {
     const select = element('select');
     select.addEventListener('change', () => {
-      session.transition.from = select.value === '' ? null : +select.value;
-      Editor.refresh();
-    });
-    const field = labeledField('Coming from', select);
-    bar.comingFrom = select;
-    return field;
-  }
-
-  function buildTransitionTo() {
-    const select = element('select');
-    select.addEventListener('change', () => {
-      session.transition.to = select.value === '' ? null : +select.value;
+      session.transition.from = select.value === '' ? session.slot : +select.value;
       paintRun();
       Editor.refresh();
     });
-    bar.transitionTo = select;
-    return labeledField('to', select);
+    bar.from = select;
+    return labeledField('from', select);
   }
 
   function targetMoves() {
@@ -223,7 +198,7 @@
   function build() {
     const host = byId('transitionBar');
     const target = session.isTarget();
-    Object.assign(bar, { run: null, runTime: null, comingFrom: null, transitionTo: null });
+    Object.assign(bar, { run: null, from: null });
 
     const scrub = element('div', 'scrub');
     bar.scrub = dom.rangeInput(SCRUB_STEPS);
@@ -244,15 +219,12 @@
       bar.run.id = 'transitionRun';
       bar.run.addEventListener('click', run);
       scrub.appendChild(bar.run);
-      fields.append(buildTransitionTo(), buildRunTime());
-      host.appendChild(fields);
-    } else {
-      if (session.partIndex === Protocol.PATCH_TARGET_ACCENT) {
-        fields.appendChild(buildComingFrom());
-        host.appendChild(fields);
-      }
-      host.appendChild(targetMoves());
     }
+    if (!target || session.partIndex === Protocol.PATCH_TARGET_ACCENT) {
+      fields.appendChild(buildFrom());
+      host.appendChild(fields);
+    }
+    if (target) host.appendChild(targetMoves());
     showPosition();
     refreshPatchChoices();
     paintShowing();
@@ -280,13 +252,12 @@
     const rows = element('div', 'mix-rows');
     for (const part of Patch.TARGETS) {
       const row = element('div', 'row');
-      const label = dom.labeled('label', Patch.PART_NAMES[part],
-        part === Protocol.PATCH_TARGET_ACCENT ? 'a held key' : 'fader');
+      const label = dom.ccLabeled('label', Patch.PART_NAMES[part], Patch.CC[MIX_CONTROLS[part]]);
       const track = element('div', 'track');
       const slider = dom.rangeInput(SCRUB_STEPS);
       slider.id = 'mix' + part;
       slider.value = Math.round(session.mix[part] * SCRUB_STEPS);
-      const readout = dom.labeled('output', '', '');
+      const readout = element('output');
       slider.addEventListener('input', () => {
         session.mix[part] = +slider.value / SCRUB_STEPS;
         paintMixReadout(part);
@@ -311,7 +282,7 @@
   }
 
   function paintMixReadout(part) {
-    dom.fillLabeled(mixBar.readouts[part], percentOf(session.mix[part]), overriddenText(+part, 'nothing to reach'));
+    mixBar.readouts[part].textContent = percentOf(session.mix[part]);
   }
 
   function rebuild() {
@@ -321,6 +292,6 @@
   }
 
   Editor.transition = {
-    snap, rebuild, refreshPatchChoices, paintShowing, paintMix, overriddenText,
+    snap, rebuild, refreshPatchChoices, paintShowing, paintMix, changesText,
   };
 })(window);

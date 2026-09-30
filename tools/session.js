@@ -14,7 +14,7 @@
     slot: null,
     draft: null,
     partIndex: Protocol.PATCH_BASE,
-    transition: { position: 0, from: null, to: null },
+    transition: { position: 1, from: null },
     mix: Object.fromEntries(Patch.TARGETS.map(part => [part, 0])),
     bypassedRoutes: new Set(),
     bypassedCards: new Set(),
@@ -95,20 +95,17 @@
     return session.draft;
   }
 
-  function heldAt() {
+  function comingFrom() {
     const from = session.transition.from;
-    if (session.partIndex !== Protocol.PATCH_TARGET_ACCENT || from === null || from === session.slot) return null;
-    return patchAt(from);
+    return from === null || from === session.slot ? null : patchAt(from);
   }
+
+  const heldAt = () => (session.partIndex === Protocol.PATCH_TARGET_ACCENT ? comingFrom() : null);
 
   const switchSource = () => (heldAt() || patch()).base;
 
-  const restPosition = () => (isTarget() ? 1 : 0);
   const mixing = () => Object.values(session.mix).some(position => position > 0);
-  const transitionDestination = () =>
-    (session.transition.to === null ? null : patchAt(session.transition.to));
-  const transitioning = () =>
-    !isTarget() && !!transitionDestination() && session.transition.position > 0;
+  const transitioning = () => !isTarget() && !!comingFrom() && session.transition.position < 1;
 
   function liveNamed() {
     const current = patch();
@@ -116,7 +113,7 @@
     if (isTarget()) {
       return Library.blend(current.base, Library.partBytes(current, session.partIndex), position, switchSource());
     }
-    if (transitioning()) return Library.blend(current.base, transitionDestination().base, position, current.base);
+    if (transitioning()) return Library.blend(comingFrom().base, current.base, position, comingFrom().base);
     if (mixing()) {
       return Library.mix(current, Object.entries(session.mix).map(([part, amount]) => [+part, amount]));
     }
@@ -220,12 +217,12 @@
   }
 
   function select(slot, draft) {
+    const previous = session.slot;
+    if (previous !== slot) session.transition.from = previous !== null && patchAt(previous) ? previous : slot;
     session.slot = slot;
     session.draft = draft || null;
     session.bypassedRoutes.clear();
     session.bypassedCards.clear();
-    session.transition.from = slot;
-    session.transition.to = null;
     resetPreview();
     saveDraft();
   }
@@ -237,7 +234,7 @@
   }
 
   function resetTransition() {
-    session.transition.position = restPosition();
+    session.transition.position = 1;
   }
 
   function resetPreview() {
@@ -247,14 +244,13 @@
 
   function forgetMissingPatches() {
     const transition = session.transition;
-    if (transition.to !== null && (transition.to === session.slot || !patchAt(transition.to))) transition.to = null;
     if (transition.from !== null && !patchAt(transition.from)) transition.from = session.slot;
   }
 
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
-    patch, patchAt, isTarget, overrides, editing, heldAt,
-    restPosition, mixing, transitionDestination, transitioning,
+    patch, patchAt, isTarget, overrides, editing, comingFrom, heldAt,
+    mixing, transitioning,
     liveNamed, targetNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
     freeRoute, addRoute, setRouteArp, select, selectPart, resetTransition, resetPreview, forgetMissingPatches,

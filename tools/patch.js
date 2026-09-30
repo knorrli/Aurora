@@ -68,11 +68,23 @@
   const periodValue = step => Math.round(step * 127 / (Protocol.LFO_PERIODS.length - 1));
 
   const TEMPO_DIVISION_NAMES = {
-    quarter: 'quarter', bar: 'bar', half: 'half',
+    bar: 'bar', half: 'half', quarter: 'quarter',
     eighth: 'eighth', eighthTriplet: 'eighth triplet', sixteenth: 'sixteenth',
   };
-  const TEMPO_DIVISIONS = Object.entries(Protocol.TEMPO_DIVISION)
-    .map(([key, value]) => [value, TEMPO_DIVISION_NAMES[key]]);
+  const TEMPO_DIVISIONS = Object.entries(TEMPO_DIVISION_NAMES)
+    .map(([key, name]) => [Protocol.TEMPO_DIVISION[key], name]);
+  const PULSE_UNITS = {
+    [Protocol.TEMPO_DIVISION.bar]: ['bar', 'bars'],
+    [Protocol.TEMPO_DIVISION.half]: ['half', 'halves'],
+    [Protocol.TEMPO_DIVISION.quarter]: ['beat', 'beats'],
+    [Protocol.TEMPO_DIVISION.eighth]: ['eighth', 'eighths'],
+    [Protocol.TEMPO_DIVISION.eighthTriplet]: ['triplet', 'triplets'],
+    [Protocol.TEMPO_DIVISION.sixteenth]: ['sixteenth', 'sixteenths'],
+  };
+  const inPulses = (text, live) => {
+    const [one, many] = PULSE_UNITS[live ? live.tempoDivision : Protocol.TEMPO_DIVISION.quarter];
+    return text.replace(/\bbeats\b/g, many).replace(/\bbeat\b/g, one);
+  };
 
   const waveText = value => {
     const stages = ['build', 'swell', 'snap', 'square', 'stab'];
@@ -209,6 +221,10 @@
       return reach === 0 ? 'one hue' : `±${degrees(Math.abs(reach))} ${reach < 0 ? 'high' : 'low'} first`;
     },
   };
+
+  for (const [name, readout] of Object.entries(READOUTS)) {
+    READOUTS[name] = (value, live) => inPulses(readout(value, live), live);
+  }
 
   for (const route of ROUTES) {
     for (const field of ROUTE_FIELDS) {
