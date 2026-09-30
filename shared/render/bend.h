@@ -8,6 +8,8 @@ struct BendTable;
 
 const BendTable *bendFor(float amount, float at);
 
+float cellsAtStart(float count);
+
 float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength, float count);
 
 float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, float count);

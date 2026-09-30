@@ -63,27 +63,31 @@ static float bendAlong(const BendTable &table, float time) {
   return ((float)i + clampUnit(t)) / (float)BEND_STEPS;
 }
 
+float cellsAtStart(float count) { return 0.5f - 0.5f * count; }
+
 static float cellAt(float cells, float count) {
   const float cell = floorf(cells);
-  if (cell < 0.0f) return 0.0f;
-  const float last = ceilf(count) - 1.0f;
+  const float first = floorf(cellsAtStart(count));
+  const float last = ceilf(cellsAtStart(count) + count) - 1.0f;
+  if (cell < first) return first;
   if (cell > last) return last;
   return cell;
 }
 
 float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength, float count) {
-  const float cells = pixel / cellLength;
+  const float cells = cellsAtStart(count) + pixel / cellLength;
   if (!bend) return cells;
-  if (!perCell) return count * unbend(*bend, pixel / (float)PIXELS);
+  if (!perCell) return cellsAtStart(count) + count * unbend(*bend, pixel / (float)PIXELS);
   const float cell = cellAt(cells, count);
   return cell + unbend(*bend, cells - cell);
 }
 
 float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, float count) {
-  if (!bend) return cells * cellLength;
-  if (!perCell) return (float)PIXELS * bendAlong(*bend, cells / count);
+  const float fromStart = cells - cellsAtStart(count);
+  if (!bend) return fromStart * cellLength;
+  if (!perCell) return (float)PIXELS * bendAlong(*bend, fromStart / count);
   const float cell = cellAt(cells, count);
-  return (cell + bendAlong(*bend, cells - cell)) * cellLength;
+  return (cell - cellsAtStart(count) + bendAlong(*bend, cells - cell)) * cellLength;
 }
 
 void readBend(const BendTable *bend, bool perCell, float cellLength, float count, float *out) {
@@ -92,7 +96,7 @@ void readBend(const BendTable *bend, bool perCell, float cellLength, float count
       out[i] = 1.0f;
       continue;
     }
-    const float cells = (float)i / cellLength;
+    const float cells = cellsAtStart(count) + (float)i / cellLength;
     const float along = perCell ? cells - cellAt(cells, count) : (float)i / (float)PIXELS;
     out[i] = bendSpeed(along, bend->amount, bend->at) * bend->totalTime;
   }

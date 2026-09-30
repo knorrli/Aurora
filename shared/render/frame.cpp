@@ -169,12 +169,12 @@ static ShapeLook lookOf(const FrameContext &context, const StripContext &strip,
 }
 
 static bool nearestOffset(float cells, float centerInCell, float direction, bool bounce,
-                          float countCells, float &out) {
+                          float count, float &out) {
   const float firstImage = centerInCell + floorf(cells - centerInCell);
   bool found = false;
   for (uint8_t image = 0; image < 2; image++) {
     const float imageCells = firstImage + (float)image;
-    if (bounce && (imageCells < 0.0f || imageCells > countCells)) continue;
+    if (bounce && (imageCells < cellsAtStart(count) || imageCells > cellsAtStart(count) + count)) continue;
     const float offset = -direction * (cells - imageCells);
     if (!found || fabsf(offset) < fabsf(out)) {
       out = offset;
