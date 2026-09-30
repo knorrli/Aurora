@@ -44,6 +44,7 @@
   }
 
   function hueBandOf(input) {
+    const live = Editor.session.liveNamed();
     const reach = Math.abs(Preview.convert(Patch.CC.parHueRange, live.parHueRange)) / HUE_STEPS_PER_FADER_STEP;
     if (reach < 0.5) return null;
     const center = +input.value;
