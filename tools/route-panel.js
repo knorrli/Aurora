@@ -19,7 +19,8 @@
     const wave = live[route.wave];
     const destination = Protocol.NAME_BY_CC[Protocol.routeTarget(live[route.destination])];
     const at = Preview.lfoWave(phase * Protocol.routeRatio(live[route.ratio]) - Protocol.routePhaseStep(live[route.phase]) / Protocol.ROUTE_PHASE_STEPS, wave);
-    return Patch.bipolar(live[route.amount]) * (Patch.swings(destination) ? at - Preview.waveMean(wave) : at);
+    const centered = Patch.swings(destination) || Protocol.routeBipolar(live[route.destination]);
+    return Patch.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
   }
 
   function drawWave(canvas, route, live) {
@@ -115,29 +116,41 @@
     return bypassed;
   }
 
-  function arpRow(route) {
+  function destinationRow(route, label, options, choose) {
     const root = element('div', 'switch-row');
-    root.append(dom.ccLabeled('label', 'Arp', Patch.CC[route.destination]));
+    root.append(dom.ccLabeled('label', label, Patch.CC[route.destination]));
     const picks = element('div', 'picks');
-    const buttons = Object.entries(Protocol.ARP).map(([name, arp]) => {
+    const buttons = options.map(([name, option]) => {
       const button = element('button', null, name);
       button.addEventListener('click', () => {
         if (root.classList.contains('locked')) return;
         Editor.transition.snap();
-        session.setRouteArp(route, arp);
+        choose(route, option);
       });
       picks.appendChild(button);
-      return [arp, button];
+      return [option, button];
     });
     root.appendChild(picks);
     return { root, buttons };
   }
 
-  function paintArpRow(row, route, live) {
-    row.root.hidden = !Patch.arpCapable(panel.target);
+  const arpRow = route => destinationRow(route, 'Arp', Object.entries(Protocol.ARP), session.setRouteArp);
+  const polarityRow = route => destinationRow(route, 'Polarity', [['unipolar', false], ['bipolar', true]], session.setRouteBipolar);
+
+  function paintDestinationRow(row, shown, chosen) {
+    row.root.hidden = !shown;
     row.root.classList.toggle('locked', session.isAboveBase());
-    const arp = Protocol.routeArp(live[route.destination]);
-    for (const [option, button] of row.buttons) button.classList.toggle('on', option === arp);
+    for (const [option, button] of row.buttons) button.classList.toggle('on', option === chosen);
+  }
+
+  function paintArpRow(row, route, live) {
+    paintDestinationRow(row, Patch.arpCapable(panel.target), Protocol.routeArp(live[route.destination]));
+  }
+
+  function paintPolarityRow(row, route, live) {
+    const destination = live[route.destination];
+    const shown = Protocol.BIPOLAR_CONTROLS.includes(panel.target) && Protocol.routeArp(destination) === Protocol.ARP.unison;
+    paintDestinationRow(row, shown, Protocol.routeBipolar(destination));
   }
 
   function free(route) {
@@ -156,13 +169,14 @@
       const clock = element('span', 'cc route-clock');
       head.append(element('span', 'route-name', route.name), clock, buttons.root);
       const arp = arpRow(route);
+      const polarity = polarityRow(route);
       const body = element('div');
-      body.appendChild(arp.root);
+      body.append(arp.root, polarity.root);
       Editor.rows.buildRows(body, route.controls);
       const canvas = element('canvas', 'route-wave');
       block.append(head, body, canvas);
       root.appendChild(block);
-      panel.blocks.push({ route, block, canvas, buttons, arp, clock });
+      panel.blocks.push({ route, block, canvas, buttons, arp, polarity, clock });
     }
     const foot = element('div', 'route-foot');
     const add = element('button', 'tiny', '+ add a route');
@@ -218,7 +232,8 @@
     const control = Patch.CONTROLS[name];
     if (!control) return `CC ${destination}`;
     const arp = Object.keys(Protocol.ARP).find(key => Protocol.ARP[key] === Protocol.routeArp(destination));
-    return `${Patch.PLACES[name]} · ${control.label}` + (arp === 'unison' ? '' : ` · ${arp}`);
+    const form = arp !== 'unison' ? ` · ${arp}` : Protocol.routeBipolar(destination) ? ' · bipolar' : '';
+    return `${Patch.PLACES[name]} · ${control.label}${form}`;
   }
 
   function paintList(live) {
@@ -255,11 +270,12 @@
     if (!panel.target) return;
     const held = session.heldAt();
     const destination = Patch.CC[panel.target];
-    for (const { route, block, canvas, buttons, arp, clock } of panel.blocks) {
+    for (const { route, block, canvas, buttons, arp, polarity, clock } of panel.blocks) {
       block.hidden = Protocol.routeTarget(live[route.destination]) !== destination;
       clock.textContent = Patch.perSpot(live[route.destination]) ? spotClockText(live) : '';
       block.classList.toggle('bypassed', paintButtons(buttons, route));
       paintArpRow(arp, route, live);
+      paintPolarityRow(polarity, route, live);
       if (!block.hidden) drawWave(canvas, route, live);
     }
     const free = session.freeRouteSlots(live).length;

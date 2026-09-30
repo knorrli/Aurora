@@ -205,6 +205,7 @@
     display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; align-items: center;
     padding-left: 7px; border-left: 2px solid transparent; margin-left: -9px;
   }
+  .switch-row[hidden] { display: none; }
   .switch-row + .switch-row, .row + .switch-row, .switch-row + .row { margin-top: 6px; }
   .switch-row.locked .picks button { opacity: .5; cursor: default; }
   .switch-row.locked .picks button:hover { border-color: var(--line); color: var(--text); }

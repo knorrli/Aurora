@@ -50,7 +50,7 @@ uint8_t hiddenEngines(const uint8_t *dialed) {
   if (!scatterActive(reading, dialed)) hidden |= ENGINE_SCATTER;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     const uint8_t target = aurora_route_target(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]);
-    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (fabsf(amount) > 0.001f && showsEngine(target)) hidden &= (uint8_t)~engineOf(target);
   }
   return hidden;

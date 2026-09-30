@@ -38,7 +38,7 @@
   const CONTINUOUS = NAMES.filter(name => !isSwitch(name));
 
   const clampToSevenBits = value => (value < 0 ? 0 : value > 127 ? 127 : value | 0);
-  const bipolar = value => (value < 64 ? (value - 64) / 64 : (value - 64) / 63);
+  const signedOf = value => (value < 64 ? (value - 64) / 64 : (value - 64) / 63);
 
   const real = (name, value) => preview().convert(CC[name], value);
 
@@ -108,7 +108,7 @@
   };
 
   const ROUTE_READOUTS = {
-    amount: () => value => signed(bipolar(value)),
+    amount: () => value => signed(signedOf(value)),
     ratio: () => value => '×' + Protocol.routeRatio(value),
     phase: route => (value, live) => phaseText(value, live, route),
     wave: () => waveText,
@@ -551,7 +551,7 @@
   global.AuroraPatch = {
     LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
     CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT, NEUTRAL,
-    clampToSevenBits, bipolar,
+    clampToSevenBits, signedOf,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
     SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,
     routable, routableDestination, arpCapable, perSpot, isCircular, swings, pointsFor,

@@ -96,6 +96,8 @@
   const HUE_LAYOUT_COUNT = 5;
   const ARP_DESTINATION_BASE = 120;
   const ARP_CONTROLS = ["parHueOffset","parSaturation","parValue"];
+  const BIPOLAR_DESTINATION_BASE = 80;
+  const BIPOLAR_CONTROLS = ["hue","parHueOffset","parHueRange","arpSpread","shapePosition","shapeBend","shapeBendAt","fanSpread","fanLfo","fanPhase","fieldPosition","fieldHue","flowHue","coreHue"];
   const WAVE_SWELL = 32;
   const WAVE_FALL = 64;
   const WAVE_SQUARE = 96;
@@ -147,15 +149,22 @@
 
   const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
     : ARP.steps + (destination - ARP_DESTINATION_BASE) % 2);
+  const routeBipolar = destination => destination >= BIPOLAR_DESTINATION_BASE
+    && destination < BIPOLAR_DESTINATION_BASE + BIPOLAR_CONTROLS.length;
   const routeTarget = destination => {
-    if (destination < ARP_DESTINATION_BASE) return destination;
+    if (destination < BIPOLAR_DESTINATION_BASE) return destination;
+    if (routeBipolar(destination)) return CC[BIPOLAR_CONTROLS[destination - BIPOLAR_DESTINATION_BASE]];
+    if (destination < ARP_DESTINATION_BASE) return 0;
     const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
     return name ? CC[name] : 0;
   };
-  const routeDestination = (target, arp) => {
+  const routeDestination = (target, arp, bipolar) => {
+    if (arp === ARP.unison) {
+      const index = BIPOLAR_CONTROLS.indexOf(NAME_BY_CC[target]);
+      return bipolar && index >= 0 ? BIPOLAR_DESTINATION_BASE + index : target;
+    }
     const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
-    if (arp === ARP.unison || index < 0) return target;
-    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
+    return index < 0 ? target : ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
   };
 
   const isOn = value => value >= SWITCH_ON_AT;
@@ -176,6 +185,7 @@
     ARP_MODE,
     HUE_LAYOUT,
     ARP_CONTROLS,
+    BIPOLAR_CONTROLS,
     WAVE_SWELL,
     WAVE_FALL,
     WAVE_SQUARE,
@@ -205,6 +215,6 @@
     SYSEX_STATUS,
     LIBRARY_STATE,
     steppedIndex, routeCC, routeRatio, routePhaseStep, isOn, threeWayPosition,
-    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeTarget, routeDestination,
+    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeBipolar, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

@@ -207,14 +207,42 @@ static inline uint8_t aurora_route_arp(uint8_t destination) {
     return (uint8_t)(ARP_STEPS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
 }
 
+static const uint8_t AURORA_BIPOLAR_DESTINATION_BASE = 80;
+
+static const uint8_t AURORA_BIPOLAR_CONTROLS[] = {
+    CC_HUE, CC_PAR_HUE_OFFSET, CC_PAR_HUE_RANGE, CC_ARP_SPREAD,
+    CC_SHAPE_POSITION, CC_SHAPE_BEND, CC_SHAPE_BEND_AT,
+    CC_FAN_SPREAD, CC_FAN_LFO, CC_FAN_PHASE,
+    CC_FIELD_POSITION, CC_FIELD_HUE, CC_FLOW_HUE, CC_CORE_HUE,
+};
+static const uint8_t AURORA_BIPOLAR_CONTROL_COUNT =
+    sizeof(AURORA_BIPOLAR_CONTROLS) / sizeof(AURORA_BIPOLAR_CONTROLS[0]);
+
+static inline bool aurora_route_bipolar(uint8_t destination) {
+    return destination >= AURORA_BIPOLAR_DESTINATION_BASE
+        && destination < AURORA_BIPOLAR_DESTINATION_BASE + AURORA_BIPOLAR_CONTROL_COUNT;
+}
+
 static inline uint8_t aurora_route_target(uint8_t destination) {
-    if (destination < AURORA_ARP_DESTINATION_BASE) return destination;
+    if (destination < AURORA_BIPOLAR_DESTINATION_BASE) return destination;
+    if (aurora_route_bipolar(destination)) {
+        return AURORA_BIPOLAR_CONTROLS[destination - AURORA_BIPOLAR_DESTINATION_BASE];
+    }
+    if (destination < AURORA_ARP_DESTINATION_BASE) return 0;
     const uint8_t index = (uint8_t)((destination - AURORA_ARP_DESTINATION_BASE) / 2);
     return index < AURORA_ARP_CONTROL_COUNT ? AURORA_ARP_CONTROLS[index] : 0;
 }
 
-static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp) {
-    if (arp == ARP_UNISON) return target;
+static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp, bool bipolar) {
+    if (arp == ARP_UNISON) {
+        if (!bipolar) return target;
+        for (uint8_t index = 0; index < AURORA_BIPOLAR_CONTROL_COUNT; index++) {
+            if (AURORA_BIPOLAR_CONTROLS[index] == target) {
+                return (uint8_t)(AURORA_BIPOLAR_DESTINATION_BASE + index);
+            }
+        }
+        return target;
+    }
     for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
         if (AURORA_ARP_CONTROLS[index] != target) continue;
         return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_STEPS));

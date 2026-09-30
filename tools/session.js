@@ -191,9 +191,14 @@
     return Patch.ROUTES.filter(route => Protocol.routeTarget(live[route.destination]) === Patch.CC[name]);
   }
 
+  const editedTarget = route => Protocol.routeTarget(editing().base[Patch.CC[route.destination]] | 0);
+
   function setRouteArp(route, arp) {
-    const target = Protocol.routeTarget(editing().base[Patch.CC[route.destination]] | 0);
-    setValue(route.destination, Protocol.routeDestination(target, arp));
+    setValue(route.destination, Protocol.routeDestination(editedTarget(route), arp, false));
+  }
+
+  function setRouteBipolar(route, bipolar) {
+    setValue(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison, bipolar));
   }
   const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
 
@@ -253,7 +258,7 @@
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    freeRoute, addRoute, setRouteArp, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
+    freeRoute, addRoute, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });

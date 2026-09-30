@@ -169,10 +169,14 @@ static float totalAt(const WaveIntegral &integral, float phase) {
   return integral.total[i] + t * (integral.total[i + 1] - integral.total[i]) - integral.center;
 }
 
+static float bipolarReach(uint8_t cc, float amount) {
+  return amount * (circular(cc) ? 64.0f : 127.0f);
+}
+
 static float swingReach(uint8_t cc, float amount) {
   const float share = (fabsf(amount) > 1.0f) ? 1.0f : fabsf(amount);
-  const bool bipolarRate = controlValue(cc, 0) < 0.0f;
-  const long byte = bipolarRate ? 64 + lroundf(share * 63.0f) : lroundf(share * 127.0f);
+  const bool signedRate = controlValue(cc, 0) < 0.0f;
+  const long byte = signedRate ? 64 + lroundf(share * 63.0f) : lroundf(share * 127.0f);
   return 2.0f * ((amount < 0.0f) ? -1.0f : 1.0f) * fabsf(controlValue(cc, (uint8_t)byte));
 }
 
@@ -182,6 +186,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
     out.amount[i] = 0.0f;
     out.swing[i] = 0.0f;
     out.shift[i] = 0.0f;
+    out.bipolar[i] = 0.0f;
   }
 
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
@@ -190,7 +195,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
     const uint8_t destination = aurora_route_target(aimedAt);
     if (routeRefused(destination) || spotDestination(destination)) continue;
 
-    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
 
     const uint8_t ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);
@@ -198,6 +203,12 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
     const float delay = aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]);
     const float lfo = plainLfo(destination) ? plainPhase : stripPhase;
     const float phase = lfo * (float)ratio - delay;
+
+    if (aurora_route_bipolar(aimedAt)) {
+      const float mean = integralOf(route, wave).mean;
+      out.bipolar[destination] += bipolarReach(destination, amount) * (lfoWave(phase, wave) - mean);
+      continue;
+    }
 
     if (!swings(destination)) {
       out.amount[destination] += amount * lfoWave(phase, wave);
@@ -224,10 +235,14 @@ static int16_t landing(uint8_t cc, uint8_t base, float amount) {
   return (int16_t)(reached < 0 ? 0 : (reached > 127 ? 127 : reached));
 }
 
+static uint8_t settled(uint8_t cc, int16_t landed) {
+  if (circular(cc)) return (uint8_t)((landed % 128 + 128) % 128);
+  return (uint8_t)(landed < 0 ? 0 : (landed > 127 ? 127 : landed));
+}
+
 uint8_t landedByte(uint8_t cc, uint8_t base, float amount) {
   if (amount > -0.001f && amount < 0.001f) return base;
-  const int16_t landed = landing(cc, base, amount);
-  return circular(cc) ? (uint8_t)((landed % 128 + 128) % 128) : (uint8_t)landed;
+  return settled(cc, landing(cc, base, amount));
 }
 
 uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
@@ -237,7 +252,7 @@ uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
     if (!spotDestination(destination)) continue;
-    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     out[count++] = {
       destination,
@@ -254,10 +269,10 @@ uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
   const uint8_t base = dialed[cc];
   if (!pushes || swings(cc)) return base;
   const float amount = pushes->amount[cc];
-  if (amount > -0.001f && amount < 0.001f) return base;
+  const float bipolar = pushes->bipolar[cc];
+  if (fabsf(amount) < 0.001f && fabsf(bipolar) < 0.001f) return base;
 
-  const int16_t landed = landing(cc, base, amount);
-  return circular(cc) ? (uint8_t)((landed % 128 + 128) % 128) : (uint8_t)landed;
+  return settled(cc, landing(cc, base, amount) + (int16_t)lroundf(bipolar));
 }
 
 uint8_t routeTarget(const uint8_t *dialed, uint8_t route) {
@@ -267,7 +282,7 @@ uint8_t routeTarget(const uint8_t *dialed, uint8_t route) {
 bool routeAims(const uint8_t *dialed, uint8_t cc) {
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     if (routeTarget(dialed, route) != cc) continue;
-    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount < -0.001f || amount > 0.001f) return true;
   }
   return false;
@@ -297,13 +312,20 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
 
   float up = 0.0f;
   float down = 0.0f;
+  float bipolarUp = 0.0f;
+  float bipolarDown = 0.0f;
   bool aimed = false;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     if (routeTarget(dialed, route) != cc) continue;
-    const float amount = bipolarOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     aimed = true;
-    if (swings(cc)) {
+    if (aurora_route_bipolar(dialed[aurora_route_cc(route, ROUTE_DESTINATION)])) {
+      const float mean = waveMean(dialed[aurora_route_cc(route, ROUTE_WAVE)]);
+      const float reach = bipolarReach(cc, amount);
+      bipolarUp += fmaxf(-reach * mean, reach * (1.0f - mean));
+      bipolarDown += fminf(-reach * mean, reach * (1.0f - mean));
+    } else if (swings(cc)) {
       const float mean = waveMean(dialed[aurora_route_cc(route, ROUTE_WAVE)]);
       const float reach = swingReach(cc, amount);
       const float atTrough = -reach * mean;
@@ -321,8 +343,12 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
     low = nearestByte(cc, value + down);
     high = nearestByte(cc, value + up);
   } else {
-    low = landing(cc, dialed[cc], down);
-    high = landing(cc, dialed[cc], up);
+    low = landing(cc, dialed[cc], down) + (int16_t)lroundf(bipolarDown);
+    high = landing(cc, dialed[cc], up) + (int16_t)lroundf(bipolarUp);
+    if (!circular(cc)) {
+      low = low < 0 ? 0 : low;
+      high = high > 127 ? 127 : high;
+    }
   }
   return aimed;
 }

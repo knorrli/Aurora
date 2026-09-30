@@ -9,6 +9,7 @@ struct Pushes {
   float amount[AURORA_PATCH_CC_COUNT];
   float swing[AURORA_PATCH_CC_COUNT];
   float shift[AURORA_PATCH_CC_COUNT];
+  float bipolar[AURORA_PATCH_CC_COUNT];
 };
 
 struct SpotRoute {

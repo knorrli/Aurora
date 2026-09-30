@@ -34,7 +34,7 @@ static float tailBeatsOf(uint8_t value) {
 
 static inline float unitOf(uint8_t value) { return (float)value / 127.0f; }
 
-float bipolarOf(uint8_t value) {
+float signedOf(uint8_t value) {
   return value < 64 ? ((float)value - 64.0f) / 64.0f
                     : ((float)value - 64.0f) / 63.0f;
 }
@@ -62,7 +62,7 @@ static float squaredRate(uint8_t value, float max) {
 }
 
 static float lapsPerBeatOf(uint8_t value) {
-  const long step = lroundf(bipolarOf(value) * (float)AURORA_LFO_PERIOD_COUNT);
+  const long step = lroundf(signedOf(value) * (float)AURORA_LFO_PERIOD_COUNT);
   if (step == 0) return 0.0f;
   return (step < 0 ? -1.0f : 1.0f) / AURORA_LFO_PERIODS[(step < 0 ? -step : step) - 1];
 }
@@ -85,18 +85,18 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_PAR_VALUE:
     case CC_PAR_HUE_OFFSET:
     case CC_PAR_SATURATION: return byteOf(value);
-    case CC_PAR_HUE_RANGE: return bipolarOf(value) * 128.0f;
+    case CC_PAR_HUE_RANGE: return signedOf(value) * 128.0f;
 
     case CC_SHAPE_COUNT:
     case CC_FIELD_COUNT: return countOf(value);
     case CC_SCATTER_COUNT: return smoothCountOf(value);
 
     case CC_SHAPE_BEND:
-    case CC_ARP_SPREAD: return bipolarOf(value);
+    case CC_ARP_SPREAD: return signedOf(value);
     case CC_SHAPE_BEND_AT:
-    case CC_SHAPE_POSITION: return 0.5f + 0.5f * bipolarOf(value);
+    case CC_SHAPE_POSITION: return 0.5f + 0.5f * signedOf(value);
     case CC_FAN_SPREAD:
-    case CC_FAN_LFO: return bipolarOf(value) * 0.5f;
+    case CC_FAN_LFO: return signedOf(value) * 0.5f;
     case CC_SHAPE_SPEED: return lapsPerBeatOf(value);
     case CC_SCATTER_SPEED:
     case CC_FAN_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
@@ -104,17 +104,17 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FAN_PHASE: return (float)value / 128.0f;
     case CC_LFO_RATE: return aurora_lfo_period(value);
 
-    case CC_FIELD_HUE: return bipolarOf(value) * FIELD_MAX_HUE;
+    case CC_FIELD_HUE: return signedOf(value) * FIELD_MAX_HUE;
     case CC_FIELD_SPEED: return lapsPerBeatOf(value);
-    case CC_FIELD_POSITION: return bipolarOf(value) * 0.5f;
-    case CC_FLOW_HUE: return bipolarOf(value) * FLOW_MAX_HUE;
+    case CC_FIELD_POSITION: return signedOf(value) * 0.5f;
+    case CC_FLOW_HUE: return signedOf(value) * FLOW_MAX_HUE;
     case CC_FLOW_RATE: return flowCyclesPerBeatOf(value);
     case CC_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
-    case CC_CORE_HUE: return bipolarOf(value) * CORE_MAX_HUE;
+    case CC_CORE_HUE: return signedOf(value) * CORE_MAX_HUE;
     case CC_SCATTER_RATE: return 1.0f / aurora_lfo_period(value);
-    case CC_SCATTER_HUE: return bipolarOf(value) * SCATTER_MAX_HUE;
+    case CC_SCATTER_HUE: return signedOf(value) * SCATTER_MAX_HUE;
 
-    case CC_SCATTER_POSITION: return bipolarOf(value);
+    case CC_SCATTER_POSITION: return signedOf(value);
 
     case CC_SHAPE_TAIL: return tailBeatsOf(value);
 

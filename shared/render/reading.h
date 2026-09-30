@@ -78,7 +78,7 @@ struct Reading {
   Hsv color;
 };
 
-float bipolarOf(uint8_t value);
+float signedOf(uint8_t value);
 
 float controlValue(uint8_t cc, uint8_t value);
 

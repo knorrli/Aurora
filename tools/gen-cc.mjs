@@ -118,17 +118,20 @@ const threeWayValues = threeWayStarts.map((start, position) =>
   position === 0 ? 0 : position === threeWayStarts.length - 1 ? 127
     : Math.round((start + threeWayStarts[position + 1] - 1) / 2));
 
-const arpControls = (header.match(/AURORA_ARP_CONTROLS\[\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_ARP_CONTROLS'))[1]
+const controlList = name => (header.match(new RegExp(`${name}\\[\\]\\s*=\\s*\\{([^}]*)\\}`)) || fail(name))[1]
   .split(',').map(text => text.trim()).filter(Boolean)
-  .map(text => camel((text.match(/^CC_([A-Z0-9_]+)$/) || fail(`a CC in AURORA_ARP_CONTROLS, not ${text}`))[1]));
-const ARP_PAIRING = [
+  .map(text => camel((text.match(/^CC_([A-Z0-9_]+)$/) || fail(`a CC in ${name}, not ${text}`))[1]));
+const arpControls = controlList('AURORA_ARP_CONTROLS');
+const bipolarControls = controlList('AURORA_BIPOLAR_CONTROLS');
+const DESTINATION_PACKING = [
   ['aurora_route_arp', /ARP_STEPS \+ \(destination - AURORA_ARP_DESTINATION_BASE\) % 2/],
-  ['aurora_route_target', /\(destination - AURORA_ARP_DESTINATION_BASE\) \/ 2/],
-  ['aurora_route_destination', /AURORA_ARP_DESTINATION_BASE \+ index \* 2 \+ \(arp - ARP_STEPS\)/],
+  ['aurora_route_bipolar', /destination >= AURORA_BIPOLAR_DESTINATION_BASE\s+&& destination < AURORA_BIPOLAR_DESTINATION_BASE \+ AURORA_BIPOLAR_CONTROL_COUNT/],
+  ['aurora_route_target', /AURORA_BIPOLAR_CONTROLS\[destination - AURORA_BIPOLAR_DESTINATION_BASE\][\s\S]*\(destination - AURORA_ARP_DESTINATION_BASE\) \/ 2/],
+  ['aurora_route_destination', /AURORA_BIPOLAR_DESTINATION_BASE \+ index\)[\s\S]*AURORA_ARP_DESTINATION_BASE \+ index \* 2 \+ \(arp - ARP_STEPS\)/],
 ];
-for (const [name, shape] of ARP_PAIRING) {
+for (const [name, shape] of DESTINATION_PACKING) {
   if (!shape.test(functionBody(name))) {
-    throw new Error(`${HEADER}: ${name}() no longer pairs destinations as routeArp() in tools/cc.js does`);
+    throw new Error(`${HEADER}: ${name}() no longer packs destinations as routeTarget() in tools/cc.js does`);
   }
 }
 const arpModeEntries = enumEntries('AuroraArpMode');
@@ -156,6 +159,8 @@ const generated = {
   HUE_LAYOUT_COUNT: hueLayoutCount,
   ARP_DESTINATION_BASE: constant('AURORA_ARP_DESTINATION_BASE'),
   ARP_CONTROLS: arpControls,
+  BIPOLAR_DESTINATION_BASE: constant('AURORA_BIPOLAR_DESTINATION_BASE'),
+  BIPOLAR_CONTROLS: bipolarControls,
   WAVE_SWELL: constant('WAVE_SWELL'),
   WAVE_FALL: constant('WAVE_FALL'),
   WAVE_SQUARE: constant('WAVE_SQUARE'),
@@ -192,7 +197,7 @@ const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
 const width = Math.max(...pairs.map(([name]) => name.length));
 const ccBody = pairs.map(([name, number]) => `    ${name}:${' '.repeat(width - name.length)} ${number},`).join('\n');
 const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE', 'ROUTE_MAX_RATIO',
-  'ARP_DESTINATION_BASE', 'ARP_MODE_COUNT', 'HUE_LAYOUT_COUNT']);
+  'ARP_DESTINATION_BASE', 'BIPOLAR_DESTINATION_BASE', 'ARP_MODE_COUNT', 'HUE_LAYOUT_COUNT']);
 const constantLines = Object.entries(generated)
   .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');
 
@@ -228,15 +233,22 @@ ${constantLines}
 
   const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
     : ARP.steps + (destination - ARP_DESTINATION_BASE) % 2);
+  const routeBipolar = destination => destination >= BIPOLAR_DESTINATION_BASE
+    && destination < BIPOLAR_DESTINATION_BASE + BIPOLAR_CONTROLS.length;
   const routeTarget = destination => {
-    if (destination < ARP_DESTINATION_BASE) return destination;
+    if (destination < BIPOLAR_DESTINATION_BASE) return destination;
+    if (routeBipolar(destination)) return CC[BIPOLAR_CONTROLS[destination - BIPOLAR_DESTINATION_BASE]];
+    if (destination < ARP_DESTINATION_BASE) return 0;
     const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
     return name ? CC[name] : 0;
   };
-  const routeDestination = (target, arp) => {
+  const routeDestination = (target, arp, bipolar) => {
+    if (arp === ARP.unison) {
+      const index = BIPOLAR_CONTROLS.indexOf(NAME_BY_CC[target]);
+      return bipolar && index >= 0 ? BIPOLAR_DESTINATION_BASE + index : target;
+    }
     const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
-    if (arp === ARP.unison || index < 0) return target;
-    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
+    return index < 0 ? target : ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
   };
 
   const isOn = value => value >= SWITCH_ON_AT;
@@ -247,7 +259,7 @@ ${constantLines}
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
 ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
     steppedIndex, routeCC, routeRatio, routePhaseStep, isOn, threeWayPosition,
-    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeTarget, routeDestination,
+    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeBipolar, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);
 `;
