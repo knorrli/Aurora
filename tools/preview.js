@@ -42,6 +42,20 @@
     }
 
     const PASS_MARKS = renderer._aurora_arp_pass_marks();
+    const STRIP_SPOTS_SIZE = renderer._aurora_strip_spots_size();
+    const SPOT_MARK_FLOATS = 3;
+
+    function readSpots() {
+      const at = renderer._aurora_spots();
+      return Array.from({ length: STRIPS }, (_, strip) => {
+        const base = at + strip * STRIP_SPOTS_SIZE;
+        const count = renderer.HEAPU8[base];
+        const floats = renderer.HEAPF32.subarray((base + 4) >> 2, ((base + 4) >> 2) + count * SPOT_MARK_FLOATS);
+        return Array.from({ length: count }, (_, i) => ({
+          center: floats[i * SPOT_MARK_FLOATS], width: floats[i * SPOT_MARK_FLOATS + 1], life: floats[i * SPOT_MARK_FLOATS + 2],
+        }));
+      });
+    }
 
     function readArpPass() {
       const at = renderer._aurora_arp_pass();
@@ -93,6 +107,7 @@
       parHuePlaces: () => Array.from(huePlaces),
       controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
       routeRefused: cc => !!renderer._aurora_route_refused(cc),
+      spotDestination: cc => !!renderer._aurora_spot_destination(cc),
       layerOf: cc => renderer._aurora_layer_of(cc),
       showsLayer: cc => !!renderer._aurora_shows_layer(cc),
       hiddenLayers(bytes) {
@@ -108,7 +123,7 @@
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_render(motion, wallState, quarterNotes);
         return {
-          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(),
+          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
           centers: Array.from(centers),
           hues: {
             palette: bytes[global.AuroraProtocol.CC.palette],
@@ -183,6 +198,7 @@
     if (overlays.bend && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
     if (overlays.palette && frame.hues) drawPalette(context, frame.hues, width, height);
+    if (overlays.spots && frame.spots) drawSpots(context, frame.spots, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.centers) drawCenters(context, frame.centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
 
@@ -190,6 +206,7 @@
   const SHAPE_MARK = 'rgba(240,168,96,0.95)';
   const SHAPE_MARK_SOFT = 'rgba(240,168,96,0.6)';
   const OUTLINE = 'rgba(10,11,14,0.85)';
+  const SPOT_MARK = 'rgba(140,220,184,0.95)';
 
   function strokeOutlined(context, style, width) {
     context.strokeStyle = OUTLINE;
@@ -241,6 +258,38 @@
       context.fillRect(x - 0.75, top + ribbonHeight + 1, 1.5, 4);
       context.fillText(pars.join(''), x, top + ribbonHeight + 13);
     }
+    context.restore();
+  }
+
+  function drawSpots(context, spots, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+    const { PIXELS } = api;
+    const yAt = pixel => WALL_TOP + (flipped ? pixel : PIXELS - pixel) * WALL_HEIGHT / PIXELS;
+    context.save();
+    context.beginPath();
+    context.rect(0, WALL_TOP, columnWidth * (order.length + 1), WALL_HEIGHT);
+    context.clip();
+    order.forEach((strip, column) => {
+      const x = columnWidth * (column + 1);
+      const bracketX = x + stripWidth / 2 + 3;
+      for (const { center, width, life } of spots[strip]) {
+        const left = 1 - life;
+        const top = yAt(center + width / 2), bottom = yAt(center - width / 2);
+        context.globalAlpha = 0.35 + 0.6 * left;
+        context.strokeStyle = SPOT_MARK;
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.moveTo(bracketX - 3, top);
+        context.lineTo(bracketX, top);
+        context.lineTo(bracketX, bottom);
+        context.lineTo(bracketX - 3, bottom);
+        context.stroke();
+        const y = yAt(center);
+        context.beginPath();
+        context.moveTo(x - stripWidth / 2 * left, y);
+        context.lineTo(x + stripWidth / 2 * left, y);
+        strokeOutlined(context, SPOT_MARK, 1.5);
+      }
+    });
     context.restore();
   }
 

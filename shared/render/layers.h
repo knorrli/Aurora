@@ -34,6 +34,7 @@ struct ScatterSpots {
   float hues[MAX_COUNT];
   float saturations[MAX_COUNT];
   float values[MAX_COUNT];
+  float lives[MAX_COUNT];
 };
 
 struct ScatterSample {

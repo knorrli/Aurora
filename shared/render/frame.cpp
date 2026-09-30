@@ -332,6 +332,11 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
                  index, scatterNow, motion.lastScatter[index], motion.spotDrift[index], scatterCycles,
                  strip.scatterSpots);
     motion.lastScatter[index] = scatterNow;
+    const ScatterSpots &spots = strip.scatterSpots;
+    out.spots[index].count = spots.count;
+    for (uint8_t i = 0; i < spots.count; i++) {
+      out.spots[index].marks[i] = { spots.centers[i], spots.widths[i] * spots.reach, spots.lives[i] };
+    }
     strip.center = travelCenter(motion.travel[index], motion.swing[index], wall.anchors[index],
                                 context.travel, strip.travel);
     TailHistory &history = wall.tails.strips[index];

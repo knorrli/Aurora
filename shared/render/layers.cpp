@@ -188,6 +188,7 @@ void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute
     out.hues[out.count] = control(CC_SCATTER_HUE);
     out.saturations[out.count] = control(CC_SCATTER_SATURATION);
     out.values[out.count] = control(CC_SCATTER_VALUE);
+    out.lives[out.count] = fract(clock);
     out.count++;
   }
 }

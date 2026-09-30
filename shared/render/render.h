@@ -92,6 +92,17 @@ struct FanReading {
   float randomize;
 };
 
+struct SpotMark {
+  float center;
+  float width;
+  float life;
+};
+
+struct StripSpots {
+  uint8_t count;
+  SpotMark marks[MAX_COUNT];
+};
+
 struct Frame {
   Rgb pixels[STRIPS * PIXELS];
   Par pars[PARS];
@@ -103,6 +114,7 @@ struct Frame {
   float lfo;
   float stripLfo[STRIPS];
   float centers[STRIPS];
+  StripSpots spots[STRIPS];
 };
 
 void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,

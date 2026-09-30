@@ -60,8 +60,10 @@
     canvas.wave = context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
+  const spotClockText = live => 'per spot, ' + Patch.READOUTS.scatterRate(live.scatterRate, live);
+
   function drawPlayhead(canvas, route, lfo, live) {
-    if (!canvas.wave || canvas.wave.width !== canvas.width) return;
+    if (!canvas.wave || canvas.wave.width !== canvas.width || Patch.perSpot(live[route.destination])) return;
     const width = canvas.clientWidth, height = canvas.clientHeight;
     const context = canvas.getContext('2d');
     context.putImageData(canvas.wave, 0, 0);
@@ -151,7 +153,8 @@
       const block = element('div', 'route-block');
       const head = element('div', 'route-head');
       const buttons = routeButtons(route);
-      head.append(element('span', 'route-name', route.name), buttons.root);
+      const clock = element('span', 'cc route-clock');
+      head.append(element('span', 'route-name', route.name), clock, buttons.root);
       const arp = arpRow(route);
       const body = element('div');
       body.appendChild(arp.root);
@@ -159,7 +162,7 @@
       const canvas = element('canvas', 'route-wave');
       block.append(head, body, canvas);
       root.appendChild(block);
-      panel.blocks.push({ route, block, canvas, buttons, arp });
+      panel.blocks.push({ route, block, canvas, buttons, arp, clock });
     }
     const foot = element('div', 'route-foot');
     const add = element('button', 'tiny', '+ add a route');
@@ -226,7 +229,8 @@
       if (!destination) continue;
       aimed++;
       target.textContent = destinationText(destination);
-      values.textContent = route.controls.map(name => Patch.READOUTS[name](live[name], live)).join(' · ');
+      const readouts = route.controls.map(name => Patch.READOUTS[name](live[name], live));
+      values.textContent = [...(Patch.perSpot(destination) ? [spotClockText(live)] : []), ...readouts].join(' · ');
       line.classList.toggle('bypassed', paintButtons(buttons, route));
       if (list.root.open) drawWave(canvas, route, live);
     }
@@ -251,8 +255,9 @@
     if (!panel.target) return;
     const held = session.heldAt();
     const destination = Patch.CC[panel.target];
-    for (const { route, block, canvas, buttons, arp } of panel.blocks) {
+    for (const { route, block, canvas, buttons, arp, clock } of panel.blocks) {
       block.hidden = Protocol.routeTarget(live[route.destination]) !== destination;
+      clock.textContent = Patch.perSpot(live[route.destination]) ? spotClockText(live) : '';
       block.classList.toggle('bypassed', paintButtons(buttons, route));
       paintArpRow(arp, route, live);
       if (!block.hidden) drawWave(canvas, route, live);

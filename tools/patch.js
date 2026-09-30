@@ -94,12 +94,16 @@
     return at === value ? name : `${WAVE_NAMES[next - 1][1]} → ${name}`;
   };
 
+  const perSpot = destination => preview().spotDestination(Protocol.routeTarget(destination));
+
   const phaseText = (value, live, route) => {
     const step = Protocol.routePhaseStep(value);
     if (step === 0) return '0°';
     const degrees = Math.round(step * 360 / Protocol.ROUTE_PHASE_STEPS);
     const settings = live || DEFAULT;
-    const cycle = real('lfoRate', settings.lfoRate) / Protocol.routeRatio(settings[route.ratio]);
+    const perCycle = perSpot(settings[route.destination])
+      ? 1 / real('scatterRate', settings.scatterRate) : real('lfoRate', settings.lfoRate);
+    const cycle = perCycle / Protocol.routeRatio(settings[route.ratio]);
     return `${degrees}° · ${beatsText(step / Protocol.ROUTE_PHASE_STEPS * cycle)}`;
   };
 
@@ -170,9 +174,14 @@
     lfoRate: value => PERIOD_NAMES[real('lfoRate', value)],
 
     scatterRate: value => 'every ' + PERIOD_NAMES[Protocol.LFO_PERIODS[periodStep(value)]],
-    scatterCount: value => real('scatterCount', value).toFixed(1) + ' spots',
+    scatterCount: value => real('scatterCount', value).toFixed(1) + ' a strip',
     scatterWidth: (value, live) => pixels(Math.max(1, real('scatterWidth', value) * preview().PIXELS / real('scatterCount', live.scatterCount))),
-    scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
+    scatterEdge: (value, live) => {
+      const settings = live || DEFAULT;
+      const reach = preview().PIXELS / real('scatterCount', settings.scatterCount);
+      const core = Math.max(real('scatterWidth', settings.scatterWidth), 1 / reach);
+      return pixels(real('scatterEdge', value) * (1 - core) * 0.5 * reach) + ' soft';
+    },
     scatterRandomize: value => percent(real('scatterRandomize', value)) + ' random',
     scatterSpeed: value => {
       const speed = real('scatterSpeed', value);
@@ -184,8 +193,6 @@
     },
     scatterMix: value => percent(real('scatterMix', value)),
     scatterHue: hueReach('scatterHue'),
-    scatterSaturation: value => percent(real('scatterSaturation', value)),
-    scatterValue: value => percent(real('scatterValue', value)),
 
     fieldHue: hueReach('fieldHue'),
     fieldWhite: value => percent(real('fieldWhite', value)) + ' white',
@@ -532,6 +539,6 @@
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
     SHAPE, LFO, MODULATORS, OUTPUTS, ROUTES, PLACES, cardNames,
-    routable, routableDestination, arpCapable, isCircular, swings, pointsFor,
+    routable, routableDestination, arpCapable, perSpot, isCircular, swings, pointsFor,
   };
 })(window);

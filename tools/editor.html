@@ -134,10 +134,11 @@
   #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
   .rail h2, .dock h2 { display: flex; align-items: baseline; gap: 6px; }
   .rail h2 > .tiny:first-of-type { margin-left: auto; }
-  .overlay-buttons { display: flex; gap: 3px; margin-left: auto; }
+  .overlay-buttons { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 9px; }
   .overlay-buttons .tiny { padding: 2px 5px; }
   .overlay-buttons button.on[data-tone=shape] { background: var(--shape); border-color: var(--shape); }
   .overlay-buttons button.on[data-tone=lfo] { background: var(--lfo); border-color: var(--lfo); }
+  .overlay-buttons button.on[data-tone=scatter] { background: var(--scatter); border-color: var(--scatter); }
   .overlay-buttons button.on[data-tone=out] { background: var(--out); border-color: var(--out); }
 
   .shape { border-left: 3px solid var(--shape); }
@@ -235,6 +236,7 @@
   .route-block { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
   .route-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
   .route-name { color: var(--lfo); }
+  .route-clock { margin-right: auto; margin-left: 10px; }
   .route-buttons { display: flex; gap: 5px; }
   .route-block.bypassed > :not(.route-head) { opacity: .38; }
   .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; }
@@ -387,15 +389,15 @@
 
   <aside class="dock">
     <section class="panel">
-      <h2>The wall
-        <span class="overlay-buttons" id="wallOverlays">
-          <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
-          <button class="tiny" data-overlay="fan" data-tone="shape">fan</button>
-          <button class="tiny" data-overlay="bend" data-tone="shape">bend</button>
-          <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
-          <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
-        </span>
-      </h2>
+      <h2>The wall</h2>
+      <div class="overlay-buttons" id="wallOverlays">
+        <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
+        <button class="tiny" data-overlay="fan" data-tone="shape">fan</button>
+        <button class="tiny" data-overlay="bend" data-tone="shape">bend</button>
+        <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
+        <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
+        <button class="tiny" data-overlay="spots" data-tone="scatter">spots</button>
+      </div>
       <div class="dockgrid">
         <div>
           <canvas id="wallMain"></canvas>

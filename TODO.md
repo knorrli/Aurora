@@ -65,7 +65,7 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 ## Editor
 
-- One pass over every control: does the readout and its unit make sense; would it, alone or with others, help as a wall overlay (the fan and the scatter have none yet); does it belong in its panel or in one of its own; is its color, and its overlay's, the right one.
+- One pass over every control: does the readout and its unit make sense; would it, alone or with others, help as a wall overlay; does it belong in its panel or in one of its own; is its color, and its overlay's, the right one.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
 - Let a morph target set a "from the patch" switch by writing it into the base patch: setting arp mode while routing PAR hue range on the accent should not need a trip to base.
 - Save what the wall shows as any part, base or a target, of this patch or a new one, then keep refining and save it again anywhere. Replaces copy from / move onto / swap with.
