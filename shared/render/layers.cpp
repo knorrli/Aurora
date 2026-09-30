@@ -100,7 +100,10 @@ float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float s
 }
 
 float fieldAtPosition(const Field &field, float u, float drift) {
-  if (field.form == FIELD_FORM_GRADIENT) return (u - 0.5f) * 2.0f;
+  if (field.form == FIELD_FORM_GRADIENT) {
+    const float along = fract(u * (float)field.count * 0.5f + drift - field.position);
+    return along < 0.5f ? 4.0f * along - 1.0f : 3.0f - 4.0f * along;
+  }
   const float cell = u * (float)field.count + drift - field.position;
   const float bump = bumpAt(fract(cell) - 0.5f, field.width, field.edge);
   return field.form == FIELD_FORM_ALL_BUT_REGION ? 1.0f - bump : bump;

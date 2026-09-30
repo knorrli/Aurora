@@ -133,6 +133,8 @@
     return '±' + pixels(reach * room * cellPixels(live));
   };
 
+  const isGradient = live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient;
+
   const fieldSize = (fraction, live) => {
     const settings = live || DEFAULT;
     const count = real('fieldCount', settings.fieldCount);
@@ -208,11 +210,15 @@
     fieldHue: hueReach('fieldHue'),
     fieldWhite: value => percent(real('fieldWhite', value)),
     fieldDark: value => percent(real('fieldDark', value)),
-    fieldCount: value => counted(real('fieldCount', value), 'region', 'regions'),
+    fieldCount: (value, live) => (isGradient(live || DEFAULT)
+      ? counted(real('fieldCount', value), 'ramp', 'ramps')
+      : counted(real('fieldCount', value), 'region', 'regions')),
     fieldWidth: (value, live) => fieldSize(real('fieldWidth', value), live),
     fieldPosition: (value, live) => {
       const offset = real('fieldPosition', value);
-      return Math.abs(offset) < 0.005 ? 'centered' : sign(offset) + fieldSize(Math.abs(offset), live);
+      if (Math.abs(offset) < 0.005) return 'centered';
+      const cells = isGradient(live || DEFAULT) ? 2 * Math.abs(offset) : Math.abs(offset);
+      return sign(offset) + fieldSize(cells, live);
     },
     fieldEdge: (value, live) => {
       const settings = live || DEFAULT;
@@ -342,9 +348,7 @@
     control(route.phase, 'Phase');
   }
 
-  const gradientInert = {
-    inertWhen: live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient,
-  };
+  const gradientInert = { inertWhen: isGradient };
 
   const ARP_MODE_NAMES = {
     sequence: 'sequence', bounce: 'bounce', evensOdds: 'evens / odds',
@@ -406,11 +410,11 @@
         control('fieldDirection', 'Direction',
           { kind: 'three', options: threeWayOptions(Protocol.FIELD_DIRECTION,
             { horizontal: 'horizontal', vertical: 'vertical', shape: 'shape' }) }),
-        control('fieldCount', 'Count', gradientInert),
+        control('fieldCount', 'Count'),
         control('fieldWidth', 'Width', gradientInert),
         control('fieldEdge', 'Edge', gradientInert),
-        control('fieldSpeed', 'Speed', gradientInert),
-        control('fieldPosition', 'Position', gradientInert),
+        control('fieldSpeed', 'Speed'),
+        control('fieldPosition', 'Position'),
       ],
       amounts: [
         control('fieldHue', 'Hue'),
