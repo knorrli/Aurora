@@ -68,7 +68,6 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 - Overlays: match their colors to the controls they show; add ones for the fan controls and the scatter.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
-- Toggle buttons hover in the same orange as on, so a button just switched off still looks on until the pointer leaves. Give them the route buttons' treatment (filled on, outlined hover, dark off) or a hover of their own, such as a paler orange.
 - Let a morph target set a "from the patch" switch by writing it into the base patch: setting arp mode while routing PAR hue range on the accent should not need a trip to base. Failing that, show the selected option clearly while it is disabled.
 - A morph target's copy from / move onto / swap with offer too many choices. Drop the ones that go unused, or find a plainer way to shift overrides between targets.
 - Every control's readout and tooltip: does it tell a patch designer something? Fan Frequency: why 32 is the default, what "turns" means, what the track's segments are; its tooltip describes a different control.

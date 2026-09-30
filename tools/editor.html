@@ -44,7 +44,7 @@
   button { cursor: pointer; }
   button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
   button:disabled { opacity: .35; cursor: default; }
-  button.on { border-color: var(--accent); color: var(--accent); background: #2f2921; }
+  button.on, button.on:hover:not(:disabled) { border-color: var(--accent); color: var(--bg); background: var(--accent); }
   .tiny { padding: 2px 7px; font-size: 10.5px; letter-spacing: .06em; }
 
   .top {
@@ -79,7 +79,7 @@
     padding: 4px 7px; color: var(--text);
   }
   .patchlist .item:hover { background: #22252f; color: var(--text); border-color: transparent; }
-  .patchlist .item.on { background: #2b2f3c; border-color: var(--rail); }
+  .patchlist .item.on, .patchlist .item.on:hover { background: #2b2f3c; border-color: var(--rail); color: var(--text); }
   .patchlist .item .slot { color: var(--faint); font-size: 10.5px; flex: 0 0 auto; min-width: 22px; }
   .patchlist .item .name {
     flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -125,7 +125,7 @@
     padding: 6px 12px; min-width: 0;
   }
   .parts .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
-  .parts .tab.on .badge { color: var(--accent); }
+  .parts .tab.on .badge { color: var(--bg); }
 
   .transition { display: flex; gap: 10px 12px; align-items: center; flex-wrap: wrap; }
   .transition .scrub { flex: 1 1 100%; display: flex; gap: 9px; align-items: center; }
