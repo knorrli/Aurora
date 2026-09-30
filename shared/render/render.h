@@ -115,6 +115,7 @@ struct Frame {
   float stripLfo[STRIPS];
   float centers[STRIPS];
   StripSpots spots[STRIPS];
+  float fieldLevels[STRIPS * PIXELS];
 };
 
 void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,

@@ -11,7 +11,7 @@
   const BEAT_FLASH = 0.15;
 
   const walls = {};
-  const OVERLAYS = ['centers', 'fan', 'bend', 'arp', 'palette', 'spots'];
+  const OVERLAYS = ['centers', 'fan', 'bend', 'arp', 'palette', 'spots', 'field'];
   const STORE_OVERLAYS = 'aurora.editor.overlays';
 
   const view = { flipped: false, overlays: readOverlays(), order: null };

@@ -212,7 +212,7 @@ static ShapeSample sampleShape(const FrameContext &context, const ShapeLook &loo
 
 static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
                      const ShapeLook &look, const Tail &tail, const PixelLayers &layers,
-                     uint8_t pixelIndex) {
+                     uint8_t pixelIndex, float &fieldLevel) {
   const Reading &reading = strip.reading;
   const Shape &plain = context.plain.shape;
   float shapeTotal = 0.0f;
@@ -241,6 +241,7 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
 
   const float shape = shapeTotal / (float)SAMPLES_PER_PIXEL;
   const float cover = scatterCover / (float)SAMPLES_PER_PIXEL;
+  fieldLevel = fieldTotal / (float)SAMPLES_PER_PIXEL;
   const bool baseLit = shape > DARKEST_DRAWN;
   if (!baseLit && cover <= DARKEST_DRAWN) return { 0, 0, 0 };
 
@@ -265,7 +266,7 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
 }
 
 static void drawStrip(const FrameContext &context, const StripContext &strip,
-                      const TailHistory &history, Rgb *pixels) {
+                      const TailHistory &history, Rgb *pixels, float *fieldLevels) {
   Tail tail;
   const ShapeLook look = lookOf(context, strip, history, tail);
 
@@ -278,7 +279,7 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
       !layers.fieldOn && !layers.flowOn && !coreActive(reading);
 
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
-    pixels[pixelIndex] = drawPixel(context, strip, look, tail, layers, pixelIndex);
+    pixels[pixelIndex] = drawPixel(context, strip, look, tail, layers, pixelIndex, fieldLevels[pixelIndex]);
   }
 }
 
@@ -344,7 +345,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
         recordTail(history, context.tail, strip.center, placementOf(context, strip));
     out.centers[index] = pixelOfCells(context.bend, shape.bounce, fract(strip.center),
                                       context.cellLength, shape.count);
-    drawStrip(context, strip, history, out.pixels + index * PIXELS);
+    drawStrip(context, strip, history, out.pixels + index * PIXELS, out.fieldLevels + index * PIXELS);
   }
 
   wall.lastBouncing = context.travel.bouncing;

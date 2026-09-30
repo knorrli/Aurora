@@ -15,7 +15,7 @@ const inputs = [...inRender, 'shared/aurora_protocol.h', 'tools/render-api.cpp']
 const sources = inputs.filter(f => f.endsWith('.cpp')).map(f => join(ROOT, f));
 
 const EXPORTS = [
-  'aurora_controls', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_strip_spots_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_centers',
+  'aurora_controls', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_field_levels', 'aurora_strip_spots_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_centers',
   'aurora_bend_points',
   'aurora_strip_count', 'aurora_par_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
   'aurora_motion_new', 'aurora_motion_copy', 'aurora_wall_new', 'aurora_wall_clear_tails',

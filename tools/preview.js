@@ -43,6 +43,8 @@
 
     const PASS_MARKS = renderer._aurora_arp_pass_marks();
     const STRIP_SPOTS_SIZE = renderer._aurora_strip_spots_size();
+    const fieldLevelsAt = renderer._aurora_field_levels() >> 2;
+    const fieldLevels = renderer.HEAPF32.subarray(fieldLevelsAt, fieldLevelsAt + STRIPS * PIXELS);
     const SPOT_MARK_FLOATS = 3;
 
     function readSpots() {
@@ -123,7 +125,7 @@
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_render(motion, wallState, quarterNotes);
         return {
-          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
+          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(), fieldLevels: Array.from(fieldLevels),
           centers: Array.from(centers),
           hues: {
             palette: bytes[global.AuroraProtocol.CC.palette],
@@ -198,6 +200,7 @@
     if (overlays.bend && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
     if (overlays.palette && frame.hues) drawPalette(context, frame.hues, width, height);
+    if (overlays.field && frame.fieldLevels) drawField(context, frame.fieldLevels, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.spots && frame.spots) drawSpots(context, frame.spots, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.centers) drawCenters(context, frame.centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
@@ -207,6 +210,8 @@
   const SHAPE_MARK_SOFT = 'rgba(240,168,96,0.6)';
   const OUTLINE = 'rgba(10,11,14,0.85)';
   const SPOT_MARK = 'rgba(140,220,184,0.95)';
+  const FIELD_MARK = 'rgba(140,190,235,0.95)';
+  const FIELD_REACH = 7;
 
   function strokeOutlined(context, style, width) {
     context.strokeStyle = OUTLINE;
@@ -258,6 +263,28 @@
       context.fillRect(x - 0.75, top + ribbonHeight + 1, 1.5, 4);
       context.fillText(pars.join(''), x, top + ribbonHeight + 13);
     }
+    context.restore();
+  }
+
+  function drawField(context, levels, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+    const { PIXELS } = api;
+    const yAt = pixel => WALL_TOP + (flipped ? pixel + 0.5 : PIXELS - pixel - 0.5) * WALL_HEIGHT / PIXELS;
+    context.save();
+    order.forEach((strip, column) => {
+      const axis = columnWidth * (column + 1) - stripWidth / 2 - FIELD_REACH - 3;
+      context.strokeStyle = 'rgba(255,255,255,0.12)';
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(axis, yAt(0));
+      context.lineTo(axis, yAt(PIXELS - 1));
+      context.stroke();
+      context.beginPath();
+      for (let pixel = 0; pixel < PIXELS; pixel++) {
+        const x = axis + levels[strip * PIXELS + pixel] * FIELD_REACH;
+        if (pixel === 0) context.moveTo(x, yAt(pixel)); else context.lineTo(x, yAt(pixel));
+      }
+      strokeOutlined(context, FIELD_MARK, 1.5);
+    });
     context.restore();
   }
 
