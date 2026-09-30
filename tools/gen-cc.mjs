@@ -105,7 +105,7 @@ const lfoPeriods = (header.match(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/) || 
   .split(',').map(text => text.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
 const STEPPED = /step = \(uint8_t\)\(\(\(uint16_t\)value \* last \+ 63\) \/ 127\);/;
-for (const name of ['aurora_route_ratio', 'aurora_lfo_period', 'aurora_arp_mode', 'aurora_hue_layout']) {
+for (const name of ['aurora_route_ratio', 'aurora_route_delay', 'aurora_lfo_period', 'aurora_arp_mode', 'aurora_hue_layout']) {
   if (!STEPPED.test(functionBody(name))) {
     throw new Error(`${HEADER}: ${name}() no longer steps as steppedIndex() in tools/cc.js does`);
   }
@@ -122,9 +122,9 @@ const arpControls = (header.match(/AURORA_ARP_CONTROLS\[\]\s*=\s*\{([^}]*)\}/) |
   .split(',').map(text => text.trim()).filter(Boolean)
   .map(text => camel((text.match(/^CC_([A-Z0-9_]+)$/) || fail(`a CC in AURORA_ARP_CONTROLS, not ${text}`))[1]));
 const ARP_PAIRING = [
-  ['aurora_route_arp', /ARP_TURNS \+ \(destination - AURORA_ARP_DESTINATION_BASE\) % 2/],
+  ['aurora_route_arp', /ARP_STEPS \+ \(destination - AURORA_ARP_DESTINATION_BASE\) % 2/],
   ['aurora_route_target', /\(destination - AURORA_ARP_DESTINATION_BASE\) \/ 2/],
-  ['aurora_route_destination', /AURORA_ARP_DESTINATION_BASE \+ index \* 2 \+ \(arp - ARP_TURNS\)/],
+  ['aurora_route_destination', /AURORA_ARP_DESTINATION_BASE \+ index \* 2 \+ \(arp - ARP_STEPS\)/],
 ];
 for (const [name, shape] of ARP_PAIRING) {
   if (!shape.test(functionBody(name))) {
@@ -157,7 +157,7 @@ const generated = {
   ARP_DESTINATION_BASE: constant('AURORA_ARP_DESTINATION_BASE'),
   ARP_CONTROLS: arpControls,
   WAVE_SWELL: constant('WAVE_SWELL'),
-  WAVE_SNAP: constant('WAVE_SNAP'),
+  WAVE_FALL: constant('WAVE_FALL'),
   WAVE_SQUARE: constant('WAVE_SQUARE'),
   LFO_PERIODS: lfoPeriods,
   ROUTES: routeCount,
@@ -165,6 +165,7 @@ const generated = {
   ROUTE_FIELD: routeField,
   ROUTE_DEFAULTS: routeDefaults,
   ROUTE_MAX_RATIO: constant('AURORA_ROUTE_MAX_RATIO'),
+  ROUTE_PHASE_STEPS: constant('AURORA_ROUTE_PHASE_STEPS'),
   PATCH_FORMAT: constant('AURORA_PATCH_FORMAT'),
   PATCH_MAX: constant('AURORA_PATCH_MAX'),
   PATCH_CC_COUNT: constant('AURORA_PATCH_CC_COUNT'),
@@ -218,6 +219,7 @@ ${constantLines}
 
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
   const routeRatio = value => 1 + steppedIndex(value, ROUTE_MAX_RATIO);
+  const routePhaseStep = value => steppedIndex(value, ROUTE_PHASE_STEPS);
 
   const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
   const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
@@ -225,7 +227,7 @@ ${constantLines}
   const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
 
   const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
-    : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
+    : ARP.steps + (destination - ARP_DESTINATION_BASE) % 2);
   const routeTarget = destination => {
     if (destination < ARP_DESTINATION_BASE) return destination;
     const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
@@ -234,7 +236,7 @@ ${constantLines}
   const routeDestination = (target, arp) => {
     const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
     if (arp === ARP.unison || index < 0) return target;
-    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.turns);
+    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
   };
 
   const isOn = value => value >= SWITCH_ON_AT;
@@ -244,7 +246,7 @@ ${constantLines}
   global.AuroraProtocol = {
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
 ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
-    steppedIndex, routeCC, routeRatio, isOn, threeWayPosition,
+    steppedIndex, routeCC, routeRatio, routePhaseStep, isOn, threeWayPosition,
     arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

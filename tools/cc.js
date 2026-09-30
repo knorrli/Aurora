@@ -88,15 +88,15 @@
   const SWITCH_ON_AT = 64;
   const THREE_WAY_STARTS = [0,43,86];
   const THREE_WAY_VALUES = [0,64,127];
-  const ARP = {"unison":0,"turns":1,"ripple":2};
-  const ARP_MODE = {"together":0,"sequence":1,"bounce":2,"evensOdds":3,"pairs":4,"mirror":5,"random":6};
-  const ARP_MODE_COUNT = 7;
+  const ARP = {"unison":0,"steps":1,"ripple":2};
+  const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
+  const ARP_MODE_COUNT = 6;
   const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
   const HUE_LAYOUT_COUNT = 5;
   const ARP_DESTINATION_BASE = 120;
   const ARP_CONTROLS = ["parHueOffset","parSaturation","parValue"];
   const WAVE_SWELL = 32;
-  const WAVE_SNAP = 64;
+  const WAVE_FALL = 64;
   const WAVE_SQUARE = 96;
   const LFO_PERIODS = [16,12,8,6,4,3,2,1.5,1,0.75,0.5,0.375,0.25];
   const ROUTES = 8;
@@ -104,6 +104,7 @@
   const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4};
   const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0};
   const ROUTE_MAX_RATIO = 8;
+  const ROUTE_PHASE_STEPS = 16;
   const PATCH_FORMAT = 3;
   const PATCH_MAX = 128;
   const PATCH_CC_COUNT = 128;
@@ -136,6 +137,7 @@
 
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
   const routeRatio = value => 1 + steppedIndex(value, ROUTE_MAX_RATIO);
+  const routePhaseStep = value => steppedIndex(value, ROUTE_PHASE_STEPS);
 
   const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
   const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
@@ -143,7 +145,7 @@
   const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
 
   const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
-    : ARP.turns + (destination - ARP_DESTINATION_BASE) % 2);
+    : ARP.steps + (destination - ARP_DESTINATION_BASE) % 2);
   const routeTarget = destination => {
     if (destination < ARP_DESTINATION_BASE) return destination;
     const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
@@ -152,7 +154,7 @@
   const routeDestination = (target, arp) => {
     const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
     if (arp === ARP.unison || index < 0) return target;
-    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.turns);
+    return ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
   };
 
   const isOn = value => value >= SWITCH_ON_AT;
@@ -174,12 +176,13 @@
     HUE_LAYOUT,
     ARP_CONTROLS,
     WAVE_SWELL,
-    WAVE_SNAP,
+    WAVE_FALL,
     WAVE_SQUARE,
     LFO_PERIODS,
     ROUTES,
     ROUTE_FIELD,
     ROUTE_DEFAULTS,
+    ROUTE_PHASE_STEPS,
     PATCH_FORMAT,
     PATCH_MAX,
     PATCH_CC_COUNT,
@@ -200,7 +203,7 @@
     SYSEX_TYPE,
     SYSEX_STATUS,
     LIBRARY_STATE,
-    steppedIndex, routeCC, routeRatio, isOn, threeWayPosition,
+    steppedIndex, routeCC, routeRatio, routePhaseStep, isOn, threeWayPosition,
     arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

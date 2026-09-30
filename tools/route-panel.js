@@ -9,7 +9,8 @@
   const { element } = dom;
 
   const WAVE_CYCLES = 2;
-  const PANEL_MIN_WIDTH = 380;
+  const PANEL_MIN_WIDTH = 420;
+  const WAVE_PADDING = 7;
 
   const panel = { root: null, blocks: [], add: null, free: null, target: null };
   const list = { root: null, count: null, lines: [] };
@@ -17,7 +18,7 @@
   function departureAt(route, phase, live) {
     const wave = live[route.wave];
     const destination = Protocol.NAME_BY_CC[Protocol.routeTarget(live[route.destination])];
-    const at = Preview.lfoWave(phase * Protocol.routeRatio(live[route.ratio]) - live[route.phase] / 128, wave);
+    const at = Preview.lfoWave(phase * Protocol.routeRatio(live[route.ratio]) - Protocol.routePhaseStep(live[route.phase]) / Protocol.ROUTE_PHASE_STEPS, wave);
     return Patch.bipolar(live[route.amount]) * (Patch.swings(destination) ? at - Preview.waveMean(wave) : at);
   }
 
@@ -31,8 +32,7 @@
     context.setTransform(scale, 0, 0, scale, 0, 0);
     context.clearRect(0, 0, width, height);
 
-    const padding = 7;
-    const y = value => (height / 2) - value * (height / 2 - padding);
+    const y = value => (height / 2) - value * (height / 2 - WAVE_PADDING);
     const rail = (value, style, dashed) => {
       context.setLineDash(dashed ? [3, 4] : []);
       context.strokeStyle = style;
@@ -57,6 +57,40 @@
       else context.lineTo(x, y(value));
     }
     context.stroke();
+    canvas.wave = context.getImageData(0, 0, canvas.width, canvas.height);
+  }
+
+  function drawPlayhead(canvas, route, lfo, live) {
+    if (!canvas.wave || canvas.wave.width !== canvas.width) return;
+    const width = canvas.clientWidth, height = canvas.clientHeight;
+    const context = canvas.getContext('2d');
+    context.putImageData(canvas.wave, 0, 0);
+    const along = ((lfo / WAVE_CYCLES) % 1 + 1) % 1;
+    const x = along * width;
+    const y = (height / 2) - departureAt(route, along * WAVE_CYCLES, live) * (height / 2 - WAVE_PADDING);
+    context.strokeStyle = 'rgba(255,255,255,.35)';
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+    context.stroke();
+    context.fillStyle = '#fff';
+    context.beginPath();
+    context.arc(x, y, 3, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  function paintPlayheads(lfo, live) {
+    if (list.root && list.root.open) {
+      for (const { route, line, canvas } of list.lines) {
+        if (!line.hidden) drawPlayhead(canvas, route, lfo, live);
+      }
+    }
+    if (panel.target) {
+      for (const { route, block, canvas } of panel.blocks) {
+        if (!block.hidden) drawPlayhead(canvas, route, lfo, live);
+      }
+    }
   }
 
   function routeButtons(route) {
@@ -192,7 +226,7 @@
       if (!destination) continue;
       aimed++;
       target.textContent = destinationText(destination);
-      values.textContent = route.controls.map(name => Patch.READOUTS[name](live[name])).join(' · ');
+      values.textContent = route.controls.map(name => Patch.READOUTS[name](live[name], live)).join(' · ');
       line.classList.toggle('bypassed', paintButtons(buttons, route));
       if (list.root.open) drawWave(canvas, route, live);
     }
@@ -267,5 +301,5 @@
     Editor.paint();
   }
 
-  Editor.routes = { buildPanel, buildList, paint, toggle };
+  Editor.routes = { buildPanel, buildList, paint, toggle, paintPlayheads };
 })(window);

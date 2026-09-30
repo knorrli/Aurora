@@ -85,17 +85,29 @@
     return text.replace(/\bbeats\b/g, many).replace(/\bbeat\b/g, one);
   };
 
+  const WAVE_NAMES = [
+    [0, 'rise'], [Protocol.WAVE_SWELL, 'swell'], [Protocol.WAVE_FALL, 'fall'], [Protocol.WAVE_SQUARE, 'square'], [127, 'stab'],
+  ];
   const waveText = value => {
-    const stages = ['build', 'swell', 'snap', 'square', 'stab'];
-    const stage = Math.min(3, value >> 5);
-    return `${stages[stage]} ${percent((value - stage * 32) * 4 / 127)}→${stages[stage + 1]}`;
+    const next = WAVE_NAMES.findIndex(([at]) => at >= value);
+    const [at, name] = WAVE_NAMES[next];
+    return at === value ? name : `${WAVE_NAMES[next - 1][1]} → ${name}`;
+  };
+
+  const phaseText = (value, live, route) => {
+    const step = Protocol.routePhaseStep(value);
+    if (step === 0) return '0°';
+    const degrees = Math.round(step * 360 / Protocol.ROUTE_PHASE_STEPS);
+    const settings = live || DEFAULT;
+    const cycle = real('lfoRate', settings.lfoRate) / Protocol.routeRatio(settings[route.ratio]);
+    return `${degrees}° · ${beatsText(step / Protocol.ROUTE_PHASE_STEPS * cycle)}`;
   };
 
   const ROUTE_READOUTS = {
-    amount: value => signed(bipolar(value)),
-    ratio: value => '×' + Protocol.routeRatio(value) + ' the LFO',
-    phase: value => Math.round(value / 128 * 360) + '°',
-    wave: waveText,
+    amount: () => value => signed(bipolar(value)),
+    ratio: () => value => '×' + Protocol.routeRatio(value),
+    phase: route => (value, live) => phaseText(value, live, route),
+    wave: () => waveText,
   };
 
   const cellPixels = live => preview().PIXELS / real('shapeCount', live.shapeCount);
@@ -212,11 +224,9 @@
       const mode = Protocol.arpMode((live || DEFAULT).arpMode);
       const steps = passLength(mode);
       const cycles = Math.max(1, Math.round(Math.abs(spread) * steps));
-      const pace = steps % cycles === 0
-        ? `${steps / cycles} step${steps / cycles === 1 ? '' : 's'} a cycle`
-        : `${steps} steps in ${cycles} cycles`;
-      const hasDirection = mode !== Protocol.ARP_MODE.together && mode !== Protocol.ARP_MODE.random;
-      return spread < 0 && hasDirection ? pace + ', backward' : pace;
+      const pace = `${Math.round(steps / cycles * 100) / 100} a cycle`;
+      const hasDirection = mode !== Protocol.ARP_MODE.random;
+      return spread < 0 && hasDirection ? '← ' + pace : pace;
     },
     parHueRange: value => {
       const reach = Math.round(real('parHueRange', value));
@@ -224,14 +234,14 @@
     },
   };
 
-  for (const [name, readout] of Object.entries(READOUTS)) {
-    READOUTS[name] = (value, live) => inPulses(readout(value, live), live);
-  }
-
   for (const route of ROUTES) {
     for (const field of ROUTE_FIELDS) {
-      if (ROUTE_READOUTS[field]) READOUTS[route[field]] = ROUTE_READOUTS[field];
+      if (ROUTE_READOUTS[field]) READOUTS[route[field]] = ROUTE_READOUTS[field](route);
     }
+  }
+
+  for (const [name, readout] of Object.entries(READOUTS)) {
+    READOUTS[name] = (value, live) => inPulses(readout(value, live), live);
   }
 
   const DEFAULT = {};
@@ -301,13 +311,12 @@
   };
 
   const ARP_MODE_NAMES = {
-    together: 'together', sequence: 'sequence', bounce: 'bounce', evensOdds: 'evens / odds',
+    sequence: 'sequence', bounce: 'bounce', evensOdds: 'evens / odds',
     pairs: 'pairs', mirror: 'mirror', random: 'random',
   };
 
   const PARS_COUNT = 4;
   const passLength = mode => ({
-    [Protocol.ARP_MODE.together]: 1,
     [Protocol.ARP_MODE.bounce]: 2 * PARS_COUNT - 2,
     [Protocol.ARP_MODE.evensOdds]: 2,
     [Protocol.ARP_MODE.pairs]: PARS_COUNT / 2,
@@ -331,7 +340,7 @@
             .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]),
           inertWhen: live => !arpRouted(live) }),
       control('arpSpread', 'Steps',
-        { inertWhen: live => !arpRouted(live) || Protocol.arpMode(live.arpMode) === Protocol.ARP_MODE.together }),
+        { inertWhen: live => !arpRouted(live) }),
     ],
   };
 
@@ -489,8 +498,8 @@
   function pointsFor(name) {
     const route = routeOf(name);
     if (route) {
-      if (name === route.wave) return [Protocol.WAVE_SWELL, Protocol.WAVE_SNAP, Protocol.WAVE_SQUARE];
-      if (name === route.phase) return [32, 64, 96];
+      if (name === route.wave) return [Protocol.WAVE_SWELL, Protocol.WAVE_FALL, Protocol.WAVE_SQUARE];
+      if (name === route.phase) return steps(Protocol.routePhaseStep);
       if (name === route.ratio) return steps(Protocol.routeRatio);
       return [64];
     }

@@ -71,6 +71,7 @@
                                  wall.motion, wall.wallState);
     Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height,
                  wall === walls.main ? view.overlays : {});
+    return frame;
   }
 
   function paintBeats() {
@@ -88,7 +89,8 @@
     beats.position += (now - beats.lastFrameAt) / 60000 * Editor.midi.bpm();
     beats.lastFrameAt = now;
     paintBeats();
-    draw(walls.main, session.liveNamed());
+    const live = session.liveNamed();
+    Editor.routes.paintPlayheads(draw(walls.main, live).lfo, live);
     Editor.tracks.paint();
     if (session.isTarget()) {
       Preview.copyMotion(walls.base.motion, walls.main.motion);

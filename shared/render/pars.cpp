@@ -32,7 +32,7 @@ static bool readArpRoute(const uint8_t *dialed, uint8_t route, ArpRoute &out) {
   if (fabsf(out.amount) < 0.001f) return false;
   out.ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);
   out.wave = dialed[aurora_route_cc(route, ROUTE_WAVE)];
-  out.delay = (float)dialed[aurora_route_cc(route, ROUTE_PHASE)] / 128.0f;
+  out.delay = aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]);
   return true;
 }
 

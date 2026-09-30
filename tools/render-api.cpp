@@ -32,6 +32,7 @@ EMSCRIPTEN_KEEPALIVE render::Par *aurora_pars() { return frame.pars; }
 EMSCRIPTEN_KEEPALIVE float *aurora_par_hue_places() { return frame.parHuePlaces; }
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_par_hues() { return frame.parHues; }
 EMSCRIPTEN_KEEPALIVE int aurora_strips_hue() { return frame.stripsHue; }
+EMSCRIPTEN_KEEPALIVE float aurora_lfo() { return frame.lfo; }
 EMSCRIPTEN_KEEPALIVE render::FanReading *aurora_fan() { return &frame.fan; }
 EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
 EMSCRIPTEN_KEEPALIVE float *aurora_centers() { return frame.centers; }

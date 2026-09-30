@@ -108,7 +108,7 @@
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_render(motion, wallState, quarterNotes);
         return {
-          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(),
+          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(),
           centers: Array.from(centers),
           hues: {
             palette: bytes[global.AuroraProtocol.CC.palette],
@@ -273,8 +273,8 @@
     context.save();
     context.fillStyle = 'rgba(226,150,172,0.8)';
     context.font = '10px ui-monospace, monospace';
-    const turns = Math.round(pass.turns * 100) / 100;
-    context.fillText(`${turns} ${turns === 1 ? 'turn' : 'turns'} a pass`, left, first - 7);
+    const cycles = Math.round(pass.turns * 100) / 100;
+    context.fillText(cycles === 1 ? 'a pass every cycle' : `a pass every ${cycles} cycles`, left, first - 7);
     context.restore();
   }
 

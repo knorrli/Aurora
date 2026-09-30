@@ -144,8 +144,16 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
 };
 
 static const uint8_t WAVE_SWELL  = 32;
-static const uint8_t WAVE_SNAP   = 64;
+static const uint8_t WAVE_FALL   = 64;
 static const uint8_t WAVE_SQUARE = 96;
+
+static const uint8_t AURORA_ROUTE_PHASE_STEPS = 16;
+
+static inline float aurora_route_delay(uint8_t value) {
+    const uint8_t last = AURORA_ROUTE_PHASE_STEPS - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return (float)step / (float)AURORA_ROUTE_PHASE_STEPS;
+}
 
 static const uint8_t AURORA_ROUTES = 8;
 
@@ -180,7 +188,7 @@ static inline uint8_t aurora_route_ratio(uint8_t value) {
 
 enum AuroraArp : uint8_t {
     ARP_UNISON = 0,
-    ARP_TURNS  = 1,
+    ARP_STEPS  = 1,
     ARP_RIPPLE = 2,
 };
 
@@ -194,7 +202,7 @@ static const uint8_t AURORA_ARP_CONTROL_COUNT =
 
 static inline uint8_t aurora_route_arp(uint8_t destination) {
     if (destination < AURORA_ARP_DESTINATION_BASE) return ARP_UNISON;
-    return (uint8_t)(ARP_TURNS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
+    return (uint8_t)(ARP_STEPS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
 }
 
 static inline uint8_t aurora_route_target(uint8_t destination) {
@@ -207,20 +215,19 @@ static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp) {
     if (arp == ARP_UNISON) return target;
     for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
         if (AURORA_ARP_CONTROLS[index] != target) continue;
-        return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_TURNS));
+        return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_STEPS));
     }
     return target;
 }
 
 enum AuroraArpMode : uint8_t {
-    ARP_MODE_TOGETHER   = 0,
-    ARP_MODE_SEQUENCE   = 1,
-    ARP_MODE_BOUNCE     = 2,
-    ARP_MODE_EVENS_ODDS = 3,
-    ARP_MODE_PAIRS      = 4,
-    ARP_MODE_MIRROR     = 5,
-    ARP_MODE_RANDOM     = 6,
-    ARP_MODES           = 7,
+    ARP_MODE_SEQUENCE   = 0,
+    ARP_MODE_BOUNCE     = 1,
+    ARP_MODE_EVENS_ODDS = 2,
+    ARP_MODE_PAIRS      = 3,
+    ARP_MODE_MIRROR     = 4,
+    ARP_MODE_RANDOM     = 5,
+    ARP_MODES           = 6,
 };
 
 static inline uint8_t aurora_arp_mode(uint8_t value) {

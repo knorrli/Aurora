@@ -17,12 +17,11 @@ Arp readArp(const uint8_t *dialed, const Pushes *pushes) {
 }
 
 static bool hasDirection(uint8_t mode) {
-  return mode != ARP_MODE_TOGETHER && mode != ARP_MODE_RANDOM;
+  return mode != ARP_MODE_RANDOM;
 }
 
 uint8_t arpGroupCount(const Arp &arp) {
   switch (arp.mode) {
-    case ARP_MODE_TOGETHER: return 1;
     case ARP_MODE_EVENS_ODDS: return PARS > 1 ? 2 : 1;
     case ARP_MODE_PAIRS:
     case ARP_MODE_MIRROR: return (PARS + 1) / 2;
@@ -32,7 +31,6 @@ uint8_t arpGroupCount(const Arp &arp) {
 
 uint8_t arpGroupOf(const Arp &arp, uint8_t par) {
   switch (arp.mode) {
-    case ARP_MODE_TOGETHER: return 0;
     case ARP_MODE_EVENS_ODDS: return par % 2;
     case ARP_MODE_PAIRS: return par / 2;
     case ARP_MODE_MIRROR: {

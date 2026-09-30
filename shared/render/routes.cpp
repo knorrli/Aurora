@@ -14,18 +14,18 @@ static inline float raisedCosine(float x) {
 }
 
 float waveRise(uint8_t wave) {
-  return (wave <= WAVE_SNAP) ? 1.0f - (float)wave / (float)WAVE_SNAP : 0.0f;
+  return (wave <= WAVE_FALL) ? 1.0f - (float)wave / (float)WAVE_FALL : 0.0f;
 }
 
 float lfoWave(float phase, uint8_t wave) {
   const float attack = waveRise(wave);
   float decay, hard;
-  if (wave <= WAVE_SNAP) {
+  if (wave <= WAVE_FALL) {
     decay = 1.0f - attack;
     hard = 0.0f;
   } else {
-    const float toSquare = (float)(wave - WAVE_SNAP)
-                         / (float)(WAVE_SQUARE - WAVE_SNAP);
+    const float toSquare = (float)(wave - WAVE_FALL)
+                         / (float)(WAVE_SQUARE - WAVE_FALL);
     hard = (toSquare > 1.0f) ? 1.0f : toSquare;
     decay = (wave <= WAVE_SQUARE)
         ? 1.0f - 0.5f * toSquare
@@ -195,7 +195,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
 
     const uint8_t ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);
     const uint8_t wave = dialed[aurora_route_cc(route, ROUTE_WAVE)];
-    const float delay = (float)dialed[aurora_route_cc(route, ROUTE_PHASE)] / 128.0f;
+    const float delay = aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]);
     const float lfo = plainLfo(destination) ? plainPhase : stripPhase;
     const float phase = lfo * (float)ratio - delay;
 
@@ -244,7 +244,7 @@ uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
       amount,
       aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]),
       dialed[aurora_route_cc(route, ROUTE_WAVE)],
-      (float)dialed[aurora_route_cc(route, ROUTE_PHASE)] / 128.0f,
+      aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]),
     };
   }
   return count;
