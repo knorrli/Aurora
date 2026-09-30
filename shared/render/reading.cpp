@@ -15,6 +15,15 @@ static const float LIGHT_MAX_HUE = 64.0f;
 
 static const float FLOW_MAX_CYCLES_PER_BEAT = 0.5f;
 
+static const float TAIL_BEATS[] = { 0.0f, 0.25f, 0.375f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, (float)TAIL_MAX_BEATS };
+static const uint8_t TAIL_BEAT_STEPS = sizeof(TAIL_BEATS) / sizeof(TAIL_BEATS[0]);
+
+static float tailBeatsOf(uint8_t value) {
+  const uint8_t last = TAIL_BEAT_STEPS - 1;
+  const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+  return TAIL_BEATS[step > last ? last : step];
+}
+
 static inline float unitOf(uint8_t value) { return (float)value / 127.0f; }
 
 float bipolarOf(uint8_t value) {
@@ -103,7 +112,7 @@ float controlValue(uint8_t cc, uint8_t value) {
 
     case CC_SCATTER_POSITION: return bipolarOf(value);
 
-    case CC_SHAPE_TAIL: return squaredUnit(value, (float)TAIL_MAX_BEATS);
+    case CC_SHAPE_TAIL: return tailBeatsOf(value);
 
     case CC_SHAPE_WIDTH:
     case CC_SHAPE_EDGE:

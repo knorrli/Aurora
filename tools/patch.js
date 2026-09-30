@@ -114,6 +114,7 @@
   const shapeGap = live => 1 - real('shapeWidth', live.shapeWidth);
 
   const BARS = '▁▂▃▄▅▆▇█';
+  const FAN_LANDMARKS = { 0: 'alike', 0.125: 'slope', 0.25: 'peak', 0.5: 'alternate' };
   const fanTriangle = u => (u < 0.5 ? 4 * u - 1 : 3 - 4 * u);
   const fract = x => x - Math.floor(x);
   const fanPicture = live => preview().WALL_STRIP_ORDER.map(strip => {
@@ -136,7 +137,7 @@
     shapeEdge: (value, live) => pixels(real('shapeEdge', value) * shapeGap(live) * 0.5 * cellPixels(live)) + ' glow',
     shapeTail: value => {
       const beats = real('shapeTail', value);
-      return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats';
+      return beats === 0 ? 'none' : PERIOD_NAMES[beats];
     },
     shapeCount: value => counted(real('shapeCount', value), 'shape', 'shapes'),
     shapePosition: value => upTheStrip(real('shapePosition', value)),
@@ -156,7 +157,11 @@
     fanSpread: (value, live) => fanShift(live, Math.abs(real('fanSpread', value))),
     fanLfo: (value, live) => '±' + beatsText(Math.abs(real('fanLfo', value)) * real('lfoRate', live.lfoRate)),
     fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
-    fanFrequency: (value, live) => fanPicture(Object.assign({}, live, { fanFrequency: value })),
+    fanFrequency: (value, live) => {
+      const picture = fanPicture(Object.assign({}, live, { fanFrequency: value }));
+      const landmark = FAN_LANDMARKS[real('fanFrequency', value)];
+      return landmark ? `${picture} ${landmark}` : picture;
+    },
     fanPhase: (value, live) => fanPicture(Object.assign({}, live, { fanPhase: value })),
     fanRandomize: value => percent(real('fanRandomize', value)) + ' random',
 
@@ -262,6 +267,19 @@
   const threeWayOptions = (positions, labels) =>
     Object.entries(positions).map(([key, position]) => [Protocol.THREE_WAY_VALUES[position], labels[key]]);
 
+  const soundingRoutes = live => ROUTES.filter(route =>
+    Protocol.routeTarget(live[route.destination]) !== 0 && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
+  const routedTo = (live, names) =>
+    soundingRoutes(live).some(route => names.some(name => Protocol.routeTarget(live[route.destination]) === CC[name]));
+  const atZero = (live, names) => names.every(name => real(name, live[name]) === 0);
+
+  const nothingTravels = live =>
+    atZero(live, ['shapeSpeed', 'fanSpeed']) && !routedTo(live, ['shapeSpeed', 'shapePosition', 'fanSpread', 'fanSpeed']);
+  const FAN_AMOUNTS = ['fanSpread', 'fanSpeed', 'fanLfo'];
+  const fanIsFlat = live => atZero(live, FAN_AMOUNTS) && !routedTo(live, FAN_AMOUNTS);
+  const inertWhileStill = { inertWhen: nothingTravels };
+  const inertWhileFlat = { inertWhen: fanIsFlat };
+
   const SHAPE = {
     name: 'Shape',
     groups: [
@@ -271,7 +289,7 @@
           control('shapeCount', 'Count'),
           control('shapeWidth', 'Width'),
           control('shapeEdge', 'Edge'),
-          control('shapeTail', 'Tail'),
+          control('shapeTail', 'Tail', inertWhileStill),
         ],
       },
       {
@@ -281,8 +299,9 @@
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
           control('shapeSpeed', 'Speed'),
           control('shapePosition', 'Position'),
-          control('shapeBend', 'Bend'),
-          control('shapeBendAt', 'Bend at'),
+          control('shapeBend', 'Bend', inertWhileStill),
+          control('shapeBendAt', 'Bend at',
+            { inertWhen: live => nothingTravels(live) || Math.abs(real('shapeBend', live.shapeBend)) < 0.005 }),
         ],
       },
       {
@@ -290,10 +309,10 @@
         names: [
           control('fanSpread', 'Spread'),
           control('fanSpeed', 'Speed'),
-          control('fanLfo', 'LFO'),
-          control('fanFrequency', 'Frequency'),
-          control('fanPhase', 'Phase'),
-          control('fanRandomize', 'Randomize'),
+          control('fanLfo', 'LFO', { inertWhen: live => !soundingRoutes(live).length }),
+          control('fanFrequency', 'Frequency', inertWhileFlat),
+          control('fanPhase', 'Phase', inertWhileFlat),
+          control('fanRandomize', 'Randomize', inertWhileFlat),
         ],
       },
     ],
@@ -323,11 +342,8 @@
     [Protocol.ARP_MODE.mirror]: PARS_COUNT / 2,
   }[mode] || PARS_COUNT);
 
-  const arpRouted = live => ROUTES.some(route => {
-    const destination = live[route.destination];
-    return Protocol.routeArp(destination) !== Protocol.ARP.unison && Protocol.routeTarget(destination) !== 0
-      && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount;
-  });
+  const arpRouted = live =>
+    soundingRoutes(live).some(route => Protocol.routeArp(live[route.destination]) !== Protocol.ARP.unison);
 
   const LFO = {
     name: 'LFO', tone: 'lfo',
@@ -505,7 +521,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
-    if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
+    if (name === 'lfoRate' || name === 'shapeTail' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
   }

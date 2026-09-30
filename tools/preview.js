@@ -187,6 +187,18 @@
   }
 
   const PALETTE_MARK = 'rgba(176,162,236,0.95)';
+  const SHAPE_MARK = 'rgba(240,168,96,0.95)';
+  const SHAPE_MARK_SOFT = 'rgba(240,168,96,0.6)';
+  const OUTLINE = 'rgba(10,11,14,0.85)';
+
+  function strokeOutlined(context, style, width) {
+    context.strokeStyle = OUTLINE;
+    context.lineWidth = width + 2.5;
+    context.stroke();
+    context.strokeStyle = style;
+    context.lineWidth = width;
+    context.stroke();
+  }
   const paletteRibbons = new Map();
 
   function paletteRibbon(palette) {
@@ -302,13 +314,11 @@
     context.beginPath();
     context.rect(0, WALL_TOP, xAt(order.length), WALL_HEIGHT);
     context.clip();
-    context.strokeStyle = 'rgba(255,255,255,0.7)';
-    context.lineWidth = 1.5;
     context.beginPath();
     points.forEach(({ x, pixel }, column) => {
       if (column === 0) context.moveTo(x, yAt(pixel)); else context.lineTo(x, yAt(pixel));
     });
-    context.stroke();
+    strokeOutlined(context, SHAPE_MARK_SOFT, 1.5);
     context.restore();
 
     context.save();
@@ -322,7 +332,7 @@
         context.moveTo(x - stripWidth * 0.75, y);
         context.lineTo(x + stripWidth * 0.75, y);
         context.stroke();
-        context.strokeStyle = 'rgba(255,255,255,0.95)';
+        context.strokeStyle = SHAPE_MARK;
         context.lineWidth = 2;
         context.stroke();
       }
@@ -352,12 +362,12 @@
 
     if (fan.stillAt !== null) {
       const y = middle - fan.stillAt * reach;
-      context.strokeStyle = 'rgba(232,168,90,0.6)';
+      context.strokeStyle = SHAPE_MARK_SOFT;
       context.beginPath();
       context.moveTo(xAt(-0.4), y);
       context.lineTo(xAt(STRIPS - 0.6), y);
       context.stroke();
-      context.fillStyle = 'rgba(232,168,90,0.8)';
+      context.fillStyle = SHAPE_MARK;
       context.font = '9px ui-monospace, monospace';
       context.fillText('still', xAt(-0.4) + 2, y - 3);
     }
@@ -365,27 +375,30 @@
 
     if (runs) {
       const columnOf = index => (step === 1 ? index - order[0] : order[0] - index);
-      context.strokeStyle = 'rgba(120,200,255,0.5)';
-      context.lineWidth = 1.5;
       context.beginPath();
       fan.curve.forEach(([index, value], i) => {
         const x = xAt(columnOf(index));
         const y = middle - value * reach;
         if (i === 0) context.moveTo(x, y); else context.lineTo(x, y);
       });
-      context.stroke();
+      strokeOutlined(context, SHAPE_MARK_SOFT, 1.5);
     }
 
     for (let column = 0; column < STRIPS; column++) {
       const value = fan.values[order[column]];
-      context.fillStyle = 'rgba(150,215,255,0.95)';
       context.beginPath();
       context.arc(xAt(column), middle - value * reach, 3.2, 0, Math.PI * 2);
+      context.fillStyle = SHAPE_MARK;
       context.fill();
+      context.strokeStyle = OUTLINE;
+      context.lineWidth = 1.5;
+      context.stroke();
     }
 
-    context.fillStyle = 'rgba(150,215,255,0.75)';
+    context.fillStyle = SHAPE_MARK;
     context.font = '10px ui-monospace, monospace';
+    context.shadowColor = OUTLINE;
+    context.shadowBlur = 3;
     const spent = fan.spent.length
       ? fan.spent.map(([where, amount]) =>
           where + ' ' + (amount > 0 ? '+' : '−') + Math.round(Math.abs(amount) * 100) + '%').join('  ')
@@ -414,22 +427,22 @@
     context.stroke();
     context.setLineDash([]);
 
-    context.strokeStyle = 'rgba(232,168,90,0.8)';
-    context.lineWidth = 1.5;
     context.beginPath();
     bend.forEach((value, i) => {
       const x = axis + (value - middle) / middle * reach;
       if (i === 0) context.moveTo(x, yAt(i)); else context.lineTo(x, yAt(i));
     });
-    context.stroke();
+    strokeOutlined(context, SHAPE_MARK, 1.5);
 
     if (high - low < 0.01) {
       context.restore();
       return;
     }
-    context.fillStyle = 'rgba(232,168,90,0.8)';
+    context.fillStyle = SHAPE_MARK;
     context.font = '10px ui-monospace, monospace';
     context.textAlign = 'right';
+    context.shadowColor = OUTLINE;
+    context.shadowBlur = 3;
     context.fillText(`travel ×${low.toFixed(low < 1 ? 2 : 1)}–${high.toFixed(1)}`, columnWidth * (STRIPS + 1) - 6, WALL_TOP + 12);
     context.restore();
   }
