@@ -116,6 +116,7 @@
 - What would a second Field sum to with the first?
 - Should a white patch get a push toward color, set by a switch from the patch's own saturation?
 - Do scatter spots need a lifetime so they can travel past their cell (raindrops)? It costs eight to ten CCs.
+- Should the per-spot scatter routes (Scatter Hue, Scatter Position) offer bipolar as other routes do? They are unipolar only.
 - Should Flow or Scatter be route sources? That costs a byte per route and a rule for where on the wall to sample.
 - Should each route choose the plain or fanned LFO, rather than its destination deciding?
 - Do the PARs want a palette of their own?
