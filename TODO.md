@@ -30,7 +30,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
 - The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize (wants a seed?).
-- White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Light Dark earn its place?
+- White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
 - Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
 - Morph between patches of different tempo divisions: does the jump read as a glitch?
 - Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.

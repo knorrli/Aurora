@@ -11,12 +11,20 @@ static const float FAN_MAX_CYCLES_PER_STRIP = 0.5f;
 static const float FIELD_MAX_HUE = 128.0f;
 static const float FLOW_MAX_HUE = 128.0f;
 static const float SCATTER_MAX_HUE = 128.0f;
-static const float LIGHT_MAX_HUE = 64.0f;
+static const float CORE_MAX_HUE = 64.0f;
 
-static const float FLOW_MAX_CYCLES_PER_BEAT = 0.5f;
+static const float FLOW_BEATS_PER_CYCLE[] = { 0.0f, 16.0f, 12.0f, 8.0f, 6.0f, 4.0f, 3.0f, 2.0f };
+static const uint8_t FLOW_RATE_STEPS = sizeof(FLOW_BEATS_PER_CYCLE) / sizeof(FLOW_BEATS_PER_CYCLE[0]);
 
 static const float TAIL_BEATS[] = { 0.0f, 0.25f, 0.375f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, (float)TAIL_MAX_BEATS };
 static const uint8_t TAIL_BEAT_STEPS = sizeof(TAIL_BEATS) / sizeof(TAIL_BEATS[0]);
+
+static float flowCyclesPerBeatOf(uint8_t value) {
+  const uint8_t last = FLOW_RATE_STEPS - 1;
+  const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+  const float beats = FLOW_BEATS_PER_CYCLE[step > last ? last : step];
+  return beats > 0.0f ? 1.0f / beats : 0.0f;
+}
 
 static float tailBeatsOf(uint8_t value) {
   const uint8_t last = TAIL_BEAT_STEPS - 1;
@@ -51,11 +59,6 @@ static uint8_t countOf(uint8_t value) {
 static float squaredRate(uint8_t value, float max) {
   const float x = fmaxf(((float)value - 64.0f) / 63.0f, -1.0f);
   return (x < 0.0f ? -1.0f : 1.0f) * x * x * max;
-}
-
-static inline float squaredUnit(uint8_t value, float max) {
-  const float x = unitOf(value);
-  return x * x * max;
 }
 
 static float lapsPerBeatOf(uint8_t value) {
@@ -104,9 +107,9 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FIELD_HUE: return bipolarOf(value) * FIELD_MAX_HUE;
     case CC_FIELD_SPEED: return lapsPerBeatOf(value);
     case CC_FLOW_HUE: return bipolarOf(value) * FLOW_MAX_HUE;
-    case CC_FLOW_RATE: return squaredUnit(value, FLOW_MAX_CYCLES_PER_BEAT);
+    case CC_FLOW_RATE: return flowCyclesPerBeatOf(value);
     case CC_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
-    case CC_LIGHT_HUE: return bipolarOf(value) * LIGHT_MAX_HUE;
+    case CC_CORE_HUE: return bipolarOf(value) * CORE_MAX_HUE;
     case CC_SCATTER_RATE: return 1.0f / aurora_lfo_period(value);
     case CC_SCATTER_HUE: return bipolarOf(value) * SCATTER_MAX_HUE;
 
@@ -123,8 +126,8 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_FIELD_DARK:
     case CC_FLOW_WHITE:
     case CC_FLOW_DARK:
-    case CC_LIGHT_WHITE:
-    case CC_LIGHT_DARK:
+    case CC_CORE_WHITE:
+    case CC_CORE_DARK:
     case CC_SCATTER_SATURATION:
     case CC_SCATTER_VALUE:
     case CC_SCATTER_MIX:
@@ -178,10 +181,10 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   flow.cyclesPerBeat = at(CC_FLOW_RATE);
   flow.density = at(CC_FLOW_DENSITY);
 
-  Light &light = out.light;
-  light.hue = at(CC_LIGHT_HUE);
-  light.white = at(CC_LIGHT_WHITE);
-  light.dark = at(CC_LIGHT_DARK);
+  Core &core = out.core;
+  core.hue = at(CC_CORE_HUE);
+  core.white = at(CC_CORE_WHITE);
+  core.dark = at(CC_CORE_DARK);
 
   Scatter &scatter = out.scatter;
   scatter.rate = at(CC_SCATTER_RATE);

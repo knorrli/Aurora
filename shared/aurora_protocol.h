@@ -94,9 +94,9 @@ enum AuroraCC : uint8_t {
     CC_FLOW_WHITE            = 74, // [patch]
     CC_FLOW_DARK             = 75, // [patch]
 
-    CC_LIGHT_HUE             = 76, // [patch]
-    CC_LIGHT_WHITE           = 77, // [patch]
-    CC_LIGHT_DARK            = 78, // [patch]
+    CC_CORE_HUE              = 76, // [patch]
+    CC_CORE_WHITE            = 77, // [patch]
+    CC_CORE_DARK             = 78, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -140,7 +140,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_FLOW_DENSITY,            20 },
     { CC_FLOW_RATE,               50 },
     { CC_FLOW_HUE,                64 },
-    { CC_LIGHT_HUE,               64 },
+    { CC_CORE_HUE,                64 },
 };
 
 static const uint8_t WAVE_SWELL  = 32;

@@ -15,7 +15,7 @@ static bool pushesColor(float hue, float white, float dark) {
 
 uint8_t layerOf(uint8_t cc) {
   if (cc >= CC_SHAPE_COUNT && cc <= CC_SHAPE_BEND_AT) return LAYER_SHAPE;
-  if (cc >= CC_LIGHT_HUE && cc <= CC_LIGHT_DARK) return LAYER_SHAPE;
+  if (cc >= CC_CORE_HUE && cc <= CC_CORE_DARK) return LAYER_SHAPE;
   if (cc >= CC_SCATTER_COUNT && cc <= CC_SCATTER_VALUE) return LAYER_SCATTER;
   if (cc == CC_SCATTER_MIX) return LAYER_SCATTER;
   if (cc >= CC_FIELD_FORM && cc <= CC_FIELD_DARK) return LAYER_FIELD;
@@ -64,8 +64,8 @@ bool flowActive(const Reading &reading) {
   return pushesColor(reading.flow.hue, reading.flow.white, reading.flow.dark);
 }
 
-bool lightActive(const Reading &reading) {
-  return pushesColor(reading.light.hue, reading.light.white, reading.light.dark);
+bool coreActive(const Reading &reading) {
+  return pushesColor(reading.core.hue, reading.core.white, reading.core.dark);
 }
 
 bool scatterActive(const Reading &reading, const uint8_t *dialed) {
@@ -227,11 +227,11 @@ Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float
   const float flowAway = (flow > 0.0f) ? flow : 0.0f;
   return pushed(reading.color,
       field * reading.field.hue + flow * reading.flow.hue
-          + shape * reading.light.hue,
+          + shape * reading.core.hue,
       fieldAway * reading.field.white + flowAway * reading.flow.white
-          + shape * reading.light.white,
+          + shape * reading.core.white,
       fieldAway * reading.field.dark + flowAway * reading.flow.dark
-          + shape * reading.light.dark);
+          + shape * reading.core.dark);
 }
 
 }

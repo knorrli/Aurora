@@ -19,7 +19,7 @@ uint8_t hiddenLayers(const uint8_t *dialed);
 
 bool fieldActive(const Reading &reading);
 bool flowActive(const Reading &reading);
-bool lightActive(const Reading &reading);
+bool coreActive(const Reading &reading);
 bool scatterActive(const Reading &reading, const uint8_t *dialed);
 
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,

@@ -133,6 +133,17 @@
     return '±' + pixels(reach * room * cellPixels(live));
   };
 
+  const fieldSize = (fraction, live) => {
+    const settings = live || DEFAULT;
+    const count = real('fieldCount', settings.fieldCount);
+    const direction = Protocol.threeWayPosition(settings.fieldDirection);
+    if (direction === Protocol.FIELD_DIRECTION.horizontal) {
+      return (fraction * (preview().STRIPS - 1) / count).toFixed(1) + ' strips';
+    }
+    if (direction === Protocol.FIELD_DIRECTION.vertical) return pixels(fraction * preview().PIXELS / count);
+    return percent(fraction / count) + ' of shape';
+  };
+
   const upTheStrip = at =>
     (at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up');
 
@@ -195,40 +206,35 @@
     scatterHue: hueReach('scatterHue'),
 
     fieldHue: hueReach('fieldHue'),
-    fieldWhite: value => percent(real('fieldWhite', value)) + ' white',
-    fieldDark: value => percent(real('fieldDark', value)) + ' dark',
+    fieldWhite: value => percent(real('fieldWhite', value)),
+    fieldDark: value => percent(real('fieldDark', value)),
     fieldCount: value => counted(real('fieldCount', value), 'region', 'regions'),
-    fieldWidth: (value, live) => {
-      const width = real('fieldWidth', value);
-      const count = real('fieldCount', live.fieldCount);
-      const direction = Protocol.threeWayPosition(live.fieldDirection);
-      if (direction === Protocol.FIELD_DIRECTION.horizontal) {
-        return (width * (preview().STRIPS - 1) / count).toFixed(1) + ' strips';
-      }
-      if (direction === Protocol.FIELD_DIRECTION.vertical) return pixels(width * preview().PIXELS / count);
-      return percent(width / count) + ' of shape';
+    fieldWidth: (value, live) => fieldSize(real('fieldWidth', value), live),
+    fieldEdge: (value, live) => {
+      const settings = live || DEFAULT;
+      const width = real('fieldWidth', settings.fieldWidth);
+      return fieldSize(real('fieldEdge', value) * (1 - width) * 0.5, settings) + ' soft';
     },
-    fieldEdge: value => percent(real('fieldEdge', value)) + ' soft',
     fieldSpeed: value => {
       const laps = real('fieldSpeed', value);
       return laps === 0 ? 'still' : sign(laps) + lapName(laps);
     },
 
     flowHue: value => '±' + degrees(Math.abs(Math.round(real('flowHue', value)))),
-    flowWhite: value => percent(real('flowWhite', value)) + ' white',
-    flowDark: value => percent(real('flowDark', value)) + ' dark',
+    flowWhite: value => percent(real('flowWhite', value)),
+    flowDark: value => percent(real('flowDark', value)),
     flowRate: value => {
       const rate = real('flowRate', value);
-      return rate < 0.004 ? 'frozen' : 'every ' + beatsText(Math.round(1 / rate));
+      return rate === 0 ? 'frozen' : 'every ' + PERIOD_NAMES[Math.round(1000 / rate) / 1000];
     },
     flowDensity: value => {
       const cells = real('flowDensity', value);
       return cells <= 0 ? 'whole wall' : pixels(preview().PIXELS / cells) + ' across';
     },
 
-    lightHue: hueReach('lightHue'),
-    lightWhite: value => percent(real('lightWhite', value)) + ' white',
-    lightDark: value => percent(real('lightDark', value)) + ' dark',
+    coreHue: hueReach('coreHue'),
+    coreWhite: value => percent(real('coreWhite', value)),
+    coreDark: value => percent(real('coreDark', value)),
 
     parHueOffset: value => '+' + degrees(real('parHueOffset', value)),
     arpSpread: (value, live) => {
@@ -420,12 +426,12 @@
       ],
     },
     {
-      name: 'Light', tone: 'color',
+      name: 'Core', tone: 'color',
       source: [],
       amounts: [
-        control('lightHue', 'Hue'),
-        control('lightWhite', 'White'),
-        control('lightDark', 'Dark'),
+        control('coreHue', 'Hue'),
+        control('coreWhite', 'White'),
+        control('coreDark', 'Dark'),
       ],
     },
   ];
@@ -528,7 +534,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
-    if (name === 'lfoRate' || name === 'shapeTail' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
+    if (name === 'lfoRate' || name === 'shapeTail' || name === 'flowRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
   }

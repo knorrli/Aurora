@@ -275,7 +275,7 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   layers.flowOn = flowActive(reading);
   layers.scatterOn = scatterActive(reading, context.dialed);
   layers.flat =
-      !layers.fieldOn && !layers.flowOn && !lightActive(reading);
+      !layers.fieldOn && !layers.flowOn && !coreActive(reading);
 
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
     pixels[pixelIndex] = drawPixel(context, strip, look, tail, layers, pixelIndex);

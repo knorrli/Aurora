@@ -50,7 +50,7 @@ struct Flow {
   float density;
 };
 
-struct Light {
+struct Core {
   float hue;
   float white;
   float dark;
@@ -71,7 +71,7 @@ struct Reading {
   Fan fan;
   Field field;
   Flow flow;
-  Light light;
+  Core core;
   Scatter scatter;
   float lfoBeats;
   Hsv color;
