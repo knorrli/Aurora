@@ -25,8 +25,8 @@
   const percentOf = position => Math.round(position * 100) + '%';
 
   function changesText(part) {
-    const count = Library.overriddenIn(session.patch(), part).length;
-    if (!count) return 'no changes';
+    const count = Library.changedIn(session.patch(), part).length;
+    if (!count) return Library.overriddenIn(session.patch(), part).length ? 'same as base' : 'no changes';
     return `${count} change${count === 1 ? '' : 's'}`;
   }
 

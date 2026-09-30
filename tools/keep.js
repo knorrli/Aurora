@@ -1,7 +1,6 @@
 (function (global) {
   'use strict';
 
-  const Protocol = global.AuroraProtocol;
   const Patch = global.AuroraPatch;
   const Library = global.AuroraLibrary;
   const Editor = global.AuroraEditor;
@@ -31,7 +30,8 @@
     const patch = session.editing();
     const leftOnBase = Patch.isTarget(part) ? Library.keepAsPart(patch, part, named) : [];
     if (!Patch.isTarget(part)) Library.keepAsBase(patch, named);
-    Editor.selectPart(part);
+    session.resetPreview();
+    Editor.transition.rebuild();
     session.changed();
     report(part, leftOnBase);
   }
@@ -44,7 +44,6 @@
     Object.assign(patch, { transitionTime: current.transitionTime, accentTime: current.accentTime });
     Library.keepAsBase(patch, named);
     Editor.show(null, patch);
-    Editor.selectPart(Protocol.PATCH_BASE);
     Editor.say('kept as a new patch — save it into a slot', 'ok');
   }
 

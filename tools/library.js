@@ -61,6 +61,8 @@
   }
 
   const overriddenIn = (patch, part) => Object.keys(patch.overrides[part] || {});
+  const changedIn = (patch, part) => Object.entries(patch.overrides[part] || {})
+    .filter(([name, value]) => value !== byteOf(patch.base, name)).map(([name]) => name);
 
   function freeRoute(patch, route) {
     for (const name of route.fields) {
@@ -137,12 +139,6 @@
 
   function keepAsBase(patch, named) {
     for (const name of Patch.NAMES) writeCC(patch.base, name, named[name]);
-    for (const over of patch.overrides) {
-      if (!over) continue;
-      for (const name of Object.keys(over)) {
-        if (over[name] === byteOf(patch.base, name)) delete over[name];
-      }
-    }
   }
 
   function keepAsPart(patch, part, named) {
@@ -151,9 +147,11 @@
     const leftOnBase = [];
     for (const name of Patch.NAMES) {
       const value = Patch.clampToSevenBits(named[name]);
-      if (value === byteOf(patch.base, name)) continue;
-      if (Patch.isSwitch(name) || free.has(name)) leftOnBase.push(name);
-      else over[name] = value;
+      if (Patch.isSwitch(name) || free.has(name)) {
+        if (value !== byteOf(patch.base, name)) leftOnBase.push(name);
+      } else {
+        over[name] = value;
+      }
     }
     patch.overrides[part] = over;
     return leftOnBase;
@@ -236,7 +234,7 @@
 
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
-    newPatch, clonePatch, partBytes, overriddenIn, freeRoute,
+    newPatch, clonePatch, partBytes, overriddenIn, changedIn, freeRoute,
     blend, mix, keepAsBase, keepAsPart, clearPart,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, libraryToFile, libraryFromFile, newLibrary,

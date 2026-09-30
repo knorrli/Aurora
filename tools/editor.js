@@ -77,7 +77,7 @@
       byId(field).value = String(Patch.periodValue(Patch.periodStep(patch[field])));
     }
     byId('tempoDivision').value = String(Library.namedFromBytes(patch.base).tempoDivision);
-    const accentReachesNothing = !Library.overriddenIn(patch, Protocol.PATCH_TARGET_ACCENT).length;
+    const accentReachesNothing = !Library.changedIn(patch, Protocol.PATCH_TARGET_ACCENT).length;
     byId('accentTime').closest('.field').classList.toggle('inert', accentReachesNothing);
   }
 

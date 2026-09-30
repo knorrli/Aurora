@@ -181,7 +181,7 @@
   function paintFader(row, live, base, overrides) {
     const name = row.control.name;
     paintFaderValue(row, live);
-    const overridden = session.isTarget() && name in overrides;
+    const overridden = session.isTarget() && name in overrides && overrides[name] !== base[name];
     row.root.classList.toggle('changed', overridden);
     if (overridden) row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, base[name])} - 1px)`;
     if (row.swatch) row.swatch.style.background = `rgb(${row.control.swatch(live).join(',')})`;
