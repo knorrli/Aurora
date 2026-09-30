@@ -106,6 +106,7 @@ float controlValue(uint8_t cc, uint8_t value) {
 
     case CC_FIELD_HUE: return bipolarOf(value) * FIELD_MAX_HUE;
     case CC_FIELD_SPEED: return lapsPerBeatOf(value);
+    case CC_FIELD_POSITION: return bipolarOf(value) * 0.5f;
     case CC_FLOW_HUE: return bipolarOf(value) * FLOW_MAX_HUE;
     case CC_FLOW_RATE: return flowCyclesPerBeatOf(value);
     case CC_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
@@ -173,6 +174,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   field.edge = at(CC_FIELD_EDGE);
   field.count = (uint8_t)at(CC_FIELD_COUNT);
   field.cellsPerBeat = at(CC_FIELD_SPEED);
+  field.position = at(CC_FIELD_POSITION);
 
   Flow &flow = out.flow;
   flow.hue = at(CC_FLOW_HUE);

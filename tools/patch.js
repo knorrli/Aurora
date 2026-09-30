@@ -210,6 +210,10 @@
     fieldDark: value => percent(real('fieldDark', value)),
     fieldCount: value => counted(real('fieldCount', value), 'region', 'regions'),
     fieldWidth: (value, live) => fieldSize(real('fieldWidth', value), live),
+    fieldPosition: (value, live) => {
+      const offset = real('fieldPosition', value);
+      return Math.abs(offset) < 0.005 ? 'centered' : sign(offset) + fieldSize(Math.abs(offset), live);
+    },
     fieldEdge: (value, live) => {
       const settings = live || DEFAULT;
       const width = real('fieldWidth', settings.fieldWidth);
@@ -406,6 +410,7 @@
         control('fieldWidth', 'Width', gradientInert),
         control('fieldEdge', 'Edge', gradientInert),
         control('fieldSpeed', 'Speed', gradientInert),
+        control('fieldPosition', 'Position', gradientInert),
       ],
       amounts: [
         control('fieldHue', 'Hue'),

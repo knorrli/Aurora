@@ -84,19 +84,20 @@ enum AuroraCC : uint8_t {
     CC_FIELD_WIDTH           = 65, // [patch]
     CC_FIELD_EDGE            = 66, // [patch]
     CC_FIELD_SPEED           = 67, // [patch][rate]
-    CC_FIELD_HUE             = 68, // [patch]
-    CC_FIELD_WHITE           = 69, // [patch]
-    CC_FIELD_DARK            = 70, // [patch]
+    CC_FIELD_POSITION        = 68, // [patch]
+    CC_FIELD_HUE             = 69, // [patch]
+    CC_FIELD_WHITE           = 70, // [patch]
+    CC_FIELD_DARK            = 71, // [patch]
 
-    CC_FLOW_DENSITY          = 71, // [patch]
-    CC_FLOW_RATE             = 72, // [patch][rate]
-    CC_FLOW_HUE              = 73, // [patch]
-    CC_FLOW_WHITE            = 74, // [patch]
-    CC_FLOW_DARK             = 75, // [patch]
+    CC_FLOW_DENSITY          = 72, // [patch]
+    CC_FLOW_RATE             = 73, // [patch][rate]
+    CC_FLOW_HUE              = 74, // [patch]
+    CC_FLOW_WHITE            = 75, // [patch]
+    CC_FLOW_DARK             = 76, // [patch]
 
-    CC_CORE_HUE              = 76, // [patch]
-    CC_CORE_WHITE            = 77, // [patch]
-    CC_CORE_DARK             = 78, // [patch]
+    CC_CORE_HUE              = 77, // [patch]
+    CC_CORE_WHITE            = 78, // [patch]
+    CC_CORE_DARK             = 79, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -136,6 +137,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_FIELD_WIDTH,             64 },
     { CC_FIELD_EDGE,              64 },
     { CC_FIELD_SPEED,             64 },
+    { CC_FIELD_POSITION,          64 },
     { CC_FIELD_HUE,               64 },
     { CC_FLOW_DENSITY,            20 },
     { CC_FLOW_RATE,               50 },
@@ -346,7 +348,7 @@ enum AuroraLibraryState : uint8_t {
     LIBRARY_UNREADABLE = 2,
 };
 
-static const uint8_t AURORA_PATCH_FORMAT    = 3;
+static const uint8_t AURORA_PATCH_FORMAT    = 4;
 static const uint8_t AURORA_PATCH_MAX       = 128;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
@@ -373,6 +375,6 @@ static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_PARTS * AURORA_PATCH_CC_COUNT;
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 14
+#define AURORA_PROTOCOL_VERSION_MINOR 15
 
 #endif

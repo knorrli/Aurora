@@ -40,6 +40,7 @@ struct Field {
   float width;
   float edge;
   float cellsPerBeat;
+  float position;
 };
 
 struct Flow {
