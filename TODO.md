@@ -65,7 +65,6 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 ## Editor
 
-- One pass over every control: does the readout and its unit make sense; would it, alone or with others, help as a wall overlay; does it belong in its panel or in one of its own; is its color, and its overlay's, the right one.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
 - Let a layer set a "from the patch" switch by writing it into the base layer: setting arp mode while routing PAR hue range on Accent should not need a trip to Base.
 - Shrink `AURORA_PATCH_NAME_LENGTH` to 13 at the next patch format change; the editor already stops at 13.
