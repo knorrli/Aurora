@@ -30,7 +30,7 @@ float anchoredPhase(Clock &clock, float beats, float elapsed, float rate) {
 void pullToWhole(float &cycles, float elapsed, float rate) {
   const float drift = cycles - roundf(cycles);
   if (fabsf(drift) < 0.0001f) return;
-  float pull = elapsed * fabsf(rate) / ANCHOR_CYCLES;
+  float pull = (rate == 0.0f) ? elapsed / SETTLE_BEATS : elapsed * fabsf(rate) / ANCHOR_CYCLES;
   if (pull > 1.0f) pull = 1.0f;
   cycles -= drift * pull;
 }

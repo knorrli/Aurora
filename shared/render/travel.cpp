@@ -7,8 +7,6 @@
 
 namespace render {
 
-static const float POSITION_SETTLE_BEATS = 2.0f;
-
 static inline float triangleSwing(float phase) {
   return (phase < 0.5f) ? (phase * 2.0f) : ((1.0f - phase) * 2.0f);
 }
@@ -24,7 +22,7 @@ static void settle(float &anchorCells, float cellsTravelled, float elapsed) {
   const float drift = travelled - roundf(travelled);
   if (fabsf(drift) < 0.0001f) return;
 
-  float pull = elapsed / POSITION_SETTLE_BEATS;
+  float pull = elapsed / SETTLE_BEATS;
   if (pull > 1.0f) pull = 1.0f;
   anchorCells -= drift * pull;
 }
