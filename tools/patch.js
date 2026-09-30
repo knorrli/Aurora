@@ -54,11 +54,6 @@
   const sign = ratio => (ratio < 0 ? '−' : '+');
   const signed = ratio => sign(ratio) + percent(Math.abs(ratio));
   const signedInteger = ratio => sign(ratio) + Math.abs(ratio);
-  const beatsPer = rate => {
-    if (Math.abs(rate) < 0.004) return '∞';
-    const beats = 1 / Math.abs(rate);
-    return beats.toFixed(beats < 10 ? 1 : 0);
-  };
 
   const fanAmount = (name, what) => value => percent(Math.abs(real(name, value)) * 2) + ' ' + what;
   const hueReach = name => value => signedInteger(Math.round(real(name, value))) + ' of 255';
@@ -70,6 +65,7 @@
   };
   const LFO_PERIOD_NAMES = Protocol.LFO_PERIODS.map(beats => PERIOD_NAMES[beats]);
   const shortPeriodName = beats => PERIOD_NAMES[beats].split(' · ')[0];
+  const lapName = lapsPerBeat => shortPeriodName(Math.round(1000 / Math.abs(lapsPerBeat)) / 1000);
   const periodStep = value => Protocol.steppedIndex(value, Protocol.LFO_PERIODS.length);
   const periodValue = step => Math.round(step * 127 / (Protocol.LFO_PERIODS.length - 1));
 
@@ -109,7 +105,7 @@
       const laps = real('shapeSpeed', value);
       if (laps === 0) return 'still';
       const arrow = Protocol.isOn(live.shapeBounce) ? '↕' : laps > 0 ? '↑' : '↓';
-      return arrow + ' ' + shortPeriodName(Math.round(1000 / Math.abs(laps)) / 1000);
+      return arrow + ' ' + lapName(laps);
     },
     shapeBend: value => signed(real('shapeBend', value)) + ' bent',
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
@@ -148,8 +144,8 @@
     fieldWidth: value => percent(real('fieldWidth', value)) + ' of a cell',
     fieldEdge: value => percent(real('fieldEdge', value)) + ' soft',
     fieldSpeed: value => {
-      const rate = real('fieldSpeed', value);
-      return sign(rate) + beatsPer(rate) + ' beats/cell';
+      const laps = real('fieldSpeed', value);
+      return laps === 0 ? 'still' : sign(laps) + lapName(laps);
     },
 
     flowHue: value => '±' + Math.abs(Math.round(real('flowHue', value))) + ' of 255',
@@ -292,7 +288,7 @@
         control('fieldCount', 'Count', 'how many regions along the direction', gradientInert),
         control('fieldWidth', 'Width', 'a region’s solid core, as a proportion of one cell', gradientInert),
         control('fieldEdge', 'Edge', 'hard-edged cell through to a smooth fade', gradientInert),
-        control('fieldSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back', gradientInert),
+        control('fieldSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back, slowest nearest center. Stepped by how long the regions take to move one region along', gradientInert),
       ],
       amounts: [
         control('fieldHue', 'Hue', 'how far the hue turns, opposite ways at the two ends of a gradient'),
@@ -426,7 +422,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
-    if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed') return steps(at);
+    if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
   }

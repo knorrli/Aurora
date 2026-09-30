@@ -306,7 +306,10 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   startTravel(context, wall);
   startTails(context, wall, quarterNotes);
   context.flowTime = clockPhase(motion.flow, context.beats, context.plain.flow.cyclesPerBeat);
-  context.fieldDrift = clockPhase(motion.field, context.beats, context.plain.field.cellsPerBeat);
+  const float fieldElapsed = context.beats - motion.lastFieldBeats;
+  motion.lastFieldBeats = context.beats;
+  context.fieldDrift =
+      anchoredPhase(motion.field, context.beats, fieldElapsed, context.plain.field.cellsPerBeat);
   float scatterElapsed = context.beats - motion.lastScatterBeats;
   motion.lastScatterBeats = context.beats;
   context.scatterTime =

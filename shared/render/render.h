@@ -43,6 +43,7 @@ struct Motion {
   ScatterClock lastScatter[STRIPS] = {};
   float lastScatterBeats = 0.0f;
   float lastLfoBeats = 0.0f;
+  float lastFieldBeats = 0.0f;
 };
 
 struct TailHistory {

@@ -13,7 +13,6 @@ static const float FLOW_MAX_HUE = 128.0f;
 static const float SCATTER_MAX_HUE = 128.0f;
 static const float LIGHT_MAX_HUE = 64.0f;
 
-static const float FIELD_MAX_CELLS_PER_BEAT = 1.0f;
 static const float FLOW_MAX_CYCLES_PER_BEAT = 0.5f;
 
 static inline float unitOf(uint8_t value) { return (float)value / 127.0f; }
@@ -94,7 +93,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_LFO_RATE: return aurora_lfo_period(value);
 
     case CC_FIELD_HUE: return bipolarOf(value) * FIELD_MAX_HUE;
-    case CC_FIELD_SPEED: return squaredRate(value, FIELD_MAX_CELLS_PER_BEAT);
+    case CC_FIELD_SPEED: return lapsPerBeatOf(value);
     case CC_FLOW_HUE: return bipolarOf(value) * FLOW_MAX_HUE;
     case CC_FLOW_RATE: return squaredUnit(value, FLOW_MAX_CYCLES_PER_BEAT);
     case CC_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
