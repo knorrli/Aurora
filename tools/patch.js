@@ -305,8 +305,8 @@
         control('scatterWidth', 'Width', 'how wide each spot is, from one pixel up to touching the next spot'),
         control('scatterEdge', 'Edge', 'hard through to a fade at the spot’s sides'),
         control('scatterRate', 'Rate', 'how often a spot lands somewhere new, stepped so it sits on the beat. A route onto Mix, Hue, Saturation, Value, Width or Position runs once per spot on this clock'),
-        control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall moves as one; full scatters their phases and rates'),
         control('scatterSpeed', 'Speed', 'center is still; either side moves each spot from where it landed, steadily up or down the strip'),
+        control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall moves as one; full scatters their phases and rates'),
         control('scatterPosition', 'Position', 'how far a spot sits from where it landed, up to half the strip either way; plus is up. Route a build here to move each spot over its life'),
       ],
       amounts: [

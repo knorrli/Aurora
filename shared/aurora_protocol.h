@@ -70,34 +70,33 @@ enum AuroraCC : uint8_t {
     CC_SCATTER_WIDTH         = 51, // [patch]
     CC_SCATTER_EDGE          = 52, // [patch]
     CC_SCATTER_RATE          = 53, // [patch][rate]
-    CC_SCATTER_RANDOMIZE     = 54, // [patch]
-    CC_SCATTER_SPEED         = 55, // [patch]
+    CC_SCATTER_SPEED         = 54, // [patch]
+    CC_SCATTER_RANDOMIZE     = 55, // [patch]
     CC_SCATTER_POSITION      = 56, // [patch]
-    CC_SCATTER_HUE           = 57, // [patch]
-    CC_SCATTER_SATURATION    = 58, // [patch]
-    CC_SCATTER_VALUE         = 59, // [patch]
+    CC_SCATTER_MIX           = 57, // [patch]
+    CC_SCATTER_HUE           = 58, // [patch]
+    CC_SCATTER_SATURATION    = 59, // [patch]
+    CC_SCATTER_VALUE         = 60, // [patch]
 
-    CC_FIELD_FORM            = 60, // [switch]
-    CC_FIELD_DIRECTION       = 61, // [switch]
-    CC_FIELD_COUNT           = 62, // [patch]
-    CC_FIELD_WIDTH           = 63, // [patch]
-    CC_FIELD_EDGE            = 65, // [patch]
-    CC_FIELD_SPEED           = 66, // [patch][rate]
-    CC_FIELD_HUE             = 67, // [patch]
-    CC_FIELD_WHITE           = 68, // [patch]
-    CC_FIELD_DARK            = 69, // [patch]
+    CC_FIELD_FORM            = 61, // [switch]
+    CC_FIELD_DIRECTION       = 62, // [switch]
+    CC_FIELD_COUNT           = 63, // [patch]
+    CC_FIELD_WIDTH           = 65, // [patch]
+    CC_FIELD_EDGE            = 66, // [patch]
+    CC_FIELD_SPEED           = 67, // [patch][rate]
+    CC_FIELD_HUE             = 68, // [patch]
+    CC_FIELD_WHITE           = 69, // [patch]
+    CC_FIELD_DARK            = 70, // [patch]
 
-    CC_FLOW_DENSITY          = 70, // [patch]
-    CC_FLOW_RATE             = 71, // [patch][rate]
-    CC_FLOW_HUE              = 72, // [patch]
-    CC_FLOW_WHITE            = 73, // [patch]
-    CC_FLOW_DARK             = 74, // [patch]
+    CC_FLOW_DENSITY          = 71, // [patch]
+    CC_FLOW_RATE             = 72, // [patch][rate]
+    CC_FLOW_HUE              = 73, // [patch]
+    CC_FLOW_WHITE            = 74, // [patch]
+    CC_FLOW_DARK             = 75, // [patch]
 
-    CC_LIGHT_HUE             = 75, // [patch]
-    CC_LIGHT_WHITE           = 76, // [patch]
-    CC_LIGHT_DARK            = 77, // [patch]
-
-    CC_SCATTER_MIX           = 78, // [patch]
+    CC_LIGHT_HUE             = 76, // [patch]
+    CC_LIGHT_WHITE           = 77, // [patch]
+    CC_LIGHT_DARK            = 78, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -340,7 +339,7 @@ enum AuroraLibraryState : uint8_t {
     LIBRARY_UNREADABLE = 2,
 };
 
-static const uint8_t AURORA_PATCH_FORMAT    = 2;
+static const uint8_t AURORA_PATCH_FORMAT    = 3;
 static const uint8_t AURORA_PATCH_MAX       = 128;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
@@ -367,6 +366,6 @@ static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_PARTS * AURORA_PATCH_CC_COUNT;
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 13
+#define AURORA_PROTOCOL_VERSION_MINOR 14
 
 #endif
