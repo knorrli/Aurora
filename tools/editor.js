@@ -40,7 +40,6 @@
   }
 
   const TIME_FIELDS = ['transitionTime', 'accentTime'];
-  const NAME_LENGTH = 13;
 
   function buildHead() {
     for (const field of TIME_FIELDS) {
@@ -60,7 +59,7 @@
     });
 
     const name = byId('patchName');
-    name.maxLength = NAME_LENGTH;
+    name.maxLength = Protocol.PATCH_NAME_LENGTH;
     name.addEventListener('input', () => {
       const printable = LibraryFile.printableName(name.value);
       if (printable !== name.value) name.value = printable;
