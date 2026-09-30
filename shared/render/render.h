@@ -13,6 +13,7 @@ static const uint8_t MAX_COUNT = 20;
 static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
 static const uint8_t BEND_POINTS = PIXELS + 1;
+static const uint8_t FIELD_ACROSS_POINTS = (STRIPS - 1) * 12 + 1;
 
 static const uint8_t TAIL_MAX_BEATS = 8;
 static const uint8_t TAIL_STEPS_PER_BEAT = 64;
@@ -116,6 +117,7 @@ struct Frame {
   float centers[STRIPS];
   StripSpots spots[STRIPS];
   float fieldLevels[STRIPS * PIXELS];
+  float fieldAcross[FIELD_ACROSS_POINTS];
 };
 
 void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,

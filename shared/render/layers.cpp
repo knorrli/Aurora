@@ -96,7 +96,10 @@ static float positionAlongFieldDirection(const Field &field, uint8_t stripIndex,
 
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
               float drift) {
-  const float u = positionAlongFieldDirection(field, stripIndex, alongPixels, shapeAcross);
+  return fieldAtPosition(field, positionAlongFieldDirection(field, stripIndex, alongPixels, shapeAcross), drift);
+}
+
+float fieldAtPosition(const Field &field, float u, float drift) {
   if (field.form == FIELD_FORM_GRADIENT) return (u - 0.5f) * 2.0f;
   const float cell = u * (float)field.count + drift;
   const float bump = bumpAt(fract(cell) - 0.5f, field.width, field.edge);

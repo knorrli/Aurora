@@ -22,6 +22,7 @@ bool flowActive(const Reading &reading);
 bool coreActive(const Reading &reading);
 bool scatterActive(const Reading &reading, const uint8_t *dialed);
 
+float fieldAtPosition(const Field &field, float u, float drift);
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
               float drift);
 

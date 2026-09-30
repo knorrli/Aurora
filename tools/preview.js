@@ -45,6 +45,8 @@
     const STRIP_SPOTS_SIZE = renderer._aurora_strip_spots_size();
     const fieldLevelsAt = renderer._aurora_field_levels() >> 2;
     const fieldLevels = renderer.HEAPF32.subarray(fieldLevelsAt, fieldLevelsAt + STRIPS * PIXELS);
+    const fieldAcrossAt = renderer._aurora_field_across() >> 2;
+    const fieldAcross = renderer.HEAPF32.subarray(fieldAcrossAt, fieldAcrossAt + renderer._aurora_field_across_points());
     const SPOT_MARK_FLOATS = 3;
 
     function readSpots() {
@@ -125,7 +127,13 @@
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_render(motion, wallState, quarterNotes);
         return {
-          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(), fieldLevels: Array.from(fieldLevels),
+          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
+          field: {
+            horizontal: global.AuroraProtocol.threeWayPosition(bytes[global.AuroraProtocol.CC.fieldDirection])
+              === global.AuroraProtocol.FIELD_DIRECTION.horizontal,
+            levels: Array.from(fieldLevels),
+            across: Array.from(fieldAcross),
+          },
           centers: Array.from(centers),
           hues: {
             palette: bytes[global.AuroraProtocol.CC.palette],
@@ -200,7 +208,10 @@
     if (overlays.bend && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
     if (overlays.palette && frame.hues) drawPalette(context, frame.hues, width, height);
-    if (overlays.field && frame.fieldLevels) drawField(context, frame.fieldLevels, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.field && frame.field) {
+      if (frame.field.horizontal) drawFieldAcross(context, frame.field, order, columnWidth, WALL_TOP, WALL_HEIGHT);
+      else drawField(context, frame.field.levels, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+    }
     if (overlays.spots && frame.spots) drawSpots(context, frame.spots, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.centers) drawCenters(context, frame.centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
@@ -284,6 +295,42 @@
         if (pixel === 0) context.moveTo(x, yAt(pixel)); else context.lineTo(x, yAt(pixel));
       }
       strokeOutlined(context, FIELD_MARK, 1.5);
+    });
+    context.restore();
+  }
+
+  function drawFieldAcross(context, field, order, columnWidth, WALL_TOP, WALL_HEIGHT) {
+    const { STRIPS, PIXELS } = api;
+    const step = order[1] - order[0];
+    const monotonic = (step === 1 || step === -1) && order.every((strip, i) => i === 0 || strip - order[i - 1] === step);
+    const xAtStrip = strip => columnWidth * (1 + (step === 1 ? strip - order[0] : order[0] - strip));
+    const base = WALL_TOP + WALL_HEIGHT * 0.88;
+    const reach = WALL_HEIGHT * 0.08;
+    context.save();
+    context.strokeStyle = 'rgba(255,255,255,0.14)';
+    context.lineWidth = 1;
+    context.setLineDash([3, 4]);
+    context.beginPath();
+    context.moveTo(columnWidth * 0.6, base);
+    context.lineTo(columnWidth * (STRIPS + 0.4), base);
+    context.stroke();
+    context.setLineDash([]);
+    if (monotonic) {
+      context.beginPath();
+      field.across.forEach((level, i) => {
+        const x = xAtStrip(i / (field.across.length - 1) * (STRIPS - 1));
+        if (i === 0) context.moveTo(x, base - level * reach); else context.lineTo(x, base - level * reach);
+      });
+      strokeOutlined(context, FIELD_MARK, 1.5);
+    }
+    order.forEach((strip, column) => {
+      context.beginPath();
+      context.arc(columnWidth * (column + 1), base - field.levels[strip * PIXELS] * reach, 3.2, 0, Math.PI * 2);
+      context.fillStyle = FIELD_MARK;
+      context.fill();
+      context.strokeStyle = OUTLINE;
+      context.lineWidth = 1.5;
+      context.stroke();
     });
     context.restore();
   }
