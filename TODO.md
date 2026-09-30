@@ -69,4 +69,5 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
 - Let a layer set a "from the patch" switch by writing it into the base layer: setting arp mode while routing PAR hue range on Accent should not need a trip to Base.
 - Shrink `AURORA_PATCH_NAME_LENGTH` to 13 at the next patch format change; the editor already stops at 13.
+- A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
 - Rebuild starting-point looks on routes, the LFO and the scatter. The old tables (shapes, fan looks, swing looks, color looks) are in `git show 21a435c:tools/patch.js`.
