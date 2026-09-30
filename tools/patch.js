@@ -53,10 +53,16 @@
   const ofByte = ratio => percent(ratio / 255);
   const sign = ratio => (ratio < 0 ? '−' : '+');
   const signed = ratio => sign(ratio) + percent(Math.abs(ratio));
-  const signedInteger = ratio => sign(ratio) + Math.abs(ratio);
 
-  const fanAmount = (name, what) => value => percent(Math.abs(real(name, value)) * 2) + ' ' + what;
-  const hueReach = name => value => signedInteger(Math.round(real(name, value))) + ' of 255';
+  const degrees = hueSteps => Math.round(hueSteps * 360 / 256) + '°';
+  const signedDegrees = hueSteps => sign(hueSteps) + degrees(Math.abs(hueSteps));
+  const hueReach = name => value => signedDegrees(Math.round(real(name, value)));
+  const pixels = count => (count < 10 ? Number(count.toFixed(1)) : count.toFixed(0)) + ' px';
+  const counted = (count, one, many) => count + ' ' + (count === 1 ? one : many);
+  const beatsText = beats => {
+    const rounded = Math.round(beats * 100) / 100;
+    return rounded + (rounded === 1 ? ' beat' : ' beats');
+  };
 
   const PERIOD_NAMES = {
     16: '16 beats · four bars', 12: '12 beats · three bars', 8: '8 beats · two bars',
@@ -89,17 +95,35 @@
     wave: waveText,
   };
 
+  const cellPixels = live => preview().PIXELS / real('shapeCount', live.shapeCount);
+  const shapeGap = live => 1 - real('shapeWidth', live.shapeWidth);
+
+  const BARS = '▁▂▃▄▅▆▇█';
+  const fanTriangle = u => (u < 0.5 ? 4 * u - 1 : 3 - 4 * u);
+  const fract = x => x - Math.floor(x);
+  const fanPicture = live => preview().WALL_STRIP_ORDER.map(strip => {
+    const wave = fanTriangle(fract(real('fanPhase', live.fanPhase) + real('fanFrequency', live.fanFrequency) * (strip - 1)));
+    return BARS[Math.round((wave + 1) / 2 * (BARS.length - 1))];
+  }).join('');
+
+  const fanShift = (live, reach) => {
+    const laps = Math.abs(real('shapeSpeed', live.shapeSpeed));
+    if (laps > 0) return '±' + beatsText(reach / laps);
+    const room = Protocol.isOn(live.shapeBounce) ? shapeGap(live) : 1;
+    return '±' + pixels(reach * room * cellPixels(live));
+  };
+
   const upTheStrip = at =>
     (at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up');
 
   const READOUTS = {
-    shapeWidth: value => percent(real('shapeWidth', value)),
-    shapeEdge: value => percent(real('shapeEdge', value)) + ' of the gap',
+    shapeWidth: (value, live) => pixels(real('shapeWidth', value) * cellPixels(live)),
+    shapeEdge: (value, live) => pixels(real('shapeEdge', value) * shapeGap(live) * 0.5 * cellPixels(live)) + ' glow',
     shapeTail: value => {
       const beats = real('shapeTail', value);
       return beats < 0.001 ? 'none' : beats.toFixed(2) + ' beats';
     },
-    shapeCount: value => real('shapeCount', value) + ' shapes',
+    shapeCount: value => counted(real('shapeCount', value), 'shape', 'shapes'),
     shapePosition: value => upTheStrip(real('shapePosition', value)),
     shapeSpeed: (value, live) => {
       const laps = real('shapeSpeed', value);
@@ -107,16 +131,21 @@
       const arrow = Protocol.isOn(live.shapeBounce) ? '↕' : laps > 0 ? '↑' : '↓';
       return arrow + ' ' + lapName(laps);
     },
-    shapeBend: value => signed(real('shapeBend', value)) + ' bent',
+    shapeBend: value => {
+      const bend = real('shapeBend', value) * 0.95;
+      if (Math.abs(bend) < 0.005) return 'even';
+      const ratio = (1 + Math.abs(bend)) / (1 - Math.abs(bend));
+      return ratio.toFixed(ratio < 10 ? 1 : 0) + '× ' + (bend > 0 ? 'faster' : 'slower');
+    },
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
-    fanSpread: fanAmount('fanSpread', 'of a cell'),
-    fanLfo: fanAmount('fanLfo', 'of a cycle'),
+    fanSpread: (value, live) => fanShift(live, Math.abs(real('fanSpread', value))),
+    fanLfo: (value, live) => '±' + beatsText(Math.abs(real('fanLfo', value)) * real('lfoRate', live.lfoRate)),
     fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
-    fanFrequency: value => (real('fanFrequency', value) * (preview().STRIPS - 1)).toFixed(2) + ' turns',
-    fanPhase: value => percent(real('fanPhase', value)) + ' of a turn',
-    fanRandomize: value => percent(real('fanRandomize', value)) + ' scrambled',
+    fanFrequency: (value, live) => fanPicture(Object.assign({}, live, { fanFrequency: value })),
+    fanPhase: (value, live) => fanPicture(Object.assign({}, live, { fanPhase: value })),
+    fanRandomize: value => percent(real('fanRandomize', value)) + ' random',
 
-    hue: value => real('hue', value) + '/255',
+    hue: value => degrees(real('hue', value)),
     saturation: value => ofByte(real('saturation', value)),
     value: value => ofByte(real('value', value)),
 
@@ -124,15 +153,18 @@
 
     scatterRate: value => 'every ' + shortPeriodName(Protocol.LFO_PERIODS[periodStep(value)]),
     scatterCount: value => real('scatterCount', value).toFixed(1) + ' spots',
-    scatterWidth: value => (value === 0 ? '1 px' : percent(real('scatterWidth', value)) + ' of the gap'),
+    scatterWidth: (value, live) => pixels(Math.max(1, real('scatterWidth', value) * preview().PIXELS / real('scatterCount', live.scatterCount))),
     scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',
-    scatterRandomize: value => percent(real('scatterRandomize', value)) + ' scrambled',
+    scatterRandomize: value => percent(real('scatterRandomize', value)) + ' random',
     scatterSpeed: value => {
       const speed = real('scatterSpeed', value);
       return sign(speed) + Math.abs(speed).toFixed(1) + ' px/beat';
     },
-    scatterPosition: value => signed(real('scatterPosition', value) * 0.5) + ' of the strip',
-    scatterMix: value => percent(real('scatterMix', value)) + ' painted',
+    scatterPosition: value => {
+      const reach = real('scatterPosition', value) * preview().PIXELS * 0.5;
+      return sign(reach) + pixels(Math.abs(reach));
+    },
+    scatterMix: value => percent(real('scatterMix', value)),
     scatterHue: hueReach('scatterHue'),
     scatterSaturation: value => percent(real('scatterSaturation', value)),
     scatterValue: value => percent(real('scatterValue', value)),
@@ -140,24 +172,33 @@
     fieldHue: hueReach('fieldHue'),
     fieldWhite: value => percent(real('fieldWhite', value)) + ' white',
     fieldDark: value => percent(real('fieldDark', value)) + ' dark',
-    fieldCount: value => real('fieldCount', value) + ' regions',
-    fieldWidth: value => percent(real('fieldWidth', value)) + ' of a cell',
+    fieldCount: value => counted(real('fieldCount', value), 'region', 'regions'),
+    fieldWidth: (value, live) => {
+      const width = real('fieldWidth', value);
+      const count = real('fieldCount', live.fieldCount);
+      const direction = Protocol.threeWayPosition(live.fieldDirection);
+      if (direction === Protocol.FIELD_DIRECTION.horizontal) {
+        return (width * (preview().STRIPS - 1) / count).toFixed(1) + ' strips';
+      }
+      if (direction === Protocol.FIELD_DIRECTION.vertical) return pixels(width * preview().PIXELS / count);
+      return percent(width / count) + ' of shape';
+    },
     fieldEdge: value => percent(real('fieldEdge', value)) + ' soft',
     fieldSpeed: value => {
       const laps = real('fieldSpeed', value);
       return laps === 0 ? 'still' : sign(laps) + lapName(laps);
     },
 
-    flowHue: value => '±' + Math.abs(Math.round(real('flowHue', value))) + ' of 255',
+    flowHue: value => '±' + degrees(Math.abs(Math.round(real('flowHue', value)))),
     flowWhite: value => percent(real('flowWhite', value)) + ' white',
     flowDark: value => percent(real('flowDark', value)) + ' dark',
     flowRate: value => {
       const rate = real('flowRate', value);
-      return (rate < 0.004 ? '∞' : (1 / rate).toFixed(0)) + ' beats/cycle';
+      return rate < 0.004 ? 'frozen' : 'every ' + beatsText(Math.round(1 / rate));
     },
     flowDensity: value => {
       const cells = real('flowDensity', value);
-      return (cells <= 0 ? '∞' : (preview().PIXELS / cells).toFixed(0)) + ' px across';
+      return cells <= 0 ? 'whole wall' : pixels(preview().PIXELS / cells) + ' across';
     },
 
     lightHue: hueReach('lightHue'),
@@ -165,7 +206,7 @@
     lightDark: value => percent(real('lightDark', value)) + ' dark',
 
     parValue: value => ofByte(real('parValue', value)),
-    parHueOffset: value => '+' + real('parHueOffset', value) + ' of 255',
+    parHueOffset: value => '+' + degrees(real('parHueOffset', value)),
     parSaturation: value => ofByte(real('parSaturation', value)),
     arpSpread: value => {
       const spread = real('arpSpread', value);
@@ -173,7 +214,7 @@
     },
     parHueRange: value => {
       const reach = Math.round(real('parHueRange', value));
-      return reach === 0 ? 'one hue' : `±${Math.abs(reach)}, first ${reach < 0 ? 'high' : 'low'}`;
+      return reach === 0 ? 'one hue' : `±${degrees(Math.abs(reach))} ${reach < 0 ? 'high' : 'low'} first`;
     },
   };
 
@@ -208,31 +249,31 @@
         title: 'Form',
         names: [
           control('shapeCount', 'Count', 'how many shapes along the strip, 1–20'),
-          control('shapeWidth', 'Width', 'the solid core, as a proportion of one cell'),
-          control('shapeEdge', 'Edge', 'how far the glow reaches into the gap, both sides'),
+          control('shapeWidth', 'Width', 'the solid core of each shape. Each shape has the strip divided by Count to itself'),
+          control('shapeEdge', 'Edge', 'how far the glow reaches toward the next shape, each side'),
           control('shapeTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
         ],
       },
       {
         title: 'Travel',
         names: [
-          control('shapeBounce', 'Bounce', 'turn at the cell’s edge instead of wrapping',
+          control('shapeBounce', 'Bounce', 'turn back at the end of each shape’s own stretch of strip instead of wrapping round',
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
           control('shapeSpeed', 'Speed', 'center is still; either side travels, slowest nearest center. Stepped by how long the pattern takes to repeat, whatever Count, Width and Bounce: ↑ up, ↓ down, ↕ there and back'),
-          control('shapePosition', 'Position', 'where a still pattern rests in its cell, from against the bottom end to against the top'),
-          control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
-          control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own cell'),
+          control('shapePosition', 'Position', 'where a still shape rests in its own stretch of strip, from the bottom end to the top'),
+          control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest at Bend at, minus slowest there. The readout compares fastest to slowest'),
+          control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own stretch'),
         ],
       },
       {
         title: 'Fan',
         names: [
-          control('fanSpread', 'Spread', 'how far apart the five strips stand in their cells'),
+          control('fanSpread', 'Spread', 'how far apart the strips stand, following the fan’s shape. The readout is the furthest strip: in pixels when still, in beats when moving'),
           control('fanSpeed', 'Speed', 'how far apart their speeds stand, either side of Speed'),
-          control('fanLfo', 'LFO', 'how far apart they stand in the LFO’s cycle'),
-          control('fanFrequency', 'Frequency', 'all five alike → every strip opposite its neighbors'),
-          control('fanPhase', 'Phase', 'where the wave sits on the strips: a staircase through a chevron'),
-          control('fanRandomize', 'Randomize', 'the wave → a fixed draw per strip'),
+          control('fanLfo', 'LFO', 'how far apart the strips’ LFOs swing, following the fan’s shape. The readout is the furthest strip, in beats'),
+          control('fanFrequency', 'Frequency', 'the shape of the fan across the five strips, as the readout draws it: all alike, a slope, a peak, or every strip opposite its neighbors'),
+          control('fanPhase', 'Phase', 'slides the fan’s shape sideways across the strips, as the readout draws it'),
+          control('fanRandomize', 'Randomize', 'from the fan’s shape to a fixed random amount per strip'),
         ],
       },
     ],
@@ -261,7 +302,7 @@
       name: 'Scatter', tone: 'scatter',
       source: [
         control('scatterCount', 'Count', 'how many spots each strip has, 1–20. Raising it adds spots and keeps the ones already there'),
-        control('scatterWidth', 'Width', 'how much of the gap between spots each spot covers, never less than a pixel'),
+        control('scatterWidth', 'Width', 'how wide each spot is, from one pixel up to touching the next spot'),
         control('scatterEdge', 'Edge', 'hard through to a fade at the spot’s sides'),
         control('scatterRate', 'Rate', 'how often a spot lands somewhere new, stepped so it sits on the beat. A route onto Mix, Hue, Saturation, Value, Width or Position runs once per spot on this clock'),
         control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall moves as one; full scatters their phases and rates'),
@@ -286,14 +327,14 @@
           { kind: 'three', options: threeWayOptions(Protocol.FIELD_DIRECTION,
             { horizontal: 'horizontal', vertical: 'vertical', shape: 'shape' }) }),
         control('fieldCount', 'Count', 'how many regions along the direction', gradientInert),
-        control('fieldWidth', 'Width', 'a region’s solid core, as a proportion of one cell', gradientInert),
-        control('fieldEdge', 'Edge', 'hard-edged cell through to a smooth fade', gradientInert),
+        control('fieldWidth', 'Width', 'a region’s solid core; each region has the direction divided by Count to itself', gradientInert),
+        control('fieldEdge', 'Edge', 'hard-edged regions through to a smooth fade', gradientInert),
         control('fieldSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back, slowest nearest center. Stepped by how long the regions take to move one region along', gradientInert),
       ],
       amounts: [
-        control('fieldHue', 'Hue', 'how far the hue turns, opposite ways at the two ends of a gradient'),
-        control('fieldWhite', 'White', 'how far the departure whitens: both ends of a gradient, the region, or all but the region'),
-        control('fieldDark', 'Dark', 'how far the departure darkens: both ends of a gradient, the region, or all but the region'),
+        control('fieldHue', 'Hue', 'how far the hue moves round the palette, opposite ways at the two ends of a gradient'),
+        control('fieldWhite', 'White', 'how far it whitens: both ends of a gradient, the region, or all but the region'),
+        control('fieldDark', 'Dark', 'how far it darkens: both ends of a gradient, the region, or all but the region'),
       ],
     },
     {

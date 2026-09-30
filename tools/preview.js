@@ -59,7 +59,6 @@
       return {
         values: Array.from(fan.subarray(0, STRIPS)),
         curve: Array.from(fan.subarray(STRIPS, after), (value, i) => [i / stepsPerStrip, value]),
-        turns: fan[after],
         stillAt: Math.abs(fan[after + 1]) <= 1 ? fan[after + 1] : null,
         spent: [
           ['position', fan[after + 2]],
@@ -337,10 +336,9 @@
       ? fan.spent.map(([where, amount]) =>
           where + ' ' + (amount > 0 ? '+' : '−') + Math.round(Math.abs(amount) * 100) + '%').join('  ')
       : 'spent nowhere';
-    context.fillText(fan.turns.toFixed(2) + ' turns across the wall', 8, WALL_TOP + 12);
-    context.fillText(spent, 8, WALL_TOP + 24);
+    context.fillText(spent, 8, WALL_TOP + 12);
     if (fan.scrambled > 0.005) {
-      context.fillText(Math.round(fan.scrambled * 100) + '% scrambled', 8, WALL_TOP + 36);
+      context.fillText(Math.round(fan.scrambled * 100) + '% random', 8, WALL_TOP + 24);
     }
     context.restore();
   }
