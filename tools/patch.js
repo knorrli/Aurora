@@ -43,7 +43,6 @@
   const real = (name, value) => preview().convert(CC[name], value);
 
   const percent = ratio => (ratio * 100).toFixed(0) + '%';
-  const ofByte = ratio => percent(ratio / 255);
   const sign = ratio => (ratio < 0 ? '−' : '+');
   const signed = ratio => sign(ratio) + percent(Math.abs(ratio));
 
@@ -150,8 +149,6 @@
     fanRandomize: value => percent(real('fanRandomize', value)) + ' random',
 
     hue: value => degrees(real('hue', value)),
-    saturation: value => ofByte(real('saturation', value)),
-    value: value => ofByte(real('value', value)),
 
     lfoRate: value => PERIOD_NAMES[real('lfoRate', value)],
 
@@ -209,12 +206,17 @@
     lightWhite: value => percent(real('lightWhite', value)) + ' white',
     lightDark: value => percent(real('lightDark', value)) + ' dark',
 
-    parValue: value => ofByte(real('parValue', value)),
     parHueOffset: value => '+' + degrees(real('parHueOffset', value)),
-    parSaturation: value => ofByte(real('parSaturation', value)),
-    arpSpread: value => {
+    arpSpread: (value, live) => {
       const spread = real('arpSpread', value);
-      return Math.abs(spread) < 0.005 ? 'together' : `${percent(Math.abs(spread))} ${spread < 0 ? 'reverse' : 'forward'}`;
+      const mode = Protocol.arpMode((live || DEFAULT).arpMode);
+      const steps = passLength(mode);
+      const cycles = Math.max(1, Math.round(Math.abs(spread) * steps));
+      const pace = steps % cycles === 0
+        ? `${steps / cycles} step${steps / cycles === 1 ? '' : 's'} a cycle`
+        : `${steps} steps in ${cycles} cycles`;
+      const hasDirection = mode !== Protocol.ARP_MODE.together && mode !== Protocol.ARP_MODE.random;
+      return spread < 0 && hasDirection ? pace + ', backward' : pace;
     },
     parHueRange: value => {
       const reach = Math.round(real('parHueRange', value));
@@ -298,10 +300,39 @@
     inertWhen: live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient,
   };
 
+  const ARP_MODE_NAMES = {
+    together: 'together', sequence: 'sequence', bounce: 'bounce', evensOdds: 'evens / odds',
+    pairs: 'pairs', mirror: 'mirror', random: 'random',
+  };
+
+  const PARS_COUNT = 4;
+  const passLength = mode => ({
+    [Protocol.ARP_MODE.together]: 1,
+    [Protocol.ARP_MODE.bounce]: 2 * PARS_COUNT - 2,
+    [Protocol.ARP_MODE.evensOdds]: 2,
+    [Protocol.ARP_MODE.pairs]: PARS_COUNT / 2,
+    [Protocol.ARP_MODE.mirror]: PARS_COUNT / 2,
+  }[mode] || PARS_COUNT);
+
+  const arpRouted = live => ROUTES.some(route => {
+    const destination = live[route.destination];
+    return Protocol.routeArp(destination) !== Protocol.ARP.unison && Protocol.routeTarget(destination) !== 0
+      && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount;
+  });
+
   const LFO = {
     name: 'LFO', tone: 'lfo',
     source: [control('lfoRate', 'Rate')],
     amounts: [],
+    arpeggiator: [
+      control('arpMode', 'Mode',
+        { kind: 'steps', step: Protocol.arpMode,
+          options: Object.entries(Protocol.ARP_MODE)
+            .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]),
+          inertWhen: live => !arpRouted(live) }),
+      control('arpSpread', 'Steps',
+        { inertWhen: live => !arpRouted(live) || Protocol.arpMode(live.arpMode) === Protocol.ARP_MODE.together }),
+    ],
   };
 
   const MODULATORS = [
@@ -370,21 +401,22 @@
   const FULL_SATURATION = 255;
   const hueSwatch = (live, hue) => preview().paletteColor(live.palette, hue & 255, FULL_SATURATION);
 
-  const STRIPS = {
-    title: '5 strips',
+  const SHARED_COLOR = {
+    title: 'Strips and PARs',
     sections: [[null, [
       control('palette', 'Palette',
         { kind: 'pick', options: () => preview().paletteNames().map((name, index) => [index, name]) }),
       control('hue', 'Hue',
         { swatch: live => hueSwatch(live, real('hue', live.hue)) }),
-      control('saturation', 'Saturation'),
-      control('value', 'Value'),
     ]]],
   };
 
-  const ARP_MODE_NAMES = {
-    together: 'together', sequence: 'sequence', bounce: 'bounce', evensOdds: 'evens / odds',
-    pairs: 'pairs', mirror: 'mirror', random: 'random',
+  const STRIPS = {
+    title: '5 strips',
+    sections: [[null, [
+      control('saturation', 'Saturation'),
+      control('value', 'Value'),
+    ]]],
   };
 
   const HUE_LAYOUT_NAMES = {
@@ -405,22 +437,16 @@
         control('parHueLayout', 'Hue layout',
           { kind: 'steps', step: Protocol.hueLayout,
             options: Object.entries(Protocol.HUE_LAYOUT)
-              .map(([key, layout]) => [Protocol.hueLayoutValue(layout), HUE_LAYOUT_NAMES[key]]) }),
+              .map(([key, layout]) => [Protocol.hueLayoutValue(layout), HUE_LAYOUT_NAMES[key]]),
+            inertWhen: live => Math.round(real('parHueRange', live.parHueRange)) === 0 }),
         control('parHueRange', 'Hue range'),
-      ]],
-      ['Arpeggiator', [
-        control('arpMode', 'Mode',
-          { kind: 'steps', step: Protocol.arpMode,
-            options: Object.entries(Protocol.ARP_MODE)
-              .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]) }),
-        control('arpSpread', 'Spread'),
       ]],
     ],
   };
 
-  const OUTPUTS = [STRIPS, PARS];
+  const OUTPUTS = [SHARED_COLOR, STRIPS, PARS];
   const outputNames = output => output.sections.flatMap(([, names]) => names);
-  const cardNames = card => [...card.source, ...card.amounts];
+  const cardNames = card => [...card.source, ...card.amounts, ...(card.arpeggiator || [])];
 
   const PLACES = {};
   for (const group of SHAPE.groups) {

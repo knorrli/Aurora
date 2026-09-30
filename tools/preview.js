@@ -25,6 +25,8 @@
     const parColors = renderer._aurora_pars();
     const huePlacesAt = renderer._aurora_par_hue_places() >> 2;
     const huePlaces = renderer.HEAPF32.subarray(huePlacesAt, huePlacesAt + PARS);
+    const parHuesAt = renderer._aurora_par_hues();
+    const parHues = renderer.HEAPU8.subarray(parHuesAt, parHuesAt + PARS);
     const fanAt = renderer._aurora_fan() >> 2;
     const fan = renderer.HEAPF32.subarray(fanAt, fanAt + STRIPS + CURVE_POINTS + 6);
     const bendAt = renderer._aurora_bend() >> 2;
@@ -108,6 +110,11 @@
         return {
           pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(),
           centers: Array.from(centers),
+          hues: {
+            palette: bytes[global.AuroraProtocol.CC.palette],
+            strips: renderer._aurora_strips_hue(),
+            pars: Array.from(parHues),
+          },
         };
       },
       draw,
@@ -175,7 +182,54 @@
     if (overlays.fan && frame.fan) drawFan(context, frame.fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.bend && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
+    if (overlays.palette && frame.hues) drawPalette(context, frame.hues, width, height);
     if (overlays.centers) drawCenters(context, frame.centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+  }
+
+  const PALETTE_MARK = 'rgba(176,162,236,0.95)';
+  const paletteRibbons = new Map();
+
+  function paletteRibbon(palette) {
+    if (!paletteRibbons.has(palette)) {
+      paletteRibbons.set(palette, Array.from({ length: 256 }, (_, hue) => `rgb(${api.paletteColor(palette, hue, 255).join(',')})`));
+    }
+    return paletteRibbons.get(palette);
+  }
+
+  function drawPalette(context, hues, width, height) {
+    const left = width * 0.04;
+    const span = width * 0.92;
+    const top = height - 27;
+    const ribbonHeight = 5;
+    const xAt = hue => left + span * (hue + 0.5) / 256;
+    const ribbon = paletteRibbon(hues.palette);
+
+    context.save();
+    context.fillStyle = 'rgba(10,11,14,0.7)';
+    context.fillRect(left - 3, top - 9, span + 6, ribbonHeight + 23);
+    ribbon.forEach((color, hue) => {
+      context.fillStyle = color;
+      context.fillRect(left + span * hue / 256, top, span / 256 + 0.6, ribbonHeight);
+    });
+
+    context.fillStyle = PALETTE_MARK;
+    const strips = xAt(hues.strips);
+    context.beginPath();
+    context.moveTo(strips - 4, top - 7);
+    context.lineTo(strips + 4, top - 7);
+    context.lineTo(strips, top - 1);
+    context.fill();
+
+    context.font = '9px ui-monospace, monospace';
+    context.textAlign = 'center';
+    const parsAtHue = new Map();
+    hues.pars.forEach((hue, par) => parsAtHue.set(hue, [...(parsAtHue.get(hue) || []), par + 1]));
+    for (const [hue, pars] of parsAtHue) {
+      const x = xAt(hue);
+      context.fillRect(x - 0.75, top + ribbonHeight + 1, 1.5, 4);
+      context.fillText(pars.join(''), x, top + ribbonHeight + 13);
+    }
+    context.restore();
   }
 
   function drawArpPass(context, pass, pars, width, top, bandHeight) {
@@ -195,20 +249,20 @@
     for (const { start, par } of pass.marks) {
       const y = first + par * rowHeight;
       const tail = context.createLinearGradient(xAt(start), 0, xAt(start + pass.length), 0);
-      tail.addColorStop(0, 'rgba(150,215,255,0.4)');
-      tail.addColorStop(1, 'rgba(150,215,255,0)');
+      tail.addColorStop(0, 'rgba(226,150,172,0.4)');
+      tail.addColorStop(1, 'rgba(226,150,172,0)');
       context.fillStyle = tail;
       context.fillRect(xAt(start), y + 1, xAt(start + pass.length) - xAt(start), rowHeight - 2);
       context.save();
       context.translate(-span, 0);
       context.fillRect(xAt(start), y + 1, xAt(start + pass.length) - xAt(start), rowHeight - 2);
       context.restore();
-      context.fillStyle = 'rgba(150,215,255,0.95)';
+      context.fillStyle = 'rgba(226,150,172,0.95)';
       context.fillRect(xAt(start) - 1, y, 2.5, rowHeight - 1);
     }
 
     const cursor = xAt(pass.at);
-    context.strokeStyle = 'rgba(232,168,90,0.9)';
+    context.strokeStyle = 'rgba(255,255,255,0.85)';
     context.lineWidth = 1.5;
     context.beginPath();
     context.moveTo(cursor, first - 3);
@@ -217,7 +271,7 @@
 
     context.restore();
     context.save();
-    context.fillStyle = 'rgba(150,215,255,0.75)';
+    context.fillStyle = 'rgba(226,150,172,0.8)';
     context.font = '10px ui-monospace, monospace';
     const turns = Math.round(pass.turns * 100) / 100;
     context.fillText(`${turns} ${turns === 1 ? 'turn' : 'turns'} a pass`, left, first - 7);

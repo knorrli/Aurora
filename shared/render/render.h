@@ -96,6 +96,8 @@ struct Frame {
   Rgb pixels[STRIPS * PIXELS];
   Par pars[PARS];
   float parHuePlaces[PARS];
+  uint8_t stripsHue;
+  uint8_t parHues[PARS];
   FanReading fan;
   float bend[BEND_POINTS];
   float lfo;

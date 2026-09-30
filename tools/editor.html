@@ -134,7 +134,10 @@
   #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
   .rail h2, .dock h2 { display: flex; align-items: baseline; gap: 6px; }
   .rail h2 > .tiny:first-of-type { margin-left: auto; }
-  .overlay-buttons { display: flex; gap: 4px; margin-left: auto; }
+  .overlay-buttons { display: flex; gap: 3px; margin-left: auto; }
+  .overlay-buttons .tiny { padding: 2px 5px; }
+  .overlay-buttons button.on[data-tone=lfo] { background: var(--lfo); border-color: var(--lfo); }
+  .overlay-buttons button.on[data-tone=out] { background: var(--out); border-color: var(--out); }
 
   .shape { border-left: 3px solid var(--shape); }
   .shape-name { font-size: 12px; letter-spacing: .18em; color: var(--shape); margin-bottom: 12px; }
@@ -156,7 +159,7 @@
     vertical-align: baseline;
   }
   .row.changed { border-left-color: var(--accent); }
-  .row.inert { opacity: .38; }
+  .row.inert, .switch-row.inert { opacity: .38; }
 
   .track { position: relative; display: flex; align-items: center; height: 20px; }
   .track input[type=range] { width: 100%; margin: 0; }
@@ -256,6 +259,9 @@
 
   .outputs { border-left: 3px solid var(--out); }
   .output-grid .subhead:not(:first-child) { margin-top: 14px; }
+  .output-grid > :first-child { grid-column: 1 / -1; }
+  .output-grid > :first-child > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 0 22px; align-items: center; }
+  .output-grid > :first-child > div > * + * { margin-top: 0; }
   .output-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px 22px; }
 
   .dock canvas { width: 100%; border-radius: 4px; display: block; background: #0a0b0e; }
@@ -382,10 +388,11 @@
     <section class="panel">
       <h2>The wall
         <span class="overlay-buttons" id="wallOverlays">
-          <button class="tiny" data-overlay="centers">centers</button>
-          <button class="tiny" data-overlay="fan">fan</button>
-          <button class="tiny" data-overlay="bend">bend</button>
-          <button class="tiny" data-overlay="arp">arp</button>
+          <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
+          <button class="tiny" data-overlay="fan" data-tone="shape">fan</button>
+          <button class="tiny" data-overlay="bend" data-tone="shape">bend</button>
+          <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
+          <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
         </span>
       </h2>
       <div class="dockgrid">

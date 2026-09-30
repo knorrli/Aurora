@@ -142,7 +142,7 @@
     root.appendChild(head);
 
     const body = element('div', 'card-body');
-    for (const [title, names] of [['Source', card.source], ['Amounts', card.amounts]]) {
+    for (const [title, names] of [['Source', card.source], ['Amounts', card.amounts], ['Arpeggiator', card.arpeggiator || []]]) {
       if (!names.length) continue;
       const box = element('div');
       box.appendChild(element('h4', null, title));
@@ -200,6 +200,7 @@
     row.root.classList.toggle('locked', target);
     const held = session.heldAt();
     row.from.textContent = !target ? '' : held ? `held at "${held.name}"` : 'from the patch';
+    row.root.classList.toggle('inert', !!(row.control.inertWhen && row.control.inertWhen(live)));
   }
 
   function paintCards(live) {
