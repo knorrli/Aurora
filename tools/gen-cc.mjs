@@ -136,7 +136,7 @@ const arpModeCount = (arpModeEntries.find(([key]) => key === 'ARP_MODES') || fai
 const hueLayoutCount = (enumEntries('AuroraHueLayout').find(([key]) => key === 'HUE_LAYOUTS') || fail('HUE_LAYOUTS'))[1];
 
 const programs = Object.fromEntries(enumEntries('AuroraProgram'));
-const patchParts = Object.fromEntries(enumEntries('AuroraPatchPart'));
+const patchLayers = Object.fromEntries(enumEntries('AuroraPatchLayer'));
 
 const generated = {
   MIDI_CHANNEL: constant('AURORA_MIDI_CHANNEL'),
@@ -171,12 +171,12 @@ const generated = {
   PATCH_CC_COUNT: constant('AURORA_PATCH_CC_COUNT'),
   PATCH_NAME_LENGTH: constant('AURORA_PATCH_NAME_LENGTH'),
   PATCH_HEAD_LENGTH: constant('AURORA_PATCH_HEAD_LENGTH'),
-  PATCH_BASE: patchParts.PATCH_BASE,
-  PATCH_TARGET_COLOR: patchParts.PATCH_TARGET_COLOR,
-  PATCH_TARGET_EXTENT: patchParts.PATCH_TARGET_EXTENT,
-  PATCH_TARGET_MOTION: patchParts.PATCH_TARGET_MOTION,
-  PATCH_TARGET_ACCENT: patchParts.PATCH_TARGET_ACCENT,
-  PATCH_PARTS: patchParts.AURORA_PATCH_PARTS,
+  PATCH_LAYER_BASE: patchLayers.PATCH_LAYER_BASE,
+  PATCH_LAYER_COLOR: patchLayers.PATCH_LAYER_COLOR,
+  PATCH_LAYER_EXTENT: patchLayers.PATCH_LAYER_EXTENT,
+  PATCH_LAYER_MOTION: patchLayers.PATCH_LAYER_MOTION,
+  PATCH_LAYER_ACCENT: patchLayers.PATCH_LAYER_ACCENT,
+  PATCH_LAYERS: patchLayers.AURORA_PATCH_LAYERS,
   KEYPAD_KEYS: constant('AURORA_KEYPAD_KEYS'),
   SLOT_MAP_LENGTH: constant('AURORA_SLOT_MAP_LENGTH'),
   SYSEX_ID: constant('AURORA_SYSEX_ID'),

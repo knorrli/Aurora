@@ -85,7 +85,7 @@
     <input type="file" id="file" accept=".json,application/json" hidden>
   </div>
   <div class="note">The recovery path when the editor's machine is gone. What comes back is
-    everything the brain was given — names, times, keypad assignment, every part — and nothing
+    everything the brain was given — names, times, keypad assignment, every layer — and nothing
     it was never given, so anything the editor knows and does not sync is not in here. Commit the
     file if you want it to survive the brain too.</div>
 </div>
@@ -116,15 +116,15 @@
   const byId = id => document.getElementById(id);
   const BUTTONS = ['query', 'push', 'abort', 'read', 'verify', 'save', 'restore'];
 
-  const byteAt = (slot, part, cc) => (slot * 7 + part * 13 + cc * 3 + 11) & 0x7F;
+  const byteAt = (slot, layer, cc) => (slot * 7 + layer * 13 + cc * 3 + 11) & 0x7F;
 
   const testPatch = slot => ({
     slot,
     name: `test ${slot}`,
     transitionTime: (slot * 2) & 0x7F,
     accentTime: (slot * 3) & 0x7F,
-    parts: Array.from({ length: Protocol.PATCH_PARTS }, (_, part) =>
-      Array.from({ length: Protocol.PATCH_CC_COUNT }, (_, cc) => byteAt(slot, part, cc))),
+    layers: Array.from({ length: Protocol.PATCH_LAYERS }, (_, layer) =>
+      Array.from({ length: Protocol.PATCH_CC_COUNT }, (_, cc) => byteAt(slot, layer, cc))),
   });
 
   const testSlots = count => (count === 1 ? [0]
@@ -178,7 +178,7 @@
     let committed;
     try {
       patches.slice(0, sent).forEach(patch => link.sendPatch(patch));
-      say(`sent ${sent} of ${patches.length} patches — ${sent * (1 + Protocol.PATCH_PARTS) + 1} messages`);
+      say(`sent ${sent} of ${patches.length} patches — ${sent * (1 + Protocol.PATCH_LAYERS) + 1} messages`);
       if (stopEarly) say('stopping here on purpose; committing anyway to see it refused');
       committed = await link.commit();
     } catch (error) {
@@ -208,9 +208,9 @@
     }
     const byte = wantHead.findIndex((value, i) => read.head[i] !== value);
     if (byte >= 0) faults.push(`head byte ${byte}: got ${read.head[byte]}, expected ${wantHead[byte]}`);
-    want.parts.forEach((bytes, part) => {
-      const cc = bytes.findIndex((value, i) => read.patch.parts[part][i] !== value);
-      if (cc >= 0) faults.push(`part ${part} byte ${cc}: got ${read.patch.parts[part][cc]}, expected ${bytes[cc]}`);
+    want.layers.forEach((bytes, layer) => {
+      const cc = bytes.findIndex((value, i) => read.patch.layers[layer][i] !== value);
+      if (cc >= 0) faults.push(`layer ${layer} byte ${cc}: got ${read.patch.layers[layer][cc]}, expected ${bytes[cc]}`);
     });
     return faults;
   }
@@ -268,7 +268,7 @@
     say(`slot ${slot} is named "${read.patch.name}"`);
     const faults = compare(slot, read);
     if (!faults.length) {
-      good(`slot ${slot} matches what was pushed, all ${Protocol.PATCH_HEAD_LENGTH + Protocol.PATCH_PARTS * Protocol.PATCH_CC_COUNT} bytes`);
+      good(`slot ${slot} matches what was pushed, all ${Protocol.PATCH_HEAD_LENGTH + Protocol.PATCH_LAYERS * Protocol.PATCH_CC_COUNT} bytes`);
     } else faults.forEach(bad);
   }));
 

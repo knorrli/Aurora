@@ -15,8 +15,8 @@
     return route ? route.name : name;
   };
 
-  function report(part, leftOnBase) {
-    const kept = `kept as ${Patch.PART_NAMES[part]}`;
+  function report(layer, leftOnBase) {
+    const kept = `kept as ${Patch.LAYER_NAMES[layer]}`;
     if (!leftOnBase.length) {
       Editor.say(kept, 'ok');
       return;
@@ -25,15 +25,15 @@
     Editor.say(`${kept}; ${labels} stayed on the base — switches belong to the whole patch`, 'warn');
   }
 
-  function keepAsPart(part) {
+  function keepAsLayer(layer) {
     const named = session.liveNamed();
     const patch = session.editing();
-    const leftOnBase = Patch.isTarget(part) ? Library.keepAsPart(patch, part, named) : [];
-    if (!Patch.isTarget(part)) Library.keepAsBase(patch, named);
+    const leftOnBase = Patch.isAboveBase(layer) ? Library.keepAsLayer(patch, layer, named) : [];
+    if (!Patch.isAboveBase(layer)) Library.keepAsBase(patch, named);
     session.resetPreview();
     Editor.transition.rebuild();
     session.changed();
-    report(part, leftOnBase);
+    report(layer, leftOnBase);
   }
 
   function keepAsNewPatch() {
@@ -51,14 +51,14 @@
     const select = byId('keepAs');
     dom.setOptions(select, [
       ['', 'keep as…'],
-      ...Patch.PARTS.map(part => [part, Patch.PART_NAMES[part]]),
+      ...Patch.LAYERS.map(layer => [layer, Patch.LAYER_NAMES[layer]]),
       [NEW_PATCH, 'new patch'],
     ], '');
     select.addEventListener('change', () => {
       const choice = select.value;
       select.value = '';
       if (choice === NEW_PATCH) keepAsNewPatch();
-      else if (choice !== '') keepAsPart(+choice);
+      else if (choice !== '') keepAsLayer(+choice);
     });
   }
 

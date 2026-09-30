@@ -112,11 +112,11 @@
       controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
       routeRefused: cc => !!renderer._aurora_route_refused(cc),
       spotDestination: cc => !!renderer._aurora_spot_destination(cc),
-      layerOf: cc => renderer._aurora_layer_of(cc),
-      showsLayer: cc => !!renderer._aurora_shows_layer(cc),
-      hiddenLayers(bytes) {
+      engineOf: cc => renderer._aurora_engine_of(cc),
+      showsEngine: cc => !!renderer._aurora_shows_engine(cc),
+      hiddenEngines(bytes) {
         renderer.HEAPU8.set(bytes, controls);
-        return renderer._aurora_hidden_layers();
+        return renderer._aurora_hidden_engines();
       },
       routeReach(cc) {
         const at = renderer._aurora_route_reach(cc);

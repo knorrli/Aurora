@@ -41,7 +41,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
 - Dial five or six endpoints by eye and save them; nothing about the morph is worth judging before.
 
-## Generator
+## Renderer
 
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
 - Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
@@ -67,6 +67,6 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 - One pass over every control: does the readout and its unit make sense; would it, alone or with others, help as a wall overlay; does it belong in its panel or in one of its own; is its color, and its overlay's, the right one.
 - Controls that modulate only upward (Hue offset, Bend at): make them bipolar, or help center the swing by marking the fader value mirrored across center, or snapping the amount to it.
-- Let a morph target set a "from the patch" switch by writing it into the base patch: setting arp mode while routing PAR hue range on the accent should not need a trip to base.
+- Let a layer set a "from the patch" switch by writing it into the base layer: setting arp mode while routing PAR hue range on Accent should not need a trip to Base.
 - Shrink `AURORA_PATCH_NAME_LENGTH` to 13 at the next patch format change; the editor already stops at 13.
 - Rebuild starting-point looks on routes, the LFO and the scatter. The old tables (shapes, fan looks, swing looks, color looks) are in `git show 21a435c:tools/patch.js`.

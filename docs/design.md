@@ -106,7 +106,7 @@
 - A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
 - Should patches have tags or grouping?
 
-### Generator
+### Renderer
 
 - Does the morph need per-parameter timing rather than every parameter in lockstep?
 - Should a patch choose to land its visible switches on the press rather than the release?
@@ -121,4 +121,4 @@
 - Do the PARs want a palette of their own?
 - Should Spread have a stepped form that flips whole at a threshold when a route moves it, rather than squeezing turns through the middle?
 - Do the PARs want different speeds, for an oscillation that looks random? Decide once ripple in random mode has been seen on the wall.
-- When the last spare CC (79) runs out: NRPN or a second MIDI channel?
+- When the last spare CC (34) runs out: NRPN or a second MIDI channel?

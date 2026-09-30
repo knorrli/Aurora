@@ -4,11 +4,11 @@
   const Protocol = global.AuroraProtocol;
   const preview = () => global.AuroraPreview;
 
-  const PART_NAMES = ['Base', 'Color', 'Extent', 'Motion', 'Accent'];
-  const TARGETS = [Protocol.PATCH_TARGET_COLOR, Protocol.PATCH_TARGET_MOTION,
-                   Protocol.PATCH_TARGET_EXTENT, Protocol.PATCH_TARGET_ACCENT];
-  const PARTS = [Protocol.PATCH_BASE, ...TARGETS];
-  const isTarget = part => part !== Protocol.PATCH_BASE;
+  const LAYER_NAMES = ['Base', 'Color', 'Extent', 'Motion', 'Accent'];
+  const LAYERS_ABOVE_BASE = [Protocol.PATCH_LAYER_COLOR, Protocol.PATCH_LAYER_MOTION,
+                   Protocol.PATCH_LAYER_EXTENT, Protocol.PATCH_LAYER_ACCENT];
+  const LAYERS = [Protocol.PATCH_LAYER_BASE, ...LAYERS_ABOVE_BASE];
+  const isAboveBase = layer => layer !== Protocol.PATCH_LAYER_BASE;
 
   const CC = Object.assign({}, Protocol.CC);
 
@@ -381,7 +381,7 @@
     ],
   };
 
-  const MODULATORS = [
+  const ENGINES = [
     {
       name: 'Scatter', tone: 'scatter',
       source: [
@@ -499,7 +499,7 @@
   for (const group of SHAPE.groups) {
     for (const name of group.names) PLACES[name] = `${SHAPE.name} · ${group.title}`;
   }
-  for (const card of [LFO, ...MODULATORS]) {
+  for (const card of [LFO, ...ENGINES]) {
     for (const name of cardNames(card)) PLACES[name] = card.name;
   }
   for (const output of OUTPUTS) {
@@ -549,11 +549,11 @@
   }
 
   global.AuroraPatch = {
-    PART_NAMES, PARTS, TARGETS, isTarget,
+    LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
     CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT, NEUTRAL,
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
-    SHAPE, LFO, MODULATORS, OUTPUTS, ROUTES, PLACES, cardNames,
+    SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,
     routable, routableDestination, arpCapable, perSpot, isCircular, swings, pointsFor,
   };
 })(window);

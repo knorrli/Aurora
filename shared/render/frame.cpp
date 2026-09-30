@@ -5,7 +5,7 @@
 #include "bend.h"
 #include "clocks.h"
 #include "fan.h"
-#include "layers.h"
+#include "engines.h"
 #include "palettes.h"
 #include "pars.h"
 #include "reading.h"
@@ -69,7 +69,7 @@ struct ShapeSample {
   float across;
 };
 
-struct PixelLayers {
+struct PixelEngines {
   bool fieldOn;
   bool flowOn;
   bool scatterOn;
@@ -211,7 +211,7 @@ static ShapeSample sampleShape(const FrameContext &context, const ShapeLook &loo
 }
 
 static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
-                     const ShapeLook &look, const Tail &tail, const PixelLayers &layers,
+                     const ShapeLook &look, const Tail &tail, const PixelEngines &engines,
                      uint8_t pixelIndex, float &fieldLevel) {
   const Reading &reading = strip.reading;
   const Shape &plain = context.plain.shape;
@@ -227,11 +227,11 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
     const ShapeSample sample = sampleShape(context, look, tail, cells);
     shapeTotal += sample.level;
 
-    if (layers.fieldOn) {
+    if (engines.fieldOn) {
       fieldTotal += fieldAt(reading.field, strip.index, (float)pixelIndex + acrossPixel,
                             clampUnit(sample.across), strip.fieldDrift);
     }
-    if (layers.scatterOn) {
+    if (engines.scatterOn) {
       const ScatterSample here = scatterAt(reading.scatter, strip.scatterSpots,
                                            (float)pixelIndex + 0.5f + acrossPixel);
       scatterCover += here.cover;
@@ -245,10 +245,10 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
   const bool baseLit = shape > DARKEST_DRAWN;
   if (!baseLit && cover <= DARKEST_DRAWN) return { 0, 0, 0 };
 
-  const Hsv tint = (layers.flat || !baseLit)
+  const Hsv tint = (engines.flat || !baseLit)
       ? reading.color
       : tintAt(reading, strip.index, pixelIndex, fieldTotal / (float)SAMPLES_PER_PIXEL, shape,
-               layers.flowOn, strip.flowTime);
+               engines.flowOn, strip.flowTime);
   const float baseValue = baseLit ? (float)tint.v * shape : 0.0f;
   if (cover <= DARKEST_DRAWN) {
     return scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s), (uint8_t)baseValue);
@@ -271,15 +271,15 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   const ShapeLook look = lookOf(context, strip, history, tail);
 
   const Reading &reading = strip.reading;
-  PixelLayers layers;
-  layers.fieldOn = fieldActive(reading);
-  layers.flowOn = flowActive(reading);
-  layers.scatterOn = scatterActive(reading, context.dialed);
-  layers.flat =
-      !layers.fieldOn && !layers.flowOn && !coreActive(reading);
+  PixelEngines engines;
+  engines.fieldOn = fieldActive(reading);
+  engines.flowOn = flowActive(reading);
+  engines.scatterOn = scatterActive(reading, context.dialed);
+  engines.flat =
+      !engines.fieldOn && !engines.flowOn && !coreActive(reading);
 
   for (uint8_t pixelIndex = 0; pixelIndex < PIXELS; pixelIndex++) {
-    pixels[pixelIndex] = drawPixel(context, strip, look, tail, layers, pixelIndex, fieldLevels[pixelIndex]);
+    pixels[pixelIndex] = drawPixel(context, strip, look, tail, engines, pixelIndex, fieldLevels[pixelIndex]);
   }
 }
 

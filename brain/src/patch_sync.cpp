@@ -63,14 +63,14 @@ void sendPatch(uint8_t slot) {
     }
     send(SYSEX_PATCH_HEAD_OUT, payload, 1 + AURORA_PATCH_HEAD_LENGTH);
 
-    for (uint8_t part = 0; part < AURORA_PATCH_PARTS; part++) {
+    for (uint8_t layer = 0; layer < AURORA_PATCH_LAYERS; layer++) {
         payload[0] = slot;
-        payload[1] = part;
-        if (!patch_store::readPart(slot, part, payload + 2)) {
+        payload[1] = layer;
+        if (!patch_store::readLayer(slot, layer, payload + 2)) {
             ack(SYSEX_QUERY_PATCH, SYSEX_ERROR_STORAGE);
             return;
         }
-        send(SYSEX_PATCH_PART_OUT, payload, 2 + AURORA_PATCH_CC_COUNT);
+        send(SYSEX_PATCH_LAYER_OUT, payload, 2 + AURORA_PATCH_CC_COUNT);
     }
 }
 
@@ -111,12 +111,12 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
             return;
         }
 
-        case SYSEX_PATCH_PART: {
+        case SYSEX_PATCH_LAYER: {
             if (payloadLength != 2 + AURORA_PATCH_CC_COUNT) {
                 fail(type, SYSEX_ERROR_RANGE);
                 return;
             }
-            fail(type, patch_store::stagePart(payload[0], payload[1], payload + 2));
+            fail(type, patch_store::stageLayer(payload[0], payload[1], payload + 2));
             return;
         }
 

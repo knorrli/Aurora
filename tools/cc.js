@@ -111,19 +111,19 @@
   const PATCH_CC_COUNT = 128;
   const PATCH_NAME_LENGTH = 16;
   const PATCH_HEAD_LENGTH = 20;
-  const PATCH_BASE = 0;
-  const PATCH_TARGET_COLOR = 1;
-  const PATCH_TARGET_EXTENT = 2;
-  const PATCH_TARGET_MOTION = 3;
-  const PATCH_TARGET_ACCENT = 4;
-  const PATCH_PARTS = 5;
+  const PATCH_LAYER_BASE = 0;
+  const PATCH_LAYER_COLOR = 1;
+  const PATCH_LAYER_EXTENT = 2;
+  const PATCH_LAYER_MOTION = 3;
+  const PATCH_LAYER_ACCENT = 4;
+  const PATCH_LAYERS = 5;
   const KEYPAD_KEYS = 9;
   const SLOT_MAP_LENGTH = 19;
   const SYSEX_ID = 125;
   const SYSEX_SIGNATURE_A = 65;
   const SYSEX_SIGNATURE_B = 85;
   const SYSEX_HEADER_LENGTH = 5;
-  const SYSEX_TYPE = {"syncBegin":1,"patchHead":2,"patchPart":3,"syncCommit":4,"syncAbort":5,"queryLibrary":6,"queryPatch":7,"ack":64,"libraryInfo":65,"patchHeadOut":66,"patchPartOut":67};
+  const SYSEX_TYPE = {"syncBegin":1,"patchHead":2,"patchLayer":3,"syncCommit":4,"syncAbort":5,"queryLibrary":6,"queryPatch":7,"ack":64,"libraryInfo":65,"patchHeadOut":66,"patchLayerOut":67};
   const SYSEX_STATUS = {"ok":0,"errorFormat":1,"errorSequence":2,"errorIncomplete":3,"errorStorage":4,"errorRange":5};
   const LIBRARY_STATE = {"stored":0,"empty":1,"unreadable":2};
 
@@ -189,12 +189,12 @@
     PATCH_CC_COUNT,
     PATCH_NAME_LENGTH,
     PATCH_HEAD_LENGTH,
-    PATCH_BASE,
-    PATCH_TARGET_COLOR,
-    PATCH_TARGET_EXTENT,
-    PATCH_TARGET_MOTION,
-    PATCH_TARGET_ACCENT,
-    PATCH_PARTS,
+    PATCH_LAYER_BASE,
+    PATCH_LAYER_COLOR,
+    PATCH_LAYER_EXTENT,
+    PATCH_LAYER_MOTION,
+    PATCH_LAYER_ACCENT,
+    PATCH_LAYERS,
     KEYPAD_KEYS,
     SLOT_MAP_LENGTH,
     SYSEX_ID,

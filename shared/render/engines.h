@@ -6,16 +6,16 @@
 
 namespace render {
 
-enum Layer : uint8_t {
-  LAYER_SHAPE = 1,
-  LAYER_FIELD = 2,
-  LAYER_FLOW = 4,
-  LAYER_SCATTER = 8,
+enum Engine : uint8_t {
+  ENGINE_SHAPE = 1,
+  ENGINE_FIELD = 2,
+  ENGINE_FLOW = 4,
+  ENGINE_SCATTER = 8,
 };
 
-uint8_t layerOf(uint8_t cc);
-bool showsLayer(uint8_t cc);
-uint8_t hiddenLayers(const uint8_t *dialed);
+uint8_t engineOf(uint8_t cc);
+bool showsEngine(uint8_t cc);
+uint8_t hiddenEngines(const uint8_t *dialed);
 
 bool fieldActive(const Reading &reading);
 bool flowActive(const Reading &reading);

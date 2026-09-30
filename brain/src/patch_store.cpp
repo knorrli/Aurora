@@ -152,9 +152,9 @@ uint8_t stageHead(uint8_t slot, const uint8_t *head) {
     return SYSEX_OK;
 }
 
-uint8_t stagePart(uint8_t slot, uint8_t part, const uint8_t *cc) {
+uint8_t stageLayer(uint8_t slot, uint8_t layer, const uint8_t *cc) {
     if (!staging) return SYSEX_ERROR_SEQUENCE;
-    if (slot != nextSlot || nextPiece == 0 || part != nextPiece - 1) {
+    if (slot != nextSlot || nextPiece == 0 || layer != nextPiece - 1) {
         return SYSEX_ERROR_SEQUENCE;
     }
 
@@ -164,7 +164,7 @@ uint8_t stagePart(uint8_t slot, uint8_t part, const uint8_t *cc) {
     }
 
     nextPiece++;
-    if (nextPiece > AURORA_PATCH_PARTS) {
+    if (nextPiece > AURORA_PATCH_LAYERS) {
         nextPiece = 0;
         nextSlot  = filledFrom(stageMap, (uint16_t)nextSlot + 1);
     }
@@ -210,10 +210,10 @@ bool readHead(uint8_t slot, uint8_t *out) {
     return readAt(slot, 0, out, AURORA_PATCH_HEAD_LENGTH);
 }
 
-bool readPart(uint8_t slot, uint8_t part, uint8_t *out) {
-    if (part >= AURORA_PATCH_PARTS) return false;
+bool readLayer(uint8_t slot, uint8_t layer, uint8_t *out) {
+    if (layer >= AURORA_PATCH_LAYERS) return false;
     const uint32_t offset = AURORA_PATCH_HEAD_LENGTH
-                          + (uint32_t)part * AURORA_PATCH_CC_COUNT;
+                          + (uint32_t)layer * AURORA_PATCH_CC_COUNT;
     return readAt(slot, offset, out, AURORA_PATCH_CC_COUNT);
 }
 

@@ -27,9 +27,9 @@
       lines.push('    {');
       lines.push(`      "slot": ${patch.slot}, "name": ${JSON.stringify(patch.name)},`);
       lines.push(`      "transitionTime": ${patch.transitionTime}, "accentTime": ${patch.accentTime},`);
-      lines.push('      "parts": [');
-      patch.parts.forEach((part, partIndex) =>
-        lines.push(`        [${part.join(',')}]${partIndex < patch.parts.length - 1 ? ',' : ''}`));
+      lines.push('      "layers": [');
+      patch.layers.forEach((layer, layerIndex) =>
+        lines.push(`        [${layer.join(',')}]${layerIndex < patch.layers.length - 1 ? ',' : ''}`));
       lines.push('      ]');
       lines.push(`    }${index < file.patches.length - 1 ? ',' : ''}`);
     });
@@ -45,15 +45,15 @@
     if (!isSevenBit(patch.transitionTime) || !isSevenBit(patch.accentTime)) {
       return `${where} needs a transition time and an accent time of 0–127`;
     }
-    if (!Array.isArray(patch.parts) || patch.parts.length !== Protocol.PATCH_PARTS) {
-      return `${where} has ${patch.parts && patch.parts.length} parts, expected ${Protocol.PATCH_PARTS}`;
+    if (!Array.isArray(patch.layers) || patch.layers.length !== Protocol.PATCH_LAYERS) {
+      return `${where} has ${patch.layers && patch.layers.length} layers, expected ${Protocol.PATCH_LAYERS}`;
     }
-    for (let part = 0; part < Protocol.PATCH_PARTS; part++) {
-      const bytes = patch.parts[part];
+    for (let layer = 0; layer < Protocol.PATCH_LAYERS; layer++) {
+      const bytes = patch.layers[layer];
       if (!Array.isArray(bytes) || bytes.length !== Protocol.PATCH_CC_COUNT) {
-        return `${where} part ${part} is not ${Protocol.PATCH_CC_COUNT} bytes`;
+        return `${where} layer ${layer} is not ${Protocol.PATCH_CC_COUNT} bytes`;
       }
-      if (!bytes.every(isSevenBit)) return `${where} part ${part} holds something that is not a 7-bit value`;
+      if (!bytes.every(isSevenBit)) return `${where} layer ${layer} holds something that is not a 7-bit value`;
     }
     return null;
   }

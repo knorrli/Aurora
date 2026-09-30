@@ -155,7 +155,7 @@
 
     sendPatch(patch) {
       this.sendSysEx(TYPE.patchHead, [patch.slot, ...LibraryFile.headBytes(patch)]);
-      patch.parts.forEach((bytes, part) => this.sendSysEx(TYPE.patchPart, [patch.slot, part, ...bytes]));
+      patch.layers.forEach((bytes, layer) => this.sendSysEx(TYPE.patchLayer, [patch.slot, layer, ...bytes]));
     }
 
     commit() { return this.request(TYPE.syncCommit); }
@@ -204,15 +204,15 @@
       this.sendSysEx(TYPE.queryPatch, [slot]);
       const first = await head;
       if (refused(first)) return { status: first.payload[1] };
-      const parts = [];
-      for (let part = 0; part < Protocol.PATCH_PARTS; part++) {
-        const message = await answer(TYPE.patchPartOut);
+      const layers = [];
+      for (let layer = 0; layer < Protocol.PATCH_LAYERS; layer++) {
+        const message = await answer(TYPE.patchLayerOut);
         if (refused(message)) return { status: message.payload[1] };
-        parts.push(message.payload.slice(2));
+        layers.push(message.payload.slice(2));
       }
       return {
         head: first.payload.slice(1),
-        patch: Object.assign({ slot }, LibraryFile.patchFromHead(first.payload.slice(1)), { parts }),
+        patch: Object.assign({ slot }, LibraryFile.patchFromHead(first.payload.slice(1)), { layers }),
       };
     }
 

@@ -169,7 +169,7 @@
 
   function replaceLibrary(file) {
     session.library = Library.libraryFromFile(file);
-    session.partIndex = Protocol.PATCH_BASE;
+    session.layerIndex = Protocol.PATCH_LAYER_BASE;
     session.saveLibrary();
     showFirstOrNew();
   }

@@ -111,7 +111,7 @@
   function paintButtons(buttons, route) {
     const bypassed = session.routeBypassed(route);
     buttons.bypass.classList.toggle('on', bypassed);
-    buttons.remove.disabled = session.isTarget();
+    buttons.remove.disabled = session.isAboveBase();
     return bypassed;
   }
 
@@ -135,7 +135,7 @@
 
   function paintArpRow(row, route, live) {
     row.root.hidden = !Patch.arpCapable(panel.target);
-    row.root.classList.toggle('locked', session.isTarget());
+    row.root.classList.toggle('locked', session.isAboveBase());
     const arp = Protocol.routeArp(live[route.destination]);
     for (const [option, button] of row.buttons) button.classList.toggle('on', option === arp);
   }

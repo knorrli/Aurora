@@ -13,9 +13,9 @@
     library: null,
     slot: null,
     draft: null,
-    partIndex: Protocol.PATCH_BASE,
+    layerIndex: Protocol.PATCH_LAYER_BASE,
     transition: { position: 1, from: null },
-    mix: Object.fromEntries(Patch.TARGETS.map(part => [part, 0])),
+    mix: Object.fromEntries(Patch.LAYERS_ABOVE_BASE.map(layer => [layer, 0])),
     bypassedRoutes: new Set(),
     bypassedCards: new Set(),
     onChange: null,
@@ -84,8 +84,8 @@
 
   const patch = () => session.draft || session.library.slots[session.slot];
   const patchAt = slot => (slot === session.slot && session.draft ? session.draft : session.library.slots[slot]) || null;
-  const isTarget = () => Patch.isTarget(session.partIndex);
-  const overrides = () => patch().overrides[session.partIndex] || {};
+  const isAboveBase = () => Patch.isAboveBase(session.layerIndex);
+  const overrides = () => patch().overrides[session.layerIndex] || {};
 
   function editing() {
     if (!session.draft) {
@@ -100,28 +100,28 @@
     return from === null || from === session.slot ? null : patchAt(from);
   }
 
-  const heldAt = () => (session.partIndex === Protocol.PATCH_TARGET_ACCENT ? comingFrom() : null);
+  const heldAt = () => (session.layerIndex === Protocol.PATCH_LAYER_ACCENT ? comingFrom() : null);
 
   const switchSource = () => (heldAt() || patch()).base;
 
   const mixing = () => Object.values(session.mix).some(position => position > 0);
-  const transitioning = () => !isTarget() && !!comingFrom() && session.transition.position < 1;
+  const transitioning = () => !isAboveBase() && !!comingFrom() && session.transition.position < 1;
 
   function liveNamed() {
     const current = patch();
     const position = session.transition.position;
-    if (isTarget()) {
-      return Library.blend(current.base, Library.partBytes(current, session.partIndex), position, switchSource());
+    if (isAboveBase()) {
+      return Library.blend(current.base, Library.layerBytes(current, session.layerIndex), position, switchSource());
     }
     if (transitioning()) return Library.blend(comingFrom().base, current.base, position, comingFrom().base);
     if (mixing()) {
-      return Library.mix(current, Object.entries(session.mix).map(([part, amount]) => [+part, amount]));
+      return Library.mix(current, Object.entries(session.mix).map(([layer, amount]) => [+layer, amount]));
     }
     return Library.namedFromBytes(current.base);
   }
 
-  const targetNamed = () =>
-    Library.blend(patch().base, Library.partBytes(patch(), session.partIndex), 1, switchSource());
+  const layerNamed = () =>
+    Library.blend(patch().base, Library.layerBytes(patch(), session.layerIndex), 1, switchSource());
 
   function changed() {
     saveDraftSoon();
@@ -130,8 +130,8 @@
 
   function write(name, value) {
     const current = editing();
-    const over = current.overrides[session.partIndex];
-    if (!isTarget() || Patch.isSwitch(name)) {
+    const over = current.overrides[session.layerIndex];
+    if (!isAboveBase() || Patch.isSwitch(name)) {
       Library.writeCC(current.base, name, value);
     } else if (Patch.clampToSevenBits(value) === (current.base[Patch.CC[name]] | 0)) {
       delete over[name];
@@ -153,8 +153,8 @@
   }
 
   function resetNames(names) {
-    if (isTarget()) {
-      const over = editing().overrides[session.partIndex];
+    if (isAboveBase()) {
+      const over = editing().overrides[session.layerIndex];
       for (const name of names) if (!Patch.isSwitch(name)) delete over[name];
       changed();
     } else {
@@ -227,8 +227,8 @@
     saveDraft();
   }
 
-  function selectPart(partIndex) {
-    session.partIndex = partIndex;
+  function selectLayer(layerIndex) {
+    session.layerIndex = layerIndex;
     if (session.transition.from === null) session.transition.from = session.slot;
     resetPreview();
   }
@@ -239,7 +239,7 @@
 
   function resetPreview() {
     resetTransition();
-    for (const part of Object.keys(session.mix)) session.mix[part] = 0;
+    for (const layer of Object.keys(session.mix)) session.mix[layer] = 0;
   }
 
   function forgetMissingPatches() {
@@ -249,11 +249,11 @@
 
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
-    patch, patchAt, isTarget, overrides, editing, comingFrom, heldAt,
+    patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
     mixing, transitioning,
-    liveNamed, targetNamed, setValue, resetNames, changed,
+    liveNamed, layerNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    freeRoute, addRoute, setRouteArp, select, selectPart, resetTransition, resetPreview, forgetMissingPatches,
+    freeRoute, addRoute, setRouteArp, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });

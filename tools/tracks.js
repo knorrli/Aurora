@@ -27,10 +27,10 @@
 
   const offset = (at, pixels) => `calc(${at} + ${pixels}px)`;
 
-  const pointLayer = at => stops(['transparent', '0%', offset(at, -1)], ['var(--bg)', offset(at, -1), offset(at, 1)],
+  const pointBackground = at => stops(['transparent', '0%', offset(at, -1)], ['var(--bg)', offset(at, -1), offset(at, 1)],
                                  ['transparent', offset(at, 1), '100%']);
 
-  const markLayer = at => stops(['transparent', '0%', offset(at, -2)], ['var(--bg)', offset(at, -2), offset(at, -1)],
+  const markBackground = at => stops(['transparent', '0%', offset(at, -2)], ['var(--bg)', offset(at, -2), offset(at, -1)],
                                 ['#fff', offset(at, -1), offset(at, 1)], ['var(--bg)', offset(at, 1), offset(at, 2)],
                                 ['transparent', offset(at, 2), '100%']);
 
@@ -68,26 +68,26 @@
   }
 
   function paintTrack(input, swing, points, circular, band) {
-    const layers = [];
+    const backgrounds = [];
     const marks = band ? band.marks : swing ? swing.marks : [];
-    for (const value of marks) layers.push(markLayer(along(input, value)));
-    for (const value of points) layers.push(pointLayer(along(input, value)));
+    for (const value of marks) backgrounds.push(markBackground(along(input, value)));
+    for (const value of points) backgrounds.push(pointBackground(along(input, value)));
     if (swing) {
       for (const [low, high] of swing.spans) {
         const from = reaching(input, low), to = reaching(input, high);
-        layers.push(stops(['transparent', '0%', from], ['var(--lfo)', from, to], ['transparent', to, '100%']));
+        backgrounds.push(stops(['transparent', '0%', from], ['var(--lfo)', from, to], ['transparent', to, '100%']));
       }
     }
     if (band) {
       for (const [low, high] of band.spans) {
         const from = reaching(input, low), to = reaching(input, high);
-        layers.push(stops(['transparent', '0%', from], ['var(--color)', from, to], ['transparent', to, '100%']));
+        backgrounds.push(stops(['transparent', '0%', from], ['var(--color)', from, to], ['transparent', to, '100%']));
       }
     }
     const at = reaching(input, +input.value);
-    layers.push(circular ? stops(['var(--rest)', '0%', '100%'])
+    backgrounds.push(circular ? stops(['var(--rest)', '0%', '100%'])
                          : stops(['var(--fill)', '0%', at], ['var(--rest)', at, '100%']));
-    const track = layers.join(', ');
+    const track = backgrounds.join(', ');
     if (input.dataset.track !== track) {
       input.dataset.track = track;
       input.style.setProperty('--track', track);

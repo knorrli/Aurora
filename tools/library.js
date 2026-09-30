@@ -35,8 +35,8 @@
 
   const writeCC = (bytes, name, value) => { bytes[Patch.CC[name]] = Patch.clampToSevenBits(value); };
 
-  const emptyOverrides = () => Array.from({ length: Protocol.PATCH_PARTS },
-    (_, part) => (Patch.isTarget(part) ? {} : null));
+  const emptyOverrides = () => Array.from({ length: Protocol.PATCH_LAYERS },
+    (_, layer) => (Patch.isAboveBase(layer) ? {} : null));
 
   const newPatch = name => ({
     name: LibraryFile.printableName(name || 'untitled'),
@@ -54,14 +54,14 @@
     overrides: patch.overrides.map(over => (over ? Object.assign({}, over) : null)),
   });
 
-  function partBytes(patch, part) {
+  function layerBytes(patch, layer) {
     const bytes = patch.base.slice();
-    for (const [name, value] of Object.entries(patch.overrides[part] || {})) writeCC(bytes, name, value);
+    for (const [name, value] of Object.entries(patch.overrides[layer] || {})) writeCC(bytes, name, value);
     return bytes;
   }
 
-  const overriddenIn = (patch, part) => Object.keys(patch.overrides[part] || {});
-  const changedIn = (patch, part) => Object.entries(patch.overrides[part] || {})
+  const overriddenIn = (patch, layer) => Object.keys(patch.overrides[layer] || {});
+  const changedIn = (patch, layer) => Object.entries(patch.overrides[layer] || {})
     .filter(([name, value]) => value !== byteOf(patch.base, name)).map(([name]) => name);
 
   function freeRoute(patch, route) {
@@ -86,34 +86,34 @@
     return named;
   }
 
-  function unseenLayers(fromBytes, toBytes) {
+  function unseenEngines(fromBytes, toBytes) {
     const preview = global.AuroraPreview;
-    if (!preview.hiddenLayers) return { appearing: 0, vanishing: 0, layerOf: () => 0, shows: () => true };
-    const hiddenFrom = preview.hiddenLayers(fromBytes);
-    const hiddenTo = preview.hiddenLayers(toBytes);
+    if (!preview.hiddenEngines) return { appearing: 0, vanishing: 0, engineOf: () => 0, shows: () => true };
+    const hiddenFrom = preview.hiddenEngines(fromBytes);
+    const hiddenTo = preview.hiddenEngines(toBytes);
     return {
       appearing: hiddenFrom & ~hiddenTo,
       vanishing: hiddenTo & ~hiddenFrom,
-      layerOf: name => preview.layerOf(Patch.CC[name]),
-      shows: name => preview.showsLayer(Patch.CC[name]),
+      engineOf: name => preview.engineOf(Patch.CC[name]),
+      shows: name => preview.showsEngine(Patch.CC[name]),
     };
   }
 
   function blend(fromBytes, toBytes, position, switchesFrom) {
     const switches = switchesFrom || fromBytes;
-    const unseen = unseenLayers(fromBytes, toBytes);
+    const unseen = unseenEngines(fromBytes, toBytes);
     const named = {};
     for (const name of Patch.CONTINUOUS) {
       const from = byteOf(fromBytes, name), to = byteOf(toBytes, name);
-      const layer = unseen.shows(name) ? 0 : unseen.layerOf(name);
-      if (layer & unseen.appearing) named[name] = to;
-      else if ((layer & unseen.vanishing) && position < 1) named[name] = from;
+      const engine = unseen.shows(name) ? 0 : unseen.engineOf(name);
+      if (engine & unseen.appearing) named[name] = to;
+      else if ((engine & unseen.vanishing) && position < 1) named[name] = from;
       else named[name] = settle(name, from + distance(name, from, to) * position);
     }
     switchesInto(named, switches);
     if (switches === fromBytes) {
       for (const name of Patch.NAMES) {
-        if (Patch.isSwitch(name) && (unseen.layerOf(name) & unseen.appearing)) named[name] = byteOf(toBytes, name);
+        if (Patch.isSwitch(name) && (unseen.engineOf(name) & unseen.appearing)) named[name] = byteOf(toBytes, name);
       }
     }
     return holdRoutesChangingDestination(named, switches, toBytes);
@@ -124,8 +124,8 @@
     for (const name of Patch.CONTINUOUS) {
       const from = byteOf(patch.base, name);
       let value = from;
-      for (const [part, position] of positions) {
-        const over = patch.overrides[part];
+      for (const [layer, position] of positions) {
+        const over = patch.overrides[layer];
         if (position && over && over[name] !== undefined) value += position * distance(name, from, over[name]);
       }
       named[name] = settle(name, value);
@@ -141,7 +141,7 @@
     for (const name of Patch.NAMES) writeCC(patch.base, name, named[name]);
   }
 
-  function keepAsPart(patch, part, named) {
+  function keepAsLayer(patch, layer, named) {
     const free = freeRouteFields(patch.base);
     const over = {};
     const leftOnBase = [];
@@ -153,24 +153,24 @@
         over[name] = value;
       }
     }
-    patch.overrides[part] = over;
+    patch.overrides[layer] = over;
     return leftOnBase;
   }
 
-  const clearPart = (patch, part) => { patch.overrides[part] = {}; };
+  const clearLayer = (patch, layer) => { patch.overrides[layer] = {}; };
 
   const patchToFile = patch => ({
     name: patch.name,
     transitionTime: patch.transitionTime,
     accentTime: patch.accentTime,
-    parts: Array.from({ length: Protocol.PATCH_PARTS }, (_, part) => partBytes(patch, part)),
+    layers: Array.from({ length: Protocol.PATCH_LAYERS }, (_, layer) => layerBytes(patch, layer)),
   });
 
   function patchFromFile(filePatch) {
-    const base = filePatch.parts[Protocol.PATCH_BASE].slice();
+    const base = filePatch.layers[Protocol.PATCH_LAYER_BASE].slice();
     const freeFields = freeRouteFields(base);
-    const overrides = filePatch.parts.map((bytes, part) => {
-      if (!Patch.isTarget(part)) return null;
+    const overrides = filePatch.layers.map((bytes, layer) => {
+      if (!Patch.isAboveBase(layer)) return null;
       const over = {};
       for (const name of Patch.CONTINUOUS) {
         if (!freeFields.has(name) && byteOf(bytes, name) !== byteOf(base, name)) over[name] = byteOf(bytes, name);
@@ -187,11 +187,11 @@
   }
 
   function destinationFault(filePatch, where) {
-    for (const [part, bytes] of filePatch.parts.entries()) {
+    for (const [layer, bytes] of filePatch.layers.entries()) {
       for (const route of Patch.ROUTES) {
         const destination = byteOf(bytes, route.destination);
         if (!Patch.routableDestination(destination)) {
-          return `${where} part ${part}: ${route.name} aims at CC ${destination}, which no route can move`;
+          return `${where} layer ${layer}: ${route.name} aims at CC ${destination}, which no route can move`;
         }
       }
     }
@@ -234,8 +234,8 @@
 
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
-    newPatch, clonePatch, partBytes, overriddenIn, changedIn, freeRoute,
-    blend, mix, keepAsBase, keepAsPart, clearPart,
+    newPatch, clonePatch, layerBytes, overriddenIn, changedIn, freeRoute,
+    blend, mix, keepAsBase, keepAsLayer, clearLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, libraryToFile, libraryFromFile, newLibrary,
   };

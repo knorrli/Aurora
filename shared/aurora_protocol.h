@@ -321,7 +321,7 @@ static const uint8_t AURORA_SYSEX_FRAME_LENGTH  = AURORA_SYSEX_HEADER_LENGTH + 1
 enum AuroraSysEx : uint8_t {
     SYSEX_SYNC_BEGIN     = 0x01,
     SYSEX_PATCH_HEAD     = 0x02,
-    SYSEX_PATCH_PART     = 0x03,
+    SYSEX_PATCH_LAYER     = 0x03,
     SYSEX_SYNC_COMMIT    = 0x04,
     SYSEX_SYNC_ABORT     = 0x05,
     SYSEX_QUERY_LIBRARY  = 0x06,
@@ -330,7 +330,7 @@ enum AuroraSysEx : uint8_t {
     SYSEX_ACK            = 0x40,
     SYSEX_LIBRARY_INFO   = 0x41,
     SYSEX_PATCH_HEAD_OUT = 0x42,
-    SYSEX_PATCH_PART_OUT = 0x43,
+    SYSEX_PATCH_LAYER_OUT = 0x43,
 };
 
 enum AuroraSysExStatus : uint8_t {
@@ -360,19 +360,19 @@ static inline bool aurora_slot_filled(const uint8_t *map, uint8_t slot) {
     return (map[slot / 7] >> (slot % 7)) & 1;
 }
 
-enum AuroraPatchPart : uint8_t {
-    PATCH_BASE          = 0,
-    PATCH_TARGET_COLOR  = 1,
-    PATCH_TARGET_EXTENT = 2,
-    PATCH_TARGET_MOTION = 3,
-    PATCH_TARGET_ACCENT = 4,
-    AURORA_PATCH_PARTS  = 5,
+enum AuroraPatchLayer : uint8_t {
+    PATCH_LAYER_BASE          = 0,
+    PATCH_LAYER_COLOR  = 1,
+    PATCH_LAYER_EXTENT = 2,
+    PATCH_LAYER_MOTION = 3,
+    PATCH_LAYER_ACCENT = 4,
+    AURORA_PATCH_LAYERS  = 5,
 };
 
 static const uint8_t AURORA_PATCH_HEAD_LENGTH = 4 + AURORA_PATCH_NAME_LENGTH;
 
 static const uint16_t AURORA_PATCH_LENGTH =
-    AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_PARTS * AURORA_PATCH_CC_COUNT;
+    AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT;
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
 #define AURORA_PROTOCOL_VERSION_MINOR 15

@@ -16,17 +16,17 @@
   let animationFrame = null;
 
   const MIX_CONTROLS = {
-    [Protocol.PATCH_TARGET_COLOR]: 'faderColor',
-    [Protocol.PATCH_TARGET_MOTION]: 'faderMotion',
-    [Protocol.PATCH_TARGET_EXTENT]: 'faderExtent',
-    [Protocol.PATCH_TARGET_ACCENT]: 'keyHeld',
+    [Protocol.PATCH_LAYER_COLOR]: 'faderColor',
+    [Protocol.PATCH_LAYER_MOTION]: 'faderMotion',
+    [Protocol.PATCH_LAYER_EXTENT]: 'faderExtent',
+    [Protocol.PATCH_LAYER_ACCENT]: 'keyHeld',
   };
 
   const percentOf = position => Math.round(position * 100) + '%';
 
-  function changesText(part) {
-    const count = Library.changedIn(session.patch(), part).length;
-    if (!count) return Library.overriddenIn(session.patch(), part).length ? 'same as base' : 'no changes';
+  function changesText(layer) {
+    const count = Library.changedIn(session.patch(), layer).length;
+    if (!count) return Library.overriddenIn(session.patch(), layer).length ? 'same as base' : 'no changes';
     return `${count} change${count === 1 ? '' : 's'}`;
   }
 
@@ -98,25 +98,25 @@
 
   function showingText() {
     const position = session.transition.position;
-    if (session.isTarget()) return `${Patch.PART_NAMES[session.partIndex]} ${percentOf(position)}`;
+    if (session.isAboveBase()) return `${Patch.LAYER_NAMES[session.layerIndex]} ${percentOf(position)}`;
     if (session.transitioning()) return `from "${session.comingFrom().name}" ${percentOf(position)}`;
     if (session.mixing()) {
       return Object.entries(session.mix).filter(([, amount]) => amount > 0)
-        .map(([part, amount]) => `${Patch.PART_NAMES[part]} ${percentOf(amount)}`).join(' + ');
+        .map(([layer, amount]) => `${Patch.LAYER_NAMES[layer]} ${percentOf(amount)}`).join(' + ');
     }
     return 'the patch';
   }
 
-  function clearPart() {
-    const part = session.partIndex;
-    Library.clearPart(session.editing(), part);
+  function clearLayer() {
+    const layer = session.layerIndex;
+    Library.clearLayer(session.editing(), layer);
     session.changed();
-    Editor.say(`cleared ${Patch.PART_NAMES[part]}`, 'ok');
+    Editor.say(`cleared ${Patch.LAYER_NAMES[layer]}`, 'ok');
   }
 
   function paintShowing() {
     byId('wallShowing').textContent = showingText();
-    if (bar.clear) bar.clear.disabled = !Library.overriddenIn(session.patch(), session.partIndex).length;
+    if (bar.clear) bar.clear.disabled = !Library.overriddenIn(session.patch(), session.layerIndex).length;
   }
 
   function paintLive() {
@@ -159,7 +159,7 @@
 
   function build() {
     const host = byId('transitionBar');
-    const target = session.isTarget();
+    const aboveBase = session.isAboveBase();
     Object.assign(bar, { run: null, from: null, clear: null });
 
     const scrub = element('div', 'scrub');
@@ -172,21 +172,21 @@
     });
     scrub.appendChild(bar.scrub);
 
-    const heading = element('h2', null, target ? `Base to ${Patch.PART_NAMES[session.partIndex]}` : 'Transition');
-    if (target) {
+    const heading = element('h2', null, aboveBase ? `Base to ${Patch.LAYER_NAMES[session.layerIndex]}` : 'Transition');
+    if (aboveBase) {
       bar.clear = element('button', 'tiny', 'clear');
-      bar.clear.addEventListener('click', clearPart);
+      bar.clear.addEventListener('click', clearLayer);
       heading.appendChild(bar.clear);
     }
     const fields = element('div', 'fields');
     host.replaceChildren(heading, scrub);
-    if (!target) {
+    if (!aboveBase) {
       bar.run = element('button', 'tiny', 'run');
       bar.run.id = 'transitionRun';
       bar.run.addEventListener('click', run);
       scrub.appendChild(bar.run);
     }
-    if (!target || session.partIndex === Protocol.PATCH_TARGET_ACCENT) {
+    if (!aboveBase || session.layerIndex === Protocol.PATCH_LAYER_ACCENT) {
       fields.appendChild(buildFrom());
       host.appendChild(fields);
     }
@@ -197,10 +197,10 @@
 
   function buildMix() {
     const host = byId('mixBar');
-    host.hidden = session.isTarget();
+    host.hidden = session.isAboveBase();
     mixBar.sliders = {};
     mixBar.readouts = {};
-    if (session.isTarget()) {
+    if (session.isAboveBase()) {
       host.replaceChildren();
       return;
     }
@@ -215,39 +215,39 @@
     head.appendChild(allDown);
 
     const rows = element('div', 'mix-rows');
-    for (const part of Patch.TARGETS) {
+    for (const layer of Patch.LAYERS_ABOVE_BASE) {
       const row = element('div', 'row');
-      const label = dom.ccLabeled('label', Patch.PART_NAMES[part], Patch.CC[MIX_CONTROLS[part]]);
+      const label = dom.ccLabeled('label', Patch.LAYER_NAMES[layer], Patch.CC[MIX_CONTROLS[layer]]);
       const track = element('div', 'track');
       const slider = dom.rangeInput(SCRUB_STEPS);
-      slider.id = 'mix' + part;
-      slider.value = Math.round(session.mix[part] * SCRUB_STEPS);
+      slider.id = 'mix' + layer;
+      slider.value = Math.round(session.mix[layer] * SCRUB_STEPS);
       const readout = element('output');
       slider.addEventListener('input', () => {
-        session.mix[part] = +slider.value / SCRUB_STEPS;
-        paintMixReadout(part);
+        session.mix[layer] = +slider.value / SCRUB_STEPS;
+        paintMixReadout(layer);
         paintLive();
       });
       track.append(slider);
       row.append(label, track, readout);
       rows.appendChild(row);
-      mixBar.sliders[part] = slider;
-      mixBar.readouts[part] = readout;
-      paintMixReadout(part);
+      mixBar.sliders[layer] = slider;
+      mixBar.readouts[layer] = readout;
+      paintMixReadout(layer);
     }
     host.replaceChildren(head, rows,
       element('p', 'note', '⚠ The brain does not combine the faders yet — this is the editor’s guess.'));
   }
 
   function paintMix() {
-    for (const [part, slider] of Object.entries(mixBar.sliders)) {
-      slider.value = Math.round(session.mix[part] * SCRUB_STEPS);
-      paintMixReadout(part);
+    for (const [layer, slider] of Object.entries(mixBar.sliders)) {
+      slider.value = Math.round(session.mix[layer] * SCRUB_STEPS);
+      paintMixReadout(layer);
     }
   }
 
-  function paintMixReadout(part) {
-    mixBar.readouts[part].textContent = percentOf(session.mix[part]);
+  function paintMixReadout(layer) {
+    mixBar.readouts[layer].textContent = percentOf(session.mix[layer]);
   }
 
   function rebuild() {

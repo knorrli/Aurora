@@ -162,7 +162,7 @@
     const shape = element('div', 'groups');
     shape.append(...Patch.SHAPE.groups.map(group => buildGroup(group.title, [[null, group.names]])));
     byId('shape').replaceChildren(element('h2', 'shape-name', Patch.SHAPE.name), shape);
-    byId('modulators').replaceChildren(...Patch.MODULATORS.map(buildCard));
+    byId('engines').replaceChildren(...Patch.ENGINES.map(buildCard));
   }
 
   function paintFaderValue(row, live) {
@@ -181,7 +181,7 @@
   function paintFader(row, live, base, overrides) {
     const name = row.control.name;
     paintFaderValue(row, live);
-    const overridden = session.isTarget() && name in overrides && overrides[name] !== base[name];
+    const overridden = session.isAboveBase() && name in overrides && overrides[name] !== base[name];
     row.root.classList.toggle('changed', overridden);
     if (overridden) row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, base[name])} - 1px)`;
     if (row.swatch) row.swatch.style.background = `rgb(${row.control.swatch(live).join(',')})`;
@@ -191,15 +191,15 @@
 
   function paintPick(row, live) {
     const value = live[row.control.name];
-    const target = session.isTarget();
+    const aboveBase = session.isAboveBase();
     for (const [option, button] of row.buttons) button.classList.toggle('on', row.lit(option, value));
     if (row.select) {
       if (+row.select.value !== value) row.select.value = value;
-      row.select.disabled = target;
+      row.select.disabled = aboveBase;
     }
-    row.root.classList.toggle('locked', target);
+    row.root.classList.toggle('locked', aboveBase);
     const held = session.heldAt();
-    row.from.textContent = !target ? '' : held ? `held at "${held.name}"` : 'from the patch';
+    row.from.textContent = !aboveBase ? '' : held ? `held at "${held.name}"` : 'from the patch';
     row.root.classList.toggle('inert', !!(row.control.inertWhen && row.control.inertWhen(live)));
   }
 

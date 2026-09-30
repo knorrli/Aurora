@@ -12,27 +12,27 @@
   const tabs = [];
 
   function buildTabs() {
-    const buttons = Patch.PARTS.map(part => {
+    const buttons = Patch.LAYERS.map(layer => {
       const button = element('button', 'tab');
       const badge = element('span', 'badge');
-      button.append(element('span', null, Patch.PART_NAMES[part]), badge);
-      button.addEventListener('click', () => selectPart(part));
-      tabs.push({ part, button, badge });
+      button.append(element('span', null, Patch.LAYER_NAMES[layer]), badge);
+      button.addEventListener('click', () => selectLayer(layer));
+      tabs.push({ layer, button, badge });
       return button;
     });
-    byId('partTabs').replaceChildren(...buttons);
+    byId('layerTabs').replaceChildren(...buttons);
   }
 
   function paintTabs() {
-    for (const { part, button, badge } of tabs) {
-      button.classList.toggle('on', part === session.partIndex);
-      badge.textContent = Patch.isTarget(part)
-        ? Editor.transition.changesText(part) : '';
+    for (const { layer, button, badge } of tabs) {
+      button.classList.toggle('on', layer === session.layerIndex);
+      badge.textContent = Patch.isAboveBase(layer)
+        ? Editor.transition.changesText(layer) : '';
     }
   }
 
-  function selectPart(part) {
-    session.selectPart(part);
+  function selectLayer(layer) {
+    session.selectLayer(layer);
     Editor.transition.rebuild();
     paint();
     Editor.rail.paintList();
@@ -77,7 +77,7 @@
       byId(field).value = String(Patch.periodValue(Patch.periodStep(patch[field])));
     }
     byId('tempoDivision').value = String(Library.namedFromBytes(patch.base).tempoDivision);
-    const accentReachesNothing = !Library.changedIn(patch, Protocol.PATCH_TARGET_ACCENT).length;
+    const accentReachesNothing = !Library.changedIn(patch, Protocol.PATCH_LAYER_ACCENT).length;
     byId('accentTime').closest('.field').classList.toggle('inert', accentReachesNothing);
   }
 
@@ -142,7 +142,7 @@
     measure();
   }
 
-  Object.assign(Editor, { paint, refresh, show, selectPart });
+  Object.assign(Editor, { paint, refresh, show, selectLayer });
 
   global.AuroraPreview.ready.then(() => {
     session.load();

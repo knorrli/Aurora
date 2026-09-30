@@ -113,13 +113,13 @@
   .field > span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
   .fields input[type=text] { width: 100%; }
 
-  .parts { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
-  .parts .tab {
+  .layers { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+  .layers .tab {
     display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
     padding: 2px 9px; min-width: 0;
   }
-  .parts .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
-  .parts .tab.on .badge { color: var(--bg); }
+  .layers .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
+  .layers .tab.on .badge { color: var(--bg); }
 
   .transition .scrub { display: flex; gap: 9px; align-items: center; }
   .transition .scrub input[type=range] { flex: 1 1 60px; min-width: 60px; }
@@ -333,7 +333,7 @@
         <label class="field"><span>Transition time</span><select id="transitionTime"></select></label>
         <label class="field"><span>Accent time</span><select id="accentTime"></select></label>
       </div>
-      <nav class="parts" id="partTabs"></nav>
+      <nav class="layers" id="layerTabs"></nav>
     </section>
     <section class="panel transition" id="transitionBar"></section>
     <section class="panel" id="mixBar" hidden></section>
@@ -383,7 +383,7 @@
 
       <section class="panel shape" id="shape"></section>
 
-      <div class="cards" id="modulators"></div>
+      <div class="cards" id="engines"></div>
 
     </div>
 
@@ -412,7 +412,7 @@
         <div>
           <div class="compare" id="compare" hidden>
             <figure><canvas id="wallBase"></canvas><figcaption>base</figcaption></figure>
-            <figure><canvas id="wallTarget"></canvas><figcaption id="targetCaption"></figcaption></figure>
+            <figure><canvas id="wallLayer"></canvas><figcaption id="layerCaption"></figcaption></figure>
           </div>
           <div class="rowline">
             <button class="tiny" id="wallFlip">pixel 0 at bottom</button>

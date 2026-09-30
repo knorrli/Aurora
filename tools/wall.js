@@ -92,25 +92,25 @@
     const live = session.liveNamed();
     Editor.routes.paintPlayheads(draw(walls.main, live).lfo, live);
     Editor.tracks.paint();
-    if (session.isTarget()) {
+    if (session.isAboveBase()) {
       Preview.copyMotion(walls.base.motion, walls.main.motion);
-      Preview.copyMotion(walls.target.motion, walls.main.motion);
+      Preview.copyMotion(walls.layer.motion, walls.main.motion);
       draw(walls.base, Library.namedFromBytes(session.patch().base));
-      draw(walls.target, session.targetNamed());
+      draw(walls.layer, session.layerNamed());
     }
     requestAnimationFrame(frame);
   }
 
   function paint() {
-    byId('compare').hidden = !session.isTarget();
-    if (session.isTarget()) byId('targetCaption').textContent = Patch.PART_NAMES[session.partIndex];
+    byId('compare').hidden = !session.isAboveBase();
+    if (session.isAboveBase()) byId('layerCaption').textContent = Patch.LAYER_NAMES[session.layerIndex];
   }
 
   function start() {
     beats.dots = [...document.querySelectorAll('#beats i')];
     walls.main = makeWall('wallMain', 300, 480);
     walls.base = makeWall('wallBase', 150, 240);
-    walls.target = makeWall('wallTarget', 150, 240);
+    walls.layer = makeWall('wallLayer', 150, 240);
 
     byId('wallOrder').value = Preview.WALL_STRIP_ORDER.join(',');
     byId('wallOrder').addEventListener('input', readOrder);
