@@ -40,7 +40,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - The scatter on the strips, and whether spots need to outlive their cell.
 - Play a set to find where the color layer's controls should stop.
 - Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
-- Dial five or six endpoints by eye and save them; nothing about the morph is worth judging before.
+- Dial the starting looks by eye and save them as library patches; nothing about the morph is worth judging before. The old shape, fan, swing and color looks are in `git show 21a435c:tools/patch.js`.
 
 ## Renderer
 
@@ -68,4 +68,3 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 - Let a layer set a "from the patch" switch by writing it into the base layer: setting arp mode while routing PAR hue range on Accent should not need a trip to Base.
 - A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
-- Rebuild starting-point looks on routes, the LFO and the scatter. The old tables (shapes, fan looks, swing looks, color looks) are in `git show 21a435c:tools/patch.js`.
