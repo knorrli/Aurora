@@ -170,7 +170,7 @@ static float totalAt(const WaveIntegral &integral, float phase) {
 }
 
 static float bipolarReach(uint8_t cc, float amount) {
-  return amount * (circular(cc) ? 64.0f : 127.0f);
+  return amount * (circular(cc) ? 128.0f : 127.0f);
 }
 
 static float swingReach(uint8_t cc, float amount) {
