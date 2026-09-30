@@ -249,12 +249,15 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
     return scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s), (uint8_t)baseValue);
   }
 
-  const float spotLight = spot.value * 255.0f * cover;
-  const float baseLight = baseValue * (1.0f - cover);
-  const uint8_t hue = (spotLight >= baseLight) ? (uint8_t)(reading.color.h + lroundf(spot.hue)) : tint.h;
-  const float saturation = (float)tint.s + (spot.saturation * 255.0f - (float)tint.s) * cover;
-  const float value = baseLight + spotLight;
-  return scaleVideo(paletteColor(context.dialed[CC_PALETTE], hue, (uint8_t)saturation), (uint8_t)value);
+  const Rgb base = scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s), (uint8_t)baseValue);
+  const Rgb painted = scaleVideo(
+      paletteColor(context.dialed[CC_PALETTE], (uint8_t)(reading.color.h + lroundf(spot.hue)),
+                   (uint8_t)(spot.saturation * 255.0f)),
+      (uint8_t)(spot.value * 255.0f));
+  const auto mixed = [cover](uint8_t below, uint8_t above) {
+    return (uint8_t)lroundf((float)below + ((float)above - (float)below) * cover);
+  };
+  return { mixed(base.r, painted.r), mixed(base.g, painted.g), mixed(base.b, painted.b) };
 }
 
 static void drawStrip(const FrameContext &context, const StripContext &strip,
