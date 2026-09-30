@@ -142,7 +142,7 @@
     measure();
   }
 
-  Object.assign(Editor, { paint, refresh, show });
+  Object.assign(Editor, { paint, refresh, show, selectPart });
 
   global.AuroraPreview.ready.then(() => {
     session.load();
@@ -157,6 +157,7 @@
     buildTabs();
     buildHead();
     Editor.rail.wire();
+    Editor.keep.wire();
     Editor.midi.wire();
     byId('sendPatch').addEventListener('click', sendPatchToWall);
     wireCCToggle();

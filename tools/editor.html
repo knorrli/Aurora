@@ -128,7 +128,6 @@
   .fields .field.inert > * { opacity: .38; }
   .fields select { width: 100%; }
   .transition .fields { margin-top: 9px; }
-  .transition .target-moves { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-top: 9px; }
 
   #mixBar[hidden] { display: none; }
   #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
@@ -270,6 +269,8 @@
 
   .dock canvas { width: 100%; border-radius: 4px; display: block; background: #0a0b0e; }
   .dockgrid { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .showing-row { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 6px; }
+  .showing-row .showing { margin-top: 0; }
   .showing { text-align: center; color: var(--select); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
   .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .compare[hidden] { display: none; }
@@ -403,7 +404,10 @@
       <div class="dockgrid">
         <div>
           <canvas id="wallMain"></canvas>
-          <p class="showing" id="wallShowing"></p>
+          <div class="showing-row">
+            <p class="showing" id="wallShowing"></p>
+            <select id="keepAs" class="tiny"></select>
+          </div>
         </div>
         <div>
           <div class="compare" id="compare" hidden>
@@ -434,6 +438,7 @@
 <script src="control-rows.js"></script>
 <script src="route-panel.js"></script>
 <script src="transition.js"></script>
+<script src="keep.js"></script>
 <script src="midi-out.js"></script>
 <script src="library-rail.js"></script>
 <script src="wall.js"></script>

@@ -11,7 +11,7 @@
   const SCRUB_STEPS = 1000;
   const SPRING_BACK_MILLISECONDS = 180;
 
-  const bar = { scrub: null, run: null, from: null };
+  const bar = { scrub: null, run: null, from: null, clear: null };
   const mixBar = { sliders: {}, readouts: {} };
   let animationFrame = null;
 
@@ -107,8 +107,16 @@
     return 'the patch';
   }
 
+  function clearPart() {
+    const part = session.partIndex;
+    Library.clearPart(session.editing(), part);
+    session.changed();
+    Editor.say(`cleared ${Patch.PART_NAMES[part]}`, 'ok');
+  }
+
   function paintShowing() {
     byId('wallShowing').textContent = showingText();
+    if (bar.clear) bar.clear.disabled = !Library.overriddenIn(session.patch(), session.partIndex).length;
   }
 
   function paintLive() {
@@ -149,56 +157,10 @@
     return labeledField('from', select);
   }
 
-  function targetMoves() {
-    const moves = element('div', 'target-moves');
-    const others = Patch.TARGETS.filter(part => part !== session.partIndex);
-    const picker = (text, act) => {
-      const select = element('select');
-      dom.setOptions(select, [['', text], ...others.map(part => [part, Patch.PART_NAMES[part]])], '');
-      select.addEventListener('change', () => {
-        if (select.value === '') return;
-        act(+select.value);
-        select.value = '';
-        session.changed();
-      });
-      const field = element('label', 'field');
-      field.appendChild(select);
-      return field;
-    };
-    const take = element('button', 'tiny', 'take the base’s changes');
-    take.addEventListener('click', takeBaseChanges);
-    const here = session.partIndex;
-    moves.append(
-      take,
-      picker('copy from…', from => Library.copyOverrides(session.editing(), from, here)),
-      picker('move onto…', to => Library.moveOverrides(session.editing(), here, to, false)),
-      picker('swap with…', to => Library.moveOverrides(session.editing(), here, to, true)));
-    return moves;
-  }
-
-  function takeBaseChanges() {
-    const saved = session.slot !== null ? session.library.slots[session.slot] : null;
-    const reference = saved ? saved.base : Library.newPatch().base;
-    const { moved, kept } = Library.takeBaseChanges(session.editing(), reference, session.partIndex);
-    if (!moved.length && !kept.length) {
-      Editor.say('the base has no changes to take', 'bad');
-      return;
-    }
-    session.changed();
-    const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
-    const took = `${Patch.PART_NAMES[session.partIndex]} took ${plural(moved.length, 'change')} from the base`;
-    if (!kept.length) {
-      Editor.say(took, 'ok');
-      return;
-    }
-    const labels = kept.map(name => (Patch.CONTROLS[name] ? Patch.CONTROLS[name].label : name)).join(', ');
-    Editor.say(`${took}; ${labels} stay${kept.length === 1 ? 's' : ''} on the base — switches belong to the whole patch`, 'warn');
-  }
-
   function build() {
     const host = byId('transitionBar');
     const target = session.isTarget();
-    Object.assign(bar, { run: null, from: null });
+    Object.assign(bar, { run: null, from: null, clear: null });
 
     const scrub = element('div', 'scrub');
     bar.scrub = dom.rangeInput(SCRUB_STEPS);
@@ -208,10 +170,14 @@
       session.transition.position = +bar.scrub.value / SCRUB_STEPS;
       paintLive();
     });
-    bar.scrub.addEventListener('change', springBack);
     scrub.appendChild(bar.scrub);
 
     const heading = element('h2', null, target ? `Base to ${Patch.PART_NAMES[session.partIndex]}` : 'Transition');
+    if (target) {
+      bar.clear = element('button', 'tiny', 'clear');
+      bar.clear.addEventListener('click', clearPart);
+      heading.appendChild(bar.clear);
+    }
     const fields = element('div', 'fields');
     host.replaceChildren(heading, scrub);
     if (!target) {
@@ -224,7 +190,6 @@
       fields.appendChild(buildFrom());
       host.appendChild(fields);
     }
-    if (target) host.appendChild(targetMoves());
     showPosition();
     refreshPatchChoices();
     paintShowing();

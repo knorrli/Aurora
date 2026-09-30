@@ -131,29 +131,35 @@
     return switchesInto(named, patch.base);
   }
 
-  function moveOverrides(patch, from, to, swap) {
-    const moving = Object.assign({}, patch.overrides[from]);
-    patch.overrides[from] = swap ? Object.assign({}, patch.overrides[to]) : {};
-    patch.overrides[to] = moving;
-  }
+  const freeRouteFields = base => new Set(Patch.ROUTES
+    .filter(route => !byteOf(base, route.destination))
+    .flatMap(route => route.fields));
 
-  const copyOverrides = (patch, from, to) => {
-    patch.overrides[to] = Object.assign({}, patch.overrides[from]);
-  };
-
-  function takeBaseChanges(patch, reference, to) {
-    const over = patch.overrides[to];
-    const moved = [], kept = [];
-    for (const name of Patch.NAMES) {
-      const now = byteOf(patch.base, name), then = byteOf(reference, name);
-      if (now === then) continue;
-      if (Patch.isSwitch(name)) { kept.push(name); continue; }
-      over[name] = now;
-      writeCC(patch.base, name, then);
-      moved.push(name);
+  function keepAsBase(patch, named) {
+    for (const name of Patch.NAMES) writeCC(patch.base, name, named[name]);
+    for (const over of patch.overrides) {
+      if (!over) continue;
+      for (const name of Object.keys(over)) {
+        if (over[name] === byteOf(patch.base, name)) delete over[name];
+      }
     }
-    return { moved, kept };
   }
+
+  function keepAsPart(patch, part, named) {
+    const free = freeRouteFields(patch.base);
+    const over = {};
+    const leftOnBase = [];
+    for (const name of Patch.NAMES) {
+      const value = Patch.clampToSevenBits(named[name]);
+      if (value === byteOf(patch.base, name)) continue;
+      if (Patch.isSwitch(name) || free.has(name)) leftOnBase.push(name);
+      else over[name] = value;
+    }
+    patch.overrides[part] = over;
+    return leftOnBase;
+  }
+
+  const clearPart = (patch, part) => { patch.overrides[part] = {}; };
 
   const patchToFile = patch => ({
     name: patch.name,
@@ -164,9 +170,7 @@
 
   function patchFromFile(filePatch) {
     const base = filePatch.parts[Protocol.PATCH_BASE].slice();
-    const freeFields = new Set(Patch.ROUTES
-      .filter(route => !byteOf(base, route.destination))
-      .flatMap(route => route.fields));
+    const freeFields = freeRouteFields(base);
     const overrides = filePatch.parts.map((bytes, part) => {
       if (!Patch.isTarget(part)) return null;
       const over = {};
@@ -233,7 +237,7 @@
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
     newPatch, clonePatch, partBytes, overriddenIn, freeRoute,
-    blend, mix, moveOverrides, copyOverrides, takeBaseChanges,
+    blend, mix, keepAsBase, keepAsPart, clearPart,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, libraryToFile, libraryFromFile, newLibrary,
   };
