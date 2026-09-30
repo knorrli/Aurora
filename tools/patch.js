@@ -12,8 +12,9 @@
     'where the Motion fader morphs to. More means faster, harder, more agitated',
     'where holding this patch’s own key pushes. Belongs to no fader',
   ];
-  const TARGETS = [Protocol.PATCH_TARGET_COLOR, Protocol.PATCH_TARGET_EXTENT,
-                   Protocol.PATCH_TARGET_MOTION, Protocol.PATCH_TARGET_ACCENT];
+  const TARGETS = [Protocol.PATCH_TARGET_COLOR, Protocol.PATCH_TARGET_MOTION,
+                   Protocol.PATCH_TARGET_EXTENT, Protocol.PATCH_TARGET_ACCENT];
+  const PARTS = [Protocol.PATCH_BASE, ...TARGETS];
   const isTarget = part => part !== Protocol.PATCH_BASE;
 
   const CC = Object.assign({}, Protocol.CC);
@@ -429,7 +430,7 @@
   }
 
   global.AuroraPatch = {
-    PART_NAMES, PART_BLURBS, TARGETS, isTarget,
+    PART_NAMES, PART_BLURBS, PARTS, TARGETS, isTarget,
     CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT, NEUTRAL,
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,

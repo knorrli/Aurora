@@ -11,24 +11,24 @@
   const tabs = [];
 
   function buildTabs() {
-    const buttons = Patch.PART_NAMES.map((name, part) => {
+    const buttons = Patch.PARTS.map(part => {
       const button = element('button', 'tab');
       const badge = element('span', 'badge');
-      button.append(element('span', null, name), badge);
+      button.append(element('span', null, Patch.PART_NAMES[part]), badge);
       button.title = Patch.PART_BLURBS[part];
       button.addEventListener('click', () => selectPart(part));
-      tabs.push({ button, badge });
+      tabs.push({ part, button, badge });
       return button;
     });
     byId('partTabs').replaceChildren(...buttons);
   }
 
   function paintTabs() {
-    tabs.forEach(({ button, badge }, part) => {
+    for (const { part, button, badge } of tabs) {
       button.classList.toggle('on', part === session.partIndex);
       badge.textContent = Patch.isTarget(part)
         ? Editor.transition.overriddenText(part, 'follows the patch') : 'the look itself';
-    });
+    }
   }
 
   function selectPart(part) {
