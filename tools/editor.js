@@ -106,6 +106,30 @@
     Editor.say(`sent "${session.patch().name}"`);
   }
 
+  const STORE_SHOW_CC = 'aurora.editor.showCC';
+
+  function showCC(shown) {
+    document.body.classList.toggle('show-cc', shown);
+    byId('ccToggle').classList.toggle('on', shown);
+    try {
+      localStorage.setItem(STORE_SHOW_CC, JSON.stringify(shown));
+    } catch {
+      return;
+    }
+  }
+
+  function wireCCToggle() {
+    let stored = false;
+    try {
+      stored = JSON.parse(localStorage.getItem(STORE_SHOW_CC)) === true;
+    } catch {
+      stored = false;
+    }
+    showCC(stored);
+    byId('ccToggle').addEventListener('click', () => showCC(!document.body.classList.contains('show-cc')));
+    byId('tempoDivisionCC').textContent = `CC ${Patch.CC.tempoDivision}`;
+  }
+
   function measureTopbar() {
     const topbar = byId('topbar');
     const measure = () => document.documentElement.style
@@ -131,6 +155,7 @@
     Editor.rail.wire();
     Editor.midi.wire();
     byId('sendPatch').addEventListener('click', sendPatchToWall);
+    wireCCToggle();
     measureTopbar();
 
     Editor.wall.start();

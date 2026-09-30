@@ -31,6 +31,12 @@
     return node;
   }
 
+  function ccLabeled(tag, title, number) {
+    const node = labeled(tag, title, `CC ${number}`);
+    node.lastChild.classList.add('cc-number');
+    return node;
+  }
+
   function fillLabeled(node, title, detail) {
     if (node.firstChild.textContent !== title) node.firstChild.textContent = title;
     if (node.lastChild.textContent !== detail) node.lastChild.textContent = detail;
@@ -42,5 +48,5 @@
   }
 
   global.AuroraEditor = global.AuroraEditor || {};
-  global.AuroraEditor.dom = { byId, element, option, rangeInput, labeled, fillLabeled, setOptions };
+  global.AuroraEditor.dom = { byId, element, option, rangeInput, labeled, ccLabeled, fillLabeled, setOptions };
 })(window);

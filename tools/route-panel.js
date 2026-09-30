@@ -81,7 +81,7 @@
 
   function arpRow(route) {
     const root = element('div', 'switch-row');
-    root.append(dom.labeled('label', 'Arp', `CC ${Patch.CC[route.destination]}`));
+    root.append(dom.ccLabeled('label', 'Arp', Patch.CC[route.destination]));
     const picks = element('div', 'picks');
     const buttons = Object.entries(Protocol.ARP).map(([name, arp]) => {
       const button = element('button', null, name);

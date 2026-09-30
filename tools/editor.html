@@ -35,6 +35,7 @@
   p { margin: 0; }
   .note { color: var(--dim); font-size: 11.5px; line-height: 1.5; margin-top: 9px; }
   .cc { color: var(--faint); font-size: 10.5px; letter-spacing: .04em; }
+  body:not(.show-cc) .cc.cc-number { display: none; }
   .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--accent); }
 
   button, select, input[type=text], input[type=number] {
@@ -301,6 +302,7 @@
   </div>
   <p id="status"></p>
   <div class="group">
+    <button id="ccToggle" class="tiny">CC</button>
     <button id="rigBlackout" class="tiny">blackout</button>
   </div>
 </header>
@@ -315,7 +317,7 @@
       </h2>
       <div class="fields">
         <label class="field"><span>Name</span><input type="text" id="patchName"></label>
-        <label class="field"><span>Tempo division</span><select id="tempoDivision"></select></label>
+        <label class="field"><span>Tempo division <span class="cc cc-number" id="tempoDivisionCC"></span></span><select id="tempoDivision"></select></label>
         <label class="field"><span>Transition time</span><select id="transitionTime"></select></label>
         <label class="field"><span>Accent time</span><select id="accentTime"></select></label>
       </div>

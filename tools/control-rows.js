@@ -11,7 +11,7 @@
   const rows = {};
   const cards = [];
 
-  const controlLabel = name => dom.labeled('label', Patch.CONTROLS[name].label, `CC ${Patch.CC[name]}`);
+  const controlLabel = name => dom.ccLabeled('label', Patch.CONTROLS[name].label, Patch.CC[name]);
 
   function faderRow(host, name) {
     const control = Patch.CONTROLS[name];
