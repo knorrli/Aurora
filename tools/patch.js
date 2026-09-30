@@ -96,6 +96,36 @@
   const upTheStrip = at =>
     (at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up');
 
+  const TRAVEL_MARK_BEATS = [0.5, 1, 2, 4, 8, 16];
+
+  function travelPixels(live) {
+    const cellLength = preview().PIXELS / real('shapeCount', live.shapeCount);
+    if (!Protocol.isOn(live.shapeBounce)) return cellLength;
+    return 2 * (1 - real('shapeWidth', live.shapeWidth)) * cellLength;
+  }
+
+  function travelBeats(value, live) {
+    const speed = Math.abs(real('shapeSpeed', value));
+    const pixels = travelPixels(live);
+    return speed > 0 && pixels > 0 ? pixels / speed : null;
+  }
+
+  function travelPoints(live) {
+    const pixels = travelPixels(live);
+    const fastest = Math.abs(real('shapeSpeed', 127));
+    let slowest = 65;
+    while (real('shapeSpeed', slowest) === 0) slowest++;
+    const slowestSpeed = real('shapeSpeed', slowest);
+    const points = [64];
+    for (const beats of TRAVEL_MARK_BEATS) {
+      const speed = pixels / beats;
+      if (speed > fastest || speed < slowestSpeed) continue;
+      const reach = 63 * Math.sqrt(speed / fastest);
+      points.push(64 - reach, 64 + reach);
+    }
+    return points;
+  }
+
   const READOUTS = {
     shapeWidth: value => percent(real('shapeWidth', value)),
     shapeEdge: value => percent(real('shapeEdge', value)) + ' of the gap',
@@ -105,9 +135,12 @@
     },
     shapeCount: value => real('shapeCount', value) + ' shapes',
     shapePosition: value => upTheStrip(real('shapePosition', value)),
-    shapeSpeed: value => {
-      const speed = real('shapeSpeed', value);
-      return sign(speed) + Math.abs(speed).toFixed(1) + ' px/beat';
+    shapeSpeed: (value, live) => {
+      const beats = travelBeats(value, live);
+      if (beats === null) return 'still';
+      const every = beats.toFixed(beats < 10 ? 2 : beats < 100 ? 1 : 0) + ' beats';
+      if (Protocol.isOn(live.shapeBounce)) return 'up and back every ' + every;
+      return (real('shapeSpeed', value) > 0 ? 'up' : 'down') + ', repeats every ' + every;
     },
     shapeBend: value => signed(real('shapeBend', value)) + ' bent',
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
@@ -435,6 +468,6 @@
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
     SHAPE, LFO, MODULATORS, OUTPUTS, ROUTES, PLACES, cardNames,
-    routable, routableDestination, arpCapable, isCircular, swings, pointsFor,
+    routable, routableDestination, arpCapable, isCircular, swings, pointsFor, travelPoints,
   };
 })(window);

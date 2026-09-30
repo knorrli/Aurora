@@ -95,6 +95,7 @@
   }
 
   function paint() {
+    const live = Editor.session.liveNamed();
     for (const input of document.querySelectorAll('input[type=range]')) {
       const row = Editor.rows.rows[input.closest('.row') && input.closest('.row').dataset.name];
       if (!row) {
@@ -102,7 +103,8 @@
         continue;
       }
       const name = row.control.name;
-      paintTrack(input, swingOf(name), row.points, row.circular, name === 'parHueOffset' ? hueBandOf(input) : null);
+      const points = name === 'shapeSpeed' ? Patch.travelPoints(live) : row.points;
+      paintTrack(input, swingOf(name), points, row.circular, name === 'parHueOffset' ? hueBandOf(input) : null);
     }
   }
 

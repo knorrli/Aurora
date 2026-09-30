@@ -54,7 +54,7 @@
     const readout = Patch.READOUTS[name];
     let longest = '';
     for (let value = 0; value < 128 && readout; value++) {
-      const text = readout(value);
+      const text = readout(value, Patch.DEFAULT);
       if (text.length > longest.length) longest = text;
     }
     return longest;
@@ -167,15 +167,16 @@
     byId('modulators').replaceChildren(...Patch.MODULATORS.map(buildCard));
   }
 
-  function paintFaderValue(row, value) {
+  function paintFaderValue(row, live) {
+    const value = live[row.control.name];
     if (+row.slider.value !== value) row.slider.value = value;
     const readout = Patch.READOUTS[row.control.name];
-    dom.fillLabeled(row.now, String(value), readout ? readout(value) : '');
+    dom.fillLabeled(row.now, String(value), readout ? readout(value, live) : '');
   }
 
   function paintFaderValues(live) {
     for (const row of Object.values(rows)) {
-      if (row.kind === 'fader') paintFaderValue(row, live[row.control.name]);
+      if (row.kind === 'fader') paintFaderValue(row, live);
     }
   }
 
@@ -189,7 +190,7 @@
 
   function paintFader(row, live, base, overrides) {
     const name = row.control.name;
-    paintFaderValue(row, live[name]);
+    paintFaderValue(row, live);
     const overridden = session.isTarget() && name in overrides;
     row.root.classList.toggle('changed', overridden);
     if (overridden) row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, base[name])} - 1px)`;
