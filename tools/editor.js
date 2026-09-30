@@ -15,7 +15,6 @@
       const button = element('button', 'tab');
       const badge = element('span', 'badge');
       button.append(element('span', null, Patch.PART_NAMES[part]), badge);
-      button.title = Patch.PART_BLURBS[part];
       button.addEventListener('click', () => selectPart(part));
       tabs.push({ part, button, badge });
       return button;
@@ -45,7 +44,6 @@
     for (const field of TIME_FIELDS) {
       const select = byId(field);
       dom.setOptions(select, Patch.LFO_PERIOD_NAMES.map((text, step) => [Patch.periodValue(step), text]), '');
-      select.title = 'Stepped to values that come back to the grid, so holding through a completed transition arrives on a beat.';
       select.addEventListener('change', () => {
         session.editing()[field] = +select.value;
         session.changed();
@@ -54,7 +52,6 @@
 
     const tempo = byId('tempoDivision');
     dom.setOptions(tempo, Patch.TEMPO_DIVISIONS, Protocol.TEMPO_DIVISION.quarter);
-    tempo.title = `What one tempo pulse stands for. Every rate scales with it. CC ${Patch.CC.tempoDivision}`;
     tempo.addEventListener('change', () => {
       Editor.transition.snap();
       session.setValue('tempoDivision', +tempo.value);

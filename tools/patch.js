@@ -5,13 +5,6 @@
   const preview = () => global.AuroraPreview;
 
   const PART_NAMES = ['Base', 'Color', 'Extent', 'Motion', 'Accent'];
-  const PART_BLURBS = [
-    'the look itself — what the wall shows with every fader down',
-    'where the Color fader morphs to. More means hotter, toward white',
-    'where the Extent fader morphs to. More means more of the wall lit',
-    'where the Motion fader morphs to. More means faster, harder, more agitated',
-    'where holding this patch’s own key pushes. Belongs to no fader',
-  ];
   const TARGETS = [Protocol.PATCH_TARGET_COLOR, Protocol.PATCH_TARGET_MOTION,
                    Protocol.PATCH_TARGET_EXTENT, Protocol.PATCH_TARGET_ACCENT];
   const PARTS = [Protocol.PATCH_BASE, ...TARGETS];
@@ -232,8 +225,8 @@
   const NEUTRAL = Object.assign({}, DEFAULT, { shapeWidth: 127, shapeEdge: 0, shapeSpeed: 64 });
 
   const CONTROLS = {};
-  const control = (name, label, hint, extra) => {
-    CONTROLS[name] = Object.assign({ name, label, hint, kind: 'fader' }, extra || {});
+  const control = (name, label, extra) => {
+    CONTROLS[name] = Object.assign({ name, label, kind: 'fader' }, extra || {});
     return name;
   };
 
@@ -247,52 +240,51 @@
       {
         title: 'Form',
         names: [
-          control('shapeCount', 'Count', 'how many shapes along the strip, 1–20'),
-          control('shapeWidth', 'Width', 'the solid core of each shape. Each shape has the strip divided by Count to itself'),
-          control('shapeEdge', 'Edge', 'how far the glow reaches toward the next shape, each side'),
-          control('shapeTail', 'Tail', 'how long a pixel glows after a moving shape passes it'),
+          control('shapeCount', 'Count'),
+          control('shapeWidth', 'Width'),
+          control('shapeEdge', 'Edge'),
+          control('shapeTail', 'Tail'),
         ],
       },
       {
         title: 'Travel',
         names: [
-          control('shapeBounce', 'Bounce', 'turn back at the end of each shape’s own stretch of strip instead of wrapping round',
+          control('shapeBounce', 'Bounce',
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
-          control('shapeSpeed', 'Speed', 'center is still; either side travels, slowest nearest center. Stepped by how long the pattern takes to repeat, whatever Count, Width and Bounce: ↑ up, ↓ down, ↕ there and back'),
-          control('shapePosition', 'Position', 'where a still shape rests in its own stretch of strip, from the bottom end to the top'),
-          control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest at Bend at, minus slowest there. The readout compares fastest to slowest'),
-          control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own stretch'),
+          control('shapeSpeed', 'Speed'),
+          control('shapePosition', 'Position'),
+          control('shapeBend', 'Bend'),
+          control('shapeBendAt', 'Bend at'),
         ],
       },
       {
         title: 'Fan',
         names: [
-          control('fanSpread', 'Spread', 'how far apart the strips stand, following the fan’s shape. The readout is the furthest strip: in pixels when still, in beats when moving'),
-          control('fanSpeed', 'Speed', 'how far apart their speeds stand, either side of Speed'),
-          control('fanLfo', 'LFO', 'how far apart the strips’ LFOs swing, following the fan’s shape. The readout is the furthest strip, in beats'),
-          control('fanFrequency', 'Frequency', 'the shape of the fan across the five strips, as the readout draws it: all alike, a slope, a peak, or every strip opposite its neighbors'),
-          control('fanPhase', 'Phase', 'slides the fan’s shape sideways across the strips, as the readout draws it'),
-          control('fanRandomize', 'Randomize', 'from the fan’s shape to a fixed random amount per strip'),
+          control('fanSpread', 'Spread'),
+          control('fanSpeed', 'Speed'),
+          control('fanLfo', 'LFO'),
+          control('fanFrequency', 'Frequency'),
+          control('fanPhase', 'Phase'),
+          control('fanRandomize', 'Randomize'),
         ],
       },
     ],
   };
 
   for (const route of ROUTES) {
-    control(route.amount, 'Amount', 'how far, as a share of the distance left; plus is toward the top, minus toward the bottom. On a rate, how wide the swing either side, and which half comes first');
-    control(route.ratio, 'Ratio', 'whole multiples of the LFO');
-    control(route.wave, 'Wave', 'a build → swell → snap → hard half-bar → stab');
-    control(route.phase, 'Phase', 'how far into its own cycle the wave starts after the bar line');
+    control(route.amount, 'Amount');
+    control(route.ratio, 'Ratio');
+    control(route.wave, 'Wave');
+    control(route.phase, 'Phase');
   }
 
   const gradientInert = {
     inertWhen: live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient,
-    inertWhy: 'a gradient spans its direction once, so there is nothing here to repeat, size or move',
   };
 
   const LFO = {
     name: 'LFO', tone: 'lfo',
-    source: [control('lfoRate', 'Rate', 'how often the swell lands. Stepped, so it can sit on the bar')],
+    source: [control('lfoRate', 'Rate')],
     amounts: [],
   };
 
@@ -300,61 +292,61 @@
     {
       name: 'Scatter', tone: 'scatter',
       source: [
-        control('scatterCount', 'Count', 'how many spots each strip has, 1–20. Raising it adds spots and keeps the ones already there'),
-        control('scatterWidth', 'Width', 'how wide each spot is, from one pixel up to touching the next spot'),
-        control('scatterEdge', 'Edge', 'hard through to a fade at the spot’s sides'),
-        control('scatterRate', 'Rate', 'how often a spot lands somewhere new, stepped so it sits on the beat. A route onto Mix, Hue, Saturation, Value, Width or Position runs once per spot on this clock'),
-        control('scatterSpeed', 'Speed', 'center is still; either side moves each spot from where it landed, steadily up or down the strip'),
-        control('scatterRandomize', 'Randomize', 'zero puts every spot on one clock and the whole wall moves as one; full scatters their phases and rates'),
-        control('scatterPosition', 'Position', 'how far a spot sits from where it landed, up to half the strip either way; plus is up. Route a build here to move each spot over its life'),
+        control('scatterCount', 'Count'),
+        control('scatterWidth', 'Width'),
+        control('scatterEdge', 'Edge'),
+        control('scatterRate', 'Rate'),
+        control('scatterSpeed', 'Speed'),
+        control('scatterRandomize', 'Randomize'),
+        control('scatterPosition', 'Position'),
       ],
       amounts: [
-        control('scatterMix', 'Mix', 'how much the spots paint over what is below; zero is no scatter. Route a pulse here to flash each spot'),
-        control('scatterHue', 'Hue', 'the spot’s hue, measured from the patch’s hue'),
-        control('scatterSaturation', 'Saturation', 'the spot’s own saturation, whatever is below it'),
-        control('scatterValue', 'Value', 'the spot’s own brightness, whatever is below it; zero paints a dark hole'),
+        control('scatterMix', 'Mix'),
+        control('scatterHue', 'Hue'),
+        control('scatterSaturation', 'Saturation'),
+        control('scatterValue', 'Value'),
       ],
       shownBy: ['scatterMix'],
     },
     {
       name: 'Field', tone: 'color',
       source: [
-        control('fieldForm', 'Form', 'one ramp along the direction, a region sitting on it, or everything but the region departing',
+        control('fieldForm', 'Form',
           { kind: 'three', options: threeWayOptions(Protocol.FIELD_FORM,
             { gradient: 'gradient', region: 'region', allButRegion: 'all but region' }) }),
-        control('fieldDirection', 'Direction', 'which way the field runs: across the five strips, up a strip, or along a shape from its tip to the end of its tail',
+        control('fieldDirection', 'Direction',
           { kind: 'three', options: threeWayOptions(Protocol.FIELD_DIRECTION,
             { horizontal: 'horizontal', vertical: 'vertical', shape: 'shape' }) }),
-        control('fieldCount', 'Count', 'how many regions along the direction', gradientInert),
-        control('fieldWidth', 'Width', 'a region’s solid core; each region has the direction divided by Count to itself', gradientInert),
-        control('fieldEdge', 'Edge', 'hard-edged regions through to a smooth fade', gradientInert),
-        control('fieldSpeed', 'Speed', 'center is still; plus drifts the regions along the direction, minus back, slowest nearest center. Stepped by how long the regions take to move one region along', gradientInert),
+        control('fieldCount', 'Count', gradientInert),
+        control('fieldWidth', 'Width', gradientInert),
+        control('fieldEdge', 'Edge', gradientInert),
+        control('fieldSpeed', 'Speed', gradientInert),
       ],
       amounts: [
-        control('fieldHue', 'Hue', 'how far the hue moves round the palette, opposite ways at the two ends of a gradient'),
-        control('fieldWhite', 'White', 'how far it whitens: both ends of a gradient, the region, or all but the region'),
-        control('fieldDark', 'Dark', 'how far it darkens: both ends of a gradient, the region, or all but the region'),
+        control('fieldHue', 'Hue'),
+        control('fieldWhite', 'White'),
+        control('fieldDark', 'Dark'),
       ],
     },
     {
       name: 'Flow', tone: 'color',
       source: [
-        control('flowDensity', 'Density', 'the whole wall moving as one, down to individual pixels'),
-        control('flowRate', 'Rate', 'frozen, through a slow ocean swell, to a nervous flicker'),
+        control('flowDensity', 'Density'),
+        control('flowRate', 'Rate'),
       ],
       amounts: [
-        control('flowHue', 'Hue', 'how far the hue wanders either side of the base'),
-        control('flowWhite', 'White', 'how far it whitens where it swings high'),
-        control('flowDark', 'Dark', 'how far it darkens where it swings high'),
+        control('flowHue', 'Hue'),
+        control('flowWhite', 'White'),
+        control('flowDark', 'Dark'),
       ],
     },
     {
       name: 'Light', tone: 'color',
       source: [],
       amounts: [
-        control('lightHue', 'Hue', 'how far the brightest part rotates off the base hue'),
-        control('lightWhite', 'White', 'how pale the brightest part goes'),
-        control('lightDark', 'Dark', 'how far the brightest part darkens'),
+        control('lightHue', 'Hue'),
+        control('lightWhite', 'White'),
+        control('lightDark', 'Dark'),
       ],
     },
   ];
@@ -365,12 +357,12 @@
   const STRIPS = {
     title: '5 strips',
     sections: [[null, [
-      control('palette', 'Palette', 'what the hue walks through: the rainbow, or a set of colors that loops',
+      control('palette', 'Palette',
         { kind: 'pick', options: () => preview().paletteNames().map((name, index) => [index, name]) }),
-      control('hue', 'Hue', 'the center hue everything else is measured from, around the palette’s loop',
+      control('hue', 'Hue',
         { swatch: live => hueSwatch(live, real('hue', live.hue)) }),
-      control('saturation', 'Saturation', 'full is a pure hue, zero is white'),
-      control('value', 'Value', 'the ceiling everything below scales against'),
+      control('saturation', 'Saturation'),
+      control('value', 'Value'),
     ]]],
   };
 
@@ -388,24 +380,24 @@
     title: '4 PARs',
     sections: [
       ['Color', [
-        control('parHueOffset', 'Hue offset', 'rotates the PARs off the strips’ hue, as routes move it. Zero matches them',
+        control('parHueOffset', 'Hue offset',
           { swatch: live => hueSwatch(live, real('hue', live.hue) + real('parHueOffset', live.parHueOffset)) }),
-        control('parSaturation', 'Saturation', 'independent of the strips. Zero is white'),
-        control('parValue', 'Value', 'the PARs’ master, independent of the strips'),
+        control('parSaturation', 'Saturation'),
+        control('parValue', 'Value'),
       ]],
       ['Hue across them', [
-        control('parHueLayout', 'Hue layout', 'how the band is laid across the PARs: groups from one end to the other, or a new hue from anywhere in it every time a PAR’s turn comes',
+        control('parHueLayout', 'Hue layout',
           { kind: 'steps', step: Protocol.hueLayout,
             options: Object.entries(Protocol.HUE_LAYOUT)
               .map(([key, layout]) => [Protocol.hueLayoutValue(layout), HUE_LAYOUT_NAMES[key]]) }),
-        control('parHueRange', 'Hue range', 'a band of hue either side of Hue offset. Plus puts the first group at the low end, minus at the high end'),
+        control('parHueRange', 'Hue range'),
       ]],
       ['Arpeggiator', [
-        control('arpMode', 'Mode', 'how the PARs are grouped, and the order the groups take their turns in',
+        control('arpMode', 'Mode',
           { kind: 'steps', step: Protocol.arpMode,
             options: Object.entries(Protocol.ARP_MODE)
               .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]) }),
-        control('arpSpread', 'Spread', 'how far apart the groups take their turns within a pass. Center is all at once; plus runs first to last, minus last to first'),
+        control('arpSpread', 'Spread'),
       ]],
     ],
   };
@@ -468,7 +460,7 @@
   }
 
   global.AuroraPatch = {
-    PART_NAMES, PART_BLURBS, PARTS, TARGETS, isTarget,
+    PART_NAMES, PARTS, TARGETS, isTarget,
     CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT, NEUTRAL,
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,

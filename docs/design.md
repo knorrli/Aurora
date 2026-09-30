@@ -104,7 +104,7 @@
 - Is the mic trigger a clock source or a flash?
 - What are the foot pedal's four jobs?
 - A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
-- Should a patch have variants (one patch, a few overrides) resolved in the editor before sync? Tags and grouping likewise.
+- Should patches have tags or grouping?
 
 ### Generator
 

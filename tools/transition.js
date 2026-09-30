@@ -97,7 +97,6 @@
   function buildRunTime() {
     const select = element('select');
     dom.setOptions(select, Patch.LFO_PERIOD_NAMES.map((text, step) => [Patch.periodValue(step), text]), '');
-    select.title = 'The transition time of the patch you named. Changing it here changes that patch.';
     select.addEventListener('change', () => {
       session.transitionDestination().transitionTime = +select.value;
       session.saveLibrary();
@@ -160,7 +159,6 @@
       Editor.refresh();
     });
     const field = labeledField('Coming from', select);
-    field.title = 'An accent plays with the switches of the patch you came from, because the destination’s land on the release and not on arrival. Dial it against the patch it will actually follow.';
     bar.comingFrom = select;
     return field;
   }
@@ -193,7 +191,6 @@
       return field;
     };
     const take = element('button', 'tiny', 'take the base’s changes');
-    take.title = 'Everything changed on the base since this edit began becomes this target, and the base goes back. Switches stay on the base.';
     take.addEventListener('click', takeBaseChanges);
     const here = session.partIndex;
     moves.append(
@@ -285,7 +282,6 @@
       const row = element('div', 'row');
       const label = dom.labeled('label', Patch.PART_NAMES[part],
         part === Protocol.PATCH_TARGET_ACCENT ? 'a held key' : 'fader');
-      label.title = Patch.PART_BLURBS[part];
       const track = element('div', 'track');
       const slider = dom.rangeInput(SCRUB_STEPS);
       slider.id = 'mix' + part;

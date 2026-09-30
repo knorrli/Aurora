@@ -10,7 +10,6 @@
 
   const WAVE_CYCLES = 2;
   const PANEL_MIN_WIDTH = 380;
-  const FREE_ON_BASE = 'freed on the base: a route belongs to the whole patch';
 
   const panel = { root: null, blocks: [], add: null, free: null, target: null };
   const list = { root: null, count: null, lines: [] };
@@ -62,7 +61,6 @@
 
   function routeButtons(route) {
     const bypass = element('button', 'tiny', 'bypass');
-    bypass.title = 'silence this route while you listen; not saved';
     bypass.addEventListener('click', () => {
       session.toggleRouteBypass(route);
       Editor.refresh();
@@ -76,11 +74,8 @@
 
   function paintButtons(buttons, route) {
     const bypassed = session.routeBypassed(route);
-    const held = session.heldAt();
     buttons.bypass.classList.toggle('on', bypassed);
     buttons.remove.disabled = session.isTarget();
-    buttons.remove.title = held ? `held at "${held.name}": its routes are in force here`
-      : session.isTarget() ? FREE_ON_BASE : 'free this route';
     return bypassed;
   }
 
@@ -163,7 +158,6 @@
     for (const route of Patch.ROUTES) {
       const line = element('div', 'route-line');
       const target = element('button', 'route-line-target');
-      target.title = 'open this route under the control it moves';
       target.addEventListener('click', () => {
         const name = Protocol.NAME_BY_CC[Protocol.routeTarget(session.liveNamed()[route.destination])];
         const row = Editor.rows.rows[name];
@@ -214,7 +208,6 @@
       row.routes.classList.toggle('aimed', here.length > 0);
       row.routes.classList.toggle('sounding', sounding);
       row.routes.classList.toggle('open', row.control.name === panel.target);
-      row.routes.title = here.length && !sounding ? 'routes on this control, all bypassed' : 'routes on this control';
       row.routes.textContent = here.length > 1 ? '~' + here.length : '~';
     }
   }
@@ -233,8 +226,6 @@
     const free = session.freeRouteSlots(live).length;
     panel.add.disabled = free === 0 || !!held;
     panel.free.textContent = `${free} of ${Patch.ROUTES.length} free`;
-    panel.add.title = held ? `held at "${held.name}": its routes are in force here`
-      : session.isTarget() ? 'Added here, the route sits on the base at zero and only this target pushes.' : '';
     place();
   }
 

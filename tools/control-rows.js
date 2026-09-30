@@ -65,7 +65,6 @@
     const root = element('div', 'switch-row');
     root.dataset.name = name;
     const label = controlLabel(name);
-    label.title = control.hint;
     const picks = element('div', 'picks');
     const options = typeof control.options === 'function' ? control.options() : control.options;
     const pick = value => {
@@ -135,7 +134,6 @@
     const head = element('div', 'card-head');
     const state = element('span', 'card-state');
     const bypass = element('button', 'tiny', 'bypass');
-    bypass.title = 'Hear the patch without this card while you listen. Never saved.';
     bypass.addEventListener('click', () => {
       session.toggleCardBypass(card);
       Editor.refresh();
@@ -180,25 +178,15 @@
     }
   }
 
-  function faderTitle(row, overridden, baseValue) {
-    const hint = row.control.hint;
-    if (!session.isTarget()) return `${hint}\nClick to put it back to ${Patch.NEUTRAL[row.control.name]}`;
-    return overridden
-      ? `${hint}\nThe patch says ${baseValue}. Click to follow it again.`
-      : `${hint}\nFollowing the patch. Move it to override.`;
-  }
-
   function paintFader(row, live, base, overrides) {
     const name = row.control.name;
     paintFaderValue(row, live);
     const overridden = session.isTarget() && name in overrides;
     row.root.classList.toggle('changed', overridden);
     if (overridden) row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, base[name])} - 1px)`;
-    row.label.title = faderTitle(row, overridden, base[name]);
     if (row.swatch) row.swatch.style.background = `rgb(${row.control.swatch(live).join(',')})`;
     const inert = !!(row.control.inertWhen && row.control.inertWhen(live));
     row.root.classList.toggle('inert', inert);
-    if (row.control.inertWhen) row.root.title = inert ? 'Reaches nothing here — ' + row.control.inertWhy : '';
   }
 
   function paintPick(row, live) {

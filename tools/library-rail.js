@@ -16,7 +16,6 @@
     const status = byId('status');
     const at = new Date().toLocaleTimeString('en-US', { hour12: false });
     status.replaceChildren(element('span', 'cc', at), '  ', element('span', className || '', text));
-    status.title = text;
   }
 
   const leaveDraft = () => !session.draft || confirm(`Discard your changes to "${session.draft.name}"?`);
@@ -64,9 +63,6 @@
       button.appendChild(color);
     }
     button.append(head, name);
-    button.title = patch
-      ? `${slot} · ${patch.name}${keys.length ? ` · key ${keys.join(', ')}` : ''}\nClick to open. Drag onto another slot to move it there.`
-      : `${slot} · empty\nClick to pick it for "save to slot".`;
 
     button.addEventListener('click', event => {
       if (patch && !event.shiftKey) selectPatch(slot);
@@ -136,9 +132,6 @@
     const saveHere = byId('saveHere');
     saveHere.disabled = slot === null;
     saveHere.textContent = slot === null ? 'save to slot' : `save to slot ${slot}`;
-    const occupant = slot === null ? null : session.library.slots[slot];
-    saveHere.title = slot === null ? 'Shift-click or click an empty slot to pick where a copy goes.'
-      : occupant ? `Replaces "${occupant.name}".` : 'Slot is empty.';
   }
 
   function paintKeys() {
@@ -148,8 +141,6 @@
       const patch = session.library.slots[slot];
       const button = element('button', null, String(key));
       button.classList.toggle('on', session.slot !== null && slot === session.slot);
-      button.title = (patch ? `Key ${key} plays slot ${slot}, "${patch.name}".` : `Key ${key} plays slot ${slot}, which is empty.`)
-        + (session.slot === null ? '' : `\nClick to put this patch on key ${key}.`);
       button.addEventListener('click', () => {
         if (session.slot === null) {
           say('save the patch into a slot first', 'bad');

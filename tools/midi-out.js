@@ -103,7 +103,6 @@
 
   function wire() {
     byId('clockToggle').addEventListener('click', () => setClock(!clock.running));
-    byId('rigBlackout').title = `Program Change ${Protocol.PROGRAM_BLACKOUT}. Sends past the patch and leaves it alone.`;
     byId('rigBlackout').addEventListener('click', blackout);
   }
 
