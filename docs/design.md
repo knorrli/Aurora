@@ -110,7 +110,6 @@
 
 - Does the morph need per-parameter timing rather than every parameter in lockstep?
 - Should a patch choose to land its visible switches on the press rather than the release?
-- A count moving mid-morph or on a fader re-cuts every cell, so the scatter flickers and shapes jump. How does a count change smoothly?
 - Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
 - Should the jump when tempo division changes at the end of a morph carry position across instead?
 - Do scatter spots need a lifetime so they can travel past their cell (raindrops)? It costs eight to ten CCs.
