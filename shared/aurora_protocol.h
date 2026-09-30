@@ -42,11 +42,11 @@ enum AuroraCC : uint8_t {
     CC_PAR_HUE_LAYOUT        = 27, // [switch]
     CC_PAR_HUE_RANGE         = 28, // [patch][plain]
 
-    CC_ARP_MODE              = 29, // [switch]
-    CC_ARP_SPREAD            = 30, // [patch][plain]
+    CC_TEMPO_DIVISION        = 29, // [switch]
+    CC_LFO_RATE              = 30, // [patch]
 
-    CC_TEMPO_DIVISION        = 33, // [switch]
-    CC_LFO_RATE              = 34, // [patch]
+    CC_ARP_MODE              = 31, // [switch]
+    CC_ARP_SPREAD            = 33, // [patch][plain]
 
     CC_SHAPE_COUNT           = 35, // [patch][plain]
     CC_SHAPE_WIDTH           = 36, // [patch]
