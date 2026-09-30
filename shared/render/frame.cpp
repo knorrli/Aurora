@@ -19,6 +19,7 @@ namespace render {
 static const uint8_t SAMPLES_PER_PIXEL = 8;
 static const float TAIL_GAP_QUARTER_NOTES = 0.5f;
 static const float DARKEST_DRAWN = 0.002f;
+static const float STILL_PIXELS_PER_BEAT = 0.05f;
 
 struct FrameContext {
   const uint8_t *dialed;
@@ -34,7 +35,7 @@ struct FrameContext {
   float scatterTime;
   SpotRoute spotRoutes[AURORA_ROUTES];
   uint8_t spotRouteCount;
-  float stripSpeeds[STRIPS];
+  float stripLaps[STRIPS];
 };
 
 struct StripContext {
@@ -83,10 +84,12 @@ static void startTravel(FrameContext &context, const Wall &wall) {
   const Reading &plain = context.plain;
   bool anyMoving =
       routeAims(context.dialed, CC_SHAPE_SPEED) || routeAims(context.dialed, CC_FAN_SPEED);
+  const float lap = lapPixels(plain.shape);
+  const float fanLaps = lap > 0.0001f ? plain.fan.speedPixels / lap : 0.0f;
   for (uint8_t i = 0; i < STRIPS; i++) {
-    context.stripSpeeds[i] =
-        snapToStill(plain.shape.speedPixels + plain.fan.speedPixels * fanWave(plain.fan, i));
-    if (context.stripSpeeds[i] != 0.0f) anyMoving = true;
+    context.stripLaps[i] = plain.shape.lapsPerBeat + fanLaps * fanWave(plain.fan, i);
+    if (fabsf(context.stripLaps[i] * lap) < STILL_PIXELS_PER_BEAT) context.stripLaps[i] = 0.0f;
+    if (context.stripLaps[i] != 0.0f) anyMoving = true;
   }
 
   Travel &travel = context.travel;
@@ -95,7 +98,6 @@ static void startTravel(FrameContext &context, const Wall &wall) {
   travel.walled = plain.shape.bounce;
   travel.flipped = travel.bouncing != wall.lastBouncing;
   travel.elapsed = context.beats - wall.lastBeats;
-  travel.cellLength = context.cellLength;
 }
 
 static void startTails(FrameContext &context, const Wall &wall, float quarterNotes) {
@@ -126,8 +128,10 @@ static void readStrip(const FrameContext &context, uint8_t index, Pushes &pushes
   strip.fieldDrift = context.fieldDrift + pushes.shift[CC_FIELD_SPEED];
   strip.scatterTime = context.scatterTime + pushes.shift[CC_SCATTER_RATE];
 
-  strip.travel.speedPixels = context.stripSpeeds[index];
-  strip.travel.shiftPixels = pushes.shift[CC_SHAPE_SPEED] + pushes.shift[CC_FAN_SPEED] * wave;
+  const float lap = lapPixels(context.plain.shape);
+  strip.travel.lapsPerBeat = context.stripLaps[index];
+  strip.travel.shiftLaps = pushes.shift[CC_SHAPE_SPEED]
+      + (lap > 0.0001f ? pushes.shift[CC_FAN_SPEED] * wave / lap : 0.0f);
   strip.travel.positionCells =
       (strip.reading.shape.position - 0.5f) * (1.0f - strip.reading.shape.width);
   const bool restsWalled = context.travel.walled && !context.travel.bouncing;
@@ -156,7 +160,7 @@ static ShapeLook lookOf(const FrameContext &context, const StripContext &strip,
   }
 
   look.direction = (look.tailing && tail.direction != 0.0f)
-      ? tail.direction : directionOf(strip.travel.speedPixels);
+      ? tail.direction : directionOf(strip.travel.lapsPerBeat);
   const float edgeSpread = shape.edge * (1.0f - shape.width) * 0.5f;
   look.tailCells = look.tailing ? tail.lengthCells : 0.0f;
   look.lead = look.halfWidth + edgeSpread;

@@ -4,7 +4,6 @@
 
 namespace render {
 
-static const float STILL_PIXELS_PER_BEAT = 0.05f;
 
 static const float FAN_FREQUENCY_STEPS = 16.0f;
 static const float FAN_MAX_CYCLES_PER_STRIP = 0.5f;
@@ -51,8 +50,15 @@ static inline float squaredUnit(uint8_t value, float max) {
   return x * x * max;
 }
 
-float snapToStill(float pixels) {
-  return (fabsf(pixels) < STILL_PIXELS_PER_BEAT) ? 0.0f : pixels;
+static float lapsPerBeatOf(uint8_t value) {
+  const long step = lroundf(bipolarOf(value) * (float)AURORA_LFO_PERIOD_COUNT);
+  if (step == 0) return 0.0f;
+  return (step < 0 ? -1.0f : 1.0f) / AURORA_LFO_PERIODS[(step < 0 ? -step : step) - 1];
+}
+
+float lapPixels(const Shape &shape) {
+  const float cellLength = (float)PIXELS / (float)shape.count;
+  return shape.bounce ? 2.0f * (1.0f - shape.width) * cellLength : cellLength;
 }
 
 static float fanFrequencyOf(uint8_t value) {
@@ -80,7 +86,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_SHAPE_POSITION: return 0.5f + 0.5f * bipolarOf(value);
     case CC_FAN_SPREAD:
     case CC_FAN_LFO: return bipolarOf(value) * 0.5f;
-    case CC_SHAPE_SPEED:
+    case CC_SHAPE_SPEED: return lapsPerBeatOf(value);
     case CC_SCATTER_SPEED:
     case CC_FAN_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
     case CC_FAN_FREQUENCY: return fanFrequencyOf(value);
@@ -122,13 +128,8 @@ float controlValue(uint8_t cc, uint8_t value) {
   }
 }
 
-float dialedValue(uint8_t cc, uint8_t value) {
-  const float converted = controlValue(cc, value);
-  return cc == CC_SHAPE_SPEED ? snapToStill(converted) : converted;
-}
-
 void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
-  auto at = [&](uint8_t cc) { return dialedValue(cc, routed(dialed, pushes, cc)); };
+  auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, pushes, cc)); };
 
   Shape &shape = out.shape;
   shape.width = at(CC_SHAPE_WIDTH);
@@ -136,7 +137,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   shape.tailBeats = at(CC_SHAPE_TAIL);
   shape.count = (uint8_t)at(CC_SHAPE_COUNT);
   shape.position = at(CC_SHAPE_POSITION);
-  shape.speedPixels = at(CC_SHAPE_SPEED);
+  shape.lapsPerBeat = at(CC_SHAPE_SPEED);
   shape.bend = at(CC_SHAPE_BEND);
   shape.bendAt = at(CC_SHAPE_BEND_AT);
   shape.bounce = aurora_switch_is_on(dialed[CC_SHAPE_BOUNCE]);
@@ -187,7 +188,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
 }
 
 Hsv routedColor(const uint8_t *dialed, const Pushes *pushes) {
-  auto at = [&](uint8_t cc) { return (uint8_t)dialedValue(cc, routed(dialed, pushes, cc)); };
+  auto at = [&](uint8_t cc) { return (uint8_t)controlValue(cc, routed(dialed, pushes, cc)); };
   return { at(CC_HUE), at(CC_SATURATION), at(CC_VALUE) };
 }
 

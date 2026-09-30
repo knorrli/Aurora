@@ -28,7 +28,7 @@ void readFan(const Reading &plain, FanReading &out) {
   }
   out.turns = fan.frequency * (float)(STRIPS - 1);
   out.stillAt = (fabsf(fan.speedPixels) > 0.0001f)
-      ? -plain.shape.speedPixels / fan.speedPixels : 2.0f;
+      ? -plain.shape.lapsPerBeat * lapPixels(plain.shape) / fan.speedPixels : 2.0f;
   out.spread = fan.spread * 2.0f;
   out.speed = fan.speedPixels / MAX_SPEED_PIXELS_PER_BEAT;
   out.lfo = fan.lfo * 2.0f;

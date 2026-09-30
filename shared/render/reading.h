@@ -15,7 +15,7 @@ struct Shape {
   float edge;
   float tailBeats;
   float position;
-  float speedPixels;
+  float lapsPerBeat;
   float bend;
   float bendAt;
   bool bounce;
@@ -81,7 +81,7 @@ float bipolarOf(uint8_t value);
 
 float controlValue(uint8_t cc, uint8_t value);
 
-float snapToStill(float pixels);
+float lapPixels(const Shape &shape);
 
 void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out);
 

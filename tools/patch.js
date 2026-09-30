@@ -96,36 +96,6 @@
   const upTheStrip = at =>
     (at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up');
 
-  const TRAVEL_MARK_BEATS = [0.5, 1, 2, 4, 8, 16];
-
-  function travelPixels(live) {
-    const cellLength = preview().PIXELS / real('shapeCount', live.shapeCount);
-    if (!Protocol.isOn(live.shapeBounce)) return cellLength;
-    return 2 * (1 - real('shapeWidth', live.shapeWidth)) * cellLength;
-  }
-
-  function travelBeats(value, live) {
-    const speed = Math.abs(real('shapeSpeed', value));
-    const pixels = travelPixels(live);
-    return speed > 0 && pixels > 0 ? pixels / speed : null;
-  }
-
-  function travelPoints(live) {
-    const pixels = travelPixels(live);
-    const fastest = Math.abs(real('shapeSpeed', 127));
-    let slowest = 65;
-    while (real('shapeSpeed', slowest) === 0) slowest++;
-    const slowestSpeed = real('shapeSpeed', slowest);
-    const points = [64];
-    for (const beats of TRAVEL_MARK_BEATS) {
-      const speed = pixels / beats;
-      if (speed > fastest || speed < slowestSpeed) continue;
-      const reach = 63 * Math.sqrt(speed / fastest);
-      points.push(64 - reach, 64 + reach);
-    }
-    return points;
-  }
-
   const READOUTS = {
     shapeWidth: value => percent(real('shapeWidth', value)),
     shapeEdge: value => percent(real('shapeEdge', value)) + ' of the gap',
@@ -136,10 +106,10 @@
     shapeCount: value => real('shapeCount', value) + ' shapes',
     shapePosition: value => upTheStrip(real('shapePosition', value)),
     shapeSpeed: (value, live) => {
-      const beats = travelBeats(value, live);
-      if (beats === null) return 'still';
-      const arrow = Protocol.isOn(live.shapeBounce) ? '↕' : real('shapeSpeed', value) > 0 ? '↑' : '↓';
-      return arrow + ' ' + beats.toFixed(beats < 10 ? 2 : beats < 100 ? 1 : 0) + ' beats';
+      const laps = real('shapeSpeed', value);
+      if (laps === 0) return 'still';
+      const arrow = Protocol.isOn(live.shapeBounce) ? '↕' : laps > 0 ? '↑' : '↓';
+      return arrow + ' ' + shortPeriodName(Math.round(1000 / Math.abs(laps)) / 1000);
     },
     shapeBend: value => signed(real('shapeBend', value)) + ' bent',
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
@@ -252,7 +222,7 @@
         names: [
           control('shapeBounce', 'Bounce', 'turn at the cell’s edge instead of wrapping',
             { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
-          control('shapeSpeed', 'Speed', 'center is still; either side travels. The readout is the beats until the pattern repeats: ↑ up, ↓ down, ↕ there and back'),
+          control('shapeSpeed', 'Speed', 'center is still; either side travels, slowest nearest center. Stepped by how long the pattern takes to repeat, whatever Count, Width and Bounce: ↑ up, ↓ down, ↕ there and back'),
           control('shapePosition', 'Position', 'where a still pattern rests in its cell, from against the bottom end to against the top'),
           control('shapeBend', 'Bend', 'travel slowed and sped by where a shape is; plus is fastest where Bend at points, minus slowest there'),
           control('shapeBendAt', 'Bend at', 'where along the strip the bend peaks, bottom to top; bouncing, along each shape’s own cell'),
@@ -456,7 +426,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
-    if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency') return steps(at);
+    if (name === 'lfoRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
   }
@@ -467,6 +437,6 @@
     clampToSevenBits, bipolar,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
     SHAPE, LFO, MODULATORS, OUTPUTS, ROUTES, PLACES, cardNames,
-    routable, routableDestination, arpCapable, isCircular, swings, pointsFor, travelPoints,
+    routable, routableDestination, arpCapable, isCircular, swings, pointsFor,
   };
 })(window);

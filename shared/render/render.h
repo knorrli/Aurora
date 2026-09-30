@@ -105,8 +105,6 @@ struct Frame {
 void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,
                  Frame &out);
 
-float dialedValue(uint8_t cc, uint8_t value);
-
 Hsv dialedColor(const uint8_t *controls);
 
 }

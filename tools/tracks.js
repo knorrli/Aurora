@@ -44,7 +44,6 @@
   }
 
   function hueBandOf(input) {
-    const live = Editor.session.liveNamed();
     const reach = Math.abs(Preview.convert(Patch.CC.parHueRange, live.parHueRange)) / HUE_STEPS_PER_FADER_STEP;
     if (reach < 0.5) return null;
     const center = +input.value;
@@ -95,7 +94,6 @@
   }
 
   function paint() {
-    const live = Editor.session.liveNamed();
     for (const input of document.querySelectorAll('input[type=range]')) {
       const row = Editor.rows.rows[input.closest('.row') && input.closest('.row').dataset.name];
       if (!row) {
@@ -103,8 +101,7 @@
         continue;
       }
       const name = row.control.name;
-      const points = name === 'shapeSpeed' ? Patch.travelPoints(live) : row.points;
-      paintTrack(input, swingOf(name), points, row.circular, name === 'parHueOffset' ? hueBandOf(input) : null);
+      paintTrack(input, swingOf(name), row.points, row.circular, name === 'parHueOffset' ? hueBandOf(input) : null);
     }
   }
 

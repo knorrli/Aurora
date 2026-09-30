@@ -288,7 +288,7 @@ static uint8_t nearestByte(uint8_t cc, float value) {
 
 uint8_t routedForDisplay(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
   if (!pushes || !swings(cc)) return routed(dialed, pushes, cc);
-  return nearestByte(cc, dialedValue(cc, dialed[cc]) + pushes->swing[cc]);
+  return nearestByte(cc, controlValue(cc, dialed[cc]) + pushes->swing[cc]);
 }
 
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) {
@@ -317,7 +317,7 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
     }
   }
   if (swings(cc)) {
-    const float value = dialedValue(cc, dialed[cc]);
+    const float value = controlValue(cc, dialed[cc]);
     low = nearestByte(cc, value + down);
     high = nearestByte(cc, value + up);
   } else {

@@ -4,6 +4,7 @@
 #include <layers.h>
 #include <palettes.h>
 #include <pars.h>
+#include <reading.h>
 #include <render.h>
 #include <routes.h>
 
@@ -70,7 +71,7 @@ EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave) {
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_convert(int cc, int value) {
-  return render::dialedValue((uint8_t)cc, (uint8_t)value);
+  return render::controlValue((uint8_t)cc, (uint8_t)value);
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_lfo_period_beats(int value) {
@@ -79,21 +80,21 @@ EMSCRIPTEN_KEEPALIVE float aurora_lfo_period_beats(int value) {
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {
   render::Pushes pushes;
-  const float beatsPerCycle = render::dialedValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripLfo[strip], pushes);
   return render::routedForDisplay(controls, &pushes, (uint8_t)cc);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
   render::Pushes pushes;
-  const float beatsPerCycle = render::dialedValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.lfo, pushes);
   return render::routedAtPar(controls, pushes, frame.lfo, (uint8_t)cc, (uint8_t)par);
 }
 
 EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
   render::Pushes pushes;
-  const float beatsPerCycle = render::dialedValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.lfo, pushes);
   return render::firstArpPass(controls, pushes, frame.lfo, arpPass) ? &arpPass : nullptr;
 }

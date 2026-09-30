@@ -136,7 +136,7 @@ void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out
   Pushes atPar;
   for (uint8_t par = 0; par < PARS; par++) {
     parPushes(dialed, pushes, arp, lfo, par, atPar);
-    auto at = [&](uint8_t cc) { return dialedValue(cc, routed(dialed, &atPar, cc)); };
+    auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, &atPar, cc)); };
     const float place = bandPlace(dialed, arp, lfo, par, at(CC_PAR_HUE_RANGE));
     out.parHuePlaces[par] = place;
     const int32_t hue = (int32_t)stripsHue + (int32_t)at(CC_PAR_HUE_OFFSET) + (int32_t)lroundf(place);

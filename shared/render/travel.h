@@ -10,18 +10,17 @@ struct Travel {
   bool bouncing;
   bool walled;
   bool flipped;
-  float cellLength;
 };
 
 struct StripTravel {
-  float speedPixels;
-  float shiftPixels;
+  float lapsPerBeat;
+  float shiftLaps;
   float positionCells;
   float fanOffset;
   float width;
 };
 
-inline float directionOf(float speedPixels) { return (speedPixels >= 0.0f) ? 1.0f : -1.0f; }
+inline float directionOf(float lapsPerBeat) { return (lapsPerBeat >= 0.0f) ? 1.0f : -1.0f; }
 
 float travelCenter(Clock &travelClock, Clock &swingClock, Anchor &anchor, const Travel &travel,
                    const StripTravel &strip);
