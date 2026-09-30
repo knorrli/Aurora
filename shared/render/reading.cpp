@@ -51,11 +51,6 @@ static float smoothCountOf(uint8_t value) {
   return powf((float)MAX_COUNT, unitOf(value));
 }
 
-static uint8_t countOf(uint8_t value) {
-  const long count = lroundf(powf((float)MAX_COUNT, unitOf(value)));
-  return (uint8_t)(count < 1 ? 1 : count > MAX_COUNT ? MAX_COUNT : count);
-}
-
 static float squaredRate(uint8_t value, float max) {
   const float x = fmaxf(((float)value - 64.0f) / 63.0f, -1.0f);
   return (x < 0.0f ? -1.0f : 1.0f) * x * x * max;
@@ -68,7 +63,7 @@ static float lapsPerBeatOf(uint8_t value) {
 }
 
 float lapPixels(const Shape &shape) {
-  const float cellLength = (float)PIXELS / (float)shape.count;
+  const float cellLength = (float)PIXELS / shape.count;
   return shape.bounce ? 2.0f * (1.0f - shape.width) * cellLength : cellLength;
 }
 
@@ -88,7 +83,7 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_PAR_HUE_RANGE: return signedOf(value) * 128.0f;
 
     case CC_SHAPE_COUNT:
-    case CC_FIELD_COUNT: return countOf(value);
+    case CC_FIELD_COUNT:
     case CC_SCATTER_COUNT: return smoothCountOf(value);
 
     case CC_SHAPE_BEND:
@@ -147,7 +142,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   shape.width = at(CC_SHAPE_WIDTH);
   shape.edge = at(CC_SHAPE_EDGE);
   shape.tailBeats = at(CC_SHAPE_TAIL);
-  shape.count = (uint8_t)at(CC_SHAPE_COUNT);
+  shape.count = at(CC_SHAPE_COUNT);
   shape.position = at(CC_SHAPE_POSITION);
   shape.lapsPerBeat = at(CC_SHAPE_SPEED);
   shape.bend = at(CC_SHAPE_BEND);
@@ -172,7 +167,7 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   field.dark = at(CC_FIELD_DARK);
   field.width = at(CC_FIELD_WIDTH);
   field.edge = at(CC_FIELD_EDGE);
-  field.count = (uint8_t)at(CC_FIELD_COUNT);
+  field.count = at(CC_FIELD_COUNT);
   field.cellsPerBeat = at(CC_FIELD_SPEED);
   field.position = at(CC_FIELD_POSITION);
 

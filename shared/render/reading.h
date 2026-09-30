@@ -11,7 +11,7 @@ static const float MAX_SPEED_PIXELS_PER_BEAT = 60.0f;
 
 struct Shape {
   float width;
-  uint8_t count;
+  float count;
   float edge;
   float tailBeats;
   float position;
@@ -36,7 +36,7 @@ struct Field {
   float hue;
   float white;
   float dark;
-  uint8_t count;
+  float count;
   float width;
   float edge;
   float cellsPerBeat;

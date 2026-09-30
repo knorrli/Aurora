@@ -189,7 +189,7 @@ static ShapeSample sampleShape(const FrameContext &context, const ShapeLook &loo
   const Shape &plain = context.plain.shape;
   float nearest = 0.0f;
   const bool onShape =
-      nearestOffset(cells, look.centerInCell, look.direction, plain.bounce, (float)plain.count,
+      nearestOffset(cells, look.centerInCell, look.direction, plain.bounce, plain.count,
                     nearest);
   const float coreLevel = onShape ? bumpAt(nearest, look.width, look.edge) : 0.0f;
   const float age = look.tailing ? tailAgeAt(tail, cells) : -1.0f;
@@ -300,7 +300,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   readFan(context.plain, out.fan);
 
   const Shape &shape = context.plain.shape;
-  context.cellLength = (float)PIXELS / (float)shape.count;
+  context.cellLength = (float)PIXELS / shape.count;
   context.bend = bendFor(shape.bend, shape.bendAt);
   readBend(context.bend, shape.bounce, context.cellLength, shape.count, out.bend);
 

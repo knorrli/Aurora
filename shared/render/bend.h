@@ -8,10 +8,10 @@ struct BendTable;
 
 const BendTable *bendFor(float amount, float at);
 
-float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength, uint8_t count);
+float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength, float count);
 
-float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, uint8_t count);
+float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, float count);
 
-void readBend(const BendTable *bend, bool perCell, float cellLength, uint8_t count, float *out);
+void readBend(const BendTable *bend, bool perCell, float cellLength, float count, float *out);
 
 }

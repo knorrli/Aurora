@@ -50,7 +50,10 @@
   const signedDegrees = hueSteps => sign(hueSteps) + degrees(Math.abs(hueSteps));
   const hueReach = name => value => signedDegrees(Math.round(real(name, value)));
   const pixels = count => (count < 10 ? Number(count.toFixed(1)) : count.toFixed(0)) + ' px';
-  const counted = (count, one, many) => count + ' ' + (count === 1 ? one : many);
+  const counted = (count, one, many) => {
+    const rounded = Math.round(count * 10) / 10;
+    return rounded + ' ' + (rounded === 1 ? one : many);
+  };
   const beatsText = beats => {
     const rounded = Math.round(beats * 100) / 100;
     return rounded + (rounded === 1 ? ' beat' : ' beats');
@@ -533,6 +536,18 @@
     return points;
   }
 
+  function wholeCounts(valueOf) {
+    const points = [];
+    for (let count = Math.ceil(valueOf(0)); count <= Math.floor(valueOf(127)); count++) {
+      let nearest = 0;
+      for (let value = 1; value < 128; value++) {
+        if (Math.abs(valueOf(value) - count) < Math.abs(valueOf(nearest) - count)) nearest = value;
+      }
+      points.push(nearest);
+    }
+    return points;
+  }
+
   function pointsFor(name) {
     const route = routeOf(name);
     if (route) {
@@ -543,6 +558,7 @@
     }
     const at = value => real(name, value);
     if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
+    if (name === 'shapeCount' || name === 'fieldCount') return wholeCounts(at);
     if (name === 'lfoRate' || name === 'shapeTail' || name === 'flowRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
     if (!Protocol.hasTag(name, 'patch')) return [];
     return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
