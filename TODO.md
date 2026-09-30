@@ -66,5 +66,4 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 
 ## Editor
 
-- Let a layer set a "from the patch" switch by writing it into the base layer: setting arp mode while routing PAR hue range on Accent should not need a trip to Base.
 - A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.

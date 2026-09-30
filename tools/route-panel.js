@@ -139,7 +139,7 @@
 
   function paintDestinationRow(row, shown, chosen) {
     row.root.hidden = !shown;
-    row.root.classList.toggle('locked', session.isAboveBase());
+    row.root.classList.toggle('locked', !!session.heldAt());
     for (const [option, button] of row.buttons) button.classList.toggle('on', option === chosen);
   }
 

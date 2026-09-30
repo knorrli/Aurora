@@ -191,15 +191,14 @@
 
   function paintPick(row, live) {
     const value = live[row.control.name];
-    const aboveBase = session.isAboveBase();
+    const held = session.heldAt();
     for (const [option, button] of row.buttons) button.classList.toggle('on', row.lit(option, value));
     if (row.select) {
       if (+row.select.value !== value) row.select.value = value;
-      row.select.disabled = aboveBase;
+      row.select.disabled = !!held;
     }
-    row.root.classList.toggle('locked', aboveBase);
-    const held = session.heldAt();
-    row.from.textContent = !aboveBase ? '' : held ? `held at "${held.name}"` : 'from the patch';
+    row.root.classList.toggle('locked', !!held);
+    row.from.textContent = !session.isAboveBase() ? '' : held ? `held at "${held.name}"` : 'from the patch';
     row.root.classList.toggle('inert', !!(row.control.inertWhen && row.control.inertWhen(live)));
   }
 
