@@ -65,18 +65,17 @@
   };
 
   const PERIOD_NAMES = {
-    16: '16 beats · four bars', 12: '12 beats · three bars', 8: '8 beats · two bars',
-    6: '6 beats', 4: '4 beats · one bar', 3: '3 beats', 2: '2 beats · half a bar',
+    16: '16 beats', 12: '12 beats', 8: '8 beats',
+    6: '6 beats', 4: '4 beats', 3: '3 beats', 2: '2 beats',
     1.5: '1½ beats', 1: '1 beat', 0.75: '¾ beat', 0.5: '½ beat', 0.375: '⅜ beat', 0.25: '¼ beat',
   };
   const LFO_PERIOD_NAMES = Protocol.LFO_PERIODS.map(beats => PERIOD_NAMES[beats]);
-  const shortPeriodName = beats => PERIOD_NAMES[beats].split(' · ')[0];
-  const lapName = lapsPerBeat => shortPeriodName(Math.round(1000 / Math.abs(lapsPerBeat)) / 1000);
+  const lapName = lapsPerBeat => PERIOD_NAMES[Math.round(1000 / Math.abs(lapsPerBeat)) / 1000];
   const periodStep = value => Protocol.steppedIndex(value, Protocol.LFO_PERIODS.length);
   const periodValue = step => Math.round(step * 127 / (Protocol.LFO_PERIODS.length - 1));
 
   const TEMPO_DIVISION_NAMES = {
-    quarter: 'quarter · one pulse a beat', bar: 'bar', half: 'half',
+    quarter: 'quarter', bar: 'bar', half: 'half',
     eighth: 'eighth', eighthTriplet: 'eighth triplet', sixteenth: 'sixteenth',
   };
   const TEMPO_DIVISIONS = Object.entries(Protocol.TEMPO_DIVISION)
@@ -149,9 +148,9 @@
     saturation: value => ofByte(real('saturation', value)),
     value: value => ofByte(real('value', value)),
 
-    lfoRate: value => shortPeriodName(real('lfoRate', value)),
+    lfoRate: value => PERIOD_NAMES[real('lfoRate', value)],
 
-    scatterRate: value => 'every ' + shortPeriodName(Protocol.LFO_PERIODS[periodStep(value)]),
+    scatterRate: value => 'every ' + PERIOD_NAMES[Protocol.LFO_PERIODS[periodStep(value)]],
     scatterCount: value => real('scatterCount', value).toFixed(1) + ' spots',
     scatterWidth: (value, live) => pixels(Math.max(1, real('scatterWidth', value) * preview().PIXELS / real('scatterCount', live.scatterCount))),
     scatterEdge: value => percent(real('scatterEdge', value)) + ' soft',

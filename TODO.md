@@ -71,4 +71,3 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 - Save what the wall shows as any part, base or a target, of this patch or a new one, then keep refining and save it again anywhere. Replaces copy from / move onto / swap with.
 - Every control's readout and tooltip: does it tell a patch designer something? Fan Frequency: why 32 is the default, what "turns" means, what the track's segments are; its tooltip describes a different control.
 - Rebuild starting-point looks on routes, the LFO and the scatter. The old tables (shapes, fan looks, swing looks, color looks) are in `git show 21a435c:tools/patch.js`.
-- The library grid sits at the top center and is always open, while the left column is nearly empty. Find it a place that is out of the way until wanted.

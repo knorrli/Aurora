@@ -11,7 +11,7 @@
   const SCRUB_STEPS = 1000;
   const SPRING_BACK_MILLISECONDS = 180;
 
-  const bar = { scrub: null, run: null, runTime: null, readout: null, comingFrom: null, transitionTo: null };
+  const bar = { scrub: null, run: null, runTime: null, comingFrom: null, transitionTo: null };
   const mixBar = { sliders: {}, readouts: {} };
   let animationFrame = null;
 
@@ -119,7 +119,6 @@
 
   function paintShowing() {
     byId('wallShowing').textContent = showingText();
-    if (bar.readout) bar.readout.textContent = percentOf(session.transition.position);
   }
 
   function paintLive() {
@@ -174,7 +173,7 @@
       Editor.refresh();
     });
     bar.transitionTo = select;
-    return labeledField('Transition to', select);
+    return labeledField('to', select);
   }
 
   function targetMoves() {
@@ -238,18 +237,23 @@
       paintLive();
     });
     bar.scrub.addEventListener('change', springBack);
-    scrub.append(element('span', 'end', target ? 'base' : 'this patch'), bar.scrub,
-                 element('span', 'end', target ? Patch.PART_NAMES[session.partIndex] : 'the patch you named'));
+    scrub.appendChild(bar.scrub);
 
-    bar.readout = element('output', 'readout');
-    host.replaceChildren(scrub, bar.readout);
+    const heading = element('h2', null, target ? `Base to ${Patch.PART_NAMES[session.partIndex]}` : 'Transition');
+    const fields = element('div', 'fields');
+    host.replaceChildren(heading, scrub);
     if (!target) {
-      bar.run = element('button', null, 'run');
+      bar.run = element('button', 'tiny', 'run');
       bar.run.id = 'transitionRun';
       bar.run.addEventListener('click', run);
-      host.append(bar.run, buildRunTime(), buildTransitionTo());
+      scrub.appendChild(bar.run);
+      fields.append(buildTransitionTo(), buildRunTime());
+      host.appendChild(fields);
     } else {
-      if (session.partIndex === Protocol.PATCH_TARGET_ACCENT) host.appendChild(buildComingFrom());
+      if (session.partIndex === Protocol.PATCH_TARGET_ACCENT) {
+        fields.appendChild(buildComingFrom());
+        host.appendChild(fields);
+      }
       host.appendChild(targetMoves());
     }
     showPosition();

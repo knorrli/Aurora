@@ -52,7 +52,10 @@
     flex-wrap: wrap; padding: 10px 16px; background: #171921;
     border-bottom: 1px solid var(--line);
   }
-  .top .spacer { flex: 1; }
+  .top #status {
+    flex: 1 1 0; min-width: 0; font-size: 11px; color: var(--dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .top .group { display: flex; gap: 7px; align-items: center; }
   .top .group + .group { border-left: 1px solid var(--line); padding-left: 14px; }
   .beats { display: flex; gap: 5px; align-items: center; margin-left: 4px; }
@@ -63,25 +66,30 @@
 
   .shell {
     display: grid;
-    grid-template-columns: minmax(232px, 268px) minmax(0, 1fr) minmax(268px, 348px);
+    grid-template-columns: minmax(232px, 300px) minmax(0, 1fr) minmax(268px, 348px);
     gap: 16px; padding: 16px; align-items: start;
   }
 
   .rail, .dock { position: sticky; top: calc(var(--topbar) + 10px); }
+  .rail { max-height: calc(100vh - var(--topbar) - 20px); overflow-y: auto; scrollbar-gutter: stable; }
+  .rail .panel { padding: 11px 13px; }
+  .rail .panel + .panel { margin-top: 10px; }
+  .rail .row { grid-template-columns: 72px minmax(48px, 1fr) auto; gap: 6px; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 13px; }
   .panel + .panel { margin-top: 14px; }
-  .work > * + * { margin-top: 16px; }
+  .view > * + * { margin-top: 16px; }
 
 .library-head { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
   .library-head h2 { margin: 0; }
+  .library-head + .library-head { margin-top: -2px; }
   .key-strip { display: flex; gap: 3px; }
   .key-strip button { padding: 1px 0; width: 22px; font-size: 10.5px; }
-  .patch-grid { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; }
+  .patch-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
   .patch-grid .cell {
-    position: relative; min-width: 0; height: 34px; padding: 5px 4px 2px; border-radius: 3px;
+    position: relative; min-width: 0; height: 34px; padding: 5px 6px 2px; border-radius: 3px;
     display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
     background: var(--sunk); border: 1px solid var(--line); color: var(--text); text-align: left;
-    font-size: 10px; line-height: 1.2; overflow: hidden;
+    font-size: 11px; line-height: 1.25; overflow: hidden;
   }
   .patch-grid .cell.empty { background: none; color: var(--faint); }
   .patch-grid .cell .color { position: absolute; left: 0; right: 0; top: 0; height: 4px; }
@@ -100,40 +108,30 @@
   .stack { display: flex; flex-direction: column; gap: 7px; }
   .rowline { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
 
-  #log {
-    margin-top: 10px; padding: 8px 9px; background: var(--sunk);
-    border: 1px solid var(--line); border-radius: 5px; height: 132px; overflow-y: auto;
-    white-space: pre-wrap; font-size: 10.5px; line-height: 1.6; color: var(--dim);
-  }
-
-  .head { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field > span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
-  .field input[type=text] { width: 190px; }
+  .fields input[type=text] { width: 100%; }
 
-  .parts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+  .parts { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
   .parts .tab {
-    display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
-    padding: 6px 12px; min-width: 0;
+    display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
+    padding: 2px 9px; min-width: 0;
   }
   .parts .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
   .parts .tab.on .badge { color: var(--bg); }
 
-  .transition { display: flex; gap: 10px 12px; align-items: center; flex-wrap: wrap; }
-  .transition .scrub { flex: 1 1 100%; display: flex; gap: 9px; align-items: center; }
+  .transition .scrub { display: flex; gap: 9px; align-items: center; }
   .transition .scrub input[type=range] { flex: 1 1 60px; min-width: 60px; }
-  .transition .end {
-    font-size: 10.5px; color: var(--dim); letter-spacing: .06em;
-    flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .transition .readout { min-width: 58px; text-align: right; color: var(--accent); }
-  .transition .field { flex-direction: row; align-items: center; gap: 7px; }
-  .transition .target-moves { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .fields { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; }
+  .fields .field { display: contents; }
+  .fields select { width: 100%; }
+  .transition .fields { margin-top: 9px; }
+  .transition .target-moves { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-top: 9px; }
 
   #mixBar[hidden] { display: none; }
   #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
-  #mixBar h2, .dock h2 { display: flex; align-items: baseline; gap: 10px; }
-  #mixBar h2 .tiny, .dock h2 > .tiny { margin-left: auto; }
+  .rail h2, .dock h2 { display: flex; align-items: baseline; gap: 6px; }
+  .rail h2 > .tiny:first-of-type { margin-left: auto; }
   .overlay-buttons { display: flex; gap: 4px; margin-left: auto; }
 
   .shape { border-left: 3px solid var(--shape); }
@@ -187,7 +185,7 @@
   .routes-button.aimed.sounding { background: #4a2f38; }
   .routes-button.open { color: var(--bg); background: var(--lfo); border-color: var(--lfo); }
 
-  .row > output, .transition .readout, .showing { font-variant-numeric: tabular-nums; }
+  .row > output, .showing { font-variant-numeric: tabular-nums; }
   .row > output { text-align: right; line-height: 1.25; white-space: nowrap; }
   .row > output .cc { display: block; }
   .row > output { display: grid; }
@@ -296,9 +294,12 @@
     <span class="beats" id="beats" title="The preview's beat: one dot per quarter note, the first on the bar line"><i></i><i></i><i></i><i></i></span>
   </div>
   <div class="group">
+    <button id="libraryView">library</button>
+  </div>
+  <div class="group">
     <button id="sendPatch" title="Send every parameter this patch holds">send to the wall</button>
   </div>
-  <div class="spacer"></div>
+  <p id="status"></p>
   <div class="group">
     <button id="rigBlackout" class="tiny">blackout</button>
   </div>
@@ -308,33 +309,30 @@
 
   <aside class="rail">
     <section class="panel">
-      <h2>The brain</h2>
-      <div class="stack">
-        <div class="rowline">
-          <button class="tiny" id="brainAsk">ask</button>
-          <button class="tiny" id="brainPush">push the library</button>
-        </div>
-        <div class="rowline">
-          <button class="tiny" id="brainPull">pull it back</button>
-          <button class="tiny" id="fileSave">save a file</button>
-          <button class="tiny" id="fileLoad">load a file</button>
-          <input type="file" id="filePick" accept=".json,application/json" hidden>
-        </div>
+      <h2>Patch
+        <button class="tiny" id="patchSave">save</button>
+        <button class="tiny" id="patchDiscard">discard</button>
+      </h2>
+      <div class="fields">
+        <label class="field"><span>Name</span><input type="text" id="patchName"></label>
+        <label class="field"><span>Tempo division</span><select id="tempoDivision"></select></label>
+        <label class="field"><span>Transition time</span><select id="transitionTime"></select></label>
+        <label class="field"><span>Accent time</span><select id="accentTime"></select></label>
       </div>
-      <div id="log"></div>
+      <nav class="parts" id="partTabs"></nav>
     </section>
+    <section class="panel transition" id="transitionBar"></section>
+    <section class="panel" id="mixBar" hidden></section>
   </aside>
 
   <main class="work">
 
-    <section class="panel library">
+    <section class="panel library" id="libraryPanel" hidden>
       <div class="library-head">
         <h2>Library</h2>
         <span class="cc" id="libraryCount"></span>
         <div class="rowline">
           <button class="tiny" id="patchNew">new</button>
-          <button class="tiny" id="patchSave">save</button>
-          <button class="tiny" id="patchDiscard">discard</button>
           <button class="tiny" id="saveHere">save to slot</button>
           <button class="tiny" id="patchDelete">delete</button>
         </div>
@@ -343,31 +341,37 @@
           <div class="key-strip" id="keyStrip"></div>
         </div>
       </div>
+      <div class="library-head">
+        <div class="rowline">
+          <span class="cc">brain</span>
+          <button class="tiny" id="brainAsk">ask</button>
+          <button class="tiny" id="brainPush">push the library</button>
+          <button class="tiny" id="brainPull">pull it back</button>
+        </div>
+        <div class="rowline">
+          <span class="cc">file</span>
+          <button class="tiny" id="fileSave">save a file</button>
+          <button class="tiny" id="fileLoad">load a file</button>
+          <input type="file" id="filePick" accept=".json,application/json" hidden>
+        </div>
+      </div>
       <div class="patch-grid" id="patchGrid"></div>
     </section>
 
-    <section class="panel head">
-      <label class="field"><span>Name</span><input type="text" id="patchName"></label>
-      <label class="field"><span>Transition time</span><select id="transitionTime"></select></label>
-      <label class="field"><span>Accent time</span><select id="accentTime"></select></label>
-      <label class="field"><span>Tempo division</span><select id="tempoDivision"></select></label>
-    </section>
+    <div class="view" id="editorView">
 
-    <nav class="parts" id="partTabs"></nav>
+      <section class="panel outputs">
+        <h2>Outputs</h2>
+        <div class="output-grid" id="outputs"></div>
+      </section>
 
-    <section class="panel transition" id="transitionBar"></section>
-    <section class="panel" id="mixBar" hidden></section>
+      <div class="cards" id="lfo"></div>
 
-    <section class="panel outputs">
-      <h2>Outputs</h2>
-      <div class="output-grid" id="outputs"></div>
-    </section>
+      <section class="panel shape" id="shape"></section>
 
-    <div class="cards" id="lfo"></div>
+      <div class="cards" id="modulators"></div>
 
-    <section class="panel shape" id="shape"></section>
-
-    <div class="cards" id="modulators"></div>
+    </div>
 
   </main>
 

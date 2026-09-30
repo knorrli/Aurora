@@ -13,10 +13,10 @@
   const BRAIN_BUTTONS = ['brainAsk', 'brainPush', 'brainPull'];
 
   function say(text, className) {
-    const log = byId('log');
+    const status = byId('status');
     const at = new Date().toLocaleTimeString('en-US', { hour12: false });
-    log.append(element('span', 'cc', at), '  ', element('span', className || '', text), '\n');
-    log.scrollTop = log.scrollHeight;
+    status.replaceChildren(element('span', 'cc', at), '  ', element('span', className || '', text));
+    status.title = text;
   }
 
   const leaveDraft = () => !session.draft || confirm(`Discard your changes to "${session.draft.name}"?`);
@@ -216,11 +216,8 @@
     const link = Editor.midi.link;
     brainButton('brainAsk', async () => {
       const info = await link.queryLibrary();
-      say(`protocol ${info.protocol}, patch format ${info.format}`);
-      say(`${info.stateText} — ${info.slots.length} patches`,
+      say(`protocol ${info.protocol}, format ${info.format} · ${info.stateText} — ${info.slots.length} patches · keypad ${info.keymap.join(' ')}`,
           info.state === Protocol.LIBRARY_STATE.stored ? 'ok' : 'warn');
-      if (info.slots.length) say(`slots: ${info.slots.join(' ')}`);
-      say(`keypad: ${info.keymap.join(' ')}`);
     });
 
     brainButton('brainPush', async () => {
@@ -317,7 +314,17 @@
     });
   }
 
+  function wireViewToggle() {
+    byId('libraryView').addEventListener('click', () => {
+      const showLibrary = byId('libraryPanel').hidden;
+      byId('libraryPanel').hidden = !showLibrary;
+      byId('editorView').hidden = showLibrary;
+      byId('libraryView').classList.toggle('on', showLibrary);
+    });
+  }
+
   function wire() {
+    wireViewToggle();
     wireLibrary();
     wireBrain();
     wireFiles();
