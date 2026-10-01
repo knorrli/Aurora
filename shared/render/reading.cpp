@@ -9,6 +9,7 @@ static const float FAN_FREQUENCY_STEPS = 16.0f;
 static const float FAN_MAX_CYCLES_PER_STRIP = 0.5f;
 
 static const float FIELD_MAX_HUE = 128.0f;
+static const float FIELD_MIN_COUNT = 0.5f;
 static const float FLOW_MAX_HUE = 128.0f;
 static const float SCATTER_MAX_HUE = 128.0f;
 static const float CORE_MAX_HUE = 64.0f;
@@ -51,6 +52,10 @@ static float smoothCountOf(uint8_t value) {
   return powf((float)MAX_COUNT, unitOf(value));
 }
 
+static float fieldCountOf(uint8_t value) {
+  return FIELD_MIN_COUNT * powf((float)MAX_COUNT / FIELD_MIN_COUNT, unitOf(value));
+}
+
 static float squaredRate(uint8_t value, float max) {
   const float x = fmaxf(((float)value - 64.0f) / 63.0f, -1.0f);
   return (x < 0.0f ? -1.0f : 1.0f) * x * x * max;
@@ -83,8 +88,8 @@ float controlValue(uint8_t cc, uint8_t value) {
     case CC_PAR_HUE_RANGE: return signedOf(value) * 128.0f;
 
     case CC_SHAPE_COUNT:
-    case CC_FIELD_COUNT:
     case CC_SCATTER_COUNT: return smoothCountOf(value);
+    case CC_FIELD_COUNT: return fieldCountOf(value);
 
     case CC_SHAPE_BEND:
     case CC_ARP_SPREAD: return signedOf(value);

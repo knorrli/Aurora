@@ -134,6 +134,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_SCATTER_SATURATION,     127 },
     { CC_SCATTER_VALUE,          127 },
     { CC_FIELD_DIRECTION,         64 },
+    { CC_FIELD_COUNT,             24 },
     { CC_FIELD_WIDTH,             64 },
     { CC_FIELD_EDGE,              64 },
     { CC_FIELD_SPEED,             64 },
