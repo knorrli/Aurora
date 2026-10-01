@@ -5,7 +5,8 @@
 - DIN MIDI is the live link: controller to brain, one cable, one way. USB MIDI stays for the editor.
 - The brain treats whatever arrives as the truth. A DAW drives it exactly as the controller does.
 - The rig is driven three ways: the controller alone; a DAW into the controller, soft-thru to the brain; a computer straight into the brain.
-- The controller sends gestures (a fader's position, a key pressed), never what a patch contains. The brain owns meaning.
+- The brain has one MIDI input. Any source playing alongside the controller goes through the controller.
+- The controller sends gestures (a fader's position, a key held) and the slot a key names, never what a patch contains.
 - The brain never answers over DIN. A controller forwarding a DAW's patch change updates its own state from what it forwards.
 - The controller has no design mode. Patches are built in the editor.
 
@@ -15,7 +16,7 @@
 - External clock is never passed through. Tapping switches source with no discontinuity at the brain; an upstream dropout keeps the last tempo running.
 - The source picks itself: the controller follows incoming clock whenever it arrives, and switches to tap tempo as soon as the button is tapped. No control selects it.
 - The controller's tempo LED flashes from that clock.
-- Tempo division is a patch switch on CC 33. The clock itself is never divided.
+- Tempo division is a patch switch on CC 29. The clock itself is never divided.
 
 ## Patch storage
 
@@ -29,8 +30,8 @@
 
 ## Recalling a patch
 
-- The keypad's nine keys map to library slots through the keymap the editor syncs. The controller sends the key; the brain looks it up.
-- A DAW names a slot directly with a Program Change.
+- Every source changes patch the same way: a Program Change naming a slot. The drum pad and MainStage send nothing else.
+- The controller turns a key and the rotary's bank into that Program Change through the keymap, which the editor syncs to the controller. The brain holds no keymap.
 - The 12-position rotary is a patch bank, turned between songs. Nine patch keys per bank (0 is the blackout) reach 108 of the 127 slots; the rest are Program Change only.
 - Recall writes the patch's `[patch]` and `[switch]` CCs through the same handlers a live CC goes through, then clears the tails.
 - A patch change lands on the next beat.
@@ -39,15 +40,16 @@
 
 - One mechanism: from the live values toward the patch of the last key pressed, at whatever rate the driver sets.
 - The start is a snapshot of what is on the wall at the press, never a patch number. Re-targeting mid-transition never lurches.
+- A source that can hold sends CC 19 = 127 before the Program Change and CC 19 = 0 on release. The keypad, the foot pedal and a DAW can hold.
+- A Program Change without a hold morphs over the patch's transition time and never reaches the accent. A transition time of none is a cut on the beat.
 - Tap: a cut, on the beat.
 - Hold: a transition toward the patch over its transition time.
 - Release before arrival: the remaining distance is re-timed to land exactly on the next beat. No jump.
 - Hold past arrival: the morph pushes on toward that patch's Accent layer over its accent time.
 - Release during the accent: hold course to the next beat, then drop to the patch in one step.
 - Holding the key of the patch already playing goes straight to the accent.
-- CC 19 reads 127 while the key the last Program Change named is down, and 0 on release.
 - Every keypad effect lands on a beat. A press is snapped to the nearest beat, not the next; tap versus hold is judged a short fixed time after that beat.
-- Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`.
+- Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`. Transition time also has a step for none.
 - A morph interpolates the raw CC bytes, all together, linearly. Circular controls (hue, PAR hue offset, fan phase) take the short way around.
 - Switches (and route destinations) never interpolate. The destination patch's land on the release, not on arrival.
 - An engine that shows nothing at one end of a morph takes the other end's values at once, its switches included; only the controls that make it visible blend (`hiddenEngines` in `shared/render/engines.cpp`).

@@ -22,6 +22,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
 - Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
 - Morph between patches of different tempo divisions: does the jump read as a glitch? Should it carry position across instead?
+- Snap a press to the nearest beat with a click track: does a press just after the beat read as on it?
 - Morph between real looks: does the morph need per-parameter timing rather than every parameter in lockstep? Should a patch choose to land its visible switches on the press rather than the release?
 - Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
 - LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
@@ -62,8 +63,9 @@ Seen only in the preview so far. One look each, driven from the editor.
 ### Controller
 
 - Write the firmware for the second Teensy: keypad as a static code, two-key rejection, faders, pad, rockers, rotary, tap tempo, fresh clock, indicator pixels, DIN out.
+- Sync the keymap from the editor to the controller over USB, and send a key as CC 19 = 127, the Program Change of its slot, then CC 19 = 0 on release (`docs/design.md` § Recalling a patch).
+- Should a DAW automation lane drive the morph position, as one more CC beside the Program Change?
 - Find out whether the touchpad reads pressure usefully.
-- How does a key press reach the brain distinct from a Program Change naming a slot?
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
 - How does a pad-driven transition land its switches, with no key release left?
 - What does the fourth rocker do?
@@ -72,12 +74,11 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-Deferred until the patch model stops changing. The editor drives the wall live over CCs until then.
-
 - Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 127.
-- Recall a patch: keypad lookup, Program Change to slot, write through the live handlers, clear the tails (`docs/design.md` § Recalling a patch).
+- Recall a patch on a Program Change: write through the live handlers, clear the tails (`docs/design.md` § Recalling a patch).
+- Give transition time a step for none, and morph a Program Change without a hold over the patch's transition time.
 - Compile in a default set (`docs/design.md` § Patch storage).
 - Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent).
 - Read the faders and mix their layers the way the editor does.
 - Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
-- Read the key-held CC for tap versus hold.
+- Read CC 19 for tap versus hold.
