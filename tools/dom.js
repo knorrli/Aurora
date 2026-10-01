@@ -33,7 +33,7 @@
 
   function ccLabeled(tag, title, number) {
     const node = labeled(tag, title, `CC ${number}`);
-    node.lastChild.classList.add('cc-number');
+    node.lastChild.classList.add('midi-number');
     return node;
   }
 

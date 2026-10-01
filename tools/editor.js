@@ -111,27 +111,27 @@
     Editor.say(`sent "${session.patch().name}"`);
   }
 
-  const STORE_SHOW_CC = 'aurora.editor.showCC';
+  const STORE_SHOW_MIDI = 'aurora.editor.showMidi';
 
-  function showCC(shown) {
-    document.body.classList.toggle('show-cc', shown);
-    byId('ccToggle').classList.toggle('on', shown);
+  function showMidi(shown) {
+    document.body.classList.toggle('show-midi', shown);
+    byId('midiToggle').classList.toggle('on', shown);
     try {
-      localStorage.setItem(STORE_SHOW_CC, JSON.stringify(shown));
+      localStorage.setItem(STORE_SHOW_MIDI, JSON.stringify(shown));
     } catch {
       return;
     }
   }
 
-  function wireCCToggle() {
+  function wireMidiToggle() {
     let stored = false;
     try {
-      stored = JSON.parse(localStorage.getItem(STORE_SHOW_CC)) === true;
+      stored = JSON.parse(localStorage.getItem(STORE_SHOW_MIDI)) === true;
     } catch {
       stored = false;
     }
-    showCC(stored);
-    byId('ccToggle').addEventListener('click', () => showCC(!document.body.classList.contains('show-cc')));
+    showMidi(stored);
+    byId('midiToggle').addEventListener('click', () => showMidi(!document.body.classList.contains('show-midi')));
     byId('tempoDivisionCC').textContent = `CC ${Patch.CC.tempoDivision}`;
   }
 
@@ -161,7 +161,7 @@
     Editor.keep.wire();
     Editor.midi.wire();
     byId('sendPatch').addEventListener('click', sendPatchToWall);
-    wireCCToggle();
+    wireMidiToggle();
     measureTopbar();
 
     Editor.wall.start();

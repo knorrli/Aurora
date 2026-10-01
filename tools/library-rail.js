@@ -42,11 +42,6 @@
 
   const bankLetter = bank => String.fromCharCode('A'.charCodeAt(0) + bank);
 
-  function addressOf(slot) {
-    if (slot < 1 || slot > BANKED_SLOTS) return null;
-    return bankLetter(Math.floor((slot - 1) / Protocol.KEYPAD_KEYS)) + String((slot - 1) % Protocol.KEYPAD_KEYS + 1);
-  }
-
   function rowLabel(text) {
     return element('span', 'row-label', text);
   }
@@ -75,9 +70,7 @@
     button.classList.toggle('target', slot === saveTarget());
 
     const head = element('span', 'cell-head');
-    const address = addressOf(slot);
-    if (address) head.append(element('span', 'address', address));
-    head.append(element('span', 'slot', String(slot)));
+    head.append(element('span', 'slot midi-number', `PC ${slot}`));
     const name = element('span', 'name', patch ? patch.name || '(unnamed)' : slot === saveTarget() ? 'new' : '');
     if (patch) {
       const color = element('i', 'color');
