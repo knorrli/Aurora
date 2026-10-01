@@ -81,7 +81,7 @@
 ## Oneshots
 
 - A oneshot is a single triggered effect with a length in beats. At the end of its length the wall snaps back to what is playing; any fade is part of the oneshot.
-- A oneshot marks the controls it sets, explicitly, even where the value equals the default. While it plays, a marked control overrides the wall and ignores the faders; an unmarked control keeps playing the wall, fader push included.
+- A oneshot marks the controls it sets, explicitly, even where the value equals the default. While it plays, a marked control overrides the wall, ignores the faders, and silences the patch's routes aimed at it; an unmarked control keeps playing the wall, fader push included.
 - A oneshot carries its own routes, run alongside the patch's. They start at the trigger, and their period is the oneshot's length.
 - A oneshot starts the moment its note arrives. If presses are ever snapped to the beat, the controller snaps them before sending.
 - The last oneshot fired wins: a new trigger replaces the one playing, or restarts it.

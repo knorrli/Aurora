@@ -68,6 +68,11 @@ void composeOneshot(const uint8_t *live, const uint8_t *oneshot, const uint8_t *
     const bool overridden = oneshot && marks[cc] && !performed(cc) && !routeByteOfPatch(cc);
     out[cc] = overridden ? oneshot[cc] : live[cc];
   }
+  for (uint8_t route = 0; oneshot && route < AURORA_ROUTES; route++) {
+    const uint8_t destination = aurora_route_cc(route, ROUTE_DESTINATION);
+    const uint8_t target = aurora_route_target(out[destination]);
+    if (target && marks[target]) out[destination] = AURORA_ROUTE_DEFAULTS[ROUTE_DESTINATION];
+  }
   for (uint8_t route = AURORA_ROUTES; route < RENDER_ROUTES; route++) {
     for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
       out[routeByte(route, field)] = oneshot
