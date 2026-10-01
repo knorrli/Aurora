@@ -213,6 +213,10 @@
 
   const emptySlots = () => new Array(Protocol.PATCH_MAX).fill(null);
   const filledSlots = library => library.slots.flatMap((patch, slot) => (patch ? [slot] : []));
+  const firstEmptySlot = library => {
+    const slot = library.slots.findIndex((patch, at) => !patch && LibraryFile.isPatchSlot(at));
+    return slot < 0 ? null : slot;
+  };
 
   const libraryToFile = library => ({
     patchFormat: Protocol.PATCH_FORMAT,
@@ -228,8 +232,8 @@
 
   function newLibrary() {
     const slots = emptySlots();
-    slots[0] = newPatch('first');
-    return { keymap: new Array(Protocol.KEYPAD_KEYS).fill(0), slots };
+    slots[1] = newPatch('first');
+    return { keymap: new Array(Protocol.KEYPAD_KEYS).fill(Protocol.PROGRAM_BLACKOUT), slots };
   }
 
   global.AuroraLibrary = {
@@ -237,6 +241,6 @@
     newPatch, clonePatch, layerBytes, overriddenIn, changedIn, freeRoute,
     blend, mix, keepAsBase, keepAsLayer, clearLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
-    filledSlots, libraryToFile, libraryFromFile, newLibrary,
+    filledSlots, firstEmptySlot, libraryToFile, libraryFromFile, newLibrary,
   };
 })(window);

@@ -51,7 +51,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 Deferred until the patch model stops changing. The editor drives the wall live over CCs until then.
 
-- Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 128.
+- Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 127.
 - Recall a patch: keypad lookup, Program Change to slot, write through the live handlers, clear the tails.
 - Compile in a default set (`docs/design.md` § Patch storage).
 - Build the patch transition, the accent and their times in the brain.

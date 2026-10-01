@@ -4,6 +4,7 @@
   const Protocol = global.AuroraProtocol;
   const Patch = global.AuroraPatch;
   const Library = global.AuroraLibrary;
+  const LibraryFile = global.AuroraLibraryFile;
 
   const STORE_LIBRARY = 'aurora.editor.library';
   const STORE_DRAFT = 'aurora.editor.draft';
@@ -46,14 +47,14 @@
       ? Library.libraryFromFile(stored) : Library.newLibrary();
     const draft = readStored(STORE_DRAFT);
     const fits = draft && !Library.validatePatch(draft.patch, 'the draft')
-      && (draft.slot === null || (Number.isInteger(draft.slot) && session.library.slots[draft.slot]));
+      && (draft.slot === null || LibraryFile.isPatchSlot(draft.slot));
     if (fits) {
       session.slot = draft.slot;
       session.draft = Library.patchFromFile(draft.patch);
       return;
     }
     const first = firstFilled();
-    session.slot = first;
+    session.slot = first === null ? Library.firstEmptySlot(session.library) : first;
     session.draft = first === null ? Library.newPatch('untitled') : null;
   }
 

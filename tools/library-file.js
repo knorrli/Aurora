@@ -9,6 +9,7 @@
 
   const isSevenBit = value => Number.isInteger(value) && value >= 0 && value <= 127;
   const isSlot = slot => Number.isInteger(slot) && slot >= 0 && slot < Protocol.PATCH_MAX;
+  const isPatchSlot = slot => isSlot(slot) && slot !== Protocol.PROGRAM_BLACKOUT;
 
   const printableName = text =>
     String(text == null ? '' : text).replace(/[^\x20-\x7E]/g, '').slice(0, Protocol.PATCH_NAME_LENGTH);
@@ -71,8 +72,8 @@
     for (let index = 0; index < file.patches.length; index++) {
       const patch = file.patches[index];
       const slot = patch && patch.slot;
-      if (!isSlot(slot)) {
-        return `patch ${index} is in slot ${slot}, and the slots run 0–${Protocol.PATCH_MAX - 1}`;
+      if (!isPatchSlot(slot)) {
+        return `patch ${index} is in slot ${slot}, and patches go in slots 1–${Protocol.PATCH_MAX - 1}`;
       }
       if (taken.has(slot)) return `two patches in slot ${slot}`;
       taken.add(slot);
@@ -108,7 +109,7 @@
     .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
 
   global.AuroraLibraryFile = {
-    printableName, serialize, validate, validatePatch,
+    printableName, serialize, validate, validatePatch, isPatchSlot,
     headBytes, patchFromHead, slotMapBytes, slotsInMap,
   };
 })(window);

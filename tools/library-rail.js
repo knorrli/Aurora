@@ -34,17 +34,25 @@
     return `rgb(${Preview.paletteColor(named.palette, hue, saturation).join(',')})`;
   }
 
-  function firstEmptySlot() {
-    const slot = session.library.slots.findIndex(patch => !patch);
-    return slot < 0 ? null : slot;
-  }
+  const firstEmptySlot = () => Library.firstEmptySlot(session.library);
+  const isSaved = () => session.slot !== null && !!session.library.slots[session.slot];
 
   function saveTarget() {
     if (target !== null && target !== session.slot) return target;
     return session.slot === null ? firstEmptySlot() : null;
   }
 
+  function blackoutCell() {
+    const button = element('button', 'cell empty');
+    button.disabled = true;
+    const head = element('span', 'cell-head');
+    head.append(element('span', 'slot', String(Protocol.PROGRAM_BLACKOUT)));
+    button.append(head, element('span', 'name', 'blackout'));
+    return button;
+  }
+
   function cell(slot) {
+    if (!LibraryFile.isPatchSlot(slot)) return blackoutCell();
     const current = slot === session.slot;
     const patch = current ? session.patch() : session.library.slots[slot];
     const keys = keysOn(slot);
@@ -118,7 +126,7 @@
   function paintList() {
     const filled = Library.filledSlots(session.library);
     byId('patchGrid').replaceChildren(...Array.from({ length: Protocol.PATCH_MAX }, (_, slot) => cell(slot)));
-    byId('libraryCount').textContent = `${filled.length} / ${Protocol.PATCH_MAX}`;
+    byId('libraryCount').textContent = `${filled.length} / ${Protocol.PATCH_MAX - 1}`;
     paintSaving();
     paintKeys();
     Editor.transition.refreshPatchChoices();
@@ -127,7 +135,7 @@
   function paintSaving() {
     byId('patchSave').disabled = !session.draft || session.slot === null;
     byId('patchDiscard').disabled = !session.draft;
-    byId('patchDelete').disabled = session.slot === null;
+    byId('patchDelete').disabled = !isSaved();
     const slot = saveTarget();
     const saveHere = byId('saveHere');
     saveHere.disabled = slot === null;
@@ -142,14 +150,16 @@
       const button = element('button', null, String(key));
       button.classList.toggle('on', session.slot !== null && slot === session.slot);
       button.addEventListener('click', () => {
-        if (session.slot === null) {
-          say('save the patch into a slot first', 'bad');
+        if (!isSaved()) {
+          say('save the patch first', 'bad');
           return;
         }
-        session.library.keymap[key - 1] = session.slot;
+        const unsetting = slot === session.slot;
+        session.library.keymap[key - 1] = unsetting ? Protocol.PROGRAM_BLACKOUT : session.slot;
         session.saveLibrary();
         paintList();
-        say(`key ${key} is now slot ${session.slot}, "${session.library.slots[session.slot].name}"`);
+        say(unsetting ? `key ${key} is unset`
+          : `key ${key} is now slot ${session.slot}, "${session.library.slots[session.slot].name}"`);
       });
       keys.push(button);
     }
@@ -163,7 +173,7 @@
 
   function showFirstOrNew() {
     const first = session.firstFilled();
-    if (first === null) Editor.show(null, Library.newPatch('untitled'));
+    if (first === null) Editor.show(firstEmptySlot(), Library.newPatch('untitled'));
     else Editor.show(first);
   }
 
@@ -275,8 +285,8 @@
     byId('patchDiscard').addEventListener('click', () => {
       if (!leaveDraft()) return;
       session.draft = null;
-      if (session.slot === null) showFirstOrNew();
-      else Editor.show(session.slot);
+      if (isSaved()) Editor.show(session.slot);
+      else showFirstOrNew();
     });
     byId('saveHere').addEventListener('click', () => {
       const slot = saveTarget();
@@ -293,7 +303,7 @@
     });
     byId('patchNew').addEventListener('click', () => {
       if (!leaveDraft()) return;
-      Editor.show(null, Library.newPatch('untitled'));
+      Editor.show(firstEmptySlot(), Library.newPatch('untitled'));
     });
     byId('patchDelete').addEventListener('click', () => {
       const patch = session.library.slots[session.slot];

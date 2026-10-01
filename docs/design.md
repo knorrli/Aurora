@@ -19,7 +19,8 @@
 
 ## Patch storage
 
-- Up to 128 patches in LittleFS on the brain's program flash. A slot is the Program Change that plays its patch.
+- Up to 127 patches in LittleFS on the brain's program flash, in slots 1–127. A slot is the Program Change that plays its patch.
+- Slot 0 holds no patch: Program Change 0 is the blackout. A key set to slot 0 is unset and does nothing.
 - Patches survive a power cycle and are lost on a firmware upload.
 - The editor holds the master library and pushes the whole library; the brain's copy is a mirror.
 - A small default set is compiled into the firmware so an empty brain still lights the wall.
@@ -94,7 +95,7 @@
 
 ### Playing
 
-- How does a key press reach the brain distinct from a Program Change naming a slot, and what becomes of slot 0 while PC 0 is blackout?
+- How does a key press reach the brain distinct from a Program Change naming a slot?
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
 - How does a pad-driven transition land its switches, with no key release left?
 - What does the fourth rocker do?

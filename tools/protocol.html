@@ -93,7 +93,7 @@
 <div class="panel">
   <h2>Read back</h2>
   <div class="row">
-    <span>slot</span><input type="number" id="index" value="0" min="0">
+    <span>slot</span><input type="number" id="index" value="1" min="1">
     <button id="read" disabled>read one</button>
     <button id="verify" disabled>verify the whole library</button>
   </div>
@@ -127,8 +127,8 @@
       Array.from({ length: Protocol.PATCH_CC_COUNT }, (_, cc) => byteAt(slot, layer, cc))),
   });
 
-  const testSlots = count => (count === 1 ? [0]
-    : [...new Set(Array.from({ length: count }, (_, i) => Math.round(i * (Protocol.PATCH_MAX - 1) / (count - 1))))]);
+  const testSlots = count => (count === 1 ? [1]
+    : [...new Set(Array.from({ length: count }, (_, i) => 1 + Math.round(i * (Protocol.PATCH_MAX - 2) / (count - 1))))]);
 
   function testLibrary(count) {
     const slots = testSlots(count);
@@ -241,7 +241,7 @@
   };
 
   const testCount = minimum =>
-    Math.min(Protocol.PATCH_MAX, Math.max(minimum, +byId('count').value || minimum));
+    Math.min(Protocol.PATCH_MAX - 1, Math.max(minimum, +byId('count').value || minimum));
 
   byId('query').addEventListener('click', run(queryLibrary));
 
@@ -355,7 +355,7 @@
     paintPorts();
   }
 
-  byId('count').max = Protocol.PATCH_MAX;
+  byId('count').max = Protocol.PATCH_MAX - 1;
   byId('index').max = Protocol.PATCH_MAX - 1;
   setBusy(false);
   openMidi();
