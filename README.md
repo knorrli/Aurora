@@ -27,6 +27,6 @@ cd tools && python3 -m http.server   # then open http://localhost:8000/editor.ht
 
 ## Docs
 
-- `TODO.md`: open work
+- `TODO.md`: open work and open questions
 - `docs/design.md`: decided behavior that is not built yet
 - `docs/hardware.md`: pins, circuits, fixtures, measurements

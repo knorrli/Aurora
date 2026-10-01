@@ -88,7 +88,6 @@ A 5 V WS2812 needs about 3.5 V for a high. Unshifted 3.3 V data gives random spe
 - Hue alone changes light output up to 5.4:1 (yellow-green brightest, blue dimmest), computed from WS2812B datasheet intensities, not metered.
 - The preview in `tools/preview.js` matches the wall; the wall reads slightly paler because of the diffuser.
 - The strips light in proportion to the byte, so the preview draws them through the screen's curve. Without it a channel at 2 to 5 vanished on screen (hue 1 reads orange and hue 127 pinkish on the strips), and dim and pale looks drew too dark and too saturated.
-- Whether a PAR wants FastLED's squared value curve is untested. Test with a strip and a PAR side by side at evenly spaced values.
 - A phase computed as elapsed × rate jumps when the rate changes; carry an offset across rate changes.
 
 ## Controller box — as it physically exists

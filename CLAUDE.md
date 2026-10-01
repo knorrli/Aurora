@@ -9,9 +9,9 @@
 
 ## Docs
 
-- Only facts the code cannot hold: hardware, measurements, and decided behavior that is not built yet.
+- Only facts the code cannot hold: hardware, measurements, and decided behavior that is not built yet. Anything open goes in `TODO.md` and nowhere else.
 - Never why, never history, never rejected alternatives. Delete what is done or no longer true.
-- `docs/hardware.md`: pins, circuits, fixtures, measured facts. `docs/design.md`: decided behavior not yet built. `TODO.md`: open work.
+- `docs/hardware.md`: pins, circuits, fixtures, measured facts. `docs/design.md`: decided behavior not yet built. `TODO.md`: all open work and open questions, split into at the wall and away from it, then by area.
 
 ## Generated files
 

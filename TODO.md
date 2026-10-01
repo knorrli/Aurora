@@ -1,6 +1,54 @@
 # Aurora TODO
 
-## Hardware
+## At the wall
+
+### Brain
+
+- Reflash the brain. Its flash predates the scatter rework and the last CC renumbers, so wall and preview disagree until then.
+
+### Looks
+
+Seen only in the preview so far. One look each, driven from the editor.
+
+- Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
+- PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a steps strobe over each of those, random per pulse on steps. Do the PARs want different speeds, for an oscillation that looks random?
+- The five strobe looks: strips in unison with the PARs chasing left to right; strips chasing with the PARs in unison; one side strobing while the other sits full on or off; strips and PARs on different waves; the same at different rates.
+- Arp modes on steps, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
+- Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
+- Region inside out across the strips at count 1, then the dark case with V at the top.
+- Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
+- Bipolar routes: Bend at wobbling the bend point, the PARs' hue offset swinging either side of the strips, a square on a hue at full amount as a flip to the opposite color.
+- The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize. Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
+- White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
+- Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
+- Morph between patches of different tempo divisions: does the jump read as a glitch? Should it carry position across instead?
+- Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
+- LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
+- Anchor against a click track: should the peak or the leading edge land on the beat?
+- The scatter on the strips. Do spots need a lifetime so they can travel past their cell (raindrops)? It costs eight to ten CCs.
+- Play a set to find where the color layer's controls should stop.
+- Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
+- Dial the starting looks by eye and save them as library patches; nothing about the morph is worth judging before. The old shape, fan, swing and color looks are in `git show 21a435c:tools/patch.js`.
+
+### PARs
+
+- Set the remaining two BCC145 to `A017` and `A025`, watching the personality (`docs/hardware.md`).
+- Does a PAR want FastLED's squared value curve? Compare a strip and a PAR side by side at evenly spaced values.
+
+### Controller
+
+- Press two keys at once on the old box and watch the wall: does 2+3 black it out?
+- The acceptance test: play a full DJ set to Justice, "Women Worldwide", on the rebuilt controller.
+
+## At rehearsal
+
+- Calibrate the fixtures: RGB trims and the brightness curve, stepping evenly spaced values.
+- Set each fixture's master scale by eye at soundcheck.
+- Aim each PAR at the wall between two strips, addressed `A001` to `A025` in stage order.
+
+## Away from the wall
+
+### Hardware
 
 - Move the brain off the breadboard onto perfboard.
 - Build DIN MIDI in on the brain: 6N138 on `Serial1`.
@@ -9,61 +57,50 @@
 - Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
 - Build the foot pedal.
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
-- Press two keys at once on the old box and watch the wall: does 2+3 black it out?
 - Buy real 110 Ω DMX cable for stage.
 
-## PARs
+### Controller
 
-- Set the remaining two BCC145 to `A017` and `A025`, watching the personality (`docs/hardware.md`).
-- Calibrate the fixtures at rehearsal: RGB trims and the brightness curve, stepping evenly spaced values.
-- Set each fixture's master scale by eye at soundcheck.
-- Aim each PAR at the wall between two strips, addressed `A001` to `A025` in stage order.
+- Write the firmware for the second Teensy: keypad as a static code, two-key rejection, faders, pad, rockers, rotary, tap tempo, fresh clock, indicator pixels, DIN out.
+- Find out whether the touchpad reads pressure usefully.
+- How does a key press reach the brain distinct from a Program Change naming a slot?
+- What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
+- How does a pad-driven transition land its switches, with no key release left?
+- What does the fourth rocker do?
+- What do the indicator pixels show?
+- What does the 12-position rotary do? Lead: a patch bank, turned between songs. Nine patch keys per bank (0 is the blackout) reach 108 of the 128 slots; the rest are Program Change only.
+- Is the mic trigger a clock source or a flash?
+- What are the foot pedal's four jobs?
 
-## On the wall
+### Playing
 
-Seen only in the preview so far. One look each, driven from the editor.
+- Which of the scatter's amounts does a fader route reach: is scatter a lift or a character change?
+- A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
+- Should patches have tags or grouping?
 
-- Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
-- PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a steps strobe over each of those, random per pulse on steps.
-- Arp modes on steps, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
-- Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
-- Region inside out across the strips at count 1, then the dark case with V at the top.
-- Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
-- Bipolar routes: Bend at wobbling the bend point, the PARs' hue offset swinging either side of the strips, a square on a hue at full amount as a flip to the opposite color.
-- The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize (wants a seed?).
-- White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
-- Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
-- Morph between patches of different tempo divisions: does the jump read as a glitch?
-- Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
-- LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
-- Anchor against a click track: should the peak or the leading edge land on the beat?
-- The scatter on the strips, and whether spots need to outlive their cell.
-- Play a set to find where the color layer's controls should stop.
-- Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
-- Dial the starting looks by eye and save them as library patches; nothing about the morph is worth judging before. The old shape, fan, swing and color looks are in `git show 21a435c:tools/patch.js`.
-
-## Renderer
+### Renderer
 
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
 - Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
+- Does the morph need per-parameter timing rather than every parameter in lockstep?
+- Should a patch choose to land its visible switches on the press rather than the release?
+- Should the per-spot scatter routes (Scatter Hue, Scatter Position) offer bipolar as other routes do? They are unipolar only.
+- Should Flow or Scatter be route sources? That costs a byte per route and a rule for where on the wall to sample.
+- Should each route choose the plain or fanned LFO, rather than its destination deciding?
+- Should Spread have a stepped form that flips whole at a threshold when a route moves it, rather than squeezing turns through the middle?
+- When the last spare CC (34) runs out: NRPN or a second MIDI channel?
 
-## Patches on the brain
+### Editor
+
+- A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
+
+### Patches on the brain
 
 Deferred until the patch model stops changing. The editor drives the wall live over CCs until then.
 
 - Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 127.
-- Recall a patch: keypad lookup, Program Change to slot, write through the live handlers, clear the tails.
+- Recall a patch: keypad lookup, Program Change to slot, write through the live handlers, clear the tails (`docs/design.md` § Recalling a patch).
 - Compile in a default set (`docs/design.md` § Patch storage).
-- Build the patch transition, the accent and their times in the brain.
+- Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent).
 - Read the faders and mix their targets the way the editor does.
 - Read the key-held CC for tap versus hold.
-
-## Controller firmware
-
-- Write it for the second Teensy: keypad as a static code, two-key rejection, faders, pad, rockers, rotary, tap tempo, fresh clock, indicator pixels, DIN out.
-- Find out whether the touchpad reads pressure usefully.
-- Then the acceptance test: play a full DJ set to Justice, "Women Worldwide", on the rebuilt controller.
-
-## Editor
-
-- A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
