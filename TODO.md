@@ -77,7 +77,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 ### Renderer
 
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
-- Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
 
 ### Editor
 
