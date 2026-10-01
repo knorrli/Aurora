@@ -50,7 +50,7 @@
 - Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`.
 - A morph interpolates the raw CC bytes, all together, linearly. Circular controls (hue, PAR hue offset, fan phase) take the short way around.
 - Switches (and route destinations) never interpolate. The destination patch's land on the release, not on arrival.
-- A layer that shows nothing at one end of a morph takes the other end's values at once, its switches included; only the controls that make it visible blend (`hiddenLayers` in `shared/render/layers.cpp`).
+- An engine that shows nothing at one end of a morph takes the other end's values at once, its switches included; only the controls that make it visible blend (`hiddenEngines` in `shared/render/engines.cpp`).
 - During an accent the source patch's switches are still in force.
 - A route whose destination differs between two patches holds whole (destination, amount, ratio, wave, phase) and lands with the switches.
 - A code arriving within a few tens of milliseconds of another key's is a fumbled two-key press and is ignored.
