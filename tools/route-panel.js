@@ -220,6 +220,10 @@
       const canvas = element('canvas', 'route-wave route-line-wave');
       const buttons = routeButtons(route);
       line.append(target, values, canvas, buttons.root);
+      Editor.layerDrop.source(line, () => ({
+        label: `${route.name} (${destinationText(session.liveNamed()[route.destination])})`,
+        names: [route.amount],
+      }));
       root.appendChild(line);
       list.lines.push({ route, line, target, values, canvas, buttons });
     }

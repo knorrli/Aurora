@@ -281,8 +281,6 @@
     for (const field of ROUTE_FIELDS) DEFAULT[route[field]] = Protocol.ROUTE_DEFAULTS[field];
   }
 
-  const NEUTRAL = Object.assign({}, DEFAULT, { shapeWidth: 127, shapeEdge: 0, shapeSpeed: 64 });
-
   const CONTROLS = {};
   const control = (name, label, extra) => {
     CONTROLS[name] = Object.assign({ name, label, kind: 'fader' }, extra || {});
@@ -566,7 +564,7 @@
 
   global.AuroraPatch = {
     LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
-    CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT, NEUTRAL,
+    CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT,
     clampToSevenBits, signedOf,
     LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
     SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,

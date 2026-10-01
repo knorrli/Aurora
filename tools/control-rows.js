@@ -112,15 +112,29 @@
     return button;
   }
 
-  function buildGroup(title, sections) {
+  function withRouteAmounts(names) {
+    const live = session.liveNamed();
+    return [...names, ...names.flatMap(name => session.routesOn(name, live).map(route => route.amount))];
+  }
+
+  const movable = (handle, label, names) =>
+    Editor.layerDrop.source(handle, () => ({ label, names: withRouteAmounts(names) }));
+
+  function buildGroup(title, sections, label = title) {
     const box = element('div');
     const heading = element('h3', null, title);
-    const reset = resetButton(sections.flatMap(([, names]) => names));
+    const groupNames = sections.flatMap(([, names]) => names);
+    const reset = resetButton(groupNames);
     reset.classList.add('push-right');
     heading.appendChild(reset);
+    movable(heading, label, groupNames);
     const body = element('div');
     for (const [subheading, names] of sections) {
-      if (subheading) body.appendChild(element('h4', 'subhead', subheading));
+      if (subheading) {
+        const handle = element('h4', 'subhead', subheading);
+        movable(handle, `${label} · ${subheading}`, names);
+        body.appendChild(handle);
+      }
       buildRows(body, names);
     }
     box.append(heading, body);
@@ -139,13 +153,16 @@
       Editor.refresh();
     });
     head.append(element('span', 'card-name', card.name), state, bypass, resetButton(Patch.cardNames(card)));
+    movable(head, card.name, Patch.cardNames(card));
     root.appendChild(head);
 
     const body = element('div', 'card-body');
     for (const [title, names] of [['Source', card.source], ['Amounts', card.amounts], ['Arpeggiator', card.arpeggiator || []]]) {
       if (!names.length) continue;
       const box = element('div');
-      box.appendChild(element('h4', null, title));
+      const handle = element('h4', null, title);
+      movable(handle, `${card.name} · ${title}`, names);
+      box.appendChild(handle);
       buildRows(box, names);
       body.appendChild(box);
     }
@@ -160,7 +177,8 @@
     byId('outputs').replaceChildren(...Patch.OUTPUTS.map(output => buildGroup(output.title, output.sections)));
     byId('lfo').replaceChildren(buildCard(Patch.LFO));
     const shape = element('div', 'groups');
-    shape.append(...Patch.SHAPE.groups.map(group => buildGroup(group.title, [[null, group.names]])));
+    shape.append(...Patch.SHAPE.groups.map(group =>
+      buildGroup(group.title, [[null, group.names]], `${Patch.SHAPE.name} · ${group.title}`)));
     byId('shape').replaceChildren(element('h2', 'shape-name', Patch.SHAPE.name), shape);
     byId('engines').replaceChildren(...Patch.ENGINES.map(buildCard));
   }

@@ -303,6 +303,7 @@
     });
     byId('patchNew').addEventListener('click', () => {
       if (!leaveDraft()) return;
+      session.layerIndex = Protocol.PATCH_LAYER_BASE;
       Editor.show(firstEmptySlot(), Library.newPatch('untitled'));
     });
     byId('patchDelete').addEventListener('click', () => {

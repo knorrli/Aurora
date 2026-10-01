@@ -17,6 +17,7 @@
       const badge = element('span', 'badge');
       button.append(element('span', null, Patch.LAYER_NAMES[layer]), badge);
       button.addEventListener('click', () => selectLayer(layer));
+      if (Patch.isAboveBase(layer)) Editor.layerDrop.target(button, layer);
       tabs.push({ layer, button, badge });
       return button;
     });
@@ -24,6 +25,7 @@
   }
 
   function paintTabs() {
+    document.body.classList.toggle('above-base', session.isAboveBase());
     for (const { layer, button, badge } of tabs) {
       button.classList.toggle('on', layer === session.layerIndex);
       badge.textContent = Patch.isAboveBase(layer)

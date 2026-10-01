@@ -159,9 +159,15 @@
       for (const name of names) if (!Patch.isSwitch(name)) delete over[name];
       changed();
     } else {
-      applyNamed(Object.fromEntries(names.filter(name => name in Patch.NEUTRAL)
-        .map(name => [name, Patch.NEUTRAL[name]])));
+      applyNamed(Object.fromEntries(names.filter(name => name in Patch.DEFAULT)
+        .map(name => [name, Patch.DEFAULT[name]])));
     }
+  }
+
+  function moveToLayer(names, layer) {
+    const moved = Library.moveToLayer(editing(), layer, names);
+    if (moved.length) changed();
+    return moved;
   }
 
   const routeBypassed = route => session.bypassedRoutes.has(route);
@@ -174,7 +180,7 @@
     for (const route of session.bypassedRoutes) out[route.destination] = 0;
     for (const card of session.bypassedCards) {
       if (card === Patch.LFO) for (const route of Patch.ROUTES) out[route.destination] = 0;
-      for (const name of card.amounts) out[name] = Patch.NEUTRAL[name];
+      for (const name of card.amounts) out[name] = Patch.DEFAULT[name];
     }
     return out;
   }
@@ -182,10 +188,10 @@
   function hasNoEffect(card, live) {
     if (card === Patch.LFO) {
       return !Patch.ROUTES.some(route =>
-        live[route.destination] !== 0 && live[route.amount] !== Patch.NEUTRAL[route.amount]);
+        live[route.destination] !== 0 && live[route.amount] !== Patch.DEFAULT[route.amount]);
     }
-    return (card.shownBy || card.amounts).every(name => live[name] === Patch.NEUTRAL[name]
-      && !routesOn(name, live).some(route => live[route.amount] !== Patch.NEUTRAL[route.amount]));
+    return (card.shownBy || card.amounts).every(name => live[name] === Patch.DEFAULT[name]
+      && !routesOn(name, live).some(route => live[route.amount] !== Patch.DEFAULT[route.amount]));
   }
 
   function routesOn(name, live) {
@@ -259,7 +265,7 @@
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    freeRoute, addRoute, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
+    freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });

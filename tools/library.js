@@ -66,7 +66,7 @@
 
   function freeRoute(patch, route) {
     for (const name of route.fields) {
-      writeCC(patch.base, name, Patch.NEUTRAL[name]);
+      writeCC(patch.base, name, Patch.DEFAULT[name]);
       for (const over of patch.overrides) if (over) delete over[name];
     }
   }
@@ -159,6 +159,20 @@
 
   const clearLayer = (patch, layer) => { patch.overrides[layer] = {}; };
 
+  function moveToLayer(patch, layer, names) {
+    const over = patch.overrides[layer];
+    const moved = [];
+    for (const name of names) {
+      if (Patch.isSwitch(name)) continue;
+      const value = byteOf(patch.base, name);
+      if (value === Patch.DEFAULT[name]) continue;
+      writeCC(patch.base, name, Patch.DEFAULT[name]);
+      over[name] = value;
+      moved.push(name);
+    }
+    return moved;
+  }
+
   const patchToFile = patch => ({
     name: patch.name,
     transitionTime: patch.transitionTime,
@@ -239,7 +253,7 @@
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
     newPatch, clonePatch, layerBytes, overriddenIn, changedIn, freeRoute,
-    blend, mix, keepAsBase, keepAsLayer, clearLayer,
+    blend, mix, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, firstEmptySlot, libraryToFile, libraryFromFile, newLibrary,
   };

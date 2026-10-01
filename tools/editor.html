@@ -105,6 +105,12 @@
   .patch-grid .cell.dirty .name::after { content: ' \2022'; color: var(--select); }
   .patch-grid .cell.dragging { opacity: .4; }
   .patch-grid .cell.drop { border-color: var(--text); }
+  .grip { color: var(--faint); cursor: grab; margin-right: 6px; user-select: none; }
+  .grip:hover, .picked > .grip { color: var(--text); }
+  body.above-base .grip { display: none; }
+  .movable.picked { outline: 1px dashed var(--text); outline-offset: 3px; }
+  body.carrying .layers .tab.takes-drop { border-style: dashed; border-color: var(--dim); }
+  .layers .tab.drop { border-color: var(--text); color: var(--text); }
 
   .stack { display: flex; flex-direction: column; gap: 7px; }
   .rowline { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
@@ -248,17 +254,18 @@
   }
   .card.bypassed .route-list .route-line, .card.no-effect .route-list .route-line { opacity: .38; }
   .route-line {
-    display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 2px 14px;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) 150px auto; gap: 2px 14px;
     align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line);
   }
   .route-line:last-child { border-bottom: none; }
   .route-line[hidden] { display: none; }
   .route-line-target {
-    grid-column: 1; background: none; border: none; padding: 0; text-align: left; color: var(--lfo);
+    grid-column: 2; background: none; border: none; padding: 0; text-align: left; color: var(--lfo);
   }
-  .route-line-values { grid-column: 1; }
-  .route-line-wave { grid-column: 2; grid-row: 1 / span 2; height: 34px; margin-top: 0; }
-  .route-line .route-buttons { grid-column: 3; grid-row: 1 / span 2; }
+  .route-line > .grip { grid-column: 1; grid-row: 1 / span 2; margin-right: 0; }
+  .route-line-values { grid-column: 2; }
+  .route-line-wave { grid-column: 3; grid-row: 1 / span 2; height: 34px; margin-top: 0; }
+  .route-line .route-buttons { grid-column: 4; grid-row: 1 / span 2; }
   .route-line.bypassed > :not(.route-buttons) { opacity: .38; }
 
   .outputs { border-left: 3px solid var(--out); }
@@ -435,6 +442,7 @@
 <script src="link.js"></script>
 <script src="dom.js"></script>
 <script src="session.js"></script>
+<script src="layer-drop.js"></script>
 <script src="tracks.js"></script>
 <script src="control-rows.js"></script>
 <script src="route-panel.js"></script>
