@@ -70,7 +70,7 @@
     button.classList.toggle('target', slot === saveTarget());
 
     const head = element('span', 'cell-head');
-    head.append(element('span', 'slot midi-number', `PC ${slot}`));
+    head.append(element('span', 'slot cc midi-number', `PC ${slot}`));
     const name = element('span', 'name', patch ? patch.name || '(unnamed)' : slot === saveTarget() ? 'new' : '');
     if (patch) {
       const color = element('i', 'color');
