@@ -83,9 +83,12 @@
 - A oneshot is a single triggered effect with a length in beats. At the end of its length the wall snaps back to what is playing; any fade is part of the oneshot.
 - A oneshot marks the controls it sets, explicitly, even where the value equals the default. While it plays, a marked control overrides the wall and ignores the faders; an unmarked control keeps playing the wall, fader push included.
 - A oneshot carries its own routes, run alongside the patch's. They start at the trigger, and their period is the oneshot's length.
-- Oneshots form one kit shared by every patch. Each oneshot is its own note. Note 60, the trigger flash, is the first.
-- The pedal's Oneshot 1 and 2 fire the song's pick, else the playing patch's pick, else a default pair. The controller resolves the pick and sends that oneshot's note.
-- The editor pushes the patches' oneshot picks to the controller together with the songs.
+- A oneshot starts the moment its note arrives. If presses are ever snapped to the beat, the controller snaps them before sending.
+- The last oneshot fired wins: a new trigger replaces the one playing, or restarts it.
+- Oneshots form one kit of up to 20, shared by every patch, on notes 60–79, one note each.
+- Each patch picks two oneshots from the kit, stored in the patch on the brain. Notes 58 and 59 fire the playing patch's first and second pick, or the default pair when the patch has none.
+- The pedal's Oneshot 1 and 2 send the song's pick for that switch as its kit note; with no song or no pick, they send note 58 or 59. The controller holds no patch data.
+- The mic trigger fires whatever Oneshot 1 fires.
 
 ## Routes
 

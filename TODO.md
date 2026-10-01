@@ -75,12 +75,9 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Oneshots
 
-- Does a oneshot start on the trigger or on the next beat?
-- What happens when a oneshot is fired while one is playing: restart, layer, or ignore?
-- How many oneshots does the kit hold, and on which notes?
-- Does the mic trigger fire a kit oneshot rather than the fixed flash?
 - Dial and preview oneshots in the editor: mark controls, routes, length, the kit, and the patches' picks.
-- Play oneshots on the brain, and give routes their once versions (`docs/design.md` § Oneshots, § Routes).
+- Push the kit to the brain with the patches.
+- Play oneshots on the brain in place of the fixed trigger flash, and give routes their once versions (`docs/design.md` § Oneshots, § Routes).
 
 ### Songs in the editor
 
