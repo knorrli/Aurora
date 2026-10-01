@@ -285,8 +285,8 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
 }
 
 void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
-                 float oneshotProgress, float oneshotBeats, Motion &motion, Wall &wall, Frame &out) {
-  setOneshotClock(oneshotProgress, oneshotBeats);
+                 const OneshotClock &oneshot, Motion &motion, Wall &wall, Frame &out) {
+  setOneshotClock(oneshot);
   FrameContext context;
   context.dialed = controls;
   context.beats = beatsAt(quarterNotes, controls[CC_TEMPO_DIVISION]);

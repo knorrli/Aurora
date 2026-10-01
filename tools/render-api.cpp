@@ -75,8 +75,10 @@ EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Wall *wa
                                        float quarterNotes, uint32_t milliseconds,
                                        int oneshot, float oneshotProgress, float oneshotBeats) {
   render::composeOneshot(live, oneshot ? oneshotControls : nullptr, oneshotMarks, controls);
-  render::renderFrame(controls, quarterNotes, milliseconds, oneshotProgress, oneshotBeats,
-                      *motion, *wall, frame);
+  const render::OneshotClock clock = {
+    oneshotProgress, oneshotBeats, oneshot != 0 && oneshotMarks[CC_FAN_LFO] != 0,
+  };
+  render::renderFrame(controls, quarterNotes, milliseconds, clock, *motion, *wall, frame);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount(); }

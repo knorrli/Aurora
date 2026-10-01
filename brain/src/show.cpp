@@ -38,7 +38,7 @@ bool blackout() { return blackedOut; }
 const render::Frame &render(float quarterNotes) {
     static uint8_t composed[render::RENDER_CONTROL_COUNT];
     render::composeOneshot(controls::all(), nullptr, nullptr, composed);
-    render::renderFrame(composed, quarterNotes, millis(), 0.0f, 1.0f, motion, wall, frame);
+    render::renderFrame(composed, quarterNotes, millis(), { 0.0f, 1.0f, false }, motion, wall, frame);
     return frame;
 }
 

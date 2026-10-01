@@ -27,7 +27,7 @@ struct SpotRoute {
   RouteTiming timing;
 };
 
-void setOneshotClock(float progress, float beats);
+void setOneshotClock(const OneshotClock &clock);
 
 RouteTiming routeTiming(const uint8_t *dialed, uint8_t route);
 

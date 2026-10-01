@@ -26,6 +26,12 @@ static inline uint8_t routeByte(uint8_t route, uint8_t field) {
 
 static inline bool oneshotRoute(uint8_t route) { return route >= AURORA_ROUTES; }
 
+struct OneshotClock {
+  float progress;
+  float beats;
+  bool staggered;
+};
+
 static const uint8_t TAIL_MAX_BEATS = 8;
 static const uint8_t TAIL_STEPS_PER_BEAT = 64;
 static const uint16_t TAIL_STEPS = TAIL_MAX_BEATS * TAIL_STEPS_PER_BEAT;
@@ -140,7 +146,7 @@ struct Frame {
 };
 
 void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
-                 float oneshotProgress, float oneshotBeats, Motion &motion, Wall &wall, Frame &out);
+                 const OneshotClock &oneshot, Motion &motion, Wall &wall, Frame &out);
 
 Hsv dialedColor(const uint8_t *controls);
 

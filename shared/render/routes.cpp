@@ -10,13 +10,9 @@ namespace render {
 static const float SHORTEST_STAB_CYCLES = 0.06f;
 static const float ONCE_END = 0.9999f;
 
-static float oneshotProgress = 0.0f;
-static float oneshotBeats = 1.0f;
+static OneshotClock oneshotClock = { 0.0f, 1.0f, false };
 
-void setOneshotClock(float progress, float beats) {
-  oneshotProgress = progress;
-  oneshotBeats = beats;
-}
+void setOneshotClock(const OneshotClock &clock) { oneshotClock = clock; }
 
 RouteTiming routeTiming(const uint8_t *dialed, uint8_t route) {
   const uint8_t ratio = dialed[routeByte(route, ROUTE_RATIO)];
@@ -31,7 +27,7 @@ float turnsOn(const RouteTiming &timing, float clock, float shift) {
 }
 
 float routeTurns(const RouteTiming &timing, float lfo, float shift) {
-  return turnsOn(timing, oneshotRoute(timing.route) ? oneshotProgress : lfo, shift);
+  return turnsOn(timing, oneshotRoute(timing.route) ? oneshotClock.progress : lfo, shift);
 }
 
 static inline float raisedCosine(float x) {
@@ -225,9 +221,10 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
 
     const RouteTiming timing = routeTiming(dialed, route);
     const uint8_t wave = dialed[routeByte(route, ROUTE_WAVE)];
-    const float shift = plainLfo(destination) ? 0.0f : fanShift;
+    const bool unstaggered = oneshotRoute(route) && !oneshotClock.staggered;
+    const float shift = plainLfo(destination) || unstaggered ? 0.0f : fanShift;
     const float phase = routeTurns(timing, lfo, shift);
-    const float cycleBeats = oneshotRoute(route) ? oneshotBeats : beatsPerCycle;
+    const float cycleBeats = oneshotRoute(route) ? oneshotClock.beats : beatsPerCycle;
 
     if (aurora_route_bipolar(aimedAt)) {
       const float mean = integralOf(route, wave).mean;
