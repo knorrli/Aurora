@@ -10,6 +10,8 @@
 namespace render {
 
 static const uint8_t HUE_DRAW_SALT = 29;
+static const uint32_t SHORTEST_PAR_PULSE_MILLISECONDS = 25;
+static const uint8_t PAR_LIT_LEVEL = 16;
 static const uint8_t CYCLE_DRAW_SALT = 97;
 
 struct ArpRoute {
@@ -144,6 +146,46 @@ void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out
     out.parHues[par] = (uint8_t)(hue & 255);
     out.pars[par] = { paletteColor(dialed[CC_PALETTE], (uint8_t)(hue & 255), (uint8_t)at(CC_PAR_SATURATION)),
                       (uint8_t)at(CC_PAR_VALUE) };
+  }
+}
+
+static uint8_t levelOf(const Par &par) {
+  const Rgb &color = par.color;
+  const uint8_t brightest = color.r > color.g ? (color.r > color.b ? color.r : color.b)
+                                              : (color.g > color.b ? color.g : color.b);
+  return scale8(par.value, brightest);
+}
+
+static Par heldPar(uint32_t milliseconds, ParHold &hold, const Par &rendered) {
+  const uint8_t level = levelOf(rendered);
+  const bool renderedLit = level >= PAR_LIT_LEVEL;
+  const bool settled = milliseconds - hold.sinceMilliseconds >= SHORTEST_PAR_PULSE_MILLISECONDS;
+
+  if (hold.lit && !settled) {
+    if (level > hold.brightestLevel) {
+      hold.brightest = rendered;
+      hold.brightestLevel = level;
+    }
+    return hold.brightest;
+  }
+  if (hold.lit && !renderedLit) {
+    hold.lit = false;
+    hold.sinceMilliseconds = milliseconds;
+    return rendered;
+  }
+  if (!hold.lit && renderedLit) {
+    if (!settled) return { rendered.color, 0 };
+    hold.lit = true;
+    hold.sinceMilliseconds = milliseconds;
+    hold.brightest = rendered;
+    hold.brightestLevel = level;
+  }
+  return rendered;
+}
+
+void holdParPulses(uint32_t milliseconds, Wall &wall, Frame &out) {
+  for (uint8_t par = 0; par < PARS; par++) {
+    out.pars[par] = heldPar(milliseconds, wall.parHolds[par], out.pars[par]);
   }
 }
 

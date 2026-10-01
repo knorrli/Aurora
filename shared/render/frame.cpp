@@ -283,8 +283,8 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   }
 }
 
-void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,
-                 Frame &out) {
+void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
+                 Motion &motion, Wall &wall, Frame &out) {
   FrameContext context;
   context.dialed = controls;
   context.beats = beatsAt(quarterNotes, controls[CC_TEMPO_DIVISION]);
@@ -297,6 +297,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   gatherRoutes(controls, context.plain.lfoBeats, context.lfo, 0.0f, pushes);
   readControls(controls, &pushes, context.plain);
   readPars(controls, pushes, context.lfo, out);
+  holdParPulses(milliseconds, wall, out);
   readFan(context.plain, out.fan);
 
   const Shape &shape = context.plain.shape;

@@ -123,9 +123,9 @@
         return at ? [renderer.HEAPF32[at >> 2], renderer.HEAPF32[(at >> 2) + 1]] : null;
       },
 
-      render(bytes, quarterNotes, motion, wallState) {
+      render(bytes, quarterNotes, milliseconds, motion, wallState) {
         renderer.HEAPU8.set(bytes, controls);
-        renderer._aurora_render(motion, wallState, quarterNotes);
+        renderer._aurora_render(motion, wallState, quarterNotes, milliseconds);
         return {
           pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
           field: {

@@ -68,7 +68,7 @@
 
   function draw(wall, named) {
     const frame = Preview.render(Library.bytesFromNamed(session.sounding(named)), beats.position,
-                                 wall.motion, wall.wallState);
+                                 Math.round(performance.now()), wall.motion, wall.wallState);
     Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height,
                  wall === walls.main ? view.overlays : {});
     return frame;

@@ -60,8 +60,8 @@ EMSCRIPTEN_KEEPALIVE render::Wall *aurora_wall_new() { return new render::Wall()
 EMSCRIPTEN_KEEPALIVE void aurora_wall_clear_tails(render::Wall *wall) { render::clearTails(*wall); }
 
 EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Wall *wall,
-                                       float quarterNotes) {
-  render::renderFrame(controls, quarterNotes, *motion, *wall, frame);
+                                       float quarterNotes, uint32_t milliseconds) {
+  render::renderFrame(controls, quarterNotes, milliseconds, *motion, *wall, frame);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount(); }

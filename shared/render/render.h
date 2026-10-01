@@ -67,8 +67,21 @@ struct Anchor {
   float swingCycles = 0.0f;
 };
 
+struct Par {
+  Rgb color;
+  uint8_t value;
+};
+
+struct ParHold {
+  bool lit = false;
+  uint32_t sinceMilliseconds = 0;
+  Par brightest = {};
+  uint8_t brightestLevel = 0;
+};
+
 struct Wall {
   Tails tails;
+  ParHold parHolds[PARS];
   Anchor anchors[STRIPS];
   bool lastBouncing = false;
   float lastBeats = 0.0f;
@@ -76,11 +89,6 @@ struct Wall {
 };
 
 void clearTails(Wall &wall);
-
-struct Par {
-  Rgb color;
-  uint8_t value;
-};
 
 struct FanReading {
   float values[STRIPS];
@@ -120,8 +128,8 @@ struct Frame {
   float fieldAcross[FIELD_ACROSS_POINTS];
 };
 
-void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wall &wall,
-                 Frame &out);
+void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
+                 Motion &motion, Wall &wall, Frame &out);
 
 Hsv dialedColor(const uint8_t *controls);
 

@@ -1,5 +1,7 @@
 #include "show.h"
 
+#include <Arduino.h>
+
 #include "aurora_protocol.h"
 #include "controls.h"
 
@@ -32,7 +34,7 @@ void advance(bool beatStarted, bool transportRunning) {
 bool blackout() { return blackedOut; }
 
 const render::Frame &render(float quarterNotes) {
-    render::renderFrame(controls::all(), quarterNotes, motion, wall, frame);
+    render::renderFrame(controls::all(), quarterNotes, millis(), motion, wall, frame);
     return frame;
 }
 

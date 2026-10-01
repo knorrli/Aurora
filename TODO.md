@@ -74,10 +74,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 - A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
 
-### Renderer
-
-- Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
-
 ### Editor
 
 - A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
