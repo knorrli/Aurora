@@ -113,7 +113,7 @@ struct Frame {
   FanReading fan;
   float bend[BEND_POINTS];
   float lfo;
-  float stripLfo[STRIPS];
+  float stripFanShift[STRIPS];
   float centers[STRIPS];
   StripSpots spots[STRIPS];
   float fieldLevels[STRIPS * PIXELS];

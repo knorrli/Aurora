@@ -175,7 +175,7 @@
     },
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
     fanSpread: (value, live) => fanShift(live, Math.abs(real('fanSpread', value))),
-    fanLfo: (value, live) => '±' + beatsText(Math.abs(real('fanLfo', value)) * real('lfoRate', live.lfoRate)),
+    fanLfo: value => '±' + Math.round(Math.abs(real('fanLfo', value)) * 360) + '°',
     fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
     fanFrequency: (value, live) => {
       const picture = fanPicture(Object.assign({}, live, { fanFrequency: value }));

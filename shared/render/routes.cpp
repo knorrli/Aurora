@@ -180,8 +180,8 @@ static float swingReach(uint8_t cc, float amount) {
   return 2.0f * ((amount < 0.0f) ? -1.0f : 1.0f) * fabsf(controlValue(cc, (uint8_t)byte));
 }
 
-void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
-                  float stripPhase, Pushes &out) {
+void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float fanShift,
+                  Pushes &out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     out.amount[i] = 0.0f;
     out.swing[i] = 0.0f;
@@ -201,8 +201,8 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float plainPhase,
     const uint8_t ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);
     const uint8_t wave = dialed[aurora_route_cc(route, ROUTE_WAVE)];
     const float delay = aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]);
-    const float lfo = plainLfo(destination) ? plainPhase : stripPhase;
-    const float phase = lfo * (float)ratio - delay;
+    const float shift = plainLfo(destination) ? 0.0f : fanShift;
+    const float phase = lfo * (float)ratio + shift - delay;
 
     if (aurora_route_bipolar(aimedAt)) {
       const float mean = integralOf(route, wave).mean;

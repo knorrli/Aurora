@@ -41,7 +41,7 @@ struct FrameContext {
 struct StripContext {
   uint8_t index;
   Reading reading;
-  float lfo;
+  float fanShift;
   float flowTime;
   float fieldDrift;
   float scatterTime;
@@ -118,10 +118,10 @@ static void readStrip(const FrameContext &context, uint8_t index, Pushes &pushes
   const Fan &fan = context.plain.fan;
   const float wave = fanWave(fan, index);
   strip.index = index;
-  strip.lfo = context.lfo + fan.lfo * wave;
-  out.stripLfo[index] = strip.lfo;
+  strip.fanShift = fan.lfo * wave;
+  out.stripFanShift[index] = strip.fanShift;
 
-  gatherRoutes(context.dialed, context.plain.lfoBeats, context.lfo, strip.lfo, pushes);
+  gatherRoutes(context.dialed, context.plain.lfoBeats, context.lfo, strip.fanShift, pushes);
   readControls(context.dialed, &pushes, strip.reading);
 
   strip.flowTime = context.flowTime + pushes.shift[CC_FLOW_RATE];
@@ -294,7 +294,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, Motion &motion, Wa
   out.lfo = context.lfo;
 
   Pushes pushes;
-  gatherRoutes(controls, context.plain.lfoBeats, context.lfo, context.lfo, pushes);
+  gatherRoutes(controls, context.plain.lfoBeats, context.lfo, 0.0f, pushes);
   readControls(controls, &pushes, context.plain);
   readPars(controls, pushes, context.lfo, out);
   readFan(context.plain, out.fan);
