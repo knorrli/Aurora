@@ -31,8 +31,8 @@
 ## Recalling a patch
 
 - Every source changes patch the same way: a Program Change naming a slot. The drum pad and MainStage send nothing else.
-- The controller turns a key and the rotary's bank into that Program Change through the keymap, which the editor syncs to the controller. The brain holds no keymap.
-- The 12-position rotary is a patch bank, turned between songs. Nine patch keys per bank (0 is the blackout) reach 108 of the 127 slots; the rest are Program Change only.
+- The 12-position rotary is a patch bank, turned between songs. Bank b, key k plays slot (b − 1) × 9 + k: bank 1 is slots 1–9, bank 12 is slots 100–108. Slots 109–127 are Program Change only.
+- The controller works that Program Change out from the bank and the key. There is no keymap.
 - Recall writes the patch's `[patch]` and `[switch]` CCs through the same handlers a live CC goes through, then clears the tails.
 - A patch change lands on the next beat.
 
@@ -70,7 +70,7 @@
 
 ## Blackout
 
-- Key 0 is the blackout (PC 0): not a patch, no slot, never in the keymap. It holds until the next key press.
+- Key 0 is the blackout (PC 0): not a patch, no slot, in every bank. It holds until the next key press.
 - The phone's hook switch is the master kill. It works on any patch and is pressed by a finger; the handset almost never rests on it.
 - The hook is a mute, not a latch: the wall is dark while it is held and back on the playing patch when it is released.
 - The hook shares the keypad's lines; its code is the blackout.

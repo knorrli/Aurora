@@ -381,6 +381,7 @@ static const uint8_t AURORA_PATCH_MAX       = 128;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
 static const uint8_t AURORA_KEYPAD_KEYS     = 9;
+static const uint8_t AURORA_BANKS           = 12;
 
 static const uint8_t AURORA_SLOT_MAP_LENGTH    = (AURORA_PATCH_MAX + 6) / 7;
 
@@ -403,6 +404,6 @@ static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT;
 
 #define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 15
+#define AURORA_PROTOCOL_VERSION_MINOR 16
 
 #endif

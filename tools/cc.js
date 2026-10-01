@@ -120,6 +120,7 @@
   const PATCH_LAYER_ACCENT = 4;
   const PATCH_LAYERS = 5;
   const KEYPAD_KEYS = 9;
+  const BANKS = 12;
   const SLOT_MAP_LENGTH = 19;
   const SYSEX_ID = 125;
   const SYSEX_SIGNATURE_A = 65;
@@ -206,6 +207,7 @@
     PATCH_LAYER_ACCENT,
     PATCH_LAYERS,
     KEYPAD_KEYS,
+    BANKS,
     SLOT_MAP_LENGTH,
     SYSEX_ID,
     SYSEX_SIGNATURE_A,

@@ -23,10 +23,6 @@
   let target = null;
   let dragged = null;
 
-  function keysOn(slot) {
-    return session.library.keymap.flatMap((keySlot, index) => (keySlot === slot ? [index + 1] : []));
-  }
-
   function patchColor(patch) {
     const named = Library.namedFromBytes(patch.base);
     const hue = Preview.convert(Patch.CC.hue, named.hue) & 255;
@@ -42,20 +38,29 @@
     return session.slot === null ? firstEmptySlot() : null;
   }
 
-  function blackoutCell() {
-    const button = element('button', 'cell empty');
-    button.disabled = true;
-    const head = element('span', 'cell-head');
-    head.append(element('span', 'slot', String(Protocol.PROGRAM_BLACKOUT)));
-    button.append(head, element('span', 'name', 'blackout'));
-    return button;
+  const BANKED_SLOTS = Protocol.BANKS * Protocol.KEYPAD_KEYS;
+
+  function rowLabel(text) {
+    return element('span', 'row-label', text);
+  }
+
+  function gridRows() {
+    const rows = [[rowLabel(''), ...Array.from({ length: Protocol.KEYPAD_KEYS }, (_, key) => rowLabel(String(key + 1)))]];
+    for (let bank = 0; bank < Protocol.BANKS; bank++) {
+      rows.push([rowLabel(String(bank + 1)),
+        ...Array.from({ length: Protocol.KEYPAD_KEYS }, (_, key) => cell(bank * Protocol.KEYPAD_KEYS + key + 1))]);
+    }
+    for (let first = BANKED_SLOTS + 1; first < Protocol.PATCH_MAX; first += Protocol.KEYPAD_KEYS) {
+      const last = Math.min(first + Protocol.KEYPAD_KEYS, Protocol.PATCH_MAX);
+      rows.push([rowLabel(first === BANKED_SLOTS + 1 ? 'PC' : ''),
+        ...Array.from({ length: last - first }, (_, offset) => cell(first + offset))]);
+    }
+    return rows.flat();
   }
 
   function cell(slot) {
-    if (!LibraryFile.isPatchSlot(slot)) return blackoutCell();
     const current = slot === session.slot;
     const patch = current ? session.patch() : session.library.slots[slot];
-    const keys = keysOn(slot);
     const button = element('button', 'cell');
     button.classList.toggle('empty', !patch);
     button.classList.toggle('on', current);
@@ -63,7 +68,7 @@
     button.classList.toggle('target', slot === saveTarget());
 
     const head = element('span', 'cell-head');
-    head.append(element('span', 'slot', String(slot)), element('span', 'keys', keys.length > 2 ? keys[0] + '+' : keys.join('')));
+    head.append(element('span', 'slot', String(slot)));
     const name = element('span', 'name', patch ? patch.name || '(unnamed)' : slot === saveTarget() ? 'new' : '');
     if (patch) {
       const color = element('i', 'color');
@@ -109,12 +114,8 @@
   }
 
   function swapSlots(from, to) {
-    const { slots, keymap } = session.library;
+    const { slots } = session.library;
     [slots[from], slots[to]] = [slots[to], slots[from]];
-    keymap.forEach((slot, index) => {
-      if (slot === from) keymap[index] = to;
-      else if (slot === to) keymap[index] = from;
-    });
     if (session.slot === from) session.slot = to;
     else if (session.slot === to) session.slot = from;
     if (target === from || target === to) target = null;
@@ -125,10 +126,9 @@
 
   function paintList() {
     const filled = Library.filledSlots(session.library);
-    byId('patchGrid').replaceChildren(...Array.from({ length: Protocol.PATCH_MAX }, (_, slot) => cell(slot)));
+    byId('patchGrid').replaceChildren(...gridRows());
     byId('libraryCount').textContent = `${filled.length} / ${Protocol.PATCH_MAX - 1}`;
     paintSaving();
-    paintKeys();
     Editor.transition.refreshPatchChoices();
   }
 
@@ -140,30 +140,6 @@
     const saveHere = byId('saveHere');
     saveHere.disabled = slot === null;
     saveHere.textContent = slot === null ? 'save to slot' : `save to slot ${slot}`;
-  }
-
-  function paintKeys() {
-    const keys = [];
-    for (let key = 1; key <= Protocol.KEYPAD_KEYS; key++) {
-      const slot = session.library.keymap[key - 1];
-      const patch = session.library.slots[slot];
-      const button = element('button', null, String(key));
-      button.classList.toggle('on', session.slot !== null && slot === session.slot);
-      button.addEventListener('click', () => {
-        if (!isSaved()) {
-          say('save the patch first', 'bad');
-          return;
-        }
-        const unsetting = slot === session.slot;
-        session.library.keymap[key - 1] = unsetting ? Protocol.PROGRAM_BLACKOUT : session.slot;
-        session.saveLibrary();
-        paintList();
-        say(unsetting ? `key ${key} is unset`
-          : `key ${key} is now slot ${session.slot}, "${session.library.slots[session.slot].name}"`);
-      });
-      keys.push(button);
-    }
-    byId('keyStrip').replaceChildren(...keys);
   }
 
   function selectPatch(slot) {
@@ -217,7 +193,7 @@
     const link = Editor.midi.link;
     brainButton('brainAsk', async () => {
       const info = await link.queryLibrary();
-      say(`protocol ${info.protocol}, format ${info.format} · ${info.stateText} — ${info.slots.length} patches · keypad ${info.keymap.join(' ')}`,
+      say(`protocol ${info.protocol}, format ${info.format} · ${info.stateText} — ${info.slots.length} patches`,
           info.state === Protocol.LIBRARY_STATE.stored ? 'ok' : 'warn');
     });
 

@@ -12,9 +12,7 @@ AuroraLibraryState state();
 
 const uint8_t *slotMap();
 
-const uint8_t *keymap();
-
-uint8_t stageBegin(uint8_t format, const uint8_t *keys, const uint8_t *map);
+uint8_t stageBegin(uint8_t format, const uint8_t *map);
 uint8_t stageHead(uint8_t slot, const uint8_t *head);
 uint8_t stageLayer(uint8_t slot, uint8_t layer, const uint8_t *cc);
 uint8_t stageCommit();

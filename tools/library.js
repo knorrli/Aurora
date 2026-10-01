@@ -177,20 +177,19 @@
 
   const libraryToFile = library => ({
     patchFormat: Protocol.PATCH_FORMAT,
-    keymap: library.keymap.slice(),
     patches: filledSlots(library).map(slot => Object.assign({ slot }, patchToFile(library.slots[slot]))),
   });
 
   function libraryFromFile(file) {
     const slots = emptySlots();
     for (const filePatch of file.patches) slots[filePatch.slot] = patchFromFile(filePatch);
-    return { keymap: file.keymap.slice(), slots };
+    return { slots };
   }
 
   function newLibrary() {
     const slots = emptySlots();
     slots[1] = newPatch('first');
-    return { keymap: new Array(Protocol.KEYPAD_KEYS).fill(Protocol.PROGRAM_BLACKOUT), slots };
+    return { slots };
   }
 
   global.AuroraLibrary = {

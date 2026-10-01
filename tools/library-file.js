@@ -21,7 +21,6 @@
       `  "aurora": ${JSON.stringify(KIND)},`,
       `  "patchFormat": ${file.patchFormat},`,
       `  "savedAt": ${JSON.stringify(new Date().toISOString())},`,
-      `  "keymap": [${file.keymap.join(', ')}],`,
       '  "patches": [',
     ];
     file.patches.forEach((patch, index) => {
@@ -65,9 +64,6 @@
       return `patch format ${file.patchFormat}, this page speaks ${Protocol.PATCH_FORMAT}`;
     }
     if (!Array.isArray(file.patches)) return 'no patch list in it';
-    if (!Array.isArray(file.keymap) || file.keymap.length !== Protocol.KEYPAD_KEYS || !file.keymap.every(isSlot)) {
-      return `the keymap should be ${Protocol.KEYPAD_KEYS} slots`;
-    }
     const taken = new Set();
     for (let index = 0; index < file.patches.length; index++) {
       const patch = file.patches[index];

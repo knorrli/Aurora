@@ -38,15 +38,13 @@ void fail(uint8_t type, uint8_t status) {
 }
 
 void sendLibraryInfo() {
-    const uint8_t KEYS_AT = 4, MAP_AT = KEYS_AT + AURORA_KEYPAD_KEYS;
+    const uint8_t MAP_AT = 4;
     uint8_t payload[MAP_AT + AURORA_SLOT_MAP_LENGTH];
     payload[0] = AURORA_PROTOCOL_VERSION_MAJOR;
     payload[1] = AURORA_PROTOCOL_VERSION_MINOR;
     payload[2] = AURORA_PATCH_FORMAT;
     payload[3] = (uint8_t)patch_store::state();
 
-    const uint8_t *keys = patch_store::keymap();
-    for (uint8_t i = 0; i < AURORA_KEYPAD_KEYS; i++) payload[KEYS_AT + i] = keys[i];
     const uint8_t *map = patch_store::slotMap();
     for (uint8_t i = 0; i < AURORA_SLOT_MAP_LENGTH; i++) payload[MAP_AT + i] = map[i];
 
@@ -92,13 +90,12 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
 
     switch (type) {
         case SYSEX_SYNC_BEGIN: {
-            if (payloadLength != 1 + AURORA_KEYPAD_KEYS + AURORA_SLOT_MAP_LENGTH) {
+            if (payloadLength != 1 + AURORA_SLOT_MAP_LENGTH) {
                 ack(type, SYSEX_ERROR_RANGE);
                 return;
             }
             pendingError = SYSEX_OK;
-            ack(type, patch_store::stageBegin(payload[0], payload + 1,
-                                              payload + 1 + AURORA_KEYPAD_KEYS));
+            ack(type, patch_store::stageBegin(payload[0], payload + 1));
             return;
         }
 

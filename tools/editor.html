@@ -83,9 +83,8 @@
 .library-head { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
   .library-head h2 { margin: 0; }
   .library-head + .library-head { margin-top: -2px; }
-  .key-strip { display: flex; gap: 3px; }
-  .key-strip button { padding: 1px 0; width: 22px; font-size: 10.5px; }
-  .patch-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+  .patch-grid { display: grid; grid-template-columns: auto repeat(9, minmax(0, 1fr)); gap: 4px; align-items: center; }
+  .patch-grid .row-label { color: var(--faint); font-size: 10.5px; text-align: center; padding: 0 4px; }
   .patch-grid .cell {
     position: relative; min-width: 0; height: 34px; padding: 5px 6px 2px; border-radius: 3px;
     display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
@@ -96,7 +95,6 @@
   .patch-grid .cell .color { position: absolute; left: 0; right: 0; top: 0; height: 4px; }
   .patch-grid .cell .cell-head { display: flex; justify-content: space-between; gap: 2px; }
   .patch-grid .cell .slot { color: var(--faint); }
-  .patch-grid .cell .keys { color: var(--select); white-space: nowrap; overflow: hidden; }
   .patch-grid .cell .name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .patch-grid .cell.on, .patch-grid .cell.on:hover:not(:disabled) {
     background: #2b2d36; border-color: var(--select); color: var(--text);
@@ -357,10 +355,6 @@
         <div class="rowline">
           <button class="tiny" id="saveHere">save to slot</button>
           <button class="tiny" id="patchDelete">delete</button>
-        </div>
-        <div class="rowline push-right">
-          <span class="cc">keys</span>
-          <div class="key-strip" id="keyStrip"></div>
         </div>
       </div>
       <div class="library-head">

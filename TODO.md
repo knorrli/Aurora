@@ -63,7 +63,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 ### Controller
 
 - Write the firmware for the second Teensy: keypad as a static code, two-key rejection, faders, pad, rockers, rotary, tap tempo, fresh clock, indicator pixels, DIN out.
-- Sync the keymap from the editor to the controller over USB, and send a key as CC 19 = 127, the Program Change of its slot, then CC 19 = 0 on release (`docs/design.md` § Recalling a patch).
+- Send a key as CC 19 = 127, the Program Change of its bank and key, then CC 19 = 0 on release (`docs/design.md` § Recalling a patch).
 - Should a DAW automation lane drive the morph position, as one more CC beside the Program Change?
 - Find out whether the touchpad reads pressure usefully.
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.

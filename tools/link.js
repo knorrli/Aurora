@@ -149,8 +149,7 @@
     }
 
     begin(file, slots) {
-      return this.request(TYPE.syncBegin, [file.patchFormat, ...file.keymap.map(slot => slot & 0x7F),
-                                           ...LibraryFile.slotMapBytes(slots)]);
+      return this.request(TYPE.syncBegin, [file.patchFormat, ...LibraryFile.slotMapBytes(slots)]);
     }
 
     sendPatch(patch) {
@@ -187,12 +186,10 @@
       const answer = this.expect(message => message.type === TYPE.libraryInfo);
       this.sendSysEx(TYPE.queryLibrary);
       const [major, minor, format, state, ...rest] = (await answer).payload;
-      const keymap = rest.slice(0, Protocol.KEYPAD_KEYS);
-      const slots = LibraryFile.slotsInMap(
-        rest.slice(Protocol.KEYPAD_KEYS, Protocol.KEYPAD_KEYS + Protocol.SLOT_MAP_LENGTH));
+      const slots = LibraryFile.slotsInMap(rest.slice(0, Protocol.SLOT_MAP_LENGTH));
       return {
         protocol: major + '.' + minor, format, state, stateText: libraryStateText(state),
-        keymap, slots,
+        slots,
       };
     }
 
@@ -227,7 +224,7 @@
         if (!read.patch) return { error: `slot ${slot}: ${statusText(read.status)}`, info };
         patches.push(read.patch);
       }
-      return { file: { patchFormat: Protocol.PATCH_FORMAT, keymap: info.keymap, patches }, info };
+      return { file: { patchFormat: Protocol.PATCH_FORMAT, patches }, info };
     }
   }
 
