@@ -91,5 +91,5 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 - Recall a patch: keypad lookup, Program Change to slot, write through the live handlers, clear the tails (`docs/design.md` § Recalling a patch).
 - Compile in a default set (`docs/design.md` § Patch storage).
 - Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent).
-- Read the faders and mix their targets the way the editor does.
+- Read the faders and mix their layers the way the editor does.
 - Read the key-held CC for tap versus hold.

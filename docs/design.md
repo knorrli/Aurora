@@ -42,7 +42,7 @@
 - Tap: a cut, on the beat.
 - Hold: a transition toward the patch over its transition time.
 - Release before arrival: the remaining distance is re-timed to land exactly on the next beat. No jump.
-- Hold past arrival: the morph pushes on toward that patch's Accent target over its accent time.
+- Hold past arrival: the morph pushes on toward that patch's Accent layer over its accent time.
 - Release during the accent: hold course to the next beat, then drop to the patch in one step.
 - Holding the key of the patch already playing goes straight to the accent.
 - CC 19 reads 127 while the key the last Program Change named is down, and 0 on release.
@@ -57,15 +57,13 @@
 
 ## The faders
 
-- CC 12, 13 and 14 carry positions. Each morphs the patch toward one of its targets:
-  - **Color**: hotter, toward white.
-  - **Extent**: more of the wall lit.
-  - **Motion**: faster, harder, more agitated.
-- A target is per patch and covers every control, the PARs included.
+- CC 12, 13 and 14 carry positions. Each morphs the patch toward one of its layers: Color, Extent and Motion.
+- A layer is the patch's look pushed further. What further means is up to the patch.
+- A layer is per patch and covers every control, the PARs included.
 - A fader never arrives: it never moves a switch, whatever its position.
 - A fader's position is its push. A patch change does not reset it: the new patch arrives pushed by wherever the faders sit. The controller sends every fader's position when it starts.
-- A patch and its targets share switches.
-- Several targets at once add: each contributes its fader position times the distance from the patch to that target, and the sum is clamped per byte; a circular control takes the short way and wraps. The brain matches the editor's rule.
+- A patch and its layers share switches.
+- Several layers at once add: each contributes its fader position times the distance from the patch to that layer, and the sum is clamped per byte; a circular control takes the short way and wraps. The brain matches the editor's rule.
 - Faders move energy; the keypad moves character. Mid-song lifts are fader moves; sideways changes at the same energy are patch changes.
 
 ## Blackout
