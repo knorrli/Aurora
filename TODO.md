@@ -75,9 +75,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Oneshots
 
-- Dial and preview oneshots in the editor: mark controls, routes, length, the kit, and the patches' picks.
-- Push the kit to the brain with the patches.
-- Play oneshots on the brain in place of the fixed trigger flash, and give routes their once versions (`docs/design.md` § Oneshots, § Routes).
+- Push the kit and the patches' oneshot picks to the brain with the patches. Until then, pulling the library back keeps the editor's kit but loses the picks.
+- Play oneshots on the brain in place of the fixed trigger flash: notes 58–79 (`docs/design.md` § Oneshots).
 
 ### Songs in the editor
 

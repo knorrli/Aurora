@@ -18,7 +18,8 @@
   const bpm = () => +byId('bpm').value || DEFAULT_BPM;
 
   function sendLive(force) {
-    const live = session.sounding(session.liveNamed());
+    const live = session.editingOneshot()
+      ? global.AuroraLibrary.namedFromBytes(session.underneath().base) : session.sounding(session.liveNamed());
     for (const name of Patch.NAMES) {
       const cc = Patch.CC[name], value = live[name];
       if (!force && lastSent[cc] === value) continue;

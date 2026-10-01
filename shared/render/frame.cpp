@@ -33,7 +33,7 @@ struct FrameContext {
   float flowTime;
   float fieldDrift;
   float scatterTime;
-  SpotRoute spotRoutes[AURORA_ROUTES];
+  SpotRoute spotRoutes[RENDER_ROUTES];
   uint8_t spotRouteCount;
   float stripLaps[STRIPS];
 };
@@ -83,7 +83,8 @@ static float beatsAt(float quarterNotes, uint8_t division) {
 static void startTravel(FrameContext &context, const Wall &wall) {
   const Reading &plain = context.plain;
   bool anyMoving =
-      routeAims(context.dialed, CC_SHAPE_SPEED) || routeAims(context.dialed, CC_FAN_SPEED);
+      routeAims(context.dialed, CC_SHAPE_SPEED, RENDER_ROUTES)
+      || routeAims(context.dialed, CC_FAN_SPEED, RENDER_ROUTES);
   const float lap = lapPixels(plain.shape);
   const float fanLaps = lap > 0.0001f ? plain.fan.speedPixels / lap : 0.0f;
   for (uint8_t i = 0; i < STRIPS; i++) {
@@ -274,7 +275,7 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   PixelEngines engines;
   engines.fieldOn = fieldActive(reading);
   engines.flowOn = flowActive(reading);
-  engines.scatterOn = scatterActive(reading, context.dialed);
+  engines.scatterOn = scatterActive(reading, context.dialed, RENDER_ROUTES);
   engines.flat =
       !engines.fieldOn && !engines.flowOn && !coreActive(reading);
 
@@ -284,7 +285,8 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
 }
 
 void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
-                 Motion &motion, Wall &wall, Frame &out) {
+                 float oneshotProgress, float oneshotBeats, Motion &motion, Wall &wall, Frame &out) {
+  setOneshotClock(oneshotProgress, oneshotBeats);
   FrameContext context;
   context.dialed = controls;
   context.beats = beatsAt(quarterNotes, controls[CC_TEMPO_DIVISION]);

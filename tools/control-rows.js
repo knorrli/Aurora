@@ -19,7 +19,11 @@
     root.dataset.name = name;
 
     const label = controlLabel(name);
-    label.addEventListener('click', () => { Editor.transition.snap(); session.resetNames([name]); });
+    label.addEventListener('click', () => {
+      Editor.transition.snap();
+      if (session.editingOneshot()) session.toggleMark(name);
+      else session.resetNames([name]);
+    });
     const swatch = control.swatch ? element('i', 'swatch') : null;
     if (swatch) label.firstChild.appendChild(swatch);
 
@@ -65,6 +69,7 @@
     const root = element('div', 'switch-row');
     root.dataset.name = name;
     const label = controlLabel(name);
+    label.addEventListener('click', () => { if (session.editingOneshot()) session.toggleMark(name); });
     const picks = element('div', 'picks');
     const options = typeof control.options === 'function' ? control.options() : control.options;
     const pick = value => {
@@ -234,9 +239,12 @@
   function paint(live) {
     const base = Library.namedFromBytes(session.patch().base);
     const overrides = session.overrides();
+    const oneshot = session.editingOneshot();
     for (const row of Object.values(rows)) {
       if (row.kind === 'fader') paintFader(row, live, base, overrides);
       else paintPick(row, live);
+      const name = row.control.name;
+      row.root.classList.toggle('unmarked', oneshot && Library.isMarkable(name) && !session.marked(name));
     }
     paintCards(live);
   }

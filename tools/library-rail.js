@@ -62,10 +62,10 @@
 
   function cell(slot) {
     const current = slot === session.slot;
-    const patch = current ? session.patch() : session.library.slots[slot];
+    const patch = current ? session.underneath() : session.library.slots[slot];
     const button = element('button', 'cell');
     button.classList.toggle('empty', !patch);
-    button.classList.toggle('on', current);
+    button.classList.toggle('on', current && !session.editingOneshot());
     button.classList.toggle('dirty', current && !!session.draft);
     button.classList.toggle('target', slot === saveTarget());
 
@@ -131,12 +131,14 @@
     byId('patchGrid').replaceChildren(...gridRows());
     byId('libraryCount').textContent = `${filled.length} / ${Protocol.PATCH_MAX - 1}`;
     paintSaving();
+    Editor.oneshots.paintKit();
     Editor.transition.refreshPatchChoices();
   }
 
   function paintSaving() {
-    byId('patchSave').disabled = !session.draft || session.slot === null;
-    byId('patchDiscard').disabled = !session.draft;
+    const oneshot = session.editingOneshot();
+    byId('patchSave').disabled = oneshot ? !session.oneshotDraft : !session.draft || session.slot === null;
+    byId('patchDiscard').disabled = oneshot ? !session.oneshotDraft : !session.draft;
     byId('patchDelete').disabled = !isSaved();
     const slot = saveTarget();
     const saveHere = byId('saveHere');
@@ -145,6 +147,10 @@
   }
 
   function selectPatch(slot) {
+    if (slot === session.slot && session.editingOneshot()) {
+      Editor.show(slot, session.draft);
+      return;
+    }
     if (slot === session.slot || !leaveDraft()) return;
     Editor.show(slot);
   }
@@ -216,10 +222,12 @@
       const result = await link.pull();
       if (result.error) { say(result.error, 'bad'); return; }
       say(`read ${result.file.patches.length} patches`);
-      const fault = Library.validateFile(result.file);
+      const pulled = Library.upgradeFile(result.file);
+      const fault = Library.validateFile(pulled);
       if (fault) { say(`the brain's library: ${fault}`, 'bad'); return; }
       if (!leaveDraft()) return;
-      replaceLibrary(result.file);
+      const { kit, defaultOneshots } = session.library;
+      replaceLibrary(Object.assign({}, pulled, Library.libraryToFile({ slots: [], kit, defaultOneshots }), { patches: pulled.patches }));
       say(`the editor now holds what the brain holds — ${result.file.patches.length} patches`, 'ok');
     });
   }
@@ -244,6 +252,7 @@
         say(`${file.name} is not readable JSON`, 'bad');
         return;
       }
+      loaded = Library.upgradeFile(loaded);
       const fault = Library.validateFile(loaded);
       if (fault) { say(`${file.name}: ${fault}`, 'bad'); return; }
       if (!leaveDraft()) return;
@@ -254,6 +263,10 @@
 
   function wireLibrary() {
     byId('patchSave').addEventListener('click', () => {
+      if (session.editingOneshot()) {
+        Editor.oneshots.save();
+        return;
+      }
       session.library.slots[session.slot] = session.draft;
       session.draft = null;
       session.saveLibrary();
@@ -261,6 +274,10 @@
       say(`saved "${session.library.slots[session.slot].name}" in slot ${session.slot}`, 'ok');
     });
     byId('patchDiscard').addEventListener('click', () => {
+      if (session.editingOneshot()) {
+        Editor.oneshots.discard();
+        return;
+      }
       if (!leaveDraft()) return;
       session.draft = null;
       if (isSaved()) Editor.show(session.slot);
@@ -270,7 +287,7 @@
       const slot = saveTarget();
       const occupant = session.library.slots[slot];
       if (slot !== session.slot && occupant && !confirm(`Slot ${slot} holds "${occupant.name}". Replace it?`)) return;
-      session.library.slots[slot] = Library.clonePatch(session.patch());
+      session.library.slots[slot] = Library.clonePatch(session.underneath());
       session.slot = slot;
       session.draft = null;
       target = null;
@@ -280,6 +297,10 @@
       say(`saved "${session.library.slots[slot].name}" in slot ${slot}`, 'ok');
     });
     byId('patchNew').addEventListener('click', () => {
+      if (session.editingOneshot()) {
+        Editor.oneshots.startNew();
+        return;
+      }
       if (!leaveDraft()) return;
       session.layerIndex = Protocol.PATCH_LAYER_BASE;
       Editor.show(firstEmptySlot(), Library.newPatch('untitled'));

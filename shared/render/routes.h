@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "aurora_protocol.h"
+#include "render.h"
 
 namespace render {
 struct Pushes {
@@ -12,13 +13,27 @@ struct Pushes {
   float bipolar[AURORA_PATCH_CC_COUNT];
 };
 
+struct RouteTiming {
+  uint8_t route;
+  uint8_t ratio;
+  bool once;
+  float delay;
+};
+
 struct SpotRoute {
   uint8_t cc;
   float amount;
-  uint8_t ratio;
   uint8_t wave;
-  float delay;
+  RouteTiming timing;
 };
+
+void setOneshotClock(float progress, float beats);
+
+RouteTiming routeTiming(const uint8_t *dialed, uint8_t route);
+
+float turnsOn(const RouteTiming &timing, float clock, float shift);
+
+float routeTurns(const RouteTiming &timing, float lfo, float shift);
 
 bool spotDestination(uint8_t cc);
 
@@ -39,7 +54,7 @@ bool routeRefused(uint8_t cc);
 
 uint8_t routeTarget(const uint8_t *dialed, uint8_t route);
 
-bool routeAims(const uint8_t *dialed, uint8_t cc);
+bool routeAims(const uint8_t *dialed, uint8_t cc, uint8_t routes);
 
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high);
 

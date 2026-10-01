@@ -8,12 +8,17 @@
 
   const STORE_LIBRARY = 'aurora.editor.library';
   const STORE_DRAFT = 'aurora.editor.draft';
+  const STORE_ONESHOT_DRAFT = 'aurora.editor.oneshotDraft';
   const DRAFT_SAVE_DELAY_MILLISECONDS = 500;
 
   const session = {
     library: null,
     slot: null,
     draft: null,
+    mode: 'patch',
+    oneshotIndex: null,
+    oneshotDraft: null,
+    firing: { at: null, repeat: true },
     layerIndex: Protocol.PATCH_LAYER_BASE,
     transition: { position: 1, from: null },
     mix: Object.fromEntries(Patch.LAYERS_ABOVE_BASE.map(layer => [layer, 0])),
@@ -42,15 +47,17 @@
   };
 
   function load() {
-    const stored = readStored(STORE_LIBRARY);
+    const stored = Library.upgradeFile(readStored(STORE_LIBRARY));
     session.library = stored && !Library.validateFile(stored)
       ? Library.libraryFromFile(stored) : Library.newLibrary();
+    loadOneshotDraft();
     const draft = readStored(STORE_DRAFT);
-    const fits = draft && !Library.validatePatch(draft.patch, 'the draft')
+    const draftPatch = draft && Library.upgradeDraftPatch(draft.patch, draft.format);
+    const fits = draft && !Library.validatePatch(draftPatch, 'the draft')
       && (draft.slot === null || LibraryFile.isPatchSlot(draft.slot));
     if (fits) {
       session.slot = draft.slot;
-      session.draft = Library.patchFromFile(draft.patch);
+      session.draft = Library.patchFromFile(draftPatch);
       return;
     }
     const first = firstFilled();
@@ -64,7 +71,16 @@
     clearTimeout(draftTimer);
     draftTimer = null;
     writeStored(STORE_DRAFT, session.draft
-      ? { slot: session.slot, patch: Library.patchToFile(session.draft) } : null);
+      ? { slot: session.slot, format: Protocol.PATCH_FORMAT, patch: Library.patchToFile(session.draft) } : null);
+    writeStored(STORE_ONESHOT_DRAFT, session.oneshotDraft
+      ? { index: session.oneshotIndex, oneshot: Library.oneshotToFile(session.oneshotDraft, session.oneshotIndex) } : null);
+  }
+
+  function loadOneshotDraft() {
+    const stored = readStored(STORE_ONESHOT_DRAFT);
+    if (!stored || LibraryFile.validateOneshot(stored.oneshot, 'the oneshot draft')) return;
+    session.oneshotIndex = stored.index;
+    session.oneshotDraft = Library.oneshotFromFile(stored.oneshot);
   }
 
   function saveDraftSoon() {
@@ -83,12 +99,22 @@
     return filled.length ? filled[0] : null;
   };
 
-  const patch = () => session.draft || session.library.slots[session.slot];
+  const editingOneshot = () => session.mode === 'oneshot';
+  const underneath = () => session.draft || session.library.slots[session.slot];
+  const oneshot = () => session.oneshotDraft || session.library.kit[session.oneshotIndex];
+  const patch = () => (editingOneshot() ? oneshot() : underneath());
   const patchAt = slot => (slot === session.slot && session.draft ? session.draft : session.library.slots[slot]) || null;
   const isAboveBase = () => Patch.isAboveBase(session.layerIndex);
   const overrides = () => patch().overrides[session.layerIndex] || {};
 
   function editing() {
+    if (editingOneshot()) {
+      if (!session.oneshotDraft) {
+        session.oneshotDraft = Library.cloneOneshot(session.library.kit[session.oneshotIndex]);
+        if (session.onDraftStarted) session.onDraftStarted();
+      }
+      return session.oneshotDraft;
+    }
     if (!session.draft) {
       session.draft = Library.clonePatch(session.library.slots[session.slot]);
       if (session.onDraftStarted) session.onDraftStarted();
@@ -105,10 +131,28 @@
 
   const switchSource = () => (heldAt() || patch()).base;
 
-  const mixing = () => Object.values(session.mix).some(position => position > 0);
-  const transitioning = () => !isAboveBase() && !!comingFrom() && session.transition.position < 1;
+  const mixing = () => !editingOneshot() && Object.values(session.mix).some(position => position > 0);
+  const transitioning = () =>
+    !editingOneshot() && !isAboveBase() && !!comingFrom() && session.transition.position < 1;
+
+  const isRouteField = name => !Library.isMarkable(name);
+  const marked = name => !!oneshot().marks[name];
+
+  function oneshotNamed() {
+    const under = Library.namedFromBytes(underneath().base);
+    const own = Library.namedFromBytes(oneshot().base);
+    const named = {};
+    for (const name of Patch.NAMES) named[name] = isRouteField(name) || marked(name) ? own[name] : under[name];
+    return named;
+  }
+
+  function oneshotInput() {
+    const own = sounding(Library.namedFromBytes(oneshot().base));
+    return { bytes: Library.bytesFromNamed(own), marks: Library.markBytes(oneshot()) };
+  }
 
   function liveNamed() {
+    if (editingOneshot()) return oneshotNamed();
     const current = patch();
     const position = session.transition.position;
     if (isAboveBase()) {
@@ -131,6 +175,11 @@
 
   function write(name, value) {
     const current = editing();
+    if (editingOneshot()) {
+      Library.writeCC(current.base, name, value);
+      if (!isRouteField(name)) current.marks[name] = true;
+      return;
+    }
     const over = current.overrides[session.layerIndex];
     if (!isAboveBase() || Patch.isSwitch(name)) {
       Library.writeBase(current, name, value);
@@ -153,8 +202,21 @@
     changed();
   }
 
+  function toggleMark(name) {
+    if (marked(name)) {
+      delete editing().marks[name];
+      changed();
+    } else {
+      setValue(name, oneshotNamed()[name]);
+    }
+  }
+
   function resetNames(names) {
-    if (isAboveBase()) {
+    if (editingOneshot()) {
+      const current = editing();
+      for (const name of names) delete current.marks[name];
+      changed();
+    } else if (isAboveBase()) {
       const over = editing().overrides[session.layerIndex];
       for (const name of names) if (!Patch.isSwitch(name)) delete over[name];
       changed();
@@ -229,10 +291,23 @@
   }
 
   function select(slot, draft) {
+    session.mode = 'patch';
     const previous = session.slot;
     if (previous !== slot) session.transition.from = previous !== null && patchAt(previous) ? previous : slot;
     session.slot = slot;
     session.draft = draft || null;
+    session.bypassedRoutes.clear();
+    session.bypassedCards.clear();
+    resetPreview();
+    saveDraft();
+  }
+
+  function openOneshot(index, draft) {
+    session.mode = 'oneshot';
+    session.oneshotIndex = index;
+    session.oneshotDraft = draft || null;
+    session.layerIndex = Protocol.PATCH_LAYER_BASE;
+    session.firing.at = null;
     session.bypassedRoutes.clear();
     session.bypassedCards.clear();
     resetPreview();
@@ -261,6 +336,7 @@
 
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
+    editingOneshot, underneath, oneshot, marked, toggleMark, oneshotInput, openOneshot,
     patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,

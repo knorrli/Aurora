@@ -9,7 +9,10 @@
 #include <render.h>
 #include <routes.h>
 
-static uint8_t controls[AURORA_PATCH_CC_COUNT];
+static uint8_t live[AURORA_PATCH_CC_COUNT];
+static uint8_t oneshotControls[AURORA_PATCH_CC_COUNT];
+static uint8_t oneshotMarks[AURORA_PATCH_CC_COUNT];
+static uint8_t controls[render::RENDER_CONTROL_COUNT];
 static render::Frame frame;
 static float reach[2];
 static render::ArpPass arpPass;
@@ -33,7 +36,9 @@ static_assert(sizeof(render::FanReading)
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return controls; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return live; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_oneshot_controls() { return oneshotControls; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_oneshot_marks() { return oneshotMarks; }
 EMSCRIPTEN_KEEPALIVE render::Rgb *aurora_pixels() { return frame.pixels; }
 EMSCRIPTEN_KEEPALIVE render::Par *aurora_pars() { return frame.pars; }
 EMSCRIPTEN_KEEPALIVE float *aurora_par_hue_places() { return frame.parHuePlaces; }
@@ -67,8 +72,11 @@ EMSCRIPTEN_KEEPALIVE render::Wall *aurora_wall_new() { return new render::Wall()
 EMSCRIPTEN_KEEPALIVE void aurora_wall_clear_tails(render::Wall *wall) { render::clearTails(*wall); }
 
 EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Wall *wall,
-                                       float quarterNotes, uint32_t milliseconds) {
-  render::renderFrame(controls, quarterNotes, milliseconds, *motion, *wall, frame);
+                                       float quarterNotes, uint32_t milliseconds,
+                                       int oneshot, float oneshotProgress, float oneshotBeats) {
+  render::composeOneshot(live, oneshot ? oneshotControls : nullptr, oneshotMarks, controls);
+  render::renderFrame(controls, quarterNotes, milliseconds, oneshotProgress, oneshotBeats,
+                      *motion, *wall, frame);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount(); }

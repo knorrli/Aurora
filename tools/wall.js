@@ -1,6 +1,7 @@
 (function (global) {
   'use strict';
 
+  const Protocol = global.AuroraProtocol;
   const Patch = global.AuroraPatch;
   const Library = global.AuroraLibrary;
   const Preview = global.AuroraPreview;
@@ -66,13 +67,40 @@
     view.order = valid ? strips : defaultOrder();
   }
 
-  function draw(wall, named) {
-    const frame = Preview.render(Library.bytesFromNamed(session.sounding(named)), beats.position,
-                                 Math.round(performance.now()), wall.motion, wall.wallState);
+  const lengthBeats = oneshot => Protocol.LFO_PERIODS[Patch.periodStep(oneshot.length)];
+
+  function fire() {
+    session.firing.at = beats.position;
+  }
+
+  function oneshotProgress() {
+    const firing = session.firing;
+    if (firing.at === null || !session.editingOneshot()) return null;
+    const length = lengthBeats(session.oneshot());
+    if (beats.position < firing.at) firing.at = beats.position;
+    if (beats.position - firing.at >= length) {
+      if (!firing.repeat) {
+        firing.at = null;
+        return null;
+      }
+      firing.at += length * Math.floor((beats.position - firing.at) / length);
+    }
+    return (beats.position - firing.at) / length;
+  }
+
+  function oneshotInput(progress) {
+    if (progress === null) return null;
+    return Object.assign(session.oneshotInput(), { progress, beats: lengthBeats(session.oneshot()) });
+  }
+
+  function drawBytes(wall, bytes, oneshot) {
+    const frame = Preview.render(bytes, beats.position, Math.round(performance.now()), wall.motion, wall.wallState, oneshot);
     Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height,
                  wall === walls.main ? view.overlays : {});
     return frame;
   }
+
+  const draw = (wall, named) => drawBytes(wall, Library.bytesFromNamed(session.sounding(named)));
 
   function paintBeats() {
     const beat = Math.floor(beats.position);
@@ -90,7 +118,14 @@
     beats.lastFrameAt = now;
     paintBeats();
     const live = session.liveNamed();
-    Editor.routes.paintPlayheads(draw(walls.main, live).lfo, live);
+    if (session.editingOneshot()) {
+      const progress = oneshotProgress();
+      drawBytes(walls.main, session.underneath().base, oneshotInput(progress));
+      Editor.routes.paintPlayheads(progress, live);
+      Editor.oneshots.paintFiring(progress);
+    } else {
+      Editor.routes.paintPlayheads(draw(walls.main, live).lfo, live);
+    }
     Editor.tracks.paint();
     if (session.isAboveBase()) {
       Preview.copyMotion(walls.base.motion, walls.main.motion);
@@ -133,5 +168,5 @@
     requestAnimationFrame(frame);
   }
 
-  Editor.wall = { start, paint, clearTails, restartBeats };
+  Editor.wall = { start, paint, clearTails, restartBeats, fire };
 })(window);

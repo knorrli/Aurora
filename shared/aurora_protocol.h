@@ -182,10 +182,18 @@ static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
 
 static const uint8_t AURORA_ROUTE_MAX_RATIO = 8;
 
-static inline uint8_t aurora_route_ratio(uint8_t value) {
-    const uint8_t last = AURORA_ROUTE_MAX_RATIO - 1;
+static inline uint8_t aurora_route_ratio_step(uint8_t value) {
+    const uint8_t last = 2 * AURORA_ROUTE_MAX_RATIO - 1;
     const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
-    return (uint8_t)(1 + (step > last ? last : step));
+    return step > last ? last : step;
+}
+
+static inline uint8_t aurora_route_ratio(uint8_t value) {
+    return (uint8_t)(1 + aurora_route_ratio_step(value) % AURORA_ROUTE_MAX_RATIO);
+}
+
+static inline bool aurora_route_once(uint8_t value) {
+    return aurora_route_ratio_step(value) >= AURORA_ROUTE_MAX_RATIO;
 }
 
 enum AuroraArp : uint8_t {
@@ -336,8 +344,13 @@ enum AuroraFieldDirection : uint8_t {
 };
 
 enum AuroraNote : uint8_t {
-    NOTE_TRIGGER_FLASH = 60,
+    NOTE_PATCH_ONESHOT_FIRST  = 58,
+    NOTE_PATCH_ONESHOT_SECOND = 59,
+    NOTE_ONESHOT_FIRST        = 60,
+    NOTE_TRIGGER_FLASH        = 60,
 };
+
+static const uint8_t AURORA_ONESHOTS = 20;
 
 static const uint8_t AURORA_SYSEX_ID       = 0x7D;
 static const uint8_t AURORA_SYSEX_SIGNATURE_A    = 0x41;
@@ -376,7 +389,7 @@ enum AuroraLibraryState : uint8_t {
     LIBRARY_UNREADABLE = 2,
 };
 
-static const uint8_t AURORA_PATCH_FORMAT    = 4;
+static const uint8_t AURORA_PATCH_FORMAT    = 5;
 static const uint8_t AURORA_PATCH_MAX       = 128;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;

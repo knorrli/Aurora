@@ -5,6 +5,8 @@
 #include "aurora_protocol.h"
 #include "controls.h"
 
+#include <morph.h>
+
 namespace show {
 
 static bool blackedOut = true;
@@ -34,7 +36,9 @@ void advance(bool beatStarted, bool transportRunning) {
 bool blackout() { return blackedOut; }
 
 const render::Frame &render(float quarterNotes) {
-    render::renderFrame(controls::all(), quarterNotes, millis(), motion, wall, frame);
+    static uint8_t composed[render::RENDER_CONTROL_COUNT];
+    render::composeOneshot(controls::all(), nullptr, nullptr, composed);
+    render::renderFrame(composed, quarterNotes, millis(), 0.0f, 1.0f, motion, wall, frame);
     return frame;
 }
 

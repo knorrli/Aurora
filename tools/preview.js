@@ -132,9 +132,14 @@
         return at ? [renderer.HEAPF32[at >> 2], renderer.HEAPF32[(at >> 2) + 1]] : null;
       },
 
-      render(bytes, quarterNotes, milliseconds, motion, wallState) {
+      render(bytes, quarterNotes, milliseconds, motion, wallState, oneshot) {
         renderer.HEAPU8.set(bytes, controls);
-        renderer._aurora_render(motion, wallState, quarterNotes, milliseconds);
+        if (oneshot) {
+          renderer.HEAPU8.set(oneshot.bytes, renderer._aurora_oneshot_controls());
+          renderer.HEAPU8.set(oneshot.marks, renderer._aurora_oneshot_marks());
+        }
+        renderer._aurora_render(motion, wallState, quarterNotes, milliseconds,
+                                oneshot ? 1 : 0, oneshot ? oneshot.progress : 0, oneshot ? oneshot.beats : 1);
         return {
           pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
           field: {

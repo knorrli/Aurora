@@ -9,6 +9,9 @@
 
   const isSevenBit = value => Number.isInteger(value) && value >= 0 && value <= 127;
   const isSlot = slot => Number.isInteger(slot) && slot >= 0 && slot < Protocol.PATCH_MAX;
+  const isOneshotIndex = index => Number.isInteger(index) && index >= 0 && index < Protocol.ONESHOTS;
+  const isPick = pick => pick === null || isOneshotIndex(pick);
+  const NO_PICKS = [null, null];
   const isPatchSlot = slot => isSlot(slot) && slot !== Protocol.PROGRAM_BLACKOUT;
 
   const printableName = text =>
@@ -27,11 +30,23 @@
       lines.push('    {');
       lines.push(`      "slot": ${patch.slot}, "name": ${JSON.stringify(patch.name)},`);
       lines.push(`      "transitionTime": ${patch.transitionTime}, "accentTime": ${patch.accentTime},`);
+      lines.push(`      "oneshots": ${JSON.stringify(patch.oneshots || NO_PICKS)},`);
       lines.push('      "layers": [');
       patch.layers.forEach((layer, layerIndex) =>
         lines.push(`        [${layer.join(',')}]${layerIndex < patch.layers.length - 1 ? ',' : ''}`));
       lines.push('      ]');
       lines.push(`    }${index < file.patches.length - 1 ? ',' : ''}`);
+    });
+    lines.push('  ],');
+    const oneshots = file.oneshots || [];
+    lines.push(`  "defaultOneshots": ${JSON.stringify(file.defaultOneshots || NO_PICKS)},`);
+    lines.push('  "oneshots": [');
+    oneshots.forEach((oneshot, index) => {
+      lines.push('    {');
+      lines.push(`      "index": ${oneshot.index}, "name": ${JSON.stringify(oneshot.name)}, "length": ${oneshot.length},`);
+      lines.push(`      "marks": [${oneshot.marks.join(',')}],`);
+      lines.push(`      "bytes": [${oneshot.bytes.join(',')}]`);
+      lines.push(`    }${index < oneshots.length - 1 ? ',' : ''}`);
     });
     lines.push('  ]', '}');
     return lines.join('\n');
@@ -45,6 +60,10 @@
     if (!isSevenBit(patch.transitionTime) || !isSevenBit(patch.accentTime)) {
       return `${where} needs a transition time and an accent time of 0–127`;
     }
+    if (patch.oneshots !== undefined
+        && !(Array.isArray(patch.oneshots) && patch.oneshots.length === 2 && patch.oneshots.every(isPick))) {
+      return `${where} picks oneshots that are not two kit numbers 0–${Protocol.ONESHOTS - 1} or empty`;
+    }
     if (!Array.isArray(patch.layers) || patch.layers.length !== Protocol.PATCH_LAYERS) {
       return `${where} has ${patch.layers && patch.layers.length} layers, expected ${Protocol.PATCH_LAYERS}`;
     }
@@ -54,6 +73,38 @@
         return `${where} layer ${layer} is not ${Protocol.PATCH_CC_COUNT} bytes`;
       }
       if (!bytes.every(isSevenBit)) return `${where} layer ${layer} holds something that is not a 7-bit value`;
+    }
+    return null;
+  }
+
+  function validateOneshot(oneshot, where) {
+    if (!oneshot || typeof oneshot !== 'object') return `${where} is not a oneshot`;
+    if (!isOneshotIndex(oneshot.index)) return `${where} is in kit place ${oneshot.index}, not 0–${Protocol.ONESHOTS - 1}`;
+    if (!isPrintableName(oneshot.name)) {
+      return `${where} needs a name of up to ${Protocol.PATCH_NAME_LENGTH} printable ASCII characters`;
+    }
+    if (!isSevenBit(oneshot.length)) return `${where} needs a length of 0–127`;
+    if (!Array.isArray(oneshot.bytes) || oneshot.bytes.length !== Protocol.PATCH_CC_COUNT
+        || !oneshot.bytes.every(isSevenBit)) {
+      return `${where} is not ${Protocol.PATCH_CC_COUNT} 7-bit values`;
+    }
+    if (!Array.isArray(oneshot.marks) || !oneshot.marks.every(isSevenBit)) return `${where} marks something that is not a CC`;
+    return null;
+  }
+
+  function validateKit(file) {
+    if (file.defaultOneshots !== undefined
+        && !(Array.isArray(file.defaultOneshots) && file.defaultOneshots.length === 2 && file.defaultOneshots.every(isPick))) {
+      return 'the default oneshots are not two kit numbers or empty';
+    }
+    if (file.oneshots === undefined) return null;
+    if (!Array.isArray(file.oneshots)) return 'the oneshots are not a list';
+    const taken = new Set();
+    for (const [position, oneshot] of file.oneshots.entries()) {
+      const fault = validateOneshot(oneshot, `oneshot ${position}`);
+      if (fault) return fault;
+      if (taken.has(oneshot.index)) return `two oneshots in kit place ${oneshot.index}`;
+      taken.add(oneshot.index);
     }
     return null;
   }
@@ -76,7 +127,7 @@
       const fault = validatePatch(patch, `patch ${index}`);
       if (fault) return fault;
     }
-    return null;
+    return validateKit(file);
   }
 
   function headBytes(patch) {
@@ -105,7 +156,7 @@
     .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
 
   global.AuroraLibraryFile = {
-    printableName, serialize, validate, validatePatch, isPatchSlot,
+    printableName, serialize, validate, validatePatch, validateOneshot, isPatchSlot,
     headBytes, patchFromHead, slotMapBytes, slotsInMap,
   };
 })(window);

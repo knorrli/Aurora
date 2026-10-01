@@ -26,10 +26,13 @@
   const emptyOverrides = () => Array.from({ length: Protocol.PATCH_LAYERS },
     (_, layer) => (Patch.isAboveBase(layer) ? {} : null));
 
+  const NO_PICKS = [null, null];
+
   const newPatch = name => ({
     name: LibraryFile.printableName(name || 'untitled'),
     transitionTime: Patch.periodValue(4),
     accentTime: Patch.periodValue(10),
+    oneshots: NO_PICKS.slice(),
     base: bytesFromNamed(Patch.DEFAULT),
     overrides: emptyOverrides(),
   });
@@ -38,8 +41,51 @@
     name: patch.name,
     transitionTime: patch.transitionTime,
     accentTime: patch.accentTime,
+    oneshots: patch.oneshots.slice(),
     base: patch.base.slice(),
     overrides: patch.overrides.map(over => (over ? Object.assign({}, over) : null)),
+  });
+
+  const newOneshot = name => ({
+    name: LibraryFile.printableName(name || 'untitled'),
+    length: Patch.periodValue(4),
+    marks: {},
+    base: bytesFromNamed(Patch.DEFAULT),
+    overrides: emptyOverrides(),
+  });
+
+  const cloneOneshot = oneshot => ({
+    name: oneshot.name,
+    length: oneshot.length,
+    marks: Object.assign({}, oneshot.marks),
+    base: oneshot.base.slice(),
+    overrides: emptyOverrides(),
+  });
+
+  const MARKABLE = Patch.NAMES.filter(name => !Patch.ROUTES.some(route => route.fields.includes(name)));
+  const isMarkable = name => MARKABLE.includes(name);
+
+  function markBytes(oneshot) {
+    const marks = new Array(Protocol.PATCH_CC_COUNT).fill(0);
+    for (const name of Object.keys(oneshot.marks)) marks[Patch.CC[name]] = 1;
+    return marks;
+  }
+
+  const oneshotToFile = (oneshot, index) => ({
+    index,
+    name: oneshot.name,
+    length: oneshot.length,
+    marks: Object.keys(oneshot.marks).map(name => Patch.CC[name]).sort((a, b) => a - b),
+    bytes: oneshot.base.slice(),
+  });
+
+  const oneshotFromFile = fileOneshot => ({
+    name: fileOneshot.name,
+    length: fileOneshot.length,
+    marks: Object.fromEntries(fileOneshot.marks
+      .map(cc => Protocol.NAME_BY_CC[cc]).filter(isMarkable).map(name => [name, true])),
+    base: fileOneshot.bytes.slice(),
+    overrides: emptyOverrides(),
   });
 
   function layerBytes(patch, layer) {
@@ -120,6 +166,7 @@
     name: patch.name,
     transitionTime: patch.transitionTime,
     accentTime: patch.accentTime,
+    oneshots: patch.oneshots.slice(),
     layers: Array.from({ length: Protocol.PATCH_LAYERS }, (_, layer) => layerBytes(patch, layer)),
   });
 
@@ -138,6 +185,7 @@
       name: filePatch.name,
       transitionTime: filePatch.transitionTime,
       accentTime: filePatch.accentTime,
+      oneshots: (filePatch.oneshots || NO_PICKS).slice(),
       base,
       overrides,
     };
@@ -175,28 +223,67 @@
     return slot < 0 ? null : slot;
   };
 
+  const emptyKit = () => new Array(Protocol.ONESHOTS).fill(null);
+  const filledKit = library => library.kit.flatMap((oneshot, index) => (oneshot ? [index] : []));
+  const firstEmptyKitPlace = library => {
+    const index = library.kit.findIndex(oneshot => !oneshot);
+    return index < 0 ? null : index;
+  };
+
   const libraryToFile = library => ({
     patchFormat: Protocol.PATCH_FORMAT,
     patches: filledSlots(library).map(slot => Object.assign({ slot }, patchToFile(library.slots[slot]))),
+    defaultOneshots: library.defaultOneshots.slice(),
+    oneshots: filledKit(library).map(index => oneshotToFile(library.kit[index], index)),
   });
 
   function libraryFromFile(file) {
     const slots = emptySlots();
     for (const filePatch of file.patches) slots[filePatch.slot] = patchFromFile(filePatch);
-    return { slots };
+    const kit = emptyKit();
+    for (const fileOneshot of file.oneshots || []) kit[fileOneshot.index] = oneshotFromFile(fileOneshot);
+    return { slots, kit, defaultOneshots: (file.defaultOneshots || NO_PICKS).slice() };
   }
 
   function newLibrary() {
     const slots = emptySlots();
     slots[1] = newPatch('first');
-    return { slots };
+    return { slots, kit: emptyKit(), defaultOneshots: NO_PICKS.slice() };
   }
+
+  const FORMAT_BEFORE_ONCE = 4;
+  const RATIOS_BEFORE_ONCE = 8;
+
+  function upgradedRatios(bytes) {
+    const upgraded = bytes.slice();
+    for (const route of Patch.ROUTES) {
+      const cc = Patch.CC[route.ratio];
+      const ratio = 1 + Protocol.steppedIndex(upgraded[cc], RATIOS_BEFORE_ONCE);
+      upgraded[cc] = Protocol.routeRatioValue(ratio, false);
+    }
+    return upgraded;
+  }
+
+  const upgradedPatch = filePatch => Object.assign({}, filePatch, { layers: filePatch.layers.map(upgradedRatios) });
+
+  function upgradeFile(file) {
+    if (!file || file.patchFormat !== FORMAT_BEFORE_ONCE || !Array.isArray(file.patches)) return file;
+    const valid = file.patches.every(filePatch => filePatch && Array.isArray(filePatch.layers)
+      && filePatch.layers.every(Array.isArray));
+    if (!valid) return file;
+    return Object.assign({}, file, { patchFormat: Protocol.PATCH_FORMAT, patches: file.patches.map(upgradedPatch) });
+  }
+
+  const upgradeDraftPatch = (filePatch, format) =>
+    (format === Protocol.PATCH_FORMAT || !filePatch || !Array.isArray(filePatch.layers)
+      ? filePatch : upgradedPatch(filePatch));
 
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
-    newPatch, clonePatch, layerBytes, changedIn, writeBase, freeRoute,
+    newPatch, clonePatch, newOneshot, cloneOneshot, oneshotToFile, oneshotFromFile, isMarkable, markBytes, layerBytes, changedIn, writeBase, freeRoute,
     blend, mix, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
-    filledSlots, firstEmptySlot, libraryToFile, libraryFromFile, newLibrary,
+    filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, libraryToFile, libraryFromFile, newLibrary,
+    upgradeFile, upgradeDraftPatch,
   };
 })(window);

@@ -73,7 +73,13 @@
 
   function paintHead() {
     const patch = session.patch();
+    byId('subjectKind').textContent = session.editingOneshot() ? 'Oneshot' : 'Patch';
     if (byId('patchName').value !== patch.name) byId('patchName').value = patch.name;
+    if (session.editingOneshot()) {
+      Editor.oneshots.paintHead();
+      return;
+    }
+    Editor.oneshots.paintPicks();
     for (const field of TIME_FIELDS) {
       byId(field).value = String(Patch.periodValue(Patch.periodStep(patch[field])));
     }
@@ -83,6 +89,7 @@
   }
 
   function paint() {
+    document.body.classList.toggle('oneshot-mode', session.editingOneshot());
     const live = session.liveNamed();
     Editor.rows.paint(live);
     paintTabs();
@@ -158,6 +165,7 @@
     buildTabs();
     buildHead();
     Editor.rail.wire();
+    Editor.oneshots.wire();
     Editor.keep.wire();
     Editor.midi.wire();
     byId('sendPatch').addEventListener('click', sendPatchToWall);

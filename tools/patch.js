@@ -112,7 +112,7 @@
 
   const ROUTE_READOUTS = {
     amount: () => value => signed(signedOf(value)),
-    ratio: () => value => '×' + Protocol.routeRatio(value),
+    ratio: () => value => '×' + Protocol.routeRatio(value) + (Protocol.routeOnce(value) ? ' once' : ''),
     phase: route => (value, live) => phaseText(value, live, route),
     wave: () => waveText,
   };

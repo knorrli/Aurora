@@ -15,31 +15,27 @@ static const uint8_t PAR_LIT_LEVEL = 16;
 static const uint8_t CYCLE_DRAW_SALT = 97;
 
 struct ArpRoute {
-  uint8_t route;
   uint8_t target;
   uint8_t arp;
   float amount;
-  uint8_t ratio;
   uint8_t wave;
-  float delay;
+  RouteTiming timing;
 };
 
 static bool readArpRoute(const uint8_t *dialed, uint8_t route, ArpRoute &out) {
-  const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
-  out.route = route;
+  const uint8_t aimedAt = dialed[routeByte(route, ROUTE_DESTINATION)];
   out.arp = aurora_route_arp(aimedAt);
   out.target = aurora_route_target(aimedAt);
   if (out.arp == ARP_UNISON || !out.target) return false;
-  out.amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+  out.amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
   if (fabsf(out.amount) < 0.001f) return false;
-  out.ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);
-  out.wave = dialed[aurora_route_cc(route, ROUTE_WAVE)];
-  out.delay = aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]);
+  out.wave = dialed[routeByte(route, ROUTE_WAVE)];
+  out.timing = routeTiming(dialed, route);
   return true;
 }
 
 static float turnsAt(const ArpRoute &route, float lfo) {
-  return lfo * (float)route.ratio - route.delay;
+  return routeTurns(route.timing, lfo, 0.0f);
 }
 
 static bool lastPulseOf(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par,
@@ -61,7 +57,7 @@ static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t 
 
 static void pushArpRoutes(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t par,
                           Pushes &pushes) {
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     if (!readArpRoute(dialed, route, arpRoute)) continue;
     pushes.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, lfo, par);
@@ -72,13 +68,13 @@ static float drawnHue(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t 
   bool drawn = false;
   float latest = 0.0f;
   uint32_t seed = 0;
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     Pulse pulse;
     if (!readArpRoute(dialed, route, arpRoute) || !lastPulseOf(arpRoute, arp, lfo, par, pulse)) {
       continue;
     }
-    const float litAt = (pulse.start + arpRoute.delay) / (float)arpRoute.ratio;
+    const float litAt = (pulse.start + arpRoute.timing.delay) / (float)arpRoute.timing.ratio;
     if (drawn && litAt <= latest) continue;
     drawn = true;
     latest = litAt;
@@ -115,7 +111,7 @@ static void parPushes(const uint8_t *dialed, const Pushes &pushes, const Arp &ar
 }
 
 bool firstArpPass(const uint8_t *dialed, const Pushes &pushes, float lfo, ArpPass &out) {
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     if (!readArpRoute(dialed, route, arpRoute)) continue;
     passAt(readArp(dialed, &pushes), arpRoute.arp == ARP_RIPPLE, turnsAt(arpRoute, lfo), out);

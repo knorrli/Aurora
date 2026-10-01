@@ -93,7 +93,7 @@
 ## Routes
 
 - A route loops or plays once. A once route plays one cycle at the start of each period, at its ratio's speed, then holds its end value until the next period. Its phase delays its start within the period.
-- Once and loop share the wave control: each wave has a once version.
+- Once and loop share the ratio control: its lower half is the eight looping ratios, its upper half the same eight played once.
 
 
 ## Foot pedal

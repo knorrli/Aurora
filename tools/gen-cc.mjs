@@ -106,7 +106,7 @@ const lfoPeriods = (header.match(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/) || 
   .split(',').map(text => text.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
 const STEPPED = /step = \(uint8_t\)\(\(\(uint16_t\)value \* last \+ 63\) \/ 127\);/;
-for (const name of ['aurora_route_ratio', 'aurora_route_delay', 'aurora_lfo_period', 'aurora_arp_mode', 'aurora_hue_layout']) {
+for (const name of ['aurora_route_ratio_step', 'aurora_route_delay', 'aurora_lfo_period', 'aurora_arp_mode', 'aurora_hue_layout']) {
   if (!STEPPED.test(functionBody(name))) {
     throw new Error(`${HEADER}: ${name}() no longer steps as steppedIndex() in tools/cc.js does`);
   }
@@ -140,12 +140,17 @@ const arpModeCount = (arpModeEntries.find(([key]) => key === 'ARP_MODES') || fai
 const hueLayoutCount = (enumEntries('AuroraHueLayout').find(([key]) => key === 'HUE_LAYOUTS') || fail('HUE_LAYOUTS'))[1];
 
 const programs = Object.fromEntries(enumEntries('AuroraProgram'));
+const notes = Object.fromEntries(enumEntries('AuroraNote'));
 const patchLayers = Object.fromEntries(enumEntries('AuroraPatchLayer'));
 
 const generated = {
   MIDI_CHANNEL: constant('AURORA_MIDI_CHANNEL'),
   PROGRAM_BLACKOUT: programs.PROGRAM_BLACKOUT,
   PROGRAM_SHOW: programs.PROGRAM_SHOW,
+  NOTE_PATCH_ONESHOT_FIRST: notes.NOTE_PATCH_ONESHOT_FIRST,
+  NOTE_PATCH_ONESHOT_SECOND: notes.NOTE_PATCH_ONESHOT_SECOND,
+  NOTE_ONESHOT_FIRST: notes.NOTE_ONESHOT_FIRST,
+  ONESHOTS: constant('AURORA_ONESHOTS'),
   TICKS_PER_BEAT: constant('AURORA_TICKS_PER_BEAT'),
   TEMPO_DIVISION: enumByPrefix('AuroraTempoDivision', 'TEMPO_DIVISION_'),
   FIELD_FORM: enumByPrefix('AuroraFieldForm', 'FIELD_FORM_'),
@@ -225,7 +230,11 @@ ${constantLines}
     Math.min(count - 1, Math.floor((value * (count - 1) + 63) / 127));
 
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
-  const routeRatio = value => 1 + steppedIndex(value, ROUTE_MAX_RATIO);
+  const routeRatioStep = value => steppedIndex(value, 2 * ROUTE_MAX_RATIO);
+  const routeRatio = value => 1 + routeRatioStep(value) % ROUTE_MAX_RATIO;
+  const routeOnce = value => routeRatioStep(value) >= ROUTE_MAX_RATIO;
+  const routeRatioValue = (ratio, once) =>
+    Math.round(((once ? ROUTE_MAX_RATIO : 0) + ratio - 1) * 127 / (2 * ROUTE_MAX_RATIO - 1));
   const routePhaseStep = value => steppedIndex(value, ROUTE_PHASE_STEPS);
 
   const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
@@ -260,7 +269,7 @@ ${constantLines}
   global.AuroraProtocol = {
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
 ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
-    steppedIndex, routeCC, routeRatio, routePhaseStep, isOn, threeWayPosition,
+    steppedIndex, routeCC, routeRatio, routeOnce, routeRatioValue, routePhaseStep, isOn, threeWayPosition,
     arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeBipolar, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

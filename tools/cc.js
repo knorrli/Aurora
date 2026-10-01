@@ -82,6 +82,10 @@
   const MIDI_CHANNEL = 1;
   const PROGRAM_BLACKOUT = 0;
   const PROGRAM_SHOW = 10;
+  const NOTE_PATCH_ONESHOT_FIRST = 58;
+  const NOTE_PATCH_ONESHOT_SECOND = 59;
+  const NOTE_ONESHOT_FIRST = 60;
+  const ONESHOTS = 20;
   const TICKS_PER_BEAT = 24;
   const TEMPO_DIVISION = {"quarter":0,"bar":1,"half":2,"eighth":3,"eighthTriplet":4,"sixteenth":5};
   const FIELD_FORM = {"gradient":0,"region":1,"allButRegion":2};
@@ -108,7 +112,7 @@
   const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0};
   const ROUTE_MAX_RATIO = 8;
   const ROUTE_PHASE_STEPS = 16;
-  const PATCH_FORMAT = 4;
+  const PATCH_FORMAT = 5;
   const PATCH_MAX = 128;
   const PATCH_CC_COUNT = 128;
   const PATCH_NAME_LENGTH = 16;
@@ -140,7 +144,11 @@
     Math.min(count - 1, Math.floor((value * (count - 1) + 63) / 127));
 
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
-  const routeRatio = value => 1 + steppedIndex(value, ROUTE_MAX_RATIO);
+  const routeRatioStep = value => steppedIndex(value, 2 * ROUTE_MAX_RATIO);
+  const routeRatio = value => 1 + routeRatioStep(value) % ROUTE_MAX_RATIO;
+  const routeOnce = value => routeRatioStep(value) >= ROUTE_MAX_RATIO;
+  const routeRatioValue = (ratio, once) =>
+    Math.round(((once ? ROUTE_MAX_RATIO : 0) + ratio - 1) * 127 / (2 * ROUTE_MAX_RATIO - 1));
   const routePhaseStep = value => steppedIndex(value, ROUTE_PHASE_STEPS);
 
   const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
@@ -177,6 +185,10 @@
     MIDI_CHANNEL,
     PROGRAM_BLACKOUT,
     PROGRAM_SHOW,
+    NOTE_PATCH_ONESHOT_FIRST,
+    NOTE_PATCH_ONESHOT_SECOND,
+    NOTE_ONESHOT_FIRST,
+    ONESHOTS,
     TICKS_PER_BEAT,
     TEMPO_DIVISION,
     FIELD_FORM,
@@ -216,7 +228,7 @@
     SYSEX_TYPE,
     SYSEX_STATUS,
     LIBRARY_STATE,
-    steppedIndex, routeCC, routeRatio, routePhaseStep, isOn, threeWayPosition,
+    steppedIndex, routeCC, routeRatio, routeOnce, routeRatioValue, routePhaseStep, isOn, threeWayPosition,
     arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeBipolar, routeTarget, routeDestination,
   };
 })(typeof window === 'undefined' ? globalThis : window);

@@ -166,6 +166,14 @@
   }
   .row.changed { border-left-color: var(--select); }
   .row.inert, .switch-row.inert { opacity: .38; }
+  .row.unmarked > :not(label), .switch-row.unmarked > .picks { opacity: .3; }
+  .row.unmarked > label, .switch-row.unmarked > label { color: var(--faint); cursor: pointer; }
+  body.oneshot-mode .patch-only, body:not(.oneshot-mode) .oneshot-only { display: none; }
+  body.oneshot-mode .grip, body.oneshot-mode #keepAs { display: none; }
+  .firing-over { margin-top: 9px; }
+  .firing-over button { justify-self: start; }
+  .kit-head { margin-top: 18px; }
+  .kit-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 
   .track { position: relative; display: flex; align-items: center; height: 20px; }
   .track input[type=range] { width: 100%; margin: 0; }
@@ -329,18 +337,31 @@
 
   <aside class="rail">
     <section class="panel">
-      <h2>Patch
+      <h2><span id="subjectKind">Patch</span>
         <button class="tiny" id="patchNew">new</button>
         <button class="tiny" id="patchSave">save</button>
         <button class="tiny" id="patchDiscard">discard</button>
       </h2>
       <div class="fields">
         <label class="field"><span>Name</span><input type="text" id="patchName"></label>
-        <label class="field"><span>Tempo division <span class="cc midi-number" id="tempoDivisionCC"></span></span><select id="tempoDivision"></select></label>
-        <label class="field"><span>Transition time</span><select id="transitionTime"></select></label>
-        <label class="field"><span>Accent time</span><select id="accentTime"></select></label>
+        <label class="field patch-only"><span>Tempo division <span class="cc midi-number" id="tempoDivisionCC"></span></span><select id="tempoDivision"></select></label>
+        <label class="field patch-only"><span>Transition time</span><select id="transitionTime"></select></label>
+        <label class="field patch-only"><span>Accent time</span><select id="accentTime"></select></label>
+        <label class="field patch-only"><span>Oneshot 1 <span class="cc midi-number" id="oneshotPick0Note"></span></span><select id="oneshotPick0"></select></label>
+        <label class="field patch-only"><span>Oneshot 2 <span class="cc midi-number" id="oneshotPick1Note"></span></span><select id="oneshotPick1"></select></label>
+        <label class="field oneshot-only"><span>Length</span><select id="oneshotLength"></select></label>
       </div>
-      <nav class="layers" id="layerTabs"></nav>
+      <nav class="layers patch-only" id="layerTabs"></nav>
+    </section>
+    <section class="panel oneshot-only" id="firingBar">
+      <div class="rowline">
+        <button class="tiny" id="oneshotFire">fire</button>
+        <button class="tiny" id="oneshotRepeat">repeat</button>
+        <output class="cc" id="firingAt"></output>
+      </div>
+      <div class="fields firing-over">
+        <label class="field"><span>Over</span><button class="tiny" id="backToPatch"></button></label>
+      </div>
     </section>
     <section class="panel transition" id="transitionBar"></section>
     <section class="panel" id="mixBar" hidden></section>
@@ -372,6 +393,19 @@
         </div>
       </div>
       <div class="patch-grid" id="patchGrid"></div>
+      <div class="library-head kit-head">
+        <h2>Oneshots</h2>
+        <span class="cc" id="kitCount"></span>
+        <div class="rowline">
+          <button class="tiny" id="oneshotDelete">delete</button>
+        </div>
+        <div class="rowline">
+          <span class="cc">default</span>
+          <select class="tiny" id="defaultOneshot0"></select>
+          <select class="tiny" id="defaultOneshot1"></select>
+        </div>
+      </div>
+      <div class="patch-grid kit-grid" id="kitGrid"></div>
     </section>
 
     <div class="view" id="editorView">
@@ -444,6 +478,7 @@
 <script src="keep.js"></script>
 <script src="midi-out.js"></script>
 <script src="library-rail.js"></script>
+<script src="oneshots.js"></script>
 <script src="wall.js"></script>
 <script src="editor.js"></script>
 </body>

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "aurora_protocol.h"
 #include "color8.h"
 
 namespace render {
@@ -14,6 +15,16 @@ static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
 static const uint8_t BEND_POINTS = PIXELS + 1;
 static const uint8_t FIELD_ACROSS_POINTS = (STRIPS - 1) * 12 + 1;
+
+static const uint8_t RENDER_ROUTES = 2 * AURORA_ROUTES;
+static const uint16_t RENDER_CONTROL_COUNT = AURORA_PATCH_CC_COUNT + AURORA_ROUTES * ROUTE_FIELDS;
+
+static inline uint8_t routeByte(uint8_t route, uint8_t field) {
+  if (route < AURORA_ROUTES) return aurora_route_cc(route, field);
+  return (uint8_t)(AURORA_PATCH_CC_COUNT + (route - AURORA_ROUTES) * ROUTE_FIELDS + field);
+}
+
+static inline bool oneshotRoute(uint8_t route) { return route >= AURORA_ROUTES; }
 
 static const uint8_t TAIL_MAX_BEATS = 8;
 static const uint8_t TAIL_STEPS_PER_BEAT = 64;
@@ -129,7 +140,7 @@ struct Frame {
 };
 
 void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
-                 Motion &motion, Wall &wall, Frame &out);
+                 float oneshotProgress, float oneshotBeats, Motion &motion, Wall &wall, Frame &out);
 
 Hsv dialedColor(const uint8_t *controls);
 

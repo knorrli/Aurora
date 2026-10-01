@@ -8,6 +8,31 @@
 namespace render {
 
 static const float SHORTEST_STAB_CYCLES = 0.06f;
+static const float ONCE_END = 0.9999f;
+
+static float oneshotProgress = 0.0f;
+static float oneshotBeats = 1.0f;
+
+void setOneshotClock(float progress, float beats) {
+  oneshotProgress = progress;
+  oneshotBeats = beats;
+}
+
+RouteTiming routeTiming(const uint8_t *dialed, uint8_t route) {
+  const uint8_t ratio = dialed[routeByte(route, ROUTE_RATIO)];
+  return { route, aurora_route_ratio(ratio), aurora_route_once(ratio),
+           aurora_route_delay(dialed[routeByte(route, ROUTE_PHASE)]) };
+}
+
+float turnsOn(const RouteTiming &timing, float clock, float shift) {
+  if (!timing.once) return clock * (float)timing.ratio + shift - timing.delay;
+  const float turns = (fract(clock) - timing.delay) * (float)timing.ratio + shift;
+  return turns < 0.0f ? 0.0f : (turns > ONCE_END ? ONCE_END : turns);
+}
+
+float routeTurns(const RouteTiming &timing, float lfo, float shift) {
+  return turnsOn(timing, oneshotRoute(timing.route) ? oneshotProgress : lfo, shift);
+}
 
 static inline float raisedCosine(float x) {
   return 0.5f - 0.5f * cosf(0.5f * TURN * clampUnit(x));
@@ -141,7 +166,7 @@ struct WaveIntegral {
   float total[INTEGRAL_STEPS + 1];
 };
 
-static WaveIntegral integrals[AURORA_ROUTES];
+static WaveIntegral integrals[RENDER_ROUTES];
 
 static const WaveIntegral &integralOf(uint8_t route, uint8_t wave) {
   WaveIntegral &integral = integrals[route];
@@ -189,20 +214,20 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
     out.bipolar[i] = 0.0f;
   }
 
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
+    const uint8_t aimedAt = dialed[routeByte(route, ROUTE_DESTINATION)];
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
     if (routeRefused(destination) || spotDestination(destination)) continue;
 
-    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
 
-    const uint8_t ratio = aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]);
-    const uint8_t wave = dialed[aurora_route_cc(route, ROUTE_WAVE)];
-    const float delay = aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]);
+    const RouteTiming timing = routeTiming(dialed, route);
+    const uint8_t wave = dialed[routeByte(route, ROUTE_WAVE)];
     const float shift = plainLfo(destination) ? 0.0f : fanShift;
-    const float phase = lfo * (float)ratio + shift - delay;
+    const float phase = routeTurns(timing, lfo, shift);
+    const float cycleBeats = oneshotRoute(route) ? oneshotBeats : beatsPerCycle;
 
     if (aurora_route_bipolar(aimedAt)) {
       const float mean = integralOf(route, wave).mean;
@@ -218,7 +243,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
     const WaveIntegral &integral = integralOf(route, wave);
     const float reach = swingReach(destination, amount);
     out.swing[destination] += reach * (lfoWave(phase, wave) - integral.mean);
-    out.shift[destination] += reach * totalAt(integral, phase) * beatsPerCycle / (float)ratio;
+    out.shift[destination] += reach * totalAt(integral, phase) * cycleBeats / (float)timing.ratio;
   }
 }
 
@@ -247,19 +272,18 @@ uint8_t landedByte(uint8_t cc, uint8_t base, float amount) {
 
 uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
   uint8_t count = 0;
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    const uint8_t aimedAt = dialed[aurora_route_cc(route, ROUTE_DESTINATION)];
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
+    const uint8_t aimedAt = dialed[routeByte(route, ROUTE_DESTINATION)];
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
     if (!spotDestination(destination)) continue;
-    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     out[count++] = {
       destination,
       amount,
-      aurora_route_ratio(dialed[aurora_route_cc(route, ROUTE_RATIO)]),
-      dialed[aurora_route_cc(route, ROUTE_WAVE)],
-      aurora_route_delay(dialed[aurora_route_cc(route, ROUTE_PHASE)]),
+      dialed[routeByte(route, ROUTE_WAVE)],
+      routeTiming(dialed, route),
     };
   }
   return count;
@@ -276,13 +300,13 @@ uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
 }
 
 uint8_t routeTarget(const uint8_t *dialed, uint8_t route) {
-  return aurora_route_target(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]);
+  return aurora_route_target(dialed[routeByte(route, ROUTE_DESTINATION)]);
 }
 
-bool routeAims(const uint8_t *dialed, uint8_t cc) {
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+bool routeAims(const uint8_t *dialed, uint8_t cc, uint8_t routes) {
+  for (uint8_t route = 0; route < routes; route++) {
     if (routeTarget(dialed, route) != cc) continue;
-    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount < -0.001f || amount > 0.001f) return true;
   }
   return false;
@@ -315,18 +339,18 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
   float bipolarUp = 0.0f;
   float bipolarDown = 0.0f;
   bool aimed = false;
-  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     if (routeTarget(dialed, route) != cc) continue;
-    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     aimed = true;
-    if (aurora_route_bipolar(dialed[aurora_route_cc(route, ROUTE_DESTINATION)])) {
-      const float mean = waveMean(dialed[aurora_route_cc(route, ROUTE_WAVE)]);
+    if (aurora_route_bipolar(dialed[routeByte(route, ROUTE_DESTINATION)])) {
+      const float mean = waveMean(dialed[routeByte(route, ROUTE_WAVE)]);
       const float reach = bipolarReach(cc, amount);
       bipolarUp += fmaxf(-reach * mean, reach * (1.0f - mean));
       bipolarDown += fminf(-reach * mean, reach * (1.0f - mean));
     } else if (swings(cc)) {
-      const float mean = waveMean(dialed[aurora_route_cc(route, ROUTE_WAVE)]);
+      const float mean = waveMean(dialed[routeByte(route, ROUTE_WAVE)]);
       const float reach = swingReach(cc, amount);
       const float atTrough = -reach * mean;
       const float atPeak = reach * (1.0f - mean);

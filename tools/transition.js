@@ -97,6 +97,7 @@
   }
 
   function showingText() {
+    if (session.editingOneshot()) return `over "${session.underneath().name}"`;
     const position = session.transition.position;
     if (session.isAboveBase()) return `${Patch.LAYER_NAMES[session.layerIndex]} ${percentOf(position)}`;
     if (session.transitioning()) return `from "${session.comingFrom().name}" ${percentOf(position)}`;
@@ -159,6 +160,7 @@
 
   function build() {
     const host = byId('transitionBar');
+    host.hidden = session.editingOneshot();
     const aboveBase = session.isAboveBase();
     Object.assign(bar, { run: null, from: null, clear: null });
 
@@ -197,10 +199,11 @@
 
   function buildMix() {
     const host = byId('mixBar');
-    host.hidden = session.isAboveBase();
+    const hidden = session.isAboveBase() || session.editingOneshot();
+    host.hidden = hidden;
     mixBar.sliders = {};
     mixBar.readouts = {};
-    if (session.isAboveBase()) {
+    if (hidden) {
       host.replaceChildren();
       return;
     }

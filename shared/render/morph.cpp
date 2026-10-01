@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "engines.h"
+#include "render.h"
 #include "routes.h"
 
 namespace render {
@@ -52,6 +53,28 @@ static bool routeDestination(uint8_t cc) {
     if (cc == aurora_route_cc(route, ROUTE_DESTINATION)) return true;
   }
   return false;
+}
+
+static bool routeByteOfPatch(uint8_t cc) {
+  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+    if (cc >= aurora_route_cc(route, 0) && cc < aurora_route_cc(route, 0) + ROUTE_FIELDS) return true;
+  }
+  return false;
+}
+
+void composeOneshot(const uint8_t *live, const uint8_t *oneshot, const uint8_t *marks, uint8_t *out) {
+  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
+    const uint8_t cc = (uint8_t)i;
+    const bool overridden = oneshot && marks[cc] && !performed(cc) && !routeByteOfPatch(cc);
+    out[cc] = overridden ? oneshot[cc] : live[cc];
+  }
+  for (uint8_t route = AURORA_ROUTES; route < RENDER_ROUTES; route++) {
+    for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
+      out[routeByte(route, field)] = oneshot
+          ? oneshot[aurora_route_cc((uint8_t)(route - AURORA_ROUTES), field)]
+          : AURORA_ROUTE_DEFAULTS[field];
+    }
+  }
 }
 
 static bool switchLike(uint8_t cc) { return switched(cc) || routeDestination(cc); }

@@ -47,7 +47,7 @@ uint8_t hiddenEngines(const uint8_t *dialed) {
   if (reading.shape.width <= 0.0001f && reading.shape.edge <= 0.0001f) hidden |= ENGINE_SHAPE;
   if (!fieldActive(reading)) hidden |= ENGINE_FIELD;
   if (!flowActive(reading)) hidden |= ENGINE_FLOW;
-  if (!scatterActive(reading, dialed)) hidden |= ENGINE_SCATTER;
+  if (!scatterActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_SCATTER;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     const uint8_t target = aurora_route_target(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]);
     const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
@@ -68,8 +68,8 @@ bool coreActive(const Reading &reading) {
   return pushesColor(reading.core.hue, reading.core.white, reading.core.dark);
 }
 
-bool scatterActive(const Reading &reading, const uint8_t *dialed) {
-  return reading.scatter.mix > 0.001f || routeAims(dialed, CC_SCATTER_MIX);
+bool scatterActive(const Reading &reading, const uint8_t *dialed, uint8_t routes) {
+  return reading.scatter.mix > 0.001f || routeAims(dialed, CC_SCATTER_MIX, routes);
 }
 
 static float flowAt(const Flow &flow, uint8_t stripIndex, float along, float time) {
@@ -143,11 +143,11 @@ static float spotClock(const ScatterClock &clock, float drift, float phaseOffset
 }
 
 static float spotWave(const SpotRoute &route, float clock, float before) {
-  const float phase = clock * (float)route.ratio - route.delay;
+  const float phase = turnsOn(route.timing, clock, 0.0f);
   const float now = lfoWave(phase, route.wave);
   const bool brightens = route.amount > 0.0f
       && (route.cc == CC_SCATTER_MIX || route.cc == CC_SCATTER_VALUE);
-  const float earlier = before * (float)route.ratio - route.delay;
+  const float earlier = turnsOn(route.timing, before, 0.0f);
   if (!brightens || earlier >= phase) return now;
   if (phase - earlier >= 1.0f || floorf(phase) > floorf(earlier)) return 1.0f;
   return fmaxf(now, lfoWave(earlier, route.wave));

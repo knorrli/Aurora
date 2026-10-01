@@ -20,7 +20,7 @@ uint8_t hiddenEngines(const uint8_t *dialed);
 bool fieldActive(const Reading &reading);
 bool flowActive(const Reading &reading);
 bool coreActive(const Reading &reading);
-bool scatterActive(const Reading &reading, const uint8_t *dialed);
+bool scatterActive(const Reading &reading, const uint8_t *dialed, uint8_t routes);
 
 float fieldAtPosition(const Field &field, float u, float drift);
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
