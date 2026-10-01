@@ -70,10 +70,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - What do the indicator pixels show?
 - What are the foot pedal's four jobs?
 
-### Playing
-
-- A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
-
 ### Editor
 
 - A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
@@ -87,4 +83,5 @@ Deferred until the patch model stops changing. The editor drives the wall live o
 - Compile in a default set (`docs/design.md` § Patch storage).
 - Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent).
 - Read the faders and mix their layers the way the editor does.
+- Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
 - Read the key-held CC for tap versus hold.
