@@ -22,6 +22,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
 - Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
 - Morph between patches of different tempo divisions: does the jump read as a glitch? Should it carry position across instead?
+- Morph between real looks: does the morph need per-parameter timing rather than every parameter in lockstep? Should a patch choose to land its visible switches on the press rather than the release?
 - Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
 - LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
 - Anchor against a click track: should the peak or the leading edge land on the beat?
@@ -57,7 +58,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
 - Build the foot pedal.
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
-- Buy real 110 Ω DMX cable for stage.
 
 ### Controller
 
@@ -68,27 +68,17 @@ Seen only in the preview so far. One look each, driven from the editor.
 - How does a pad-driven transition land its switches, with no key release left?
 - What does the fourth rocker do?
 - What do the indicator pixels show?
-- What does the 12-position rotary do? Lead: a patch bank, turned between songs. Nine patch keys per bank (0 is the blackout) reach 108 of the 128 slots; the rest are Program Change only.
-- Is the mic trigger a clock source or a flash?
 - What are the foot pedal's four jobs?
 
 ### Playing
 
-- Which of the scatter's amounts does a fader route reach: is scatter a lift or a character change?
 - A slow 128-step ramp steps visibly (`docs/hardware.md`). Should the brain smooth incoming control changes, and would that make fast moves sluggish?
-- Should patches have tags or grouping?
 
 ### Renderer
 
 - Hold every PAR pulse to at least 25 ms (`docs/hardware.md`). The renderer knows beats, not milliseconds.
 - Measure the fan's delay against each route's own cycle. It sits on the master LFO, so a route at 2× doubles every strip's delay.
-- Does the morph need per-parameter timing rather than every parameter in lockstep?
-- Should a patch choose to land its visible switches on the press rather than the release?
-- Should the per-spot scatter routes (Scatter Hue, Scatter Position) offer bipolar as other routes do? They are unipolar only.
-- Should Flow or Scatter be route sources? That costs a byte per route and a rule for where on the wall to sample.
-- Should each route choose the plain or fanned LFO, rather than its destination deciding?
 - Should Spread have a stepped form that flips whole at a threshold when a route moves it, rather than squeezing turns through the middle?
-- When the last spare CC (34) runs out: NRPN or a second MIDI channel?
 
 ### Editor
 

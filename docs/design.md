@@ -31,6 +31,7 @@
 
 - The keypad's nine keys map to library slots through the keymap the editor syncs. The controller sends the key; the brain looks it up.
 - A DAW names a slot directly with a Program Change.
+- The 12-position rotary is a patch bank, turned between songs. Nine patch keys per bank (0 is the blackout) reach 108 of the 127 slots; the rest are Program Change only.
 - Recall writes the patch's `[patch]` and `[switch]` CCs through the same handlers a live CC goes through, then clears the tails.
 - A patch change lands on the next beat.
 
