@@ -45,7 +45,7 @@ uint8_t hiddenEngines(const uint8_t *dialed) {
   readControls(dialed, nullptr, reading);
   uint8_t hidden = 0;
   if (reading.shape.width <= 0.0001f && reading.shape.edge <= 0.0001f) hidden |= ENGINE_SHAPE;
-  if (!fieldActive(reading)) hidden |= ENGINE_FIELD;
+  if (!fieldActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_FIELD;
   if (!flowActive(reading)) hidden |= ENGINE_FLOW;
   if (!scatterActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_SCATTER;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
@@ -56,8 +56,10 @@ uint8_t hiddenEngines(const uint8_t *dialed) {
   return hidden;
 }
 
-bool fieldActive(const Reading &reading) {
-  return pushesColor(reading.field.hue, reading.field.white, reading.field.dark);
+bool fieldActive(const Reading &reading, const uint8_t *dialed, uint8_t routes) {
+  return pushesColor(reading.field.hue, reading.field.white, reading.field.dark)
+      || routeAims(dialed, CC_FIELD_HUE, routes) || routeAims(dialed, CC_FIELD_WHITE, routes)
+      || routeAims(dialed, CC_FIELD_DARK, routes);
 }
 
 bool flowActive(const Reading &reading) {

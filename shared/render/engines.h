@@ -17,7 +17,7 @@ uint8_t engineOf(uint8_t cc);
 bool showsEngine(uint8_t cc);
 uint8_t hiddenEngines(const uint8_t *dialed);
 
-bool fieldActive(const Reading &reading);
+bool fieldActive(const Reading &reading, const uint8_t *dialed, uint8_t routes);
 bool flowActive(const Reading &reading);
 bool coreActive(const Reading &reading);
 bool scatterActive(const Reading &reading, const uint8_t *dialed, uint8_t routes);

@@ -273,7 +273,7 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
 
   const Reading &reading = strip.reading;
   PixelEngines engines;
-  engines.fieldOn = fieldActive(reading);
+  engines.fieldOn = fieldActive(reading, context.dialed, RENDER_ROUTES);
   engines.flowOn = flowActive(reading);
   engines.scatterOn = scatterActive(reading, context.dialed, RENDER_ROUTES);
   engines.flat =
@@ -314,7 +314,7 @@ void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseco
   motion.lastFieldBeats = context.beats;
   context.fieldDrift =
       anchoredPhase(motion.field, context.beats, fieldElapsed, context.plain.field.cellsPerBeat);
-  const bool fieldOn = fieldActive(context.plain);
+  const bool fieldOn = fieldActive(context.plain, context.dialed, RENDER_ROUTES);
   for (uint8_t i = 0; i < FIELD_ACROSS_POINTS; i++) {
     const float u = (float)i / (float)(FIELD_ACROSS_POINTS - 1);
     out.fieldAcross[i] = fieldOn ? fieldAtPosition(context.plain.field, u, context.fieldDrift) : 0.0f;
