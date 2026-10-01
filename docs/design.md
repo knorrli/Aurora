@@ -31,7 +31,7 @@
 ## Recalling a patch
 
 - Every source changes patch the same way: a Program Change naming a slot. The drum pad and MainStage send nothing else.
-- The 12-position rotary is a patch bank, turned between songs. Bank b, key k plays slot (b − 1) × 9 + k: bank 1 is slots 1–9, bank 12 is slots 100–108. Slots 109–127 are Program Change only.
+- The 12-position rotary is a patch bank, turned between songs, labeled A to L. Bank b, key k plays slot (b − 1) × 9 + k, counting A as 1: A1 is slot 1, C5 is slot 23, L9 is slot 108. Slots 109–127 are Program Change only.
 - The controller works that Program Change out from the bank and the key. There is no keymap.
 - Recall writes the patch's `[patch]` and `[switch]` CCs through the same handlers a live CC goes through, then clears the tails.
 - A patch change lands on the next beat.

@@ -57,6 +57,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Cut the brain's enclosure around the finished perfboard.
 - Socket both Teensys rather than soldering them down.
 - Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
+- Relabel the rotary's twelve positions A to L.
 - Build the foot pedal.
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
 

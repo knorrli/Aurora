@@ -40,6 +40,13 @@
 
   const BANKED_SLOTS = Protocol.BANKS * Protocol.KEYPAD_KEYS;
 
+  const bankLetter = bank => String.fromCharCode('A'.charCodeAt(0) + bank);
+
+  function addressOf(slot) {
+    if (slot < 1 || slot > BANKED_SLOTS) return null;
+    return bankLetter(Math.floor((slot - 1) / Protocol.KEYPAD_KEYS)) + String((slot - 1) % Protocol.KEYPAD_KEYS + 1);
+  }
+
   function rowLabel(text) {
     return element('span', 'row-label', text);
   }
@@ -47,7 +54,7 @@
   function gridRows() {
     const rows = [[rowLabel(''), ...Array.from({ length: Protocol.KEYPAD_KEYS }, (_, key) => rowLabel(String(key + 1)))]];
     for (let bank = 0; bank < Protocol.BANKS; bank++) {
-      rows.push([rowLabel(String(bank + 1)),
+      rows.push([rowLabel(bankLetter(bank)),
         ...Array.from({ length: Protocol.KEYPAD_KEYS }, (_, key) => cell(bank * Protocol.KEYPAD_KEYS + key + 1))]);
     }
     for (let first = BANKED_SLOTS + 1; first < Protocol.PATCH_MAX; first += Protocol.KEYPAD_KEYS) {
@@ -68,6 +75,8 @@
     button.classList.toggle('target', slot === saveTarget());
 
     const head = element('span', 'cell-head');
+    const address = addressOf(slot);
+    if (address) head.append(element('span', 'address', address));
     head.append(element('span', 'slot', String(slot)));
     const name = element('span', 'name', patch ? patch.name || '(unnamed)' : slot === saveTarget() ? 'new' : '');
     if (patch) {
