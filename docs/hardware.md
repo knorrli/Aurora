@@ -145,9 +145,9 @@ One WS2812 chain inside the box, driven ahead of the strips in v1: index 0 right
 - 12-position rotary (tempo source and division): was on the second Arduino, not the Nano. Panel reads MIDI divisions (sixteenth, dotted sixteenth through quarter to half), TRIG (quarter, eighth) and tap (half, quarter, eighth).
 - Fader-mode rocker below the faders; power rocker (hardwired to the 9 V, never read).
 
-### Foot pedal — four switches on one line
+### Foot pedal — four switches per line, two lines
 
-Two-conductor cable. Pull-up `R_top` at the controller; each switch shorts the line to GND through its own resistor in the pedal.
+TRS cable: tip and ring each carry one line, sleeve is ground. Pull-up `R_top` at the controller on each line; each switch shorts its line to GND through its own resistor in the pedal.
 
 | R_top | R1 | R2 | R3 | R4 |
 |-------|----|----|----|----|

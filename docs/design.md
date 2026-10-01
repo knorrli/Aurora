@@ -6,21 +6,21 @@
 - The brain treats whatever arrives as the truth. A DAW drives it exactly as the controller does.
 - The rig is driven three ways: the controller alone; a DAW into the controller, soft-thru to the brain; a computer straight into the brain.
 - The brain has one MIDI input. Any source playing alongside the controller goes through the controller.
-- The controller sends gestures (a fader's position, a key held) and the slot a key names, never what a patch contains.
+- The controller sends gestures (a fader's position, a key held) and the slot a key or song section names, never what a patch contains.
 - The brain never answers over DIN. A controller forwarding a DAW's patch change updates its own state from what it forwards.
-- The controller has no design mode. Patches are built in the editor.
+- The controller has no design mode. Patches and songs are built in the editor.
 
 ## Clock
 
 - The controller is the clock source. It tracks tempo from incoming clock or from tap tempo and always emits its own fresh 24 PPQN.
-- External clock is never passed through. Tapping switches source with no discontinuity at the brain; an upstream dropout keeps the last tempo running.
-- The source picks itself: the controller follows incoming clock whenever it arrives, and switches to tap tempo as soon as the button is tapped. No control selects it.
+- External clock is never passed through. An upstream dropout keeps the last tempo running.
+- The source picks itself: the controller follows incoming clock whenever it arrives. Tapping does nothing while clock arrives; with none arriving, a tap takes over with no discontinuity at the brain. No control selects it.
 - The controller's tempo LED flashes from that clock.
 - Tempo division is a patch switch on CC 29. The clock itself is never divided.
 
 ## Patch storage
 
-- Up to 127 patches in LittleFS on the brain's program flash, in slots 1–127. A slot is the Program Change that plays its patch.
+- Up to 108 patches in LittleFS on the brain's program flash, in slots 1–108. A slot is the Program Change that plays its patch.
 - Slot 0 holds no patch: Program Change 0 is the blackout. A key set to slot 0 is unset and does nothing.
 - Patches survive a power cycle and are lost on a firmware upload.
 - The editor holds the master library and pushes the whole library; the brain's copy is a mirror.
@@ -31,7 +31,8 @@
 ## Recalling a patch
 
 - Every source changes patch the same way: a Program Change naming a slot. The drum pad and MainStage send nothing else.
-- The 12-position rotary is a patch bank, turned between songs, labeled A to L. Bank b, key k plays slot (b − 1) × 9 + k, counting A as 1: A1 is slot 1, C5 is slot 23, L9 is slot 108. Slots 109–127 are Program Change only.
+- The 12-position rotary is a patch bank, labeled A to L. Bank b, key k plays slot (b − 1) × 9 + k, counting A as 1: A1 is slot 1, C5 is slot 23, L9 is slot 108.
+- Program Changes 109–127 are songs, never patches. The brain ignores them.
 - The controller works that Program Change out from the bank and the key. There is no keymap.
 - Recall writes the patch's `[patch]` and `[switch]` CCs through the same handlers a live CC goes through, then clears the tails.
 - A patch change lands on the next beat.
@@ -68,12 +69,44 @@
 - Several layers at once add: each contributes its fader position times the distance from the patch to that layer, and the sum is clamped per byte; a circular control takes the short way and wraps. The brain matches the editor's rule.
 - Faders move energy; the keypad moves character. Mid-song lifts are fader moves; sideways changes at the same energy are patch changes.
 
+## Songs
+
+- A song is an ordered list of labeled sections (intro, verse, chorus). Each label names one patch; a section that repeats plays the same patch every time.
+- Up to 19 songs, on Program Changes 109–127. Songs are prepared per gig: the editor holds every song and pushes the gig's set.
+- Songs live on the controller. The controller catches a song's Program Change, does not forward it, and sends the first section's patch Program Change in its place.
+- The foot pedal steps through the song's sections, one switch forward and one back. Each step sends that section's patch Program Change, held or tapped like a key. Two quick taps forward skip a section.
+- The controller always knows the current song and section.
+- The editor pushes the songs to the controller and the patches to the brain together, never one without the other.
+
+## Oneshots
+
+- A oneshot is a single triggered effect. Each oneshot is its own note. Note 60, the trigger flash, is the first.
+
+## Foot pedal
+
+- Eight switches over a TRS cable: tip and ring each carry the four-switch ladder in `docs/hardware.md`.
+- Every switch has a fixed role, the same for every patch, the way each fader has its layer. A switch with nothing to do on a patch does nothing.
+- Roles: Prev, Next, Color, Extent, Motion, Tap, Oneshot 1, Oneshot 2.
+- Prev and Next step through the song's sections; with no song loaded, through the keys of the current bank.
+- Color, Extent and Motion push their layer the way its fader does. Pressing starts the push at once; a quick release latches it at full and the next tap drops it; a long hold pushes only while held.
+- Tap is tap tempo.
+- Two rows of four, the back row offset half a switch, Next under the right foot:
+
+```
+ back    [Oneshot 1] [Oneshot 2]      [ Color ]       [ Prev ]
+ front          [  Tap  ]        [Extent] [Motion]    [ Next ]
+```
+
+- Switch centers about 10 cm apart, rows about 12 cm apart, wider gaps between the three groups.
+
 ## Blackout
 
-- Key 0 is the blackout (PC 0): not a patch, no slot, in every bank. It holds until the next key press.
+- Key 0 is the blackout (PC 0): not a patch, no slot, in every bank. It holds until the next key press and never returns on its own.
+- Tapping 0 cuts to black on the next beat.
+- Holding 0 fades the brightness to black over the playing patch's transition time, leaving the look itself untouched. Release before black: the rest of the fade is re-timed to land on the next beat. Holding past black stays black; the blackout has no accent.
 - The phone's hook switch is the master kill. It works on any patch and is pressed by a finger; the handset almost never rests on it.
-- The hook is a mute, not a latch: the wall is dark while it is held and back on the playing patch when it is released.
-- The hook shares the keypad's lines; its code is the blackout.
+- The hook is a mute, not a latch: the wall goes dark the moment it is pressed, not on a beat, and is back on the playing patch the moment it is released.
+- The hook sends its own note: note-on while held, note-off on release. It is never a Program Change or a CC.
 
 ## Touchpad and rockers
 
@@ -86,7 +119,7 @@
 
 - A second Teensy 4.0: pure input to MIDI. Keypad, three faders, touchpad, rockers, foot pedal, tap tempo, mic trigger. Every control is in `docs/hardware.md`.
 - It drives its own 12 indicator pixels from what it sends. Nothing is streamed back from the brain.
-- The foot pedal's four switches emit messages that already exist, the way the tap tempo button does.
+- The foot pedal's switches emit messages that already exist, the way the tap tempo button does.
 
 ## Out of scope
 
