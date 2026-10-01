@@ -18,7 +18,8 @@
     mode: 'patch',
     oneshotIndex: null,
     oneshotDraft: null,
-    firing: { at: null, repeat: true },
+    firing: { at: null, repeat: true, index: null },
+    overSlot: null,
     layerIndex: Protocol.PATCH_LAYER_BASE,
     transition: { position: 1, from: null },
     mix: Object.fromEntries(Patch.LAYERS_ABOVE_BASE.map(layer => [layer, 0])),
@@ -103,6 +104,15 @@
   const underneath = () => session.draft || session.library.slots[session.slot];
   const oneshot = () => session.oneshotDraft || session.library.kit[session.oneshotIndex];
   const patch = () => (editingOneshot() ? oneshot() : underneath());
+  const over = () => (session.overSlot !== null && session.overSlot !== session.slot
+    && session.library.slots[session.overSlot]) || underneath();
+  const kitOneshot = index =>
+    (index === session.oneshotIndex && session.oneshotDraft) || session.library.kit[index] || null;
+  const resolvedPick = place => {
+    const pick = underneath().oneshots[place];
+    return pick !== null ? pick : session.library.defaultOneshots[place];
+  };
+  const fired = () => (editingOneshot() ? oneshot() : session.firing.index === null ? null : kitOneshot(session.firing.index));
   const patchAt = slot => (slot === session.slot && session.draft ? session.draft : session.library.slots[slot]) || null;
   const isAboveBase = () => Patch.isAboveBase(session.layerIndex);
   const overrides = () => patch().overrides[session.layerIndex] || {};
@@ -139,7 +149,7 @@
   const marked = name => !!oneshot().marks[name];
 
   function oneshotNamed() {
-    const under = Library.namedFromBytes(underneath().base);
+    const under = Library.namedFromBytes(over().base);
     const own = Library.namedFromBytes(oneshot().base);
     const named = {};
     for (const name of Patch.NAMES) named[name] = isRouteField(name) || marked(name) ? own[name] : under[name];
@@ -147,8 +157,10 @@
   }
 
   function oneshotInput() {
-    const own = sounding(Library.namedFromBytes(oneshot().base));
-    return { bytes: Library.bytesFromNamed(own), marks: Library.markBytes(oneshot()) };
+    const firedOneshot = fired();
+    const named = Library.namedFromBytes(firedOneshot.base);
+    const own = editingOneshot() ? sounding(named) : named;
+    return { bytes: Library.bytesFromNamed(own), marks: Library.markBytes(firedOneshot) };
   }
 
   function liveNamed() {
@@ -292,6 +304,8 @@
 
   function select(slot, draft) {
     session.mode = 'patch';
+    session.firing.at = null;
+    session.overSlot = null;
     const previous = session.slot;
     if (previous !== slot) session.transition.from = previous !== null && patchAt(previous) ? previous : slot;
     session.slot = slot;
@@ -308,6 +322,7 @@
     session.oneshotDraft = draft || null;
     session.layerIndex = Protocol.PATCH_LAYER_BASE;
     session.firing.at = null;
+    session.firing.index = null;
     session.bypassedRoutes.clear();
     session.bypassedCards.clear();
     resetPreview();
@@ -336,7 +351,7 @@
 
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
-    editingOneshot, underneath, oneshot, marked, toggleMark, oneshotInput, openOneshot,
+    editingOneshot, underneath, over, kitOneshot, resolvedPick, fired, oneshot, marked, toggleMark, oneshotInput, openOneshot,
     patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,

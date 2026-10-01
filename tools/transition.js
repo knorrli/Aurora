@@ -97,7 +97,7 @@
   }
 
   function showingText() {
-    if (session.editingOneshot()) return `over "${session.underneath().name}"`;
+    if (session.editingOneshot()) return `over "${session.over().name}"`;
     const position = session.transition.position;
     if (session.isAboveBase()) return `${Patch.LAYER_NAMES[session.layerIndex]} ${percentOf(position)}`;
     if (session.transitioning()) return `from "${session.comingFrom().name}" ${percentOf(position)}`;

@@ -171,7 +171,8 @@
   body.oneshot-mode .patch-only, body:not(.oneshot-mode) .oneshot-only { display: none; }
   body.oneshot-mode .grip, body.oneshot-mode #keepAs { display: none; }
   .firing-over { margin-top: 9px; }
-  .firing-over button { justify-self: start; }
+  .pick-line { display: flex; gap: 6px; align-items: center; min-width: 0; }
+  .pick-line select { flex: 1 1 auto; min-width: 0; }
   .kit-head { margin-top: 18px; }
   .kit-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 
@@ -347,8 +348,8 @@
         <label class="field patch-only"><span>Tempo division <span class="cc midi-number" id="tempoDivisionCC"></span></span><select id="tempoDivision"></select></label>
         <label class="field patch-only"><span>Transition time</span><select id="transitionTime"></select></label>
         <label class="field patch-only"><span>Accent time</span><select id="accentTime"></select></label>
-        <label class="field patch-only"><span>Oneshot 1 <span class="cc midi-number" id="oneshotPick0Note"></span></span><select id="oneshotPick0"></select></label>
-        <label class="field patch-only"><span>Oneshot 2 <span class="cc midi-number" id="oneshotPick1Note"></span></span><select id="oneshotPick1"></select></label>
+        <div class="field patch-only"><span>Oneshot 1 <span class="cc midi-number" id="oneshotPick0Note"></span></span><div class="pick-line"><select id="oneshotPick0"></select><button class="tiny" id="oneshotFire0">fire</button></div></div>
+        <div class="field patch-only"><span>Oneshot 2 <span class="cc midi-number" id="oneshotPick1Note"></span></span><div class="pick-line"><select id="oneshotPick1"></select><button class="tiny" id="oneshotFire1">fire</button></div></div>
         <label class="field oneshot-only"><span>Length</span><select id="oneshotLength"></select></label>
       </div>
       <nav class="layers patch-only" id="layerTabs"></nav>
@@ -360,7 +361,7 @@
         <output class="cc" id="firingAt"></output>
       </div>
       <div class="fields firing-over">
-        <label class="field"><span>Over</span><button class="tiny" id="backToPatch"></button></label>
+        <div class="field"><span>Over</span><div class="pick-line"><select id="overPatch"></select><button class="tiny" id="editOver">edit</button></div></div>
       </div>
     </section>
     <section class="panel transition" id="transitionBar"></section>

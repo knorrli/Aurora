@@ -69,17 +69,19 @@
 
   const lengthBeats = oneshot => Protocol.LFO_PERIODS[Patch.periodStep(oneshot.length)];
 
-  function fire() {
+  function fire(index) {
+    session.firing.index = session.editingOneshot() ? null : index;
     session.firing.at = beats.position;
   }
 
   function oneshotProgress() {
     const firing = session.firing;
-    if (firing.at === null || !session.editingOneshot()) return null;
-    const length = lengthBeats(session.oneshot());
+    const fired = firing.at === null ? null : session.fired();
+    if (!fired) return null;
+    const length = lengthBeats(fired);
     if (beats.position < firing.at) firing.at = beats.position;
     if (beats.position - firing.at >= length) {
-      if (!firing.repeat) {
+      if (!firing.repeat || !session.editingOneshot()) {
         firing.at = null;
         return null;
       }
@@ -90,7 +92,7 @@
 
   function oneshotInput(progress) {
     if (progress === null) return null;
-    return Object.assign(session.oneshotInput(), { progress, beats: lengthBeats(session.oneshot()) });
+    return Object.assign(session.oneshotInput(), { progress, beats: lengthBeats(session.fired()) });
   }
 
   function drawBytes(wall, bytes, oneshot) {
@@ -100,7 +102,7 @@
     return frame;
   }
 
-  const draw = (wall, named) => drawBytes(wall, Library.bytesFromNamed(session.sounding(named)));
+  const draw = (wall, named, oneshot) => drawBytes(wall, Library.bytesFromNamed(session.sounding(named)), oneshot);
 
   function paintBeats() {
     const beat = Math.floor(beats.position);
@@ -118,14 +120,14 @@
     beats.lastFrameAt = now;
     paintBeats();
     const live = session.liveNamed();
+    const progress = oneshotProgress();
     if (session.editingOneshot()) {
-      const progress = oneshotProgress();
-      drawBytes(walls.main, session.underneath().base, oneshotInput(progress));
+      drawBytes(walls.main, session.over().base, oneshotInput(progress));
       Editor.routes.paintPlayheads(progress, live);
-      Editor.oneshots.paintFiring(progress);
     } else {
-      Editor.routes.paintPlayheads(draw(walls.main, live).lfo, live);
+      Editor.routes.paintPlayheads(draw(walls.main, live, oneshotInput(progress)).lfo, live);
     }
+    Editor.oneshots.paintFiring(progress);
     Editor.tracks.paint();
     if (session.isAboveBase()) {
       Preview.copyMotion(walls.base.motion, walls.main.motion);

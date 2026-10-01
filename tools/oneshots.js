@@ -9,10 +9,11 @@
   const { element, byId } = dom;
 
   const PICK_FIELDS = ['oneshotPick0', 'oneshotPick1'];
+  const FIRE_BUTTONS = ['oneshotFire0', 'oneshotFire1'];
   const DEFAULT_FIELDS = ['defaultOneshot0', 'defaultOneshot1'];
 
   const noteOf = index => Protocol.NOTE_ONESHOT_FIRST + index;
-  const kitOneshot = index => (index === session.oneshotIndex && session.oneshotDraft) || session.library.kit[index];
+  const kitOneshot = session.kitOneshot;
 
   const leaveOneshotDraft = () =>
     !session.oneshotDraft || confirm(`Discard your changes to the oneshot "${session.oneshotDraft.name}"?`);
@@ -25,19 +26,41 @@
   const pickValue = pick => (pick === null ? '' : String(pick));
   const pickFrom = value => (value === '' ? null : +value);
 
-  function paintPickSelects(ids, picks, empty) {
+  function paintPickSelects(ids, picks, emptyOf) {
     ids.forEach((id, place) => {
-      dom.setOptions(byId(id), kitOptions(empty), pickValue(picks[place]));
+      dom.setOptions(byId(id), kitOptions(emptyOf(place)), pickValue(picks[place]));
     });
   }
 
+  function defaultText(place) {
+    const index = session.library.defaultOneshots[place];
+    const oneshot = index === null ? null : kitOneshot(index);
+    return oneshot ? `default · ${oneshot.name}` : 'default';
+  }
+
   function paintPicks() {
-    paintPickSelects(PICK_FIELDS, session.patch().oneshots, 'default');
+    paintPickSelects(PICK_FIELDS, session.patch().oneshots, defaultText);
+    FIRE_BUTTONS.forEach((id, place) => {
+      const index = session.resolvedPick(place);
+      byId(id).disabled = index === null || !kitOneshot(index);
+    });
+  }
+
+  const patchName = slot => {
+    const patch = slot === session.slot ? session.underneath() : session.library.slots[slot];
+    return `${slot} · ${patch.name || '(unnamed)'}`;
+  };
+
+  function paintOver() {
+    const slots = Library.filledSlots(session.library);
+    if (session.slot !== null && !slots.includes(session.slot)) slots.unshift(session.slot);
+    const chosen = session.overSlot !== null && slots.includes(session.overSlot) ? session.overSlot : session.slot;
+    dom.setOptions(byId('overPatch'), slots.map(slot => [slot, patchName(slot)]), String(chosen));
   }
 
   function paintHead() {
     byId('oneshotLength').value = String(Patch.periodValue(Patch.periodStep(session.patch().length)));
-    byId('backToPatch').textContent = session.underneath().name || '(unnamed)';
+    paintOver();
   }
 
   function open(index) {
@@ -57,6 +80,28 @@
     Editor.show(session.slot, session.draft);
   }
 
+  function editOver() {
+    const slot = +byId('overPatch').value;
+    if (slot === session.slot) {
+      backToPatch();
+      return;
+    }
+    if (!Editor.rail.leaveDraft()) return;
+    Editor.show(slot);
+  }
+
+  function chooseOver() {
+    session.overSlot = +byId('overPatch').value;
+    Editor.paint();
+    Editor.midi.sendLive(true);
+  }
+
+  function firePick(place) {
+    const index = session.resolvedPick(place);
+    if (index === null || !kitOneshot(index)) return;
+    Editor.wall.fire(index);
+  }
+
   function cell(index) {
     const oneshot = kitOneshot(index);
     const current = session.editingOneshot() && index === session.oneshotIndex;
@@ -74,19 +119,25 @@
   function paintKit() {
     byId('kitGrid').replaceChildren(...Array.from({ length: Protocol.ONESHOTS }, (_, index) => cell(index)));
     byId('kitCount').textContent = `${Library.filledKit(session.library).length} / ${Protocol.ONESHOTS}`;
-    paintPickSelects(DEFAULT_FIELDS, session.library.defaultOneshots, '—');
+    paintPickSelects(DEFAULT_FIELDS, session.library.defaultOneshots, () => '—');
     byId('oneshotDelete').disabled = !session.editingOneshot() || !session.library.kit[session.oneshotIndex];
   }
 
   let firingText = null;
 
   function paintFiring(progress) {
-    const length = Protocol.LFO_PERIODS[Patch.periodStep(session.patch().length)];
-    const text = progress === null ? '' : `${(progress * length).toFixed(1)} / ${length}`;
-    if (text === firingText) return;
-    firingText = text;
+    const fired = progress === null ? null : session.fired();
+    const editing = session.editingOneshot();
+    const length = fired ? Protocol.LFO_PERIODS[Patch.periodStep(fired.length)] : 0;
+    const text = fired && editing ? `${(progress * length).toFixed(1)} / ${length}` : '';
+    const firingIndex = fired && !editing ? session.firing.index : null;
+    const state = `${text}|${firingIndex}`;
+    if (state === firingText) return;
+    firingText = state;
     byId('firingAt').textContent = text;
-    byId('oneshotFire').classList.toggle('on', progress !== null);
+    byId('oneshotFire').classList.toggle('on', !!fired && editing);
+    FIRE_BUTTONS.forEach((id, place) => byId(id).classList.toggle('on',
+      firingIndex !== null && session.resolvedPick(place) === firingIndex));
   }
 
   function save() {
@@ -153,16 +204,19 @@
     DEFAULT_FIELDS.forEach((id, place) => byId(id).addEventListener('change', () => {
       session.library.defaultOneshots[place] = pickFrom(byId(id).value);
       session.saveLibrary();
+      Editor.paint();
     }));
 
-    byId('oneshotFire').addEventListener('click', Editor.wall.fire);
+    byId('oneshotFire').addEventListener('click', () => Editor.wall.fire(null));
     const repeat = byId('oneshotRepeat');
     repeat.classList.toggle('on', session.firing.repeat);
     repeat.addEventListener('click', () => {
       session.firing.repeat = !session.firing.repeat;
       repeat.classList.toggle('on', session.firing.repeat);
     });
-    byId('backToPatch').addEventListener('click', backToPatch);
+    byId('overPatch').addEventListener('change', chooseOver);
+    byId('editOver').addEventListener('click', editOver);
+    FIRE_BUTTONS.forEach((id, place) => byId(id).addEventListener('click', () => firePick(place)));
     byId('oneshotDelete').addEventListener('click', remove);
   }
 

@@ -19,7 +19,7 @@
 
   function sendLive(force) {
     const live = session.editingOneshot()
-      ? global.AuroraLibrary.namedFromBytes(session.underneath().base) : session.sounding(session.liveNamed());
+      ? global.AuroraLibrary.namedFromBytes(session.over().base) : session.sounding(session.liveNamed());
     for (const name of Patch.NAMES) {
       const cc = Patch.CC[name], value = live[name];
       if (!force && lastSent[cc] === value) continue;
