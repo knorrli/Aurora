@@ -80,7 +80,18 @@
 
 ## Oneshots
 
-- A oneshot is a single triggered effect. Each oneshot is its own note. Note 60, the trigger flash, is the first.
+- A oneshot is a single triggered effect with a length in beats. At the end of its length the wall snaps back to what is playing; any fade is part of the oneshot.
+- A oneshot marks the controls it sets, explicitly, even where the value equals the default. While it plays, a marked control overrides the wall and ignores the faders; an unmarked control keeps playing the wall, fader push included.
+- A oneshot carries its own routes, run alongside the patch's. They start at the trigger, and their period is the oneshot's length.
+- Oneshots form one kit shared by every patch. Each oneshot is its own note. Note 60, the trigger flash, is the first.
+- The pedal's Oneshot 1 and 2 fire the song's pick, else the playing patch's pick, else a default pair. The controller resolves the pick and sends that oneshot's note.
+- The editor pushes the patches' oneshot picks to the controller together with the songs.
+
+## Routes
+
+- A route loops or plays once. A once route plays one cycle at the start of each period, at its ratio's speed, then holds its end value until the next period. Its phase delays its start within the period.
+- Once and loop share the wave control: each wave has a once version.
+
 
 ## Foot pedal
 

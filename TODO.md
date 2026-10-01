@@ -72,11 +72,19 @@ Seen only in the preview so far. One look each, driven from the editor.
 - How does a pad-driven transition land its switches, with no key release left?
 - What does the fourth rocker do?
 - What do the indicator pixels show? Lead: the current song section.
-- What does a oneshot look like, and where is it defined?
+
+### Oneshots
+
+- Does a oneshot start on the trigger or on the next beat?
+- What happens when a oneshot is fired while one is playing: restart, layer, or ignore?
+- How many oneshots does the kit hold, and on which notes?
+- Does the mic trigger fire a kit oneshot rather than the fixed flash?
+- Dial and preview oneshots in the editor: mark controls, routes, length, the kit, and the patches' picks.
+- Play oneshots on the brain, and give routes their once versions (`docs/design.md` § Oneshots, § Routes).
 
 ### Songs in the editor
 
-- Arrange songs in the editor: labeled sections, each label naming a patch, ordered into a song.
+- Arrange songs in the editor: labeled sections, each label naming a patch, ordered into a song, with the song's two oneshot picks.
 - Push the gig's songs to the controller together with the patches to the brain.
 
 ### Patches on the brain
