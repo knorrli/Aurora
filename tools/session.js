@@ -283,6 +283,16 @@
   }
   const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
 
+  function routeRemovable(route) {
+    if (editingOneshot() || !isAboveBase()) return true;
+    const current = patch();
+    const base = Library.namedFromBytes(current.base);
+    const tunedOnBase = route.fields.some(name => name !== route.destination && base[name] !== Patch.DEFAULT[name]);
+    const tunedOnOtherLayer = current.overrides.some((over, layer) =>
+      layer !== session.layerIndex && over && route.fields.some(name => name in over));
+    return !tunedOnBase && !tunedOnOtherLayer;
+  }
+
   function freeRoute(route) {
     session.bypassedRoutes.delete(route);
     Library.freeRoute(editing(), route);
@@ -356,7 +366,7 @@
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
+    routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });

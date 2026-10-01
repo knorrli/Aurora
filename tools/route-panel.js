@@ -124,7 +124,7 @@
   function paintButtons(buttons, route) {
     const bypassed = session.routeBypassed(route);
     buttons.bypass.classList.toggle('on', bypassed);
-    buttons.remove.disabled = session.isAboveBase();
+    buttons.remove.hidden = !session.routeRemovable(route);
     return bypassed;
   }
 
