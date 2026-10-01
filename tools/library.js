@@ -7,18 +7,6 @@
 
   const byteOf = (bytes, name) => bytes[Patch.CC[name]] | 0;
 
-  const TURN = 128;
-
-  function distance(name, from, to) {
-    if (!Patch.isCircular(name)) return to - from;
-    return ((to - from + TURN * 1.5) % TURN) - TURN / 2;
-  }
-
-  function settle(name, value) {
-    const rounded = Math.round(value);
-    return Patch.isCircular(name) ? ((rounded % TURN) + TURN) % TURN : Patch.clampToSevenBits(rounded);
-  }
-
   function bytesFromNamed(named) {
     const bytes = new Array(Protocol.PATCH_CC_COUNT).fill(0);
     for (const name of Patch.NAMES) {
@@ -76,66 +64,16 @@
     }
   }
 
-  function switchesInto(named, switchesFrom) {
-    for (const name of Patch.NAMES) {
-      if (Patch.isSwitch(name)) named[name] = byteOf(switchesFrom, name);
-    }
-    return named;
-  }
-
-  function holdRoutesChangingDestination(named, switchesFrom, toBytes) {
-    for (const route of Patch.ROUTES) {
-      if (byteOf(switchesFrom, route.destination) === byteOf(toBytes, route.destination)) continue;
-      for (const name of route.fields) named[name] = byteOf(switchesFrom, name);
-    }
-    return named;
-  }
-
-  function unseenEngines(fromBytes, toBytes) {
-    const preview = global.AuroraPreview;
-    if (!preview.hiddenEngines) return { appearing: 0, vanishing: 0, engineOf: () => 0, shows: () => true };
-    const hiddenFrom = preview.hiddenEngines(fromBytes);
-    const hiddenTo = preview.hiddenEngines(toBytes);
-    return {
-      appearing: hiddenFrom & ~hiddenTo,
-      vanishing: hiddenTo & ~hiddenFrom,
-      engineOf: name => preview.engineOf(Patch.CC[name]),
-      shows: name => preview.showsEngine(Patch.CC[name]),
-    };
-  }
-
   function blend(fromBytes, toBytes, position, switchesFrom) {
     const switches = switchesFrom || fromBytes;
-    const unseen = unseenEngines(fromBytes, toBytes);
-    const named = {};
-    for (const name of Patch.CONTINUOUS) {
-      const from = byteOf(fromBytes, name), to = byteOf(toBytes, name);
-      const engine = unseen.shows(name) ? 0 : unseen.engineOf(name);
-      if (engine & unseen.appearing) named[name] = to;
-      else if ((engine & unseen.vanishing) && position < 1) named[name] = from;
-      else named[name] = settle(name, from + distance(name, from, to) * position);
-    }
-    switchesInto(named, switches);
-    if (switches === fromBytes) {
-      for (const name of Patch.NAMES) {
-        if (Patch.isSwitch(name) && (unseen.engineOf(name) & unseen.appearing)) named[name] = byteOf(toBytes, name);
-      }
-    }
-    return holdRoutesChangingDestination(named, switches, toBytes);
+    return namedFromBytes(global.AuroraPreview.blend(fromBytes, toBytes, position, switches, switches === fromBytes));
   }
 
   function mix(patch, positions) {
-    const named = {};
-    for (const name of Patch.CONTINUOUS) {
-      const from = byteOf(patch.base, name);
-      let value = from;
-      for (const [layer, position] of positions) {
-        const over = patch.overrides[layer];
-        if (position && over && over[name] !== undefined) value += position * distance(name, from, over[name]);
-      }
-      named[name] = settle(name, value);
-    }
-    return switchesInto(named, patch.base);
+    const weights = new Array(Protocol.PATCH_LAYERS).fill(0);
+    for (const [layer, position] of positions) weights[layer] = position;
+    const layers = Array.from({ length: Protocol.PATCH_LAYERS }, (_, layer) => layerBytes(patch, layer));
+    return namedFromBytes(global.AuroraPreview.mix(patch.base, layers, weights));
   }
 
   const freeRouteFields = base => new Set(Patch.ROUTES

@@ -22,6 +22,8 @@ struct SpotRoute {
 
 bool spotDestination(uint8_t cc);
 
+bool circular(uint8_t cc);
+
 uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out);
 
 uint8_t landedByte(uint8_t cc, uint8_t base, float amount);

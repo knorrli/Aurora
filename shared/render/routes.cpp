@@ -77,7 +77,7 @@ static bool swings(uint8_t cc) {
   }
 }
 
-static bool circular(uint8_t cc) {
+bool circular(uint8_t cc) {
   switch (cc) {
     case CC_HUE:
     case CC_PAR_HUE_OFFSET:

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HEADER = join(ROOT, 'shared/aurora_protocol.h');
 const ROUTES_SOURCE = join(ROOT, 'shared/render/routes.cpp');
+const MORPH_SOURCE = join(ROOT, 'shared/render/morph.cpp');
 const OUT = join(ROOT, 'tools/cc.js');
 
 const header = readFileSync(HEADER, 'utf8');
@@ -264,26 +265,34 @@ ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${
 })(typeof window === 'undefined' ? globalThis : window);
 `;
 
-function checkRenderer() {
-  const source = readFileSync(ROUTES_SOURCE, 'utf8');
-  const cases = name => {
-    const at = source.indexOf(`static bool ${name}(uint8_t cc)`);
-    if (at < 0) throw new Error(`routes.cpp: no ${name}()`);
-    const body = source.slice(at, source.indexOf('\n}', at));
-    return new Set([...body.matchAll(/case CC_([A-Z0-9_]+):/g)].map(match => camel(match[1])));
-  };
-  const expected = {
-    refused: new Set([...tagged('switch'), 'lfoRate']),
-    swings: new Set(tagged('rate')),
-    circular: new Set(tagged('circular')),
-    plainLfo: new Set(tagged('plain')),
-  };
+function checkCases(path, expected) {
+  const source = readFileSync(path, 'utf8');
+  const file = path.slice(ROOT.length + 1);
   const problems = [];
   for (const [name, want] of Object.entries(expected)) {
-    const got = cases(name);
-    for (const control of want) if (!got.has(control)) problems.push(`shared/render/routes.cpp: ${name}() is missing ${control}`);
-    for (const control of got) if (!want.has(control)) problems.push(`shared/render/routes.cpp: ${name}() has ${control}, which the enum does not tag`);
+    const at = source.indexOf(`bool ${name}(uint8_t cc)`);
+    if (at < 0) throw new Error(`${file}: no ${name}()`);
+    const body = source.slice(at, source.indexOf('\n}', at));
+    const got = new Set([...body.matchAll(/case CC_([A-Z0-9_]+):/g)].map(match => camel(match[1])));
+    for (const control of want) if (!got.has(control)) problems.push(`${file}: ${name}() is missing ${control}`);
+    for (const control of got) if (!want.has(control)) problems.push(`${file}: ${name}() has ${control}, which the enum does not tag`);
   }
+  return problems;
+}
+
+function checkRenderer() {
+  const problems = [
+    ...checkCases(ROUTES_SOURCE, {
+      refused: new Set([...tagged('switch'), 'lfoRate']),
+      swings: new Set(tagged('rate')),
+      circular: new Set(tagged('circular')),
+      plainLfo: new Set(tagged('plain')),
+    }),
+    ...checkCases(MORPH_SOURCE, {
+      performed: new Set([...tagged('ambient'), ...tagged('gesture')]),
+      switched: new Set(tagged('switch')),
+    }),
+  ];
   for (const name of Object.keys(controlDefaults)) {
     if (!(name in cc)) problems.push(`shared/aurora_protocol.h: AURORA_CONTROL_DEFAULTS names ${name}, which is not a CC`);
   }
@@ -300,7 +309,7 @@ if (process.argv.includes('--check')) {
     process.exit(1);
   }
   console.log(`tools/cc.js up to date — ${pairs.length} controls, ${routeCount} routes,`
-    + ` and routes.cpp agrees with the enum's tags`);
+    + ` and routes.cpp and morph.cpp agree with the enum's tags`);
 } else {
   writeFileSync(OUT, out);
   console.log(`tools/cc.js written — ${pairs.length} controls, ${routeCount} routes`);

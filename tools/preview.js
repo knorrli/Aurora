@@ -73,6 +73,8 @@
       };
     }
 
+    const morphed = at => Array.from(renderer.HEAPU8.subarray(at, at + global.AuroraProtocol.PATCH_CC_COUNT));
+
     function readFan() {
       const after = STRIPS + CURVE_POINTS;
       const stepsPerStrip = (CURVE_POINTS - 1) / (STRIPS - 1);
@@ -112,11 +114,18 @@
       controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
       routeRefused: cc => !!renderer._aurora_route_refused(cc),
       spotDestination: cc => !!renderer._aurora_spot_destination(cc),
-      engineOf: cc => renderer._aurora_engine_of(cc),
-      showsEngine: cc => !!renderer._aurora_shows_engine(cc),
-      hiddenEngines(bytes) {
-        renderer.HEAPU8.set(bytes, controls);
-        return renderer._aurora_hidden_engines();
+      blend(fromBytes, toBytes, position, switchBytes, switchesFromStart) {
+        renderer.HEAPU8.set(fromBytes, renderer._aurora_morph_from());
+        renderer.HEAPU8.set(toBytes, renderer._aurora_morph_to());
+        renderer.HEAPU8.set(switchBytes, renderer._aurora_morph_switches());
+        return morphed(renderer._aurora_blend(position, switchesFromStart ? 1 : 0));
+      },
+      mix(baseBytes, layerBytes, positions) {
+        renderer.HEAPU8.set(baseBytes, renderer._aurora_morph_from());
+        const layersAt = renderer._aurora_morph_layers();
+        layerBytes.forEach((bytes, layer) => renderer.HEAPU8.set(bytes, layersAt + layer * baseBytes.length));
+        renderer.HEAPF32.set(positions, renderer._aurora_morph_positions() >> 2);
+        return morphed(renderer._aurora_mix());
       },
       routeReach(cc) {
         const at = renderer._aurora_route_reach(cc);

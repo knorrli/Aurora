@@ -2,6 +2,7 @@
 
 #include <emscripten/emscripten.h>
 #include <engines.h>
+#include <morph.h>
 #include <palettes.h>
 #include <pars.h>
 #include <reading.h>
@@ -12,6 +13,12 @@ static uint8_t controls[AURORA_PATCH_CC_COUNT];
 static render::Frame frame;
 static float reach[2];
 static render::ArpPass arpPass;
+static uint8_t morphFrom[AURORA_PATCH_CC_COUNT];
+static uint8_t morphTo[AURORA_PATCH_CC_COUNT];
+static uint8_t morphSwitches[AURORA_PATCH_CC_COUNT];
+static uint8_t morphLayers[AURORA_PATCH_LAYERS][AURORA_PATCH_CC_COUNT];
+static float morphPositions[AURORA_PATCH_LAYERS];
+static uint8_t morphOut[AURORA_PATCH_CC_COUNT];
 
 static_assert(offsetof(render::FanReading, curve) == sizeof(float) * render::STRIPS, "");
 static_assert(offsetof(render::FanReading, turns)
@@ -116,11 +123,21 @@ EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave) {
 
 EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }
 
-EMSCRIPTEN_KEEPALIVE int aurora_engine_of(int cc) { return render::engineOf((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_from() { return morphFrom; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_to() { return morphTo; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_switches() { return morphSwitches; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_layers() { return &morphLayers[0][0]; }
+EMSCRIPTEN_KEEPALIVE float *aurora_morph_positions() { return morphPositions; }
 
-EMSCRIPTEN_KEEPALIVE int aurora_shows_engine(int cc) { return render::showsEngine((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_blend(float position, int switchesFromStart) {
+  render::blendPatches(morphFrom, morphTo, position, morphSwitches, switchesFromStart != 0, morphOut);
+  return morphOut;
+}
 
-EMSCRIPTEN_KEEPALIVE int aurora_hidden_engines() { return render::hiddenEngines(controls); }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_mix() {
+  render::mixLayers(morphFrom, morphLayers, morphPositions, morphOut);
+  return morphOut;
+}
 
 EMSCRIPTEN_KEEPALIVE float *aurora_route_reach(int cc) {
   int16_t low, high;
