@@ -124,6 +124,8 @@
   }
   .layers .tab .badge { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
   .layers .tab.on .badge { color: var(--bg); }
+  .layers .tab.unsaved > :first-child::after, #subjectKind.unsaved::after { content: ' \2022'; color: var(--select); }
+  .layers .tab.on.unsaved > :first-child::after { color: var(--bg); }
 
   .transition .scrub { display: flex; gap: 9px; align-items: center; }
   .transition .scrub input[type=range] { flex: 1 1 60px; min-width: 60px; }

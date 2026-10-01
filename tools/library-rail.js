@@ -137,6 +137,7 @@
 
   function paintSaving() {
     const oneshot = session.editingOneshot();
+    byId('subjectKind').classList.toggle('unsaved', !!(oneshot ? session.oneshotDraft : session.draft));
     byId('patchSave').disabled = oneshot ? !session.oneshotDraft : !session.draft || session.slot === null;
     byId('patchDiscard').disabled = oneshot ? !session.oneshotDraft : !session.draft;
     byId('patchDelete').disabled = !isSaved();
@@ -270,6 +271,7 @@
       session.library.slots[session.slot] = session.draft;
       session.draft = null;
       session.saveLibrary();
+      Editor.paint();
       paintList();
       say(`saved "${session.library.slots[session.slot].name}" in slot ${session.slot}`, 'ok');
     });

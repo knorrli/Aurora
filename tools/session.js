@@ -283,6 +283,21 @@
   }
   const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
 
+  function sameOverrides(one, other) {
+    const names = Object.keys(one || {});
+    return names.length === Object.keys(other || {}).length && names.every(name => one[name] === other[name]);
+  }
+
+  function layerUnsaved(layer) {
+    if (editingOneshot() || !session.draft) return false;
+    const saved = session.library.slots[session.slot];
+    if (Patch.isAboveBase(layer)) {
+      return saved ? !sameOverrides(session.draft.overrides[layer], saved.overrides[layer])
+                   : Library.changedIn(session.draft, layer).length > 0;
+    }
+    return !saved || session.draft.base.some((byte, cc) => byte !== saved.base[cc]);
+  }
+
   function routeRemovable(route) {
     if (editingOneshot() || !isAboveBase()) return true;
     const current = patch();
@@ -366,7 +381,7 @@
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
+    layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });

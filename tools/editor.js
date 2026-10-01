@@ -28,6 +28,7 @@
     document.body.classList.toggle('above-base', session.isAboveBase());
     for (const { layer, button, badge } of tabs) {
       button.classList.toggle('on', layer === session.layerIndex);
+      button.classList.toggle('unsaved', session.layerUnsaved(layer));
       badge.textContent = Patch.isAboveBase(layer)
         ? Editor.transition.changesText(layer) : '';
     }
