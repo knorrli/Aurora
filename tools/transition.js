@@ -26,7 +26,7 @@
 
   function changesText(layer) {
     const count = Library.changedIn(session.patch(), layer).length;
-    if (!count) return Library.overriddenIn(session.patch(), layer).length ? 'same as base' : 'no changes';
+    if (!count) return 'no changes';
     return `${count} change${count === 1 ? '' : 's'}`;
   }
 
@@ -116,7 +116,7 @@
 
   function paintShowing() {
     byId('wallShowing').textContent = showingText();
-    if (bar.clear) bar.clear.disabled = !Library.overriddenIn(session.patch(), session.layerIndex).length;
+    if (bar.clear) bar.clear.disabled = !Library.changedIn(session.patch(), session.layerIndex).length;
   }
 
   function paintLive() {

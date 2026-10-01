@@ -133,7 +133,7 @@
     const current = editing();
     const over = current.overrides[session.layerIndex];
     if (!isAboveBase() || Patch.isSwitch(name)) {
-      Library.writeCC(current.base, name, value);
+      Library.writeBase(current, name, value);
     } else if (Patch.clampToSevenBits(value) === (current.base[Patch.CC[name]] | 0)) {
       delete over[name];
     } else {

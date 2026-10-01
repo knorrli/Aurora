@@ -60,9 +60,14 @@
     return bytes;
   }
 
-  const overriddenIn = (patch, layer) => Object.keys(patch.overrides[layer] || {});
-  const changedIn = (patch, layer) => Object.entries(patch.overrides[layer] || {})
-    .filter(([name, value]) => value !== byteOf(patch.base, name)).map(([name]) => name);
+  const changedIn = (patch, layer) => Object.keys(patch.overrides[layer] || {});
+
+  function writeBase(patch, name, value) {
+    writeCC(patch.base, name, value);
+    for (const over of patch.overrides) {
+      if (over && over[name] === byteOf(patch.base, name)) delete over[name];
+    }
+  }
 
   function freeRoute(patch, route) {
     for (const name of route.fields) {
@@ -138,7 +143,7 @@
     .flatMap(route => route.fields));
 
   function keepAsBase(patch, named) {
-    for (const name of Patch.NAMES) writeCC(patch.base, name, named[name]);
+    for (const name of Patch.NAMES) writeBase(patch, name, named[name]);
   }
 
   function keepAsLayer(patch, layer, named) {
@@ -149,7 +154,7 @@
       const value = Patch.clampToSevenBits(named[name]);
       if (Patch.isSwitch(name) || free.has(name)) {
         if (value !== byteOf(patch.base, name)) leftOnBase.push(name);
-      } else {
+      } else if (value !== byteOf(patch.base, name)) {
         over[name] = value;
       }
     }
@@ -166,7 +171,7 @@
       if (Patch.isSwitch(name)) continue;
       const value = byteOf(patch.base, name);
       if (value === Patch.DEFAULT[name]) continue;
-      writeCC(patch.base, name, Patch.DEFAULT[name]);
+      writeBase(patch, name, Patch.DEFAULT[name]);
       over[name] = value;
       moved.push(name);
     }
@@ -252,7 +257,7 @@
 
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
-    newPatch, clonePatch, layerBytes, overriddenIn, changedIn, freeRoute,
+    newPatch, clonePatch, layerBytes, changedIn, writeBase, freeRoute,
     blend, mix, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, firstEmptySlot, libraryToFile, libraryFromFile, newLibrary,

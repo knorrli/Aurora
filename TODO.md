@@ -70,10 +70,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - What do the indicator pixels show?
 - What are the foot pedal's four jobs?
 
-### Editor
-
-- A kept layer stores the whole look, but after a reload its controls that equal the base follow the base again: the library file and the brain store each layer as full bytes. Holding them needs a per-layer mask in the stored format.
-
 ### Patches on the brain
 
 Deferred until the patch model stops changing. The editor drives the wall live over CCs until then.
