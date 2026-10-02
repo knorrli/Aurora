@@ -106,7 +106,7 @@
   - Double time runs the whole wall faster on the beat, PARs included, ignoring Width and Gaps: ×2 in the lower half of Y, ×4 in the upper half. After letting go, the patch glides back onto the beat.
   - Freeze holds the picture while the patch keeps running underneath on the beat; Y blends from live to fully frozen. Letting go shows the patch where it is now.
   - Stutter gates the strips on and off on the beat; Y sets how fast.
-  - Strobe flashes the full strips white on the beat; Y sets the rate.
+  - Strobe flashes the full strips white on the beat, dark in between; Y sets the rate.
   - Focus darkens the strips outside Width and Gaps; Y sets how dark. The PARs stay as the patch has them.
   - The PARs follow freeze, stutter and strobe.
 - The touchpad rockers report where they stand. The fader rocker sends nothing of its own.

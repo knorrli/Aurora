@@ -144,6 +144,7 @@ void Playback::playEffect(float beats) {
       return;
     case PAD_EFFECT_STROBE:
       if (along < STROBE_LIT_SHARE) render::flashWhite(rendered, marked);
+      else render::blackOut(rendered, marked);
       return;
   }
 }
