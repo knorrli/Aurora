@@ -84,12 +84,7 @@
         values: Array.from(fan.subarray(0, STRIPS)),
         curve: Array.from(fan.subarray(STRIPS, after), (value, i) => [i / stepsPerStrip, value]),
         stillAt: Math.abs(fan[after + 1]) <= 1 ? fan[after + 1] : null,
-        spent: [
-          ['position', fan[after + 2]],
-          ['rate', fan[after + 3]],
-          ['LFO', fan[after + 4]],
-        ].filter(([, amount]) => Math.abs(amount) > 0.005),
-        scrambled: fan[after + 5],
+        used: [fan[after + 2], fan[after + 3], fan[after + 4]].some(amount => Math.abs(amount) > 0.005),
       };
     }
 
@@ -420,12 +415,6 @@
     context.stroke();
 
     context.restore();
-    context.save();
-    context.fillStyle = 'rgba(226,150,172,0.8)';
-    context.font = '10px ui-monospace, monospace';
-    const cycles = Math.round(pass.turns * 100) / 100;
-    context.fillText(cycles === 1 ? 'a pass every cycle' : `a pass every ${cycles} cycles`, left, first - 7);
-    context.restore();
   }
 
   function drawCenters(context, centers, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
@@ -490,6 +479,7 @@
       && order.every((strip, i) => i === 0 || strip - order[i - 1] === step);
 
     context.save();
+    if (!fan.used) context.globalAlpha = 0.3;
     context.lineWidth = 1;
     context.strokeStyle = 'rgba(255,255,255,0.14)';
     context.setLineDash([3, 4]);
@@ -533,18 +523,6 @@
       context.stroke();
     }
 
-    context.fillStyle = SHAPE_MARK;
-    context.font = '10px ui-monospace, monospace';
-    context.shadowColor = OUTLINE;
-    context.shadowBlur = 3;
-    const spent = fan.spent.length
-      ? fan.spent.map(([where, amount]) =>
-          where + ' ' + (amount > 0 ? '+' : '−') + Math.round(Math.abs(amount) * 100) + '%').join('  ')
-      : 'spent nowhere';
-    context.fillText(spent, 8, WALL_TOP + 12);
-    if (fan.scrambled > 0.005) {
-      context.fillText(Math.round(fan.scrambled * 100) + '% random', 8, WALL_TOP + 24);
-    }
     context.restore();
   }
 
@@ -571,17 +549,6 @@
       if (i === 0) context.moveTo(x, yAt(i)); else context.lineTo(x, yAt(i));
     });
     strokeOutlined(context, SHAPE_MARK, 1.5);
-
-    if (high - low < 0.01) {
-      context.restore();
-      return;
-    }
-    context.fillStyle = SHAPE_MARK;
-    context.font = '10px ui-monospace, monospace';
-    context.textAlign = 'right';
-    context.shadowColor = OUTLINE;
-    context.shadowBlur = 3;
-    context.fillText(`travel ×${low.toFixed(low < 1 ? 2 : 1)}–${high.toFixed(1)}`, columnWidth * (STRIPS + 1) - 6, WALL_TOP + 12);
     context.restore();
   }
 
