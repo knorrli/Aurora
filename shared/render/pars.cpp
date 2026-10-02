@@ -55,12 +55,12 @@ static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t 
   return level;
 }
 
-static void pushArpRoutes(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t par,
-                          Pushes &pushes) {
+static void addArpRoutes(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t par,
+                          Modulation &modulation) {
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     if (!readArpRoute(dialed, route, arpRoute)) continue;
-    pushes.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, lfo, par);
+    modulation.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, lfo, par);
   }
 }
 
@@ -74,7 +74,7 @@ static float drawnHue(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t 
     if (!readArpRoute(dialed, route, arpRoute) || !lastPulseOf(arpRoute, arp, lfo, par, pulse)) {
       continue;
     }
-    const float litAt = (pulse.start + arpRoute.timing.delay) / (float)arpRoute.timing.ratio;
+    const float litAt = (pulse.start + arpRoute.timing.phase) / (float)arpRoute.timing.ratio;
     if (drawn && litAt <= latest) continue;
     drawn = true;
     latest = litAt;
@@ -104,37 +104,37 @@ static float bandPlace(const uint8_t *dialed, const Arp &arp, float lfo, uint8_t
   return range * (2.0f * (float)arpGroupOf(grouping, par) / (float)(groups - 1) - 1.0f);
 }
 
-static void parPushes(const uint8_t *dialed, const Pushes &pushes, const Arp &arp, float lfo,
-                      uint8_t par, Pushes &out) {
-  out = pushes;
-  pushArpRoutes(dialed, arp, lfo, par, out);
+static void parModulation(const uint8_t *dialed, const Modulation &modulation, const Arp &arp, float lfo,
+                      uint8_t par, Modulation &out) {
+  out = modulation;
+  addArpRoutes(dialed, arp, lfo, par, out);
 }
 
-bool firstArpPass(const uint8_t *dialed, const Pushes &pushes, float lfo, ArpPass &out) {
+bool firstArpPass(const uint8_t *dialed, const Modulation &modulation, float lfo, ArpPass &out) {
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     if (!readArpRoute(dialed, route, arpRoute)) continue;
-    passAt(readArp(dialed, &pushes), arpRoute.arp == ARP_RIPPLE, turnsAt(arpRoute, lfo), out);
+    passAt(readArp(dialed, &modulation), arpRoute.arp == ARP_RIPPLE, turnsAt(arpRoute, lfo), out);
     return true;
   }
   return false;
 }
 
-uint8_t routedAtPar(const uint8_t *dialed, const Pushes &pushes, float lfo, uint8_t cc,
+uint8_t routedAtPar(const uint8_t *dialed, const Modulation &modulation, float lfo, uint8_t cc,
                     uint8_t par) {
-  Pushes atPar;
-  parPushes(dialed, pushes, readArp(dialed, &pushes), lfo, par, atPar);
+  Modulation atPar;
+  parModulation(dialed, modulation, readArp(dialed, &modulation), lfo, par, atPar);
   return routed(dialed, &atPar, cc);
 }
 
-void readPars(const uint8_t *dialed, const Pushes &pushes, float lfo, Frame &out) {
-  const Arp arp = readArp(dialed, &pushes);
-  const uint8_t stripsHue = routedColor(dialed, &pushes).h;
+void readPars(const uint8_t *dialed, const Modulation &modulation, float lfo, Frame &out) {
+  const Arp arp = readArp(dialed, &modulation);
+  const uint8_t stripsHue = routedColor(dialed, &modulation).h;
   out.stripsHue = stripsHue;
 
-  Pushes atPar;
+  Modulation atPar;
   for (uint8_t par = 0; par < PARS; par++) {
-    parPushes(dialed, pushes, arp, lfo, par, atPar);
+    parModulation(dialed, modulation, arp, lfo, par, atPar);
     auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, &atPar, cc)); };
     const float place = bandPlace(dialed, arp, lfo, par, at(CC_PAR_HUE_RANGE));
     out.parHuePlaces[par] = place;

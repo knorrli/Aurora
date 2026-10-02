@@ -215,7 +215,7 @@ ScatterSample scatterAt(const Scatter &scatter, const ScatterSpots &spots, float
 
 static float valueLeftAfterDark(float dark) { return powf(DARK_FLOOR, dark); }
 
-static Hsv pushed(Hsv base, float hue, float white, float dark) {
+static Hsv tinted(Hsv base, float hue, float white, float dark) {
   if (white > 1.0f) white = 1.0f;
   if (dark > 1.0f) dark = 1.0f;
 
@@ -233,7 +233,7 @@ Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float
 
   const float fieldAway = fabsf(field);
   const float flowAway = (flow > 0.0f) ? flow : 0.0f;
-  return pushed(reading.color,
+  return tinted(reading.color,
       field * reading.field.hue + flow * reading.flow.hue
           + shape * reading.core.hue,
       fieldAway * reading.field.white + flowAway * reading.flow.white

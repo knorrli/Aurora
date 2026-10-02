@@ -25,7 +25,7 @@ struct FrameContext {
   const uint8_t *dialed;
   float beats;
   float lfo;
-  Reading plain;
+  Reading wallReading;
   float cellLength;
   const BendTable *bend;
   Travel travel;
@@ -81,22 +81,22 @@ static float beatsAt(float quarterNotes, uint8_t division) {
 }
 
 static void startTravel(FrameContext &context, const Wall &wall) {
-  const Reading &plain = context.plain;
+  const Reading &wallReading = context.wallReading;
   bool anyMoving =
       routeAims(context.dialed, CC_SHAPE_SPEED, RENDER_ROUTES)
       || routeAims(context.dialed, CC_FAN_SPEED, RENDER_ROUTES);
-  const float lap = lapPixels(plain.shape);
-  const float fanLaps = lap > 0.0001f ? plain.fan.speedPixels / lap : 0.0f;
+  const float lap = lapPixels(wallReading.shape);
+  const float fanLaps = lap > 0.0001f ? wallReading.fan.speedPixels / lap : 0.0f;
   for (uint8_t i = 0; i < STRIPS; i++) {
-    context.stripLaps[i] = plain.shape.lapsPerBeat + fanLaps * fanWave(plain.fan, i);
+    context.stripLaps[i] = wallReading.shape.lapsPerBeat + fanLaps * fanWave(wallReading.fan, i);
     if (fabsf(context.stripLaps[i] * lap) < STILL_PIXELS_PER_BEAT) context.stripLaps[i] = 0.0f;
     if (context.stripLaps[i] != 0.0f) anyMoving = true;
   }
 
   Travel &travel = context.travel;
   travel.beats = context.beats;
-  travel.bouncing = plain.shape.bounce && anyMoving;
-  travel.walled = plain.shape.bounce;
+  travel.bouncing = wallReading.shape.bounce && anyMoving;
+  travel.walled = wallReading.shape.bounce;
   travel.flipped = travel.bouncing != wall.lastBouncing;
   travel.elapsed = context.beats - wall.lastBeats;
 }
@@ -114,25 +114,25 @@ static void startTails(FrameContext &context, const Wall &wall, float quarterNot
   tail.flipped = context.travel.flipped;
 }
 
-static void readStrip(const FrameContext &context, uint8_t index, Pushes &pushes,
+static void readStrip(const FrameContext &context, uint8_t index, Modulation &modulation,
                       StripContext &strip, Frame &out) {
-  const Fan &fan = context.plain.fan;
+  const Fan &fan = context.wallReading.fan;
   const float wave = fanWave(fan, index);
   strip.index = index;
   strip.fanShift = fan.lfo * wave;
   out.stripFanShift[index] = strip.fanShift;
 
-  gatherRoutes(context.dialed, context.plain.lfoBeats, context.lfo, strip.fanShift, pushes);
-  readControls(context.dialed, &pushes, strip.reading);
+  gatherRoutes(context.dialed, context.wallReading.lfoBeats, context.lfo, strip.fanShift, modulation);
+  readControls(context.dialed, &modulation, strip.reading);
 
-  strip.flowTime = context.flowTime + pushes.shift[CC_FLOW_RATE];
-  strip.fieldDrift = context.fieldDrift + pushes.shift[CC_FIELD_SPEED];
-  strip.scatterTime = context.scatterTime + pushes.shift[CC_SCATTER_RATE];
+  strip.flowTime = context.flowTime + modulation.shift[CC_FLOW_RATE];
+  strip.fieldDrift = context.fieldDrift + modulation.shift[CC_FIELD_SPEED];
+  strip.scatterTime = context.scatterTime + modulation.shift[CC_SCATTER_RATE];
 
-  const float lap = lapPixels(context.plain.shape);
+  const float lap = lapPixels(context.wallReading.shape);
   strip.travel.lapsPerBeat = context.stripLaps[index];
-  strip.travel.shiftLaps = pushes.shift[CC_SHAPE_SPEED]
-      + (lap > 0.0001f ? pushes.shift[CC_FAN_SPEED] * wave / lap : 0.0f);
+  strip.travel.shiftLaps = modulation.shift[CC_SHAPE_SPEED]
+      + (lap > 0.0001f ? modulation.shift[CC_FAN_SPEED] * wave / lap : 0.0f);
   strip.travel.positionCells =
       (strip.reading.shape.position - 0.5f) * (1.0f - strip.reading.shape.width);
   const bool restsWalled = context.travel.walled && !context.travel.bouncing;
@@ -187,10 +187,10 @@ static bool nearestOffset(float cells, float centerInCell, float direction, bool
 
 static ShapeSample sampleShape(const FrameContext &context, const ShapeLook &look,
                                const Tail &tail, float cells) {
-  const Shape &plain = context.plain.shape;
+  const Shape &wallShape = context.wallReading.shape;
   float nearest = 0.0f;
   const bool onShape =
-      nearestOffset(cells, look.centerInCell, look.direction, plain.bounce, plain.count,
+      nearestOffset(cells, look.centerInCell, look.direction, wallShape.bounce, wallShape.count,
                     nearest);
   const float coreLevel = onShape ? bumpAt(nearest, look.width, look.edge) : 0.0f;
   const float age = look.tailing ? tailAgeAt(tail, cells) : -1.0f;
@@ -215,16 +215,16 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
                      const ShapeLook &look, const Tail &tail, const PixelEngines &engines,
                      uint8_t pixelIndex, float &fieldLevel) {
   const Reading &reading = strip.reading;
-  const Shape &plain = context.plain.shape;
+  const Shape &wallShape = context.wallReading.shape;
   float shapeTotal = 0.0f;
   float fieldTotal = 0.0f;
   float scatterCover = 0.0f;
   ScatterSample spot = { 0.0f, 0.0f, 0.0f, 0.0f };
   for (uint8_t sampleIndex = 0; sampleIndex < SAMPLES_PER_PIXEL; sampleIndex++) {
     const float acrossPixel = ((float)sampleIndex + 0.5f) / (float)SAMPLES_PER_PIXEL - 0.5f;
-    const float cells = bentCells(context.bend, plain.bounce,
+    const float cells = bentCells(context.bend, wallShape.bounce,
                                   (float)pixelIndex + 0.5f + acrossPixel, context.cellLength,
-                                  plain.count);
+                                  wallShape.count);
     const ShapeSample sample = sampleShape(context, look, tail, cells);
     shapeTotal += sample.level;
 
@@ -291,38 +291,38 @@ void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseco
   context.dialed = controls;
   context.beats = beatsAt(quarterNotes, controls[CC_TEMPO_DIVISION]);
 
-  readControls(controls, nullptr, context.plain);
-  context.lfo = anchoredLfoPhase(motion, context.beats, 1.0f / context.plain.lfoBeats);
+  readControls(controls, nullptr, context.wallReading);
+  context.lfo = anchoredLfoPhase(motion, context.beats, 1.0f / context.wallReading.lfoBeats);
   out.lfo = context.lfo;
 
-  Pushes pushes;
-  gatherRoutes(controls, context.plain.lfoBeats, context.lfo, 0.0f, pushes);
-  readControls(controls, &pushes, context.plain);
-  readPars(controls, pushes, context.lfo, out);
+  Modulation modulation;
+  gatherRoutes(controls, context.wallReading.lfoBeats, context.lfo, 0.0f, modulation);
+  readControls(controls, &modulation, context.wallReading);
+  readPars(controls, modulation, context.lfo, out);
   holdParPulses(milliseconds, wall, out);
-  readFan(context.plain, out.fan);
+  readFan(context.wallReading, out.fan);
 
-  const Shape &shape = context.plain.shape;
+  const Shape &shape = context.wallReading.shape;
   context.cellLength = (float)PIXELS / shape.count;
   context.bend = bendFor(shape.bend, shape.bendAt);
   readBend(context.bend, shape.bounce, context.cellLength, shape.count, out.bend);
 
   startTravel(context, wall);
   startTails(context, wall, quarterNotes);
-  context.flowTime = clockPhase(motion.flow, context.beats, context.plain.flow.cyclesPerBeat);
+  context.flowTime = clockPhase(motion.flow, context.beats, context.wallReading.flow.cyclesPerBeat);
   const float fieldElapsed = context.beats - motion.lastFieldBeats;
   motion.lastFieldBeats = context.beats;
   context.fieldDrift =
-      anchoredPhase(motion.field, context.beats, fieldElapsed, context.plain.field.cellsPerBeat);
-  const bool fieldOn = fieldActive(context.plain, context.dialed, RENDER_ROUTES);
+      anchoredPhase(motion.field, context.beats, fieldElapsed, context.wallReading.field.cellsPerBeat);
+  const bool fieldOn = fieldActive(context.wallReading, context.dialed, RENDER_ROUTES);
   for (uint8_t i = 0; i < FIELD_ACROSS_POINTS; i++) {
     const float u = (float)i / (float)(FIELD_ACROSS_POINTS - 1);
-    out.fieldAcross[i] = fieldOn ? fieldAtPosition(context.plain.field, u, context.fieldDrift) : 0.0f;
+    out.fieldAcross[i] = fieldOn ? fieldAtPosition(context.wallReading.field, u, context.fieldDrift) : 0.0f;
   }
   float scatterElapsed = context.beats - motion.lastScatterBeats;
   motion.lastScatterBeats = context.beats;
   context.scatterTime =
-      anchoredPhase(motion.scatter, context.beats, scatterElapsed, context.plain.scatter.rate);
+      anchoredPhase(motion.scatter, context.beats, scatterElapsed, context.wallReading.scatter.rate);
   context.spotRouteCount = gatherSpotRoutes(controls, context.spotRoutes);
   if (scatterElapsed < 0.0f) {
     for (auto &drifts : motion.spotDrift) {
@@ -330,11 +330,11 @@ void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseco
     }
     scatterElapsed = 0.0f;
   }
-  const float scatterCycles = scatterElapsed * context.plain.scatter.rate;
+  const float scatterCycles = scatterElapsed * context.wallReading.scatter.rate;
 
   for (uint8_t index = 0; index < STRIPS; index++) {
     StripContext strip;
-    readStrip(context, index, pushes, strip, out);
+    readStrip(context, index, modulation, strip, out);
     const float randomize = strip.reading.scatter.randomize;
     const ScatterClock scatterNow = { strip.scatterTime, randomize };
     placeScatter(strip.reading.scatter, context.dialed, context.spotRoutes, context.spotRouteCount,

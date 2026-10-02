@@ -6,7 +6,7 @@
 #include "render.h"
 
 namespace render {
-struct Pushes {
+struct Modulation {
   float amount[AURORA_PATCH_CC_COUNT];
   float swing[AURORA_PATCH_CC_COUNT];
   float shift[AURORA_PATCH_CC_COUNT];
@@ -17,7 +17,7 @@ struct RouteTiming {
   uint8_t route;
   uint8_t ratio;
   bool once;
-  float delay;
+  float phase;
 };
 
 struct SpotRoute {
@@ -44,11 +44,11 @@ uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out);
 uint8_t landedByte(uint8_t cc, uint8_t base, float amount);
 
 void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float fanShift,
-                  Pushes &out);
+                  Modulation &out);
 
-uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
+uint8_t routed(const uint8_t *dialed, const Modulation *modulation, uint8_t cc);
 
-uint8_t routedForDisplay(const uint8_t *dialed, const Pushes *pushes, uint8_t cc);
+uint8_t routedForDisplay(const uint8_t *dialed, const Modulation *modulation, uint8_t cc);
 
 bool routeRefused(uint8_t cc);
 

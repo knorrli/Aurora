@@ -209,7 +209,7 @@ function checkRenderer() {
       refused: new Set([...tagged('switch'), 'lfoRate']),
       swings: new Set(tagged('rate')),
       circular: new Set(tagged('circular')),
-      plainLfo: new Set(tagged('plain')),
+      unstaggered: new Set(tagged('unstaggered')),
     }),
     ...checkCases(MORPH_SOURCE, {
       performed: new Set(tagged('ambient')),

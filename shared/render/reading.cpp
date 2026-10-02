@@ -140,8 +140,8 @@ float controlValue(uint8_t cc, uint8_t value) {
   }
 }
 
-void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
-  auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, pushes, cc)); };
+void readControls(const uint8_t *dialed, const Modulation *modulation, Reading &out) {
+  auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, modulation, cc)); };
 
   Shape &shape = out.shape;
   shape.width = at(CC_SHAPE_WIDTH);
@@ -197,11 +197,11 @@ void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out) {
   scatter.speed = at(CC_SCATTER_SPEED);
   scatter.mix = at(CC_SCATTER_MIX);
 
-  out.color = routedColor(dialed, pushes);
+  out.color = routedColor(dialed, modulation);
 }
 
-Hsv routedColor(const uint8_t *dialed, const Pushes *pushes) {
-  auto at = [&](uint8_t cc) { return (uint8_t)controlValue(cc, routed(dialed, pushes, cc)); };
+Hsv routedColor(const uint8_t *dialed, const Modulation *modulation) {
+  auto at = [&](uint8_t cc) { return (uint8_t)controlValue(cc, routed(dialed, modulation, cc)); };
   return { at(CC_HUE), at(CC_SATURATION), at(CC_VALUE) };
 }
 

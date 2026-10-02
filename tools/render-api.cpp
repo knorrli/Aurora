@@ -210,7 +210,7 @@ EMSCRIPTEN_KEEPALIVE int aurora_arp_reversed(int mode, int spread) { return rend
 
 EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int phase, float clock) {
   const render::RouteTiming timing = { 0, aurora_route_ratio((uint8_t)ratio), aurora_route_once((uint8_t)ratio),
-                                       aurora_route_delay((uint8_t)phase) };
+                                       aurora_route_phase((uint8_t)phase) };
   return render::turnsOn(timing, clock, 0.0f);
 }
 
@@ -219,24 +219,24 @@ EMSCRIPTEN_KEEPALIVE float aurora_bend_speed_ratio(int bend) {
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {
-  render::Pushes pushes;
+  render::Modulation modulation;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripFanShift[strip], pushes);
-  return render::routedForDisplay(controls, &pushes, (uint8_t)cc);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripFanShift[strip], modulation);
+  return render::routedForDisplay(controls, &modulation, (uint8_t)cc);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
-  render::Pushes pushes;
+  render::Modulation modulation;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, pushes);
-  return render::routedAtPar(controls, pushes, frame.lfo, (uint8_t)cc, (uint8_t)par);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, modulation);
+  return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)cc, (uint8_t)par);
 }
 
 EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
-  render::Pushes pushes;
+  render::Modulation modulation;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, pushes);
-  return render::firstArpPass(controls, pushes, frame.lfo, arpPass) ? &arpPass : nullptr;
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, modulation);
+  return render::firstArpPass(controls, modulation, frame.lfo, arpPass) ? &arpPass : nullptr;
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_marks() { return render::PASS_MARKS; }

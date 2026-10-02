@@ -46,7 +46,7 @@ function keepAsNewPatch() {
   const patch = Library.newPatch(current.name);
   Object.assign(patch, { transitionTime: current.transitionTime, accentTime: current.accentTime });
   Library.keepAsBase(patch, shown);
-  Editor.show(null, patch);
+  Editor.open(null, patch);
   say('kept as a new patch — save it into a slot', 'ok');
 }
 

@@ -394,7 +394,7 @@ const LFO = {
         options: Object.entries(Protocol.ARP_MODE)
           .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]),
         inertWhen: live => !arpRouted(live) }),
-    control('arpSpread', 'Steps',
+    control('arpSpread', 'Spread',
       { inertWhen: live => !arpRouted(live) }),
   ],
 };

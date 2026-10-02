@@ -88,7 +88,7 @@ function open(index) {
 }
 
 function backToPatch() {
-  Editor.show(session.slot, session.draft);
+  Editor.open(session.slot, session.draft);
 }
 
 function editOver() {
@@ -98,7 +98,7 @@ function editOver() {
     return;
   }
   if (!Rail.leaveDraft()) return;
-  Editor.show(slot);
+  Editor.open(slot);
 }
 
 function chooseOver() {

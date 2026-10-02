@@ -8,6 +8,6 @@ namespace render {
 
 float fanWave(const Fan &fan, uint8_t stripIndex);
 
-void readFan(const Reading &plain, FanReading &out);
+void readFan(const Reading &reading, FanReading &out);
 
 }

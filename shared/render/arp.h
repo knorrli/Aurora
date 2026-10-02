@@ -11,7 +11,7 @@ struct Arp {
   float spread;
 };
 
-Arp readArp(const uint8_t *dialed, const Pushes *pushes);
+Arp readArp(const uint8_t *dialed, const Modulation *modulation);
 
 uint8_t arpGroupCount(const Arp &arp);
 

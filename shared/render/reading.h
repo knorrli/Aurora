@@ -84,8 +84,8 @@ float controlValue(uint8_t cc, uint8_t value);
 
 float lapPixels(const Shape &shape);
 
-void readControls(const uint8_t *dialed, const Pushes *pushes, Reading &out);
+void readControls(const uint8_t *dialed, const Modulation *modulation, Reading &out);
 
-Hsv routedColor(const uint8_t *dialed, const Pushes *pushes);
+Hsv routedColor(const uint8_t *dialed, const Modulation *modulation);
 
 }

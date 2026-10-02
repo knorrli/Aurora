@@ -19,8 +19,8 @@ float fanWave(const Fan &fan, uint8_t stripIndex) {
   return ordered + (drawn - ordered) * fan.randomize;
 }
 
-void readFan(const Reading &plain, FanReading &out) {
-  const Fan &fan = plain.fan;
+void readFan(const Reading &reading, FanReading &out) {
+  const Fan &fan = reading.fan;
   for (uint8_t i = 0; i < STRIPS; i++) out.values[i] = fanWave(fan, i);
   for (uint16_t i = 0; i < FAN_CURVE_POINTS; i++) {
     const float at = (float)i / (float)FAN_CURVE_STEPS_PER_STRIP;
@@ -28,7 +28,7 @@ void readFan(const Reading &plain, FanReading &out) {
   }
   out.turns = fan.frequency * (float)(STRIPS - 1);
   out.stillAt = (fabsf(fan.speedPixels) > 0.0001f)
-      ? -plain.shape.lapsPerBeat * lapPixels(plain.shape) / fan.speedPixels : 2.0f;
+      ? -reading.shape.lapsPerBeat * lapPixels(reading.shape) / fan.speedPixels : 2.0f;
   out.spread = fan.spread * 2.0f;
   out.speed = fan.speedPixels / MAX_SPEED_PIXELS_PER_BEAT;
   out.lfo = fan.lfo * 2.0f;

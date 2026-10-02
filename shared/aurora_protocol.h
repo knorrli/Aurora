@@ -22,19 +22,19 @@ enum AuroraCC : uint8_t {
     CC_SATURATION            = 22, // [patch]
     CC_VALUE                 = 23, // [patch]
 
-    CC_PAR_HUE_OFFSET        = 24, // [patch][circular][plain]
-    CC_PAR_SATURATION        = 25, // [patch][plain]
-    CC_PAR_VALUE             = 26, // [patch][plain]
+    CC_PAR_HUE_OFFSET        = 24, // [patch][circular][unstaggered]
+    CC_PAR_SATURATION        = 25, // [patch][unstaggered]
+    CC_PAR_VALUE             = 26, // [patch][unstaggered]
     CC_PAR_HUE_LAYOUT        = 27, // [switch]
-    CC_PAR_HUE_RANGE         = 28, // [patch][plain]
+    CC_PAR_HUE_RANGE         = 28, // [patch][unstaggered]
 
     CC_TEMPO_DIVISION        = 29, // [switch]
     CC_LFO_RATE              = 30, // [patch]
 
     CC_ARP_MODE              = 31, // [switch]
-    CC_ARP_SPREAD            = 33, // [patch][plain]
+    CC_ARP_SPREAD            = 33, // [patch][unstaggered]
 
-    CC_SHAPE_COUNT           = 35, // [patch][plain]
+    CC_SHAPE_COUNT           = 35, // [patch][unstaggered]
     CC_SHAPE_WIDTH           = 36, // [patch]
     CC_SHAPE_EDGE            = 37, // [patch]
     CC_SHAPE_TAIL            = 38, // [patch]
@@ -42,15 +42,15 @@ enum AuroraCC : uint8_t {
     CC_SHAPE_BOUNCE          = 39, // [switch]
     CC_SHAPE_SPEED           = 40, // [patch][rate]
     CC_SHAPE_POSITION        = 41, // [patch]
-    CC_SHAPE_BEND            = 42, // [patch][plain]
-    CC_SHAPE_BEND_AT         = 43, // [patch][plain]
+    CC_SHAPE_BEND            = 42, // [patch][unstaggered]
+    CC_SHAPE_BEND_AT         = 43, // [patch][unstaggered]
 
-    CC_FAN_SPREAD            = 44, // [patch][plain]
-    CC_FAN_SPEED             = 45, // [patch][rate][plain]
-    CC_FAN_LFO               = 46, // [patch][plain]
-    CC_FAN_FREQUENCY         = 47, // [patch][plain]
-    CC_FAN_PHASE             = 48, // [patch][circular][plain]
-    CC_FAN_RANDOMIZE         = 49, // [patch][plain]
+    CC_FAN_SPREAD            = 44, // [patch][unstaggered]
+    CC_FAN_SPEED             = 45, // [patch][rate][unstaggered]
+    CC_FAN_LFO               = 46, // [patch][unstaggered]
+    CC_FAN_FREQUENCY         = 47, // [patch][unstaggered]
+    CC_FAN_PHASE             = 48, // [patch][circular][unstaggered]
+    CC_FAN_RANDOMIZE         = 49, // [patch][unstaggered]
 
     CC_SCATTER_COUNT         = 50, // [patch]
     CC_SCATTER_WIDTH         = 51, // [patch]
@@ -143,7 +143,7 @@ static inline uint8_t aurora_route_phase_step(uint8_t value) {
     return (uint8_t)(((uint16_t)value * last + 63) / 127);
 }
 
-static inline float aurora_route_delay(uint8_t value) {
+static inline float aurora_route_phase(uint8_t value) {
     return (float)aurora_route_phase_step(value) / (float)AURORA_ROUTE_PHASE_STEPS;
 }
 

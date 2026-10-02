@@ -119,7 +119,7 @@ function refresh() {
   Midi.sendLive();
 }
 
-function show(slot, draft) {
+function open(slot, draft) {
   session.select(slot, draft);
   Transition.rebuild();
   Playback.cut();
@@ -173,7 +173,7 @@ function measureTopbar() {
   measure();
 }
 
-export { paint, refresh, show, follow, selectLayer };
+export { paint, refresh, open, follow, selectLayer };
 
 session.load();
 session.transition.from = session.slot;

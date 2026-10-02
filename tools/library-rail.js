@@ -143,17 +143,17 @@ function paintSaving() {
 
 function selectPatch(slot) {
   if (slot === session.slot && session.editingOneshot()) {
-    Editor.show(slot, session.draft);
+    Editor.open(slot, session.draft);
     return;
   }
   if (slot === session.slot || !leaveDraft()) return;
-  Editor.show(slot);
+  Editor.open(slot);
 }
 
 function showFirstOrNew() {
   const first = session.firstFilled();
-  if (first === null) Editor.show(firstEmptySlot(), Library.newPatch('untitled'));
-  else Editor.show(first);
+  if (first === null) Editor.open(firstEmptySlot(), Library.newPatch('untitled'));
+  else Editor.open(first);
 }
 
 function replaceLibrary(file) {
@@ -274,7 +274,7 @@ function wireLibrary() {
     }
     if (!leaveDraft()) return;
     session.draft = null;
-    if (isSaved()) Editor.show(session.slot);
+    if (isSaved()) Editor.open(session.slot);
     else showFirstOrNew();
   });
   byId('saveHere').addEventListener('click', () => {
@@ -297,7 +297,7 @@ function wireLibrary() {
     }
     if (!leaveDraft()) return;
     session.layerIndex = Protocol.PATCH_LAYER_BASE;
-    Editor.show(firstEmptySlot(), Library.newPatch('untitled'));
+    Editor.open(firstEmptySlot(), Library.newPatch('untitled'));
   });
   byId('patchDelete').addEventListener('click', () => {
     const patch = session.library.slots[session.slot];

@@ -17,12 +17,12 @@ void setOneshotClock(const OneshotClock &clock) { oneshotClock = clock; }
 RouteTiming routeTiming(const uint8_t *dialed, uint8_t route) {
   const uint8_t ratio = dialed[routeByte(route, ROUTE_RATIO)];
   return { route, aurora_route_ratio(ratio), aurora_route_once(ratio),
-           aurora_route_delay(dialed[routeByte(route, ROUTE_PHASE)]) };
+           aurora_route_phase(dialed[routeByte(route, ROUTE_PHASE)]) };
 }
 
 float turnsOn(const RouteTiming &timing, float clock, float shift) {
-  if (!timing.once) return clock * (float)timing.ratio + shift - timing.delay;
-  const float turns = (fract(clock) - timing.delay) * (float)timing.ratio + shift;
+  if (!timing.once) return clock * (float)timing.ratio + shift - timing.phase;
+  const float turns = (fract(clock) - timing.phase) * (float)timing.ratio + shift;
   return turns < 0.0f ? 0.0f : (turns > ONCE_END ? ONCE_END : turns);
 }
 
@@ -123,7 +123,7 @@ bool spotDestination(uint8_t cc) {
   }
 }
 
-static bool plainLfo(uint8_t cc) {
+static bool unstaggered(uint8_t cc) {
   switch (cc) {
     case CC_PAR_VALUE:
     case CC_PAR_HUE_OFFSET:
@@ -202,7 +202,7 @@ static float swingReach(uint8_t cc, float amount) {
 }
 
 void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float fanShift,
-                  Pushes &out) {
+                  Modulation &out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     out.amount[i] = 0.0f;
     out.swing[i] = 0.0f;
@@ -221,8 +221,8 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
 
     const RouteTiming timing = routeTiming(dialed, route);
     const uint8_t wave = dialed[routeByte(route, ROUTE_WAVE)];
-    const bool unstaggered = oneshotRoute(route) && !oneshotClock.staggered;
-    const float shift = plainLfo(destination) || unstaggered ? 0.0f : fanShift;
+    const bool oneshotUnstaggered = oneshotRoute(route) && !oneshotClock.staggered;
+    const float shift = unstaggered(destination) || oneshotUnstaggered ? 0.0f : fanShift;
     const float phase = routeTurns(timing, lfo, shift);
     const float cycleBeats = oneshotRoute(route) ? oneshotClock.beats : beatsPerCycle;
 
@@ -286,11 +286,11 @@ uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
   return count;
 }
 
-uint8_t routed(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
+uint8_t routed(const uint8_t *dialed, const Modulation *modulation, uint8_t cc) {
   const uint8_t base = dialed[cc];
-  if (!pushes || swings(cc)) return base;
-  const float amount = pushes->amount[cc];
-  const float bipolar = pushes->bipolar[cc];
+  if (!modulation || swings(cc)) return base;
+  const float amount = modulation->amount[cc];
+  const float bipolar = modulation->bipolar[cc];
   if (fabsf(amount) < 0.001f && fabsf(bipolar) < 0.001f) return base;
 
   return settled(cc, landing(cc, base, amount) + (int16_t)lroundf(bipolar));
@@ -322,9 +322,9 @@ static uint8_t nearestByte(uint8_t cc, float value) {
   return best;
 }
 
-uint8_t routedForDisplay(const uint8_t *dialed, const Pushes *pushes, uint8_t cc) {
-  if (!pushes || !swings(cc)) return routed(dialed, pushes, cc);
-  return nearestByte(cc, controlValue(cc, dialed[cc]) + pushes->swing[cc]);
+uint8_t routedForDisplay(const uint8_t *dialed, const Modulation *modulation, uint8_t cc) {
+  if (!modulation || !swings(cc)) return routed(dialed, modulation, cc);
+  return nearestByte(cc, controlValue(cc, dialed[cc]) + modulation->swing[cc]);
 }
 
 bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) {
