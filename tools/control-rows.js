@@ -185,8 +185,11 @@
     byId('outputs').replaceChildren(...Patch.OUTPUTS.map(output => buildGroup(output.title, output.sections)));
     byId('lfo').replaceChildren(buildCard(Patch.LFO));
     const shape = element('div', 'groups');
-    shape.append(...Patch.SHAPE.groups.map(group =>
-      buildGroup(group.title, [[null, group.names]], `${Patch.SHAPE.name} · ${group.title}`)));
+    shape.append(...Patch.SHAPE.groups.map(group => {
+      const box = buildGroup(group.title, [[null, group.names]], `${Patch.SHAPE.name} · ${group.title}`);
+      box.classList.add(`tone-${group.title.toLowerCase()}`);
+      return box;
+    }));
     byId('shape').replaceChildren(element('h2', 'shape-name', Patch.SHAPE.name), shape);
     byId('engines').replaceChildren(...Patch.ENGINES.map(buildCard));
   }

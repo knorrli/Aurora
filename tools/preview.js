@@ -227,8 +227,10 @@
   }
 
   const PALETTE_MARK = 'rgba(176,162,236,0.95)';
-  const SHAPE_MARK = 'rgba(240,168,96,0.95)';
-  const SHAPE_MARK_SOFT = 'rgba(240,168,96,0.6)';
+  const TRAVEL_MARK = 'rgba(244,198,110,0.95)';
+  const TRAVEL_MARK_SOFT = 'rgba(244,198,110,0.6)';
+  const FAN_MARK = 'rgba(236,122,84,0.95)';
+  const FAN_MARK_SOFT = 'rgba(236,122,84,0.6)';
   const OUTLINE = 'rgba(10,11,14,0.85)';
   const SPOT_MARK = 'rgba(140,220,184,0.95)';
   const FIELD_MARK = 'rgba(140,190,235,0.95)';
@@ -445,7 +447,7 @@
     points.forEach(({ x, pixel }, column) => {
       if (column === 0) context.moveTo(x, yAt(pixel)); else context.lineTo(x, yAt(pixel));
     });
-    strokeOutlined(context, SHAPE_MARK_SOFT, 1.5);
+    strokeOutlined(context, TRAVEL_MARK_SOFT, 1.5);
     context.restore();
 
     context.save();
@@ -459,7 +461,7 @@
         context.moveTo(x - stripWidth * 0.75, y);
         context.lineTo(x + stripWidth * 0.75, y);
         context.stroke();
-        context.strokeStyle = SHAPE_MARK;
+        context.strokeStyle = TRAVEL_MARK;
         context.lineWidth = 2;
         context.stroke();
       }
@@ -490,12 +492,12 @@
 
     if (fan.stillAt !== null) {
       const y = middle - fan.stillAt * reach;
-      context.strokeStyle = SHAPE_MARK_SOFT;
+      context.strokeStyle = FAN_MARK_SOFT;
       context.beginPath();
       context.moveTo(xAt(-0.4), y);
       context.lineTo(xAt(STRIPS - 0.6), y);
       context.stroke();
-      context.fillStyle = SHAPE_MARK;
+      context.fillStyle = FAN_MARK;
       context.font = '9px ui-monospace, monospace';
       context.fillText('still', xAt(-0.4) + 2, y - 3);
     }
@@ -509,14 +511,14 @@
         const y = middle - value * reach;
         if (i === 0) context.moveTo(x, y); else context.lineTo(x, y);
       });
-      strokeOutlined(context, SHAPE_MARK_SOFT, 1.5);
+      strokeOutlined(context, FAN_MARK_SOFT, 1.5);
     }
 
     for (let column = 0; column < STRIPS; column++) {
       const value = fan.values[order[column]];
       context.beginPath();
       context.arc(xAt(column), middle - value * reach, 3.2, 0, Math.PI * 2);
-      context.fillStyle = SHAPE_MARK;
+      context.fillStyle = FAN_MARK;
       context.fill();
       context.strokeStyle = OUTLINE;
       context.lineWidth = 1.5;
@@ -548,7 +550,7 @@
       const x = axis + (value - middle) / middle * reach;
       if (i === 0) context.moveTo(x, yAt(i)); else context.lineTo(x, yAt(i));
     });
-    strokeOutlined(context, SHAPE_MARK, 1.5);
+    strokeOutlined(context, TRAVEL_MARK, 1.5);
     context.restore();
   }
 
