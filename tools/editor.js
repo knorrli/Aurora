@@ -96,7 +96,6 @@
     paintTabs();
     Editor.routes.paint(live);
     paintHead();
-    Editor.wall.paint();
     Editor.transition.paintShowing();
     Editor.transition.paintMix();
   }

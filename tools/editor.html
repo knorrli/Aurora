@@ -289,10 +289,6 @@
   .showing-row { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 6px; }
   .showing-row .showing { margin-top: 0; }
   .showing { text-align: center; color: var(--select); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
-  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-  .compare[hidden] { display: none; }
-  .compare figure { margin: 0; }
-  .compare figcaption { color: var(--faint); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; text-align: center; }
   .dock .rowline { margin-top: 9px; }
   .dock input[type=text] { width: 84px; }
   .dock input.invalid { border-color: var(--bad); }
@@ -301,7 +297,6 @@
     .shell { grid-template-columns: minmax(220px, 252px) minmax(0, 1fr); }
     .dock { grid-column: 1 / -1; order: -1; position: static; }
     .dockgrid { grid-template-columns: 172px minmax(0, 1fr); gap: 16px; align-items: start; }
-    .dock .compare { margin-top: 0; max-width: 300px; }
   }
   @media (max-width: 780px) {
     .shell { grid-template-columns: 1fr; }
@@ -449,10 +444,6 @@
           </div>
         </div>
         <div>
-          <div class="compare" id="compare" hidden>
-            <figure><canvas id="wallBase"></canvas><figcaption>base</figcaption></figure>
-            <figure><canvas id="wallLayer"></canvas><figcaption id="layerCaption"></figcaption></figure>
-          </div>
           <div class="rowline">
             <button class="tiny" id="wallFlip">pixel 0 at bottom</button>
             <label class="cc">order <input type="text" id="wallOrder"></label>

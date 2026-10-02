@@ -1,7 +1,6 @@
 (function (global) {
   'use strict';
 
-  const Patch = global.AuroraPatch;
   const Library = global.AuroraLibrary;
   const Preview = global.AuroraPreview;
   const Editor = global.AuroraEditor;
@@ -10,7 +9,7 @@
 
   const BEAT_FLASH = 0.15;
 
-  const walls = {};
+  let wall = null;
   const OVERLAYS = ['centers', 'fan', 'bend', 'arp', 'palette', 'spots', 'field'];
   const STORE_OVERLAYS = 'aurora.editor.overlays';
 
@@ -50,7 +49,7 @@
   }
 
   function clearTails() {
-    for (const wall of Object.values(walls)) Preview.clearTails(wall.wallState);
+    Preview.clearTails(wall.wallState);
   }
 
   const restartBeats = () => { beats.position = 0; };
@@ -92,14 +91,13 @@
     return Object.assign(session.oneshotInput(), { progress, beats: Library.lengthBeats(session.fired()) });
   }
 
-  function drawBytes(wall, bytes, oneshot) {
+  function drawBytes(bytes, oneshot) {
     const frame = Preview.render(bytes, beats.position, Math.round(performance.now()), wall.motion, wall.wallState, oneshot);
-    Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height,
-                 wall === walls.main ? view.overlays : {});
+    Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height, view.overlays);
     return frame;
   }
 
-  const draw = (wall, named, oneshot) => drawBytes(wall, Library.bytesFromNamed(session.sounding(named)), oneshot);
+  const draw = (named, oneshot) => drawBytes(Library.bytesFromNamed(session.sounding(named)), oneshot);
 
   function paintBeats() {
     const beat = Math.floor(beats.position);
@@ -119,32 +117,19 @@
     const live = session.liveNamed();
     const progress = oneshotProgress();
     if (session.editingOneshot()) {
-      drawBytes(walls.main, session.over().base, oneshotInput(progress));
+      drawBytes(session.over().base, oneshotInput(progress));
       Editor.routes.paintPlayheads(progress, live);
     } else {
-      Editor.routes.paintPlayheads(draw(walls.main, live, oneshotInput(progress)).lfo, live);
+      Editor.routes.paintPlayheads(draw(live, oneshotInput(progress)).lfo, live);
     }
     Editor.oneshots.paintFiring(progress);
     Editor.tracks.paint();
-    if (session.isAboveBase()) {
-      Preview.copyMotion(walls.base.motion, walls.main.motion);
-      Preview.copyMotion(walls.layer.motion, walls.main.motion);
-      draw(walls.base, Library.namedFromBytes(session.patch().base));
-      draw(walls.layer, session.layerNamed());
-    }
     requestAnimationFrame(frame);
-  }
-
-  function paint() {
-    byId('compare').hidden = !session.isAboveBase();
-    if (session.isAboveBase()) byId('layerCaption').textContent = Patch.LAYER_NAMES[session.layerIndex];
   }
 
   function start() {
     beats.dots = [...document.querySelectorAll('#beats i')];
-    walls.main = makeWall('wallMain', 300, 480);
-    walls.base = makeWall('wallBase', 150, 240);
-    walls.layer = makeWall('wallLayer', 150, 240);
+    wall = makeWall('wallMain', 300, 480);
 
     byId('wallOrder').value = Preview.WALL_STRIP_ORDER.join(',');
     byId('wallOrder').addEventListener('input', readOrder);
@@ -167,5 +152,5 @@
     requestAnimationFrame(frame);
   }
 
-  Editor.wall = { start, paint, clearTails, restartBeats, fire };
+  Editor.wall = { start, clearTails, restartBeats, fire };
 })(window);

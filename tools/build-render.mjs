@@ -18,7 +18,7 @@ const EXPORTS = [
   'aurora_controls', 'aurora_oneshot_controls', 'aurora_oneshot_marks', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_field_levels', 'aurora_field_across', 'aurora_field_across_points', 'aurora_strip_spots_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_centers',
   'aurora_bend_points',
   'aurora_strip_count', 'aurora_par_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
-  'aurora_motion_new', 'aurora_motion_copy', 'aurora_wall_new', 'aurora_wall_clear_tails',
+  'aurora_motion_new', 'aurora_wall_new', 'aurora_wall_clear_tails',
   'aurora_render', 'aurora_palette_count', 'aurora_palette_name', 'aurora_palette_color', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats',
   'aurora_control_at_strip', 'aurora_control_at_par', 'aurora_route_reach', 'aurora_route_refused',

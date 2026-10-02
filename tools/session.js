@@ -178,9 +178,6 @@
     return Library.namedFromBytes(current.base);
   }
 
-  const layerNamed = () =>
-    Library.blend(patch().base, Library.layerBytes(patch(), session.layerIndex), 1, switchSource());
-
   function changed() {
     saveDraftSoon();
     if (session.onChange) session.onChange();
@@ -380,7 +377,7 @@
     editingOneshot, underneath, over, kitOneshot, resolvedPick, fired, oneshot, oneshotBeats, marked, toggleMark, oneshotInput, openOneshot,
     patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
     mixing, transitioning,
-    liveNamed, layerNamed, setValue, resetNames, changed,
+    liveNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
     layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),

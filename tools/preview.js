@@ -94,7 +94,6 @@
     Object.assign(api, {
       STRIPS, PIXELS, PARS,
       makeMotion: () => renderer._aurora_motion_new(),
-      copyMotion: (to, from) => renderer._aurora_motion_copy(to, from),
       makeWallState: () => renderer._aurora_wall_new(),
       clearTails: wallState => renderer._aurora_wall_clear_tails(wallState),
       paletteNames: () => Array.from({ length: renderer._aurora_palette_count() }, (_, i) => {
