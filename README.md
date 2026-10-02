@@ -10,7 +10,6 @@ The Arduino Nano rig it replaces is at the tag `aurora-nano-final`.
 - `shared/render/`: the renderer. The brain runs it natively; the editor runs it compiled to WebAssembly.
 - `shared/aurora_protocol.h`: every MIDI number Aurora uses.
 - `tools/editor.html`: builds patches, drives the rig over Web MIDI, and previews it with the same renderer.
-- `bench/dmx_bringup/`: checks the DMX link to one PAR.
 
 ## MIDI
 
