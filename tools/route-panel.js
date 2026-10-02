@@ -76,7 +76,7 @@
       context.stroke();
     }
 
-    context.strokeStyle = '#cf7d93';
+    context.strokeStyle = '#d466d6';
     context.lineWidth = 2;
     context.lineJoin = 'round';
     context.beginPath();

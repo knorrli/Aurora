@@ -9,7 +9,7 @@
     --bg: #14151a; --panel: #1c1e26; --sunk: #101118; --line: #2c2f3a; --rail: #3a3e4d;
     --text: #e6e7ec; --dim: #8b8fa3; --faint: #5f6475;
     --select: #d4d7e0; --warn: #d9b03f; --ok: #4a9e6a; --bad: #cf5c5c;
-    --shape: #d98c3f; --travel: #e8b85c; --fan: #e2704c; --color: #6fa8dc; --lfo: #cf7d93; --scatter: #7bc4a4;
+    --shape: #e08a3c; --travel: #e6c454; --fan: #e0544a; --color: #6fa8dc; --lfo: #d466d6; --scatter: #7bc4a4;
     --out: #8f7fd4;
     --topbar: 56px;
   }
@@ -142,12 +142,14 @@
   .overlay-buttons { display: grid; gap: 3px; margin-top: 9px; }
   .overlay-buttons > div { display: flex; gap: 3px; }
   .overlay-buttons .tiny { padding: 2px 5px; }
+  .overlay-buttons button:not(.on)[data-tone=shape] { color: var(--shape); }
   .overlay-buttons button:not(.on)[data-tone=travel] { color: var(--travel); }
   .overlay-buttons button:not(.on)[data-tone=fan] { color: var(--fan); }
   .overlay-buttons button:not(.on)[data-tone=lfo] { color: var(--lfo); }
   .overlay-buttons button:not(.on)[data-tone=scatter] { color: var(--scatter); }
   .overlay-buttons button:not(.on)[data-tone=color] { color: var(--color); }
   .overlay-buttons button:not(.on)[data-tone=out] { color: var(--out); }
+  .overlay-buttons button.on[data-tone=shape] { background: var(--shape); border-color: var(--shape); }
   .overlay-buttons button.on[data-tone=travel] { background: var(--travel); border-color: var(--travel); }
   .overlay-buttons button.on[data-tone=fan] { background: var(--fan); border-color: var(--fan); }
   .overlay-buttons button.on[data-tone=lfo] { background: var(--lfo); border-color: var(--lfo); }
@@ -155,8 +157,11 @@
   .overlay-buttons button.on[data-tone=color] { background: var(--color); border-color: var(--color); }
   .overlay-buttons button.on[data-tone=out] { background: var(--out); border-color: var(--out); }
 
-  .shape { border-left: 3px solid var(--shape); }
+  .shape .groups > div { margin-left: -13px; padding-left: 10px; border-left: 3px solid var(--shape); }
+  .shape .tone-form h3 { color: var(--shape); }
+  .shape .groups > .tone-travel { border-left-color: var(--travel); }
   .shape .tone-travel h3 { color: var(--travel); }
+  .shape .groups > .tone-fan { border-left-color: var(--fan); }
   .shape .tone-fan h3 { color: var(--fan); }
   .shape-name { font-size: 12px; letter-spacing: .18em; color: var(--shape); margin-bottom: 12px; }
   .push-right { margin-left: auto; }
@@ -448,7 +453,7 @@
             <div>
               <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
               <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
-              <button class="tiny" data-overlay="centers" data-tone="travel">centers</button>
+              <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
               <button class="tiny" data-overlay="fan" data-tone="fan">fan</button>
               <button class="tiny" data-overlay="bend" data-tone="travel">bend</button>
             </div>
