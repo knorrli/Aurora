@@ -157,7 +157,10 @@
   .overlay-buttons button.on[data-tone=color] { background: var(--color); border-color: var(--color); }
   .overlay-buttons button.on[data-tone=out] { background: var(--out); border-color: var(--out); }
 
-  .shape .groups > div { margin-left: -13px; padding-left: 10px; border-left: 3px solid var(--shape); }
+  .shape { border-left: 3px solid var(--shape); }
+  .shape .groups { row-gap: 0; }
+  .shape .groups > div { margin-left: -16px; padding: 0 0 16px 13px; border-left: 3px solid var(--shape); }
+  .shape .groups > div:last-child { margin-bottom: -13px; padding-bottom: 13px; }
   .shape .tone-form h3 { color: var(--shape); }
   .shape .groups > .tone-travel { border-left-color: var(--travel); }
   .shape .tone-travel h3 { color: var(--travel); }
@@ -454,8 +457,8 @@
               <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
               <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
               <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
-              <button class="tiny" data-overlay="fan" data-tone="fan">fan</button>
               <button class="tiny" data-overlay="bend" data-tone="travel">bend</button>
+              <button class="tiny" data-overlay="fan" data-tone="fan">fan</button>
             </div>
             <div>
               <button class="tiny" data-overlay="spots" data-tone="scatter">spots</button>
