@@ -89,7 +89,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Give transition time a step for none, and morph a Program Change without a hold over the patch's transition time.
 - Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent), and the blackout's tap and hold (`docs/design.md` § Blackout).
 - Read the hook's note on the brain: dark at once, back on release.
-- Limit the library to slots 1–108 and ignore Program Changes 109–127.
 - Read the faders and mix their layers the way the editor does.
 - Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
 - Read note 57 for tap versus hold.

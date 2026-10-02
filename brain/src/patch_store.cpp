@@ -36,8 +36,9 @@ uint8_t filledBelow(const uint8_t *map, uint8_t slot) {
 }
 
 bool mapFits(const uint8_t *map) {
-    for (uint16_t bit = AURORA_PATCH_MAX; bit < AURORA_SLOT_MAP_LENGTH * 7u; bit++) {
-        if ((map[bit / 7] >> (bit % 7)) & 1) return false;
+    for (uint16_t bit = 0; bit < AURORA_SLOT_MAP_LENGTH * 7u; bit++) {
+        const bool filled = (map[bit / 7] >> (bit % 7)) & 1;
+        if (filled && (bit >= AURORA_PATCH_MAX || !aurora_is_patch_slot(bit))) return false;
     }
     return true;
 }
@@ -80,7 +81,7 @@ void loadLive() {
 
 bool readAt(uint8_t slot, uint32_t offset, uint8_t *out, uint16_t length) {
     if (!mounted || liveState != LIBRARY_STORED) return false;
-    if (slot >= AURORA_PATCH_MAX || !aurora_slot_filled(liveMap, slot)) return false;
+    if (!aurora_is_patch_slot(slot) || !aurora_slot_filled(liveMap, slot)) return false;
 
     File file = filesystem.open(LIVE_PATH, FILE_READ);
     if (!file) return false;

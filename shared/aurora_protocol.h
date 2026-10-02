@@ -405,6 +405,10 @@ static inline bool aurora_slot_filled(const uint8_t *map, uint8_t slot) {
     return (map[slot / 7] >> (slot % 7)) & 1;
 }
 
+static inline bool aurora_is_patch_slot(uint8_t slot) {
+    return slot != PROGRAM_BLACKOUT && slot < PROGRAM_SONG_FIRST;
+}
+
 enum AuroraPatchLayer : uint8_t {
     PATCH_LAYER_BASE          = 0,
     PATCH_LAYER_COLOR  = 1,

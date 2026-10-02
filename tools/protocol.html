@@ -128,7 +128,7 @@
   });
 
   const testSlots = count => (count === 1 ? [1]
-    : [...new Set(Array.from({ length: count }, (_, i) => 1 + Math.round(i * (Protocol.PATCH_MAX - 2) / (count - 1))))]);
+    : [...new Set(Array.from({ length: count }, (_, i) => 1 + Math.round(i * (LibraryFile.LAST_PATCH_SLOT - 1) / (count - 1))))]);
 
   function testLibrary(count) {
     const slots = testSlots(count);
@@ -239,7 +239,7 @@
   };
 
   const testCount = minimum =>
-    Math.min(Protocol.PATCH_MAX - 1, Math.max(minimum, +byId('count').value || minimum));
+    Math.min(LibraryFile.LAST_PATCH_SLOT, Math.max(minimum, +byId('count').value || minimum));
 
   byId('query').addEventListener('click', run(queryLibrary));
 
@@ -353,7 +353,7 @@
     paintPorts();
   }
 
-  byId('count').max = Protocol.PATCH_MAX - 1;
+  byId('count').max = LibraryFile.LAST_PATCH_SLOT;
   byId('index').max = Protocol.PATCH_MAX - 1;
   setBusy(false);
   openMidi();
