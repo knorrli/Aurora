@@ -227,9 +227,9 @@
   }
 
   const PALETTE_MARK = 'rgba(176,162,236,0.95)';
-  const FORM_MARK = 'rgba(240,150,80,0.95)';
-  const FORM_MARK_SOFT = 'rgba(240,150,80,0.6)';
-  const TRAVEL_MARK = 'rgba(240,206,100,0.95)';
+  const FORM_MARK = 'rgba(240,206,100,0.95)';
+  const FORM_MARK_SOFT = 'rgba(240,206,100,0.6)';
+  const TRAVEL_MARK = 'rgba(240,150,80,0.95)';
   const FAN_MARK = 'rgba(236,96,84,0.95)';
   const FAN_MARK_SOFT = 'rgba(236,96,84,0.6)';
   const OUTLINE = 'rgba(10,11,14,0.85)';
