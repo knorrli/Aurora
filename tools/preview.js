@@ -162,7 +162,7 @@
     return api;
   }
 
-  function draw(context, glow, frame, order, parOrder, flipped, width, height, overlays) {
+  function draw(context, glow, frame, order, parOrder, width, height, overlays) {
     const { STRIPS, PIXELS } = api;
     const PAR_BAND = height * 0.2;
     const WALL_TOP = height * 0.025;
@@ -182,7 +182,7 @@
         const at = (stripIndex * PIXELS + pixelIndex) * 3;
         const red = frame.pixels[at], green = frame.pixels[at + 1], blue = frame.pixels[at + 2];
         if (red + green + blue === 0) continue;
-        const row = flipped ? pixelIndex : PIXELS - 1 - pixelIndex;
+        const row = PIXELS - 1 - pixelIndex;
         glowContext.fillStyle = `rgb(${SCREEN_LEVEL_OF_STRIP_BYTE[red]},${SCREEN_LEVEL_OF_STRIP_BYTE[green]},${SCREEN_LEVEL_OF_STRIP_BYTE[blue]})`;
         glowContext.fillRect(x, WALL_TOP + row * pitch, stripWidth, pixelHeight);
       }
@@ -219,16 +219,16 @@
     context.lineTo(width, height - PAR_BAND);
     context.stroke();
 
-    if (overlays.fan && frame.fan) drawFan(context, frame.fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
-    if (overlays.bend && frame.bend) drawBend(context, frame.bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.fan && frame.fan) drawFan(context, frame.fan, order, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.bend && frame.bend) drawBend(context, frame.bend, columnWidth, WALL_TOP, WALL_HEIGHT);
     if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
     if (overlays.palette && frame.hues) drawPalette(context, frame.hues, width, height);
     if (overlays.field && frame.field) {
       if (frame.field.horizontal) drawFieldAcross(context, frame.field, order, columnWidth, WALL_TOP, WALL_HEIGHT);
-      else drawField(context, frame.field.levels, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+      else drawField(context, frame.field.levels, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
     }
-    if (overlays.spots && frame.spots) drawSpots(context, frame.spots, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
-    if (overlays.centers) drawCenters(context, frame.centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.spots && frame.spots) drawSpots(context, frame.spots, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+    if (overlays.centers) drawCenters(context, frame.centers, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
 
   const PALETTE_MARK = 'rgba(176,162,236,0.95)';
@@ -292,9 +292,9 @@
     context.restore();
   }
 
-  function drawField(context, levels, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+  function drawField(context, levels, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
     const { PIXELS } = api;
-    const yAt = pixel => WALL_TOP + (flipped ? pixel + 0.5 : PIXELS - pixel - 0.5) * WALL_HEIGHT / PIXELS;
+    const yAt = pixel => WALL_TOP + (PIXELS - pixel - 0.5) * WALL_HEIGHT / PIXELS;
     context.save();
     order.forEach((strip, column) => {
       const axis = columnWidth * (column + 1) - stripWidth / 2 - FIELD_REACH - 3;
@@ -350,9 +350,9 @@
     context.restore();
   }
 
-  function drawSpots(context, spots, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+  function drawSpots(context, spots, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
     const { PIXELS } = api;
-    const yAt = pixel => WALL_TOP + (flipped ? pixel : PIXELS - pixel) * WALL_HEIGHT / PIXELS;
+    const yAt = pixel => WALL_TOP + (PIXELS - pixel) * WALL_HEIGHT / PIXELS;
     context.save();
     context.beginPath();
     context.rect(0, WALL_TOP, columnWidth * (order.length + 1), WALL_HEIGHT);
@@ -428,11 +428,11 @@
     context.restore();
   }
 
-  function drawCenters(context, centers, order, flipped, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+  function drawCenters(context, centers, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
     const { PIXELS } = api;
     const SEAM_PIXELS = 0.5;
     const xAt = column => columnWidth * (column + 1);
-    const yAt = pixel => WALL_TOP + (flipped ? pixel : PIXELS - pixel) * WALL_HEIGHT / PIXELS;
+    const yAt = pixel => WALL_TOP + (PIXELS - pixel) * WALL_HEIGHT / PIXELS;
     const nearest = (pixels, to) =>
       pixels.reduce((best, pixel) => (Math.abs(pixel - to) < Math.abs(best - to) ? pixel : best));
 
@@ -478,11 +478,11 @@
     context.restore();
   }
 
-  function drawFan(context, fan, order, flipped, columnWidth, WALL_TOP, WALL_HEIGHT) {
+  function drawFan(context, fan, order, columnWidth, WALL_TOP, WALL_HEIGHT) {
     const { STRIPS } = api;
     const middle = WALL_TOP + WALL_HEIGHT / 2;
 
-    const reach = WALL_HEIGHT * 0.3 * (flipped ? -1 : 1);
+    const reach = WALL_HEIGHT * 0.3;
     const xAt = column => columnWidth * (column + 1);
 
     const step = order[1] - order[0];
@@ -548,13 +548,13 @@
     context.restore();
   }
 
-  function drawBend(context, bend, flipped, columnWidth, WALL_TOP, WALL_HEIGHT) {
+  function drawBend(context, bend, columnWidth, WALL_TOP, WALL_HEIGHT) {
     const { STRIPS, PIXELS } = api;
     const axis = columnWidth * (STRIPS + 0.5);
     const reach = columnWidth * 0.4;
     const low = Math.min(...bend), high = Math.max(...bend);
     const middle = (low + high) / 2;
-    const yAt = i => WALL_TOP + (flipped ? i : PIXELS - i) * WALL_HEIGHT / PIXELS;
+    const yAt = i => WALL_TOP + (PIXELS - i) * WALL_HEIGHT / PIXELS;
 
     context.save();
     context.strokeStyle = 'rgba(255,255,255,0.14)';

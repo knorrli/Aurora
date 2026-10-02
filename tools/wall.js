@@ -13,7 +13,7 @@
   const OVERLAYS = ['centers', 'fan', 'bend', 'arp', 'palette', 'spots', 'field'];
   const STORE_OVERLAYS = 'aurora.editor.overlays';
 
-  const view = { flipped: false, overlays: readOverlays(), order: null, parOrder: null };
+  const view = { overlays: readOverlays(), order: null, parOrder: null };
   const beats = { position: 0, lastFrameAt: 0, dots: [] };
 
   function readOverlays() {
@@ -99,7 +99,7 @@
 
   function drawBytes(bytes, oneshot) {
     const frame = Preview.render(bytes, beats.position, Math.round(performance.now()), wall.motion, wall.wallState, oneshot);
-    Preview.draw(wall.context, wall.glow, frame, view.order, view.parOrder, view.flipped, wall.width, wall.height, view.overlays);
+    Preview.draw(wall.context, wall.glow, frame, view.order, view.parOrder, wall.width, wall.height, view.overlays);
     return frame;
   }
 
@@ -148,10 +148,6 @@
         writeOverlays();
       });
     }
-    byId('wallFlip').addEventListener('click', () => {
-      view.flipped = !view.flipped;
-      byId('wallFlip').textContent = view.flipped ? 'pixel 0 at top' : 'pixel 0 at bottom';
-    });
 
     beats.lastFrameAt = performance.now();
     requestAnimationFrame(frame);
