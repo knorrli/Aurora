@@ -28,12 +28,14 @@
     if (swatch) label.firstChild.appendChild(swatch);
 
     const track = element('div', 'track');
-    const slider = dom.rangeInput(127);
+    const positions = control.positions;
+    const slider = dom.rangeInput(positions ? positions.count - 1 : 127);
     const ghost = element('i', 'ghost');
     track.append(slider, ghost);
     slider.addEventListener('pointerdown', () => Editor.transition.snap());
     slider.addEventListener('keydown', () => Editor.transition.snap());
-    slider.addEventListener('input', () => session.setValue(name, +slider.value));
+    slider.addEventListener('input', () => session.setValue(name,
+      positions ? positions.valueAt(+slider.value, session.liveNamed()) : +slider.value));
 
     const readout = element('output');
     const now = dom.labeled('span', '', '');
@@ -50,7 +52,8 @@
     host.appendChild(root);
     rows[name] = {
       kind: 'fader', control, root, label, slider, ghost, now, routes, swatch,
-      points: Patch.pointsFor(name), circular: Patch.isCircular(name),
+      points: positions ? Array.from({ length: positions.count - 1 }, (_, step) => step + 0.5) : Patch.pointsFor(name),
+      circular: Patch.isCircular(name),
     };
   }
 
@@ -188,9 +191,12 @@
     byId('engines').replaceChildren(...Patch.ENGINES.map(buildCard));
   }
 
+  const sliderPosition = (control, value) => (control.positions ? control.positions.positionOf(value) : value);
+
   function paintFaderValue(row, live) {
     const value = live[row.control.name];
-    if (+row.slider.value !== value) row.slider.value = value;
+    const position = sliderPosition(row.control, value);
+    if (+row.slider.value !== position) row.slider.value = position;
     const readout = Patch.READOUTS[row.control.name];
     dom.fillLabeled(row.now, String(value), readout ? readout(value, live) : '');
   }
@@ -206,7 +212,9 @@
     paintFaderValue(row, live);
     const overridden = session.isAboveBase() && name in overrides;
     row.root.classList.toggle('changed', overridden);
-    if (overridden) row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, base[name])} - 1px)`;
+    if (overridden) {
+      row.ghost.style.left = `calc(${Editor.tracks.along(row.slider, sliderPosition(row.control, base[name]))} - 1px)`;
+    }
     if (row.swatch) row.swatch.style.background = `rgb(${row.control.swatch(live).join(',')})`;
     const inert = !!(row.control.inertWhen && row.control.inertWhen(live));
     row.root.classList.toggle('inert', inert);

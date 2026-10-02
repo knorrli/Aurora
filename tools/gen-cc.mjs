@@ -203,7 +203,7 @@ const generated = {
 const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
 const width = Math.max(...pairs.map(([name]) => name.length));
 const ccBody = pairs.map(([name, number]) => `    ${name}:${' '.repeat(width - name.length)} ${number},`).join('\n');
-const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE', 'ROUTE_MAX_RATIO',
+const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE',
   'ARP_DESTINATION_BASE', 'BIPOLAR_DESTINATION_BASE', 'ARP_MODE_COUNT', 'HUE_LAYOUT_COUNT']);
 const constantLines = Object.entries(generated)
   .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');

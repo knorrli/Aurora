@@ -99,20 +99,24 @@
 
   const perSpot = destination => preview().spotDestination(Protocol.routeTarget(destination));
 
+  const cycleBeats = (live, route, ratioValue) => {
+    const settings = live || DEFAULT;
+    const perCycle = perSpot(settings[route.destination])
+      ? 1 / real('scatterRate', settings.scatterRate) : real('lfoRate', settings.lfoRate);
+    return perCycle / Protocol.routeRatio(ratioValue);
+  };
+
   const phaseText = (value, live, route) => {
     const step = Protocol.routePhaseStep(value);
     if (step === 0) return '0°';
     const degrees = Math.round(step * 360 / Protocol.ROUTE_PHASE_STEPS);
-    const settings = live || DEFAULT;
-    const perCycle = perSpot(settings[route.destination])
-      ? 1 / real('scatterRate', settings.scatterRate) : real('lfoRate', settings.lfoRate);
-    const cycle = perCycle / Protocol.routeRatio(settings[route.ratio]);
+    const cycle = cycleBeats(live, route, (live || DEFAULT)[route.ratio]);
     return `${degrees}° · ${beatsText(step / Protocol.ROUTE_PHASE_STEPS * cycle)}`;
   };
 
   const ROUTE_READOUTS = {
     amount: () => value => signed(signedOf(value)),
-    ratio: () => value => '×' + Protocol.routeRatio(value) + (Protocol.routeOnce(value) ? ' once' : ''),
+    ratio: route => (value, live) => `×${Protocol.routeRatio(value)} · ${beatsText(cycleBeats(live, route, value))}`,
     phase: route => (value, live) => phaseText(value, live, route),
     wave: () => waveText,
   };
@@ -344,7 +348,13 @@
 
   for (const route of ROUTES) {
     control(route.amount, 'Amount');
-    control(route.ratio, 'Ratio');
+    control(route.ratio, 'Ratio', {
+      positions: {
+        count: Protocol.ROUTE_MAX_RATIO,
+        positionOf: value => Protocol.routeRatio(value) - 1,
+        valueAt: (position, live) => Protocol.routeRatioValue(position + 1, Protocol.routeOnce(live[route.ratio])),
+      },
+    });
     control(route.wave, 'Wave');
     control(route.phase, 'Phase');
   }
