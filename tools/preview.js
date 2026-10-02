@@ -2,6 +2,7 @@
   'use strict';
 
   const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
+  const WALL_PAR_ORDER = [1, 2, 3, 4];
 
   const SCREEN_LEVEL_OF_STRIP_BYTE = Array.from({ length: 256 }, (_, byte) => {
     const light = byte / 255;
@@ -11,6 +12,7 @@
 
   const api = {
     WALL_STRIP_ORDER,
+    WALL_PAR_ORDER,
     ready: global.AuroraRenderModule().then(connect),
   };
 
@@ -160,7 +162,7 @@
     return api;
   }
 
-  function draw(context, glow, frame, order, flipped, width, height, overlays) {
+  function draw(context, glow, frame, order, parOrder, flipped, width, height, overlays) {
     const { STRIPS, PIXELS } = api;
     const PAR_BAND = height * 0.2;
     const WALL_TOP = height * 0.025;
@@ -187,9 +189,9 @@
     }
 
     const parY = height - PAR_BAND / 2;
-    for (let i = 0; i < frame.pars.length; i++) {
-      const par = frame.pars[i];
-      const x = width * (i + 0.5) / frame.pars.length;
+    for (let column = 0; column < frame.pars.length; column++) {
+      const par = frame.pars[parOrder[column]];
+      const x = width * (column + 0.5) / frame.pars.length;
       const gradient = glowContext.createRadialGradient(x, parY, 2, x, parY, PAR_BAND * 0.52);
       gradient.addColorStop(0, `rgba(${par[0]},${par[1]},${par[2]},0.95)`);
       gradient.addColorStop(1, `rgba(${par[0]},${par[1]},${par[2]},0)`);

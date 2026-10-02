@@ -13,7 +13,7 @@
   const OVERLAYS = ['centers', 'fan', 'bend', 'arp', 'palette', 'spots', 'field'];
   const STORE_OVERLAYS = 'aurora.editor.overlays';
 
-  const view = { flipped: false, overlays: readOverlays(), order: null };
+  const view = { flipped: false, overlays: readOverlays(), order: null, parOrder: null };
   const beats = { position: 0, lastFrameAt: 0, dots: [] };
 
   function readOverlays() {
@@ -54,15 +54,21 @@
 
   const restartBeats = () => { beats.position = 0; };
 
-  const defaultOrder = () => Preview.WALL_STRIP_ORDER.map(strip => strip - 1);
-
-  function readOrder() {
-    const input = byId('wallOrder');
-    const strips = input.value.split(',').map(text => parseInt(text, 10) - 1);
-    const valid = strips.length === Preview.STRIPS && new Set(strips).size === Preview.STRIPS
-      && strips.every(strip => Number.isInteger(strip) && strip >= 0 && strip < Preview.STRIPS);
+  function readOrder(input, fallback) {
+    const count = fallback.length;
+    const places = input.value.split(',').map(text => parseInt(text, 10) - 1);
+    const valid = places.length === count && new Set(places).size === count
+      && places.every(place => Number.isInteger(place) && place >= 0 && place < count);
     input.classList.toggle('invalid', !valid);
-    view.order = valid ? strips : defaultOrder();
+    return valid ? places : fallback.map(number => number - 1);
+  }
+
+  function wireOrder(id, fallback, apply) {
+    const input = byId(id);
+    input.value = fallback.join(',');
+    const read = () => apply(readOrder(input, fallback));
+    input.addEventListener('input', read);
+    read();
   }
 
   function fire(index) {
@@ -93,7 +99,7 @@
 
   function drawBytes(bytes, oneshot) {
     const frame = Preview.render(bytes, beats.position, Math.round(performance.now()), wall.motion, wall.wallState, oneshot);
-    Preview.draw(wall.context, wall.glow, frame, view.order, view.flipped, wall.width, wall.height, view.overlays);
+    Preview.draw(wall.context, wall.glow, frame, view.order, view.parOrder, view.flipped, wall.width, wall.height, view.overlays);
     return frame;
   }
 
@@ -131,9 +137,8 @@
     beats.dots = [...document.querySelectorAll('#beats i')];
     wall = makeWall('wallMain', 300, 480);
 
-    byId('wallOrder').value = Preview.WALL_STRIP_ORDER.join(',');
-    byId('wallOrder').addEventListener('input', readOrder);
-    readOrder();
+    wireOrder('stripOrder', Preview.WALL_STRIP_ORDER, order => { view.order = order; });
+    wireOrder('parOrder', Preview.WALL_PAR_ORDER, order => { view.parOrder = order; });
     for (const button of document.querySelectorAll('#wallOverlays button')) {
       const name = button.dataset.overlay;
       button.classList.toggle('on', view.overlays[name]);
