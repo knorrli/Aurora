@@ -100,11 +100,12 @@
 - Touchpad rocker 1 picks one of three modes:
   - Per patch: X and Y are route sources, like the LFO. A route's Wave also offers Pad X and Pad Y; such a route follows the finger, ignores its ratio and phase, and shares the patch's eight routes with the LFO.
   - Morph: four fixed looks in the corners, the same on every patch; the finger blends between them, and landing near a corner cuts to it. A corner look's switches land on the press and return on release.
-  - Effects: five columns across X (riser, freeze, stutter and the like), Y sets how hard, from nothing at the bottom edge to full at the top. Effects and corner looks are designed in the editor, like the kit.
+  - Effects: five columns across X (riser, freeze, stutter, strobe, focus), Y sets how hard, from nothing at the bottom edge to full at the top. Effects and corner looks are designed in the editor, like the kit.
   - An effect plays on top of the patch. The riser washes the strips toward white, full white at the top.
   - Freeze holds the picture while the patch keeps running underneath on the beat; Y blends from live to fully frozen. Letting go shows the patch where it is now.
   - Stutter gates the strips on and off on the beat; Y sets how fast.
   - Strobe flashes the full strips white on the beat; Y sets the rate.
+  - Focus darkens the strips outside Width and Gaps; Y sets how dark. The PARs stay as the patch has them.
 - The rockers report where they stand on CC 2–6.
 - Touchpad rockers 2 and 3 choose which strips the pad acts on, in every mode. Width (rocker 2): strip 3, strips 2–4, or all five. Gaps (rocker 3): solid, or every other strip counted in from the outer edge of the width. Together: 3; 2+3+4; 2+4; all; 1+3+5.
 - The PARs ignore Width and Gaps.
