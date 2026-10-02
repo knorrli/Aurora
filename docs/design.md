@@ -44,7 +44,7 @@
 
 - A layer is the patch's look pushed further. What further means is up to the patch.
 - The controller sends every fader's position when it starts.
-- The fader rocker is Cue. While it is on, the controller holds fader moves back; the wall keeps the positions last sent, across patch changes too. Turning it off sends every fader's position at once.
+- The fader rocker is Cue. While it is on, the controller holds fader moves back; the wall keeps the positions last sent, across patch changes too. Turning it off sends every fader's position at once. Cue never holds back the pedal.
 - Faders move energy; the keypad moves character. Mid-song lifts are fader moves; sideways changes at the same energy are patch changes.
 
 ## Songs
