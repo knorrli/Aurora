@@ -42,7 +42,7 @@
 - One mechanism: from the live values toward the patch of the last key pressed, at whatever rate the driver sets.
 - The start is a snapshot of what is on the wall at the press, never a patch number. Re-targeting mid-transition never lurches.
 - A source that can hold sends note 57 on before the Program Change and note 57 off on release. The keypad, the foot pedal and a DAW can hold.
-- A Program Change without a hold morphs over the patch's transition time and never reaches the accent. A transition time of none is a cut on the beat.
+- A Program Change without a hold starts its morph on the next beat, runs it over the patch's transition time, and never reaches the accent. A transition time of none is a cut on the beat.
 - Tap: a cut, on the beat.
 - Hold: a transition toward the patch over its transition time.
 - Release before arrival: the remaining distance is re-timed to land exactly on the next beat. No jump.
