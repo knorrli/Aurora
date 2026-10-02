@@ -164,32 +164,28 @@ const INTERNAL = new Set(['ROUTE_BASE']);
 const constantLines = Object.entries(generated)
   .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');
 
-const out = `(function (global) {
-  'use strict';
+const out = `const CC = {
+${ccBody.replace(/^  /gm, '')}
+};
 
-  const CC = {
-${ccBody}
-  };
+const TAGS = ${JSON.stringify(tags)};
+const CONTROL_DEFAULTS = ${JSON.stringify(controlDefaults)};
 
-  const TAGS = ${JSON.stringify(tags)};
-  const CONTROL_DEFAULTS = ${JSON.stringify(controlDefaults)};
+${constantLines.replace(/^  /gm, '')}
 
-${constantLines}
+const tagged = tag => Object.keys(TAGS).filter(name => TAGS[name].includes(tag));
+const hasTag = (name, tag) => (TAGS[name] || []).includes(tag);
 
-  const tagged = tag => Object.keys(TAGS).filter(name => TAGS[name].includes(tag));
-  const hasTag = (name, tag) => (TAGS[name] || []).includes(tag);
+const NAME_BY_CC = {};
+for (const [name, number] of Object.entries(CC)) NAME_BY_CC[number] = name;
 
-  const NAME_BY_CC = {};
-  for (const [name, number] of Object.entries(CC)) NAME_BY_CC[number] = name;
+const routeCC = (route, field) => ROUTE_BASE[route] + field;
 
-  const routeCC = (route, field) => ROUTE_BASE[route] + field;
-
-  global.AuroraProtocol = {
-    CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
-${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
-    routeCC,
-  };
-})(typeof window === 'undefined' ? globalThis : window);
+export const Protocol = {
+  CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
+${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `  ${name},`).join('\n')}
+  routeCC,
+};
 `;
 
 function checkCases(path, expected) {

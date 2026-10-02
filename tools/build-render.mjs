@@ -38,8 +38,8 @@ const EXPORTS = [
 const FLAGS = [
   '-O2', '-std=c++17', '-fno-exceptions', '-fno-rtti',
   '-I', join(ROOT, 'shared'), ...SHARED.flatMap(dir => ['-I', join(ROOT, dir)]),
-  '-sSINGLE_FILE=1', '-sSINGLE_FILE_BINARY_ENCODE=0', '-sMODULARIZE=1', '-sEXPORT_NAME=AuroraRenderModule',
-  '-sENVIRONMENT=web,node', '-sFILESYSTEM=0',
+  '-sSINGLE_FILE=1', '-sSINGLE_FILE_BINARY_ENCODE=0', '-sMODULARIZE=1', '-sEXPORT_ES6=1', '-sEXPORT_NAME=AuroraRenderModule',
+  '-sENVIRONMENT=web', '-sFILESYSTEM=0',
   `-sEXPORTED_FUNCTIONS=${EXPORTS.map(n => '_' + n).join(',')}`,
   '-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32',
 ];

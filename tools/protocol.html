@@ -100,16 +100,10 @@
 
 <div id="log"></div>
 
-<script src="cc.js"></script>
-<script src="library-file.js"></script>
-<script src="link.js"></script>
-<script>
-(function () {
-  'use strict';
-
-  const Protocol = window.AuroraProtocol;
-  const LibraryFile = window.AuroraLibraryFile;
-  const { Link, statusText } = window.AuroraLink;
+<script type="module">
+  import { Protocol } from './cc.js';
+  import * as LibraryFile from './library-file.js';
+  import { Link, statusText } from './link.js';
 
   const link = new Link();
   const byId = id => document.getElementById(id);
@@ -357,7 +351,6 @@
   setBusy(false);
   openMidi();
   say('ready — ask the brain what it is holding to check the link');
-})();
 </script>
 </body>
 </html>
