@@ -115,10 +115,10 @@
   const ROUTE_MAX_RATIO = 8;
   const ROUTE_PHASE_STEPS = 16;
   const PATCH_FORMAT = 5;
-  const PATCH_MAX = 128;
+  const LAST_PATCH_SLOT = 108;
   const PATCH_CC_COUNT = 128;
   const PATCH_NAME_LENGTH = 16;
-  const PATCH_HEAD_LENGTH = 20;
+  const PATCH_HEAD_LENGTH = 18;
   const PATCH_LAYER_BASE = 0;
   const PATCH_LAYER_COLOR = 1;
   const PATCH_LAYER_EXTENT = 2;
@@ -127,7 +127,7 @@
   const PATCH_LAYERS = 5;
   const KEYPAD_KEYS = 9;
   const BANKS = 12;
-  const SLOT_MAP_LENGTH = 19;
+  const SLOT_MAP_LENGTH = 16;
   const SYSEX_ID = 125;
   const SYSEX_SIGNATURE_A = 65;
   const SYSEX_SIGNATURE_B = 85;
@@ -214,7 +214,7 @@
     ROUTE_MAX_RATIO,
     ROUTE_PHASE_STEPS,
     PATCH_FORMAT,
-    PATCH_MAX,
+    LAST_PATCH_SLOT,
     PATCH_CC_COUNT,
     PATCH_NAME_LENGTH,
     PATCH_HEAD_LENGTH,

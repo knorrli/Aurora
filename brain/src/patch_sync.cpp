@@ -38,12 +38,10 @@ void fail(uint8_t type, uint8_t status) {
 }
 
 void sendLibraryInfo() {
-    const uint8_t MAP_AT = 4;
+    const uint8_t MAP_AT = 2;
     uint8_t payload[MAP_AT + AURORA_SLOT_MAP_LENGTH];
-    payload[0] = AURORA_PROTOCOL_VERSION_MAJOR;
-    payload[1] = AURORA_PROTOCOL_VERSION_MINOR;
-    payload[2] = AURORA_PATCH_FORMAT;
-    payload[3] = (uint8_t)patch_store::state();
+    payload[0] = AURORA_PATCH_FORMAT;
+    payload[1] = (uint8_t)patch_store::state();
 
     const uint8_t *map = patch_store::slotMap();
     for (uint8_t i = 0; i < AURORA_SLOT_MAP_LENGTH; i++) payload[MAP_AT + i] = map[i];

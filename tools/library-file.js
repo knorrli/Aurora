@@ -5,15 +5,14 @@
 
   const KIND = 'patch library';
   const NAME_AT = Protocol.PATCH_HEAD_LENGTH - Protocol.PATCH_NAME_LENGTH;
-  const HEAD = { program: 0, transitionTime: 2, accentTime: 3 };
+  const HEAD = { transitionTime: 0, accentTime: 1 };
 
   const isSevenBit = value => Number.isInteger(value) && value >= 0 && value <= 127;
-  const isSlot = slot => Number.isInteger(slot) && slot >= 0 && slot < Protocol.PATCH_MAX;
   const isOneshotIndex = index => Number.isInteger(index) && index >= 0 && index < Protocol.ONESHOTS;
   const isPick = pick => pick === null || isOneshotIndex(pick);
   const NO_PICKS = [null, null];
-  const LAST_PATCH_SLOT = Protocol.PROGRAM_SONG_FIRST - 1;
-  const isPatchSlot = slot => isSlot(slot) && slot !== Protocol.PROGRAM_BLACKOUT && slot <= LAST_PATCH_SLOT;
+  const LAST_PATCH_SLOT = Protocol.LAST_PATCH_SLOT;
+  const isPatchSlot = slot => Number.isInteger(slot) && slot > Protocol.PROGRAM_BLACKOUT && slot <= LAST_PATCH_SLOT;
 
   const printableName = text =>
     String(text == null ? '' : text).replace(/[^\x20-\x7E]/g, '').slice(0, Protocol.PATCH_NAME_LENGTH);
@@ -182,7 +181,6 @@
 
   function headBytes(patch) {
     const head = new Array(Protocol.PATCH_HEAD_LENGTH).fill(0);
-    head[HEAD.program] = Protocol.PROGRAM_SHOW;
     head[HEAD.transitionTime] = patch.transitionTime;
     head[HEAD.accentTime] = patch.accentTime;
     const name = printableName(patch.name).padEnd(Protocol.PATCH_NAME_LENGTH, ' ');
@@ -202,7 +200,7 @@
     return map;
   }
 
-  const slotsInMap = map => Array.from({ length: Protocol.PATCH_MAX }, (_, slot) => slot)
+  const slotsInMap = map => Array.from({ length: LAST_PATCH_SLOT + 1 }, (_, slot) => slot)
     .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
 
   global.AuroraLibraryFile = {

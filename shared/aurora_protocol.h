@@ -393,20 +393,20 @@ enum AuroraLibraryState : uint8_t {
 };
 
 static const uint8_t AURORA_PATCH_FORMAT    = 5;
-static const uint8_t AURORA_PATCH_MAX       = 128;
+static const uint8_t AURORA_LAST_PATCH_SLOT = PROGRAM_SONG_FIRST - 1;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
 static const uint8_t AURORA_KEYPAD_KEYS     = 9;
 static const uint8_t AURORA_BANKS           = 12;
 
-static const uint8_t AURORA_SLOT_MAP_LENGTH    = (AURORA_PATCH_MAX + 6) / 7;
+static const uint8_t AURORA_SLOT_MAP_LENGTH    = (AURORA_LAST_PATCH_SLOT + 7) / 7;
 
 static inline bool aurora_slot_filled(const uint8_t *map, uint8_t slot) {
     return (map[slot / 7] >> (slot % 7)) & 1;
 }
 
 static inline bool aurora_is_patch_slot(uint8_t slot) {
-    return slot != PROGRAM_BLACKOUT && slot < PROGRAM_SONG_FIRST;
+    return slot != PROGRAM_BLACKOUT && slot <= AURORA_LAST_PATCH_SLOT;
 }
 
 enum AuroraPatchLayer : uint8_t {
@@ -418,12 +418,9 @@ enum AuroraPatchLayer : uint8_t {
     AURORA_PATCH_LAYERS  = 5,
 };
 
-static const uint8_t AURORA_PATCH_HEAD_LENGTH = 4 + AURORA_PATCH_NAME_LENGTH;
+static const uint8_t AURORA_PATCH_HEAD_LENGTH = 2 + AURORA_PATCH_NAME_LENGTH;
 
 static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT;
-
-#define AURORA_PROTOCOL_VERSION_MAJOR 0
-#define AURORA_PROTOCOL_VERSION_MINOR 16
 
 #endif

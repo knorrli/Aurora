@@ -216,7 +216,7 @@
     return null;
   }
 
-  const emptySlots = () => new Array(Protocol.PATCH_MAX).fill(null);
+  const emptySlots = () => new Array(Protocol.LAST_PATCH_SLOT + 1).fill(null);
   const filledSlots = library => library.slots.flatMap((patch, slot) => (patch ? [slot] : []));
   const firstEmptySlot = library => {
     const slot = library.slots.findIndex((patch, at) => !patch && LibraryFile.isPatchSlot(at));

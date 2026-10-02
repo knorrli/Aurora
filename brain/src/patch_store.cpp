@@ -11,6 +11,7 @@ const char *STAGE_PATH = "/library.new";
 const uint8_t  MAGIC[4]  = { 'A', 'U', 'R', 'L' };
 const uint8_t  MAP_AT    = 5;
 const uint16_t HEADER_LENGTH = MAP_AT + AURORA_SLOT_MAP_LENGTH;
+const uint8_t  SLOTS_END = AURORA_LAST_PATCH_SLOT + 1;
 
 LittleFS_Program filesystem;
 bool mounted = false;
@@ -21,11 +22,11 @@ uint8_t liveMap[AURORA_SLOT_MAP_LENGTH];
 File    stageFile;
 bool    staging   = false;
 uint8_t stageMap[AURORA_SLOT_MAP_LENGTH];
-uint8_t nextSlot  = AURORA_PATCH_MAX;
+uint8_t nextSlot  = SLOTS_END;
 uint8_t nextPiece = 0;
 
 uint8_t filledFrom(const uint8_t *map, uint16_t slot) {
-    while (slot < AURORA_PATCH_MAX && !aurora_slot_filled(map, slot)) slot++;
+    while (slot < SLOTS_END && !aurora_slot_filled(map, slot)) slot++;
     return slot;
 }
 
@@ -38,7 +39,7 @@ uint8_t filledBelow(const uint8_t *map, uint8_t slot) {
 bool mapFits(const uint8_t *map) {
     for (uint16_t bit = 0; bit < AURORA_SLOT_MAP_LENGTH * 7u; bit++) {
         const bool filled = (map[bit / 7] >> (bit % 7)) & 1;
-        if (filled && (bit >= AURORA_PATCH_MAX || !aurora_is_patch_slot(bit))) return false;
+        if (filled && !aurora_is_patch_slot(bit)) return false;
     }
     return true;
 }
@@ -72,7 +73,7 @@ void loadLive() {
         liveState = LIBRARY_UNREADABLE;
         return;
     }
-    const uint8_t count = filledBelow(head + MAP_AT, AURORA_PATCH_MAX);
+    const uint8_t count = filledBelow(head + MAP_AT, SLOTS_END);
     if (count == 0 || size != patchOffset(count)) { liveState = LIBRARY_UNREADABLE; return; }
 
     for (uint8_t i = 0; i < AURORA_SLOT_MAP_LENGTH; i++) liveMap[i] = head[MAP_AT + i];
@@ -110,7 +111,7 @@ const uint8_t *slotMap()     { return liveMap; }
 uint8_t stageBegin(uint8_t format, const uint8_t *map) {
     if (!mounted) return SYSEX_ERROR_STORAGE;
     if (format != AURORA_PATCH_FORMAT) return SYSEX_ERROR_FORMAT;
-    if (!mapFits(map) || filledFrom(map, 0) == AURORA_PATCH_MAX) return SYSEX_ERROR_RANGE;
+    if (!mapFits(map) || filledFrom(map, 0) == SLOTS_END) return SYSEX_ERROR_RANGE;
 
     stageAbort();
 
@@ -168,7 +169,7 @@ uint8_t stageLayer(uint8_t slot, uint8_t layer, const uint8_t *cc) {
 
 uint8_t stageCommit() {
     if (!staging) return SYSEX_ERROR_SEQUENCE;
-    if (nextSlot != AURORA_PATCH_MAX || nextPiece != 0) {
+    if (nextSlot != SLOTS_END || nextPiece != 0) {
         stageAbort();
         return SYSEX_ERROR_INCOMPLETE;
     }
@@ -197,7 +198,7 @@ void stageAbort() {
         staging = false;
     }
     if (mounted && filesystem.exists(STAGE_PATH)) filesystem.remove(STAGE_PATH);
-    nextSlot  = AURORA_PATCH_MAX;
+    nextSlot  = SLOTS_END;
     nextPiece = 0;
 }
 

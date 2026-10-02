@@ -197,7 +197,7 @@
     const link = Editor.midi.link;
     brainButton('brainAsk', async () => {
       const info = await link.queryLibrary();
-      say(`protocol ${info.protocol}, format ${info.format} · ${info.stateText} — ${info.slots.length} patches`,
+      say(`patch format ${info.format} · ${info.stateText} — ${info.slots.length} patches`,
           info.state === Protocol.LIBRARY_STATE.stored ? 'ok' : 'warn');
     });
 

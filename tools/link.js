@@ -185,11 +185,10 @@
     async queryLibrary() {
       const answer = this.expect(message => message.type === TYPE.libraryInfo);
       this.sendSysEx(TYPE.queryLibrary);
-      const [major, minor, format, state, ...rest] = (await answer).payload;
-      const slots = LibraryFile.slotsInMap(rest.slice(0, Protocol.SLOT_MAP_LENGTH));
+      const [format, state, ...map] = (await answer).payload;
       return {
-        protocol: major + '.' + minor, format, state, stateText: libraryStateText(state),
-        slots,
+        format, state, stateText: libraryStateText(state),
+        slots: LibraryFile.slotsInMap(map.slice(0, Protocol.SLOT_MAP_LENGTH)),
       };
     }
 

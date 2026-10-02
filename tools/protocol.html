@@ -42,7 +42,7 @@
 
 <h1>Aurora patch sync</h1>
 <div class="note">
-  The bench instrument for <code>shared/aurora_protocol.h</code> § "System Exclusive". It pushes a
+  The bench instrument for the patch sync. It pushes a
   library of known bytes, reads it back and compares, so the protocol can be told apart from the
   editor when something misbehaves. Chrome only, and it asks for SysEx permission. Reload after
   every flash — that resets the Teensy's USB and the page keeps a dead port.
@@ -61,8 +61,7 @@
   <div class="row">
     <button id="query" disabled>ask the brain</button>
   </div>
-  <div class="note">An empty library means a fresh flash. The compiled default set is never written
-    to storage, which is what keeps that answer meaningful.</div>
+  <div class="note">An empty library means a fresh flash.</div>
 </div>
 
 <div class="panel">
@@ -85,7 +84,7 @@
     <input type="file" id="file" accept=".json,application/json" hidden>
   </div>
   <div class="note">The recovery path when the editor's machine is gone. What comes back is
-    everything the brain was given — names, times, keypad assignment, every layer — and nothing
+    everything the brain was given — names, times, every layer — and nothing
     it was never given, so anything the editor knows and does not sync is not in here. Commit the
     file if you want it to survive the brain too.</div>
 </div>
@@ -161,7 +160,7 @@
 
   async function queryLibrary() {
     const info = await link.queryLibrary();
-    say(`protocol ${info.protocol}, patch format ${info.format}`);
+    say(`patch format ${info.format}`);
     say(`${info.stateText} — ${info.slots.length} patches`);
     if (info.slots.length) say(`slots: ${info.slots.join(' ')}`);
     return info;
@@ -279,7 +278,7 @@
       const faults = read ? compare(slot, read) : ['unreadable'];
       if (faults.length) { wrong++; bad(`slot ${slot}: ${faults[0]}`); }
     }
-    const empty = Array.from({ length: Protocol.PATCH_MAX }, (_, slot) => slot).find(slot => !slots.includes(slot));
+    const empty = Array.from({ length: Protocol.LAST_PATCH_SLOT + 1 }, (_, slot) => slot).find(slot => !slots.includes(slot));
     if (empty !== undefined) {
       const read = await link.readPatch(empty);
       if (read.status === Protocol.SYSEX_STATUS.errorRange) good(`empty slot ${empty} is refused, as it should be`);
@@ -294,7 +293,7 @@
     if (pulled.error) { bad(`nothing saved: ${pulled.error}`); return; }
     const stamp = new Date().toISOString().slice(0, 10);
     download(`aurora-library-${stamp}.json`, LibraryFile.serialize(pulled.file));
-    good(`saved ${pulled.file.patches.length} patches and the keypad assignment`);
+    good(`saved ${pulled.file.patches.length} patches`);
   }));
 
   byId('restore').addEventListener('click', () => byId('file').click());
@@ -354,7 +353,7 @@
   }
 
   byId('count').max = LibraryFile.LAST_PATCH_SLOT;
-  byId('index').max = Protocol.PATCH_MAX - 1;
+  byId('index').max = Protocol.LAST_PATCH_SLOT;
   setBusy(false);
   openMidi();
   say('ready — ask the brain what it is holding to check the link');
