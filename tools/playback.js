@@ -12,6 +12,7 @@ const CHANNEL = Protocol.MIDI_CHANNEL - 1;
 const FULL_VELOCITY = 127;
 const LOOKAHEAD_MILLISECONDS = 250;
 const STALL_BEATS = 1;
+const RELEASE_BEFORE_ARRIVAL_BEATS = 0.05;
 
 const FADERS = {
   [Protocol.PATCH_LAYER_COLOR]: 'faderColor',
@@ -161,7 +162,10 @@ function follow(slot) {
   syncPin();
 }
 
+let runRelease = null;
+
 function press(slot) {
+  clearTimeout(runRelease);
   play();
   both(NOTE_ON, Protocol.NOTE_KEY_HELD, FULL_VELOCITY);
   both(PROGRAM_CHANGE, slot);
@@ -187,7 +191,11 @@ function run(fromSlot) {
   play();
   Preview.playback.cut(fromSlot, patchRecord(from));
   forgetFed(from.base);
-  both(PROGRAM_CHANGE, session.slot);
+  press(session.slot);
+  const beats = Preview.playback.beats();
+  const length = Protocol.transitionBeats(session.patch().transitionTime);
+  const releaseBeat = Math.round(beats) + Math.max(0, length - RELEASE_BEFORE_ARRIVAL_BEATS);
+  runRelease = setTimeout(release, Math.max(0, (releaseBeat - beats) * 60000 / Midi.bpm()));
 }
 
 function frame(now) {
