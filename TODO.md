@@ -74,7 +74,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
 - Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
 - Find out whether the touchpad reads pressure usefully.
-- Are eight routes enough once patches use both the LFO and the pad?
 - Which four corner looks, and which five effects in which order?
 - Focus, taking energy away from part of the wall. Current idea, to settle while designing the effects: a Focus column in Effects that darkens the strips outside Width and Gaps, Y sets how dark.
 - Colors on the pad's grid: send each effect's color to the controller, or even the patches, so the grid can show the wall's real colors?
