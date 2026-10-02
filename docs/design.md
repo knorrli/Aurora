@@ -93,7 +93,8 @@
 
 ## Touchpad and rockers
 
-- The pad sends X, Y, pressure and engage as raw values on CC 15–18. X and Y are positions that persist when the finger lifts; engage is separate from a finger being down.
+- The pad sends X, Y, pressure and engage as raw values on CC 15–18.
+- The pad has no off switch: not touching it means no effect. Lifting the finger returns the wall to what the patch was doing.
 - The rockers report where they stand on CC 2–6. What that does belongs to the patch.
 - The pad never sets a value and never arrives on its own. Switches never move during a pad gesture.
 - Nothing depends on pressure until it has been measured on this pad.
