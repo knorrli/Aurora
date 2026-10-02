@@ -69,7 +69,7 @@
   function oneshotRecord(index, oneshot) {
     const editing = session.editingOneshot() && index === session.oneshotIndex;
     const controls = editing
-      ? Library.bytesFromNamed(session.sounding(Library.namedFromBytes(oneshot.base))) : oneshot.base;
+      ? session.sounding(Patch.controls(oneshot.base)).bytes : oneshot.base;
     return { length: oneshot.length, marks: Library.markBytes(oneshot), controls };
   }
 
@@ -100,18 +100,18 @@
 
   function feedBase() {
     if (Preview.playback.slot() !== (dialedSlot() || 0)) return;
-    const named = session.sounding(Library.namedFromBytes(dialedPatch().base));
+    const live = session.sounding(Patch.controls(dialedPatch().base));
     for (const name of Patch.NAMES) {
       const cc = Patch.CC[name];
-      if (fed[cc] === named[name]) continue;
-      local(CONTROL_CHANGE, cc, named[name]);
-      fed[cc] = named[name];
+      if (fed[cc] === live[name]) continue;
+      local(CONTROL_CHANGE, cc, live[name]);
+      fed[cc] = live[name];
     }
   }
 
   function syncPin() {
-    const pinned = session.pinnedNamed();
-    if (pinned) Preview.playback.pin(Library.bytesFromNamed(session.sounding(pinned)));
+    const pinned = session.pinnedControls();
+    if (pinned) Preview.playback.pin(session.sounding(pinned).bytes);
     else Preview.playback.unpin();
   }
 
@@ -169,9 +169,9 @@
     return shown;
   }
 
-  function shownNamed() {
-    if (session.editingOneshot()) return session.liveNamed();
-    return session.pinnedNamed() || Library.namedFromBytes(shown ? shown.drawn : dialedPatch().base);
+  function shownControls() {
+    if (session.editingOneshot()) return session.liveControls();
+    return session.pinnedControls() || Patch.controls(shown ? shown.drawn : dialedPatch().base);
   }
 
   function start() {
@@ -182,7 +182,7 @@
 
   Editor.playback = {
     FADERS, faders, start, syncLibrary, cut, changed, follow, press, release, fireNote, setFader, run,
-    sendClock, frame, shownNamed,
+    sendClock, frame, shownControls,
     beats: () => Preview.playback.beats(),
     slot: () => Preview.playback.slot(),
     oneshotProgress: () => Preview.playback.oneshotProgress(),

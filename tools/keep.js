@@ -26,10 +26,10 @@
   }
 
   function keepAsLayer(layer) {
-    const named = Editor.playback.shownNamed();
+    const shown = Editor.playback.shownControls();
     const patch = session.editing();
-    const leftOnBase = Patch.isAboveBase(layer) ? Library.keepAsLayer(patch, layer, named) : [];
-    if (!Patch.isAboveBase(layer)) Library.keepAsBase(patch, named);
+    const leftOnBase = Patch.isAboveBase(layer) ? Library.keepAsLayer(patch, layer, shown) : [];
+    if (!Patch.isAboveBase(layer)) Library.keepAsBase(patch, shown);
     session.resetTransition();
     Editor.transition.rebuild();
     session.changed();
@@ -37,12 +37,12 @@
   }
 
   function keepAsNewPatch() {
-    const named = Editor.playback.shownNamed();
+    const shown = Editor.playback.shownControls();
     const current = session.patch();
     if (!Editor.rail.leaveDraft()) return;
     const patch = Library.newPatch(current.name);
     Object.assign(patch, { transitionTime: current.transitionTime, accentTime: current.accentTime });
-    Library.keepAsBase(patch, named);
+    Library.keepAsBase(patch, shown);
     Editor.show(null, patch);
     Editor.say('kept as a new patch — save it into a slot', 'ok');
   }

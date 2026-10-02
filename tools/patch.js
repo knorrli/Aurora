@@ -39,6 +39,18 @@
 
   const clampToSevenBits = value => (value < 0 ? 0 : value > 127 ? 127 : value | 0);
 
+  class Controls {
+    constructor(bytes) { this.bytes = bytes; }
+    copy() { return new Controls(this.bytes.slice()); }
+  }
+  for (const name of Object.keys(CC)) {
+    Object.defineProperty(Controls.prototype, name, {
+      get() { return this.bytes[CC[name]] | 0; },
+      set(value) { this.bytes[CC[name]] = clampToSevenBits(value); },
+    });
+  }
+  const controls = bytes => new Controls(bytes);
+
   const real = (name, value) => preview().convert(CC[name], value);
 
   const percent = ratio => (ratio * 100).toFixed(0) + '%';
@@ -185,11 +197,17 @@
     fanLfo: value => '±' + Math.round(Math.abs(real('fanLfo', value)) * 360) + '°',
     fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
     fanFrequency: (value, live) => {
-      const picture = fanPicture(Object.assign({}, live, { fanFrequency: value }));
+      const turned = live.copy();
+      turned.fanFrequency = value;
+      const picture = fanPicture(turned);
       const landmark = FAN_LANDMARKS[real('fanFrequency', value)];
       return landmark ? `${picture} ${landmark}` : picture;
     },
-    fanPhase: (value, live) => fanPicture(Object.assign({}, live, { fanPhase: value })),
+    fanPhase: (value, live) => {
+      const turned = live.copy();
+      turned.fanPhase = value;
+      return fanPicture(turned);
+    },
     fanRandomize: value => percent(real('fanRandomize', value)) + ' random',
 
     hue: value => degrees(real('hue', value)),
@@ -278,7 +296,7 @@
     READOUTS[name] = (value, live, oneshotBeats) => inPulses(readout(value, live, oneshotBeats), live);
   }
 
-  const DEFAULT = {};
+  const DEFAULT = controls(new Array(Protocol.PATCH_CC_COUNT).fill(0));
   for (const name of NAMES) DEFAULT[name] = Protocol.CONTROL_DEFAULTS[name] || 0;
   for (const route of ROUTES) {
     for (const field of ROUTE_FIELDS) DEFAULT[route[field]] = Protocol.ROUTE_DEFAULTS[field];
@@ -566,7 +584,7 @@
 
   global.AuroraPatch = {
     LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
-    CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT,
+    CC, NAMES, CONTINUOUS, isSwitch, controls, CONTROLS, READOUTS, DEFAULT,
     clampToSevenBits,
     LFO_PERIOD_NAMES, periodStep, periodValue, transitionNames, transitionStep, transitionValue, TEMPO_DIVISIONS,
     SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,

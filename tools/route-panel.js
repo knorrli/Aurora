@@ -159,7 +159,7 @@
   }
 
   const setCycle = (route, once) =>
-    session.setValue(route.ratio, Protocol.routeRatioValue(Protocol.routeRatio(session.liveNamed()[route.ratio]), once));
+    session.setValue(route.ratio, Protocol.routeRatioValue(Protocol.routeRatio(session.liveControls()[route.ratio]), once));
   const cycleRow = route => destinationRow(route, 'Cycle', [['loop', false], ['once', true]], setCycle, route.ratio);
   const arpRow = route => destinationRow(route, 'Arp', Object.entries(Protocol.ARP), session.setRouteArp);
   const polarityRow = route => destinationRow(route, 'Polarity', [['unipolar', false], ['bipolar', true]], session.setRouteBipolar);
@@ -183,7 +183,7 @@
   function free(route) {
     Editor.transition.snap();
     session.freeRoute(route);
-    if (panel.target && !session.routesOn(panel.target, session.liveNamed()).length) close();
+    if (panel.target && !session.routesOn(panel.target, session.liveControls()).length) close();
   }
 
   function buildPanel() {
@@ -238,7 +238,7 @@
       const line = element('div', 'route-line');
       const target = element('button', 'route-line-target');
       target.addEventListener('click', () => {
-        const name = Protocol.NAME_BY_CC[Protocol.routeTarget(session.liveNamed()[route.destination])];
+        const name = Protocol.NAME_BY_CC[Protocol.routeTarget(session.liveControls()[route.destination])];
         const row = Editor.rows.rows[name];
         if (!row) return;
         row.root.scrollIntoView({ block: 'center' });
@@ -249,7 +249,7 @@
       const buttons = routeButtons(route);
       line.append(target, values, canvas, buttons.root);
       Editor.layerDrop.source(line, () => ({
-        label: `${route.name} (${destinationText(session.liveNamed()[route.destination])})`,
+        label: `${route.name} (${destinationText(session.liveControls()[route.destination])})`,
         names: [route.amount],
       }));
       root.appendChild(line);
@@ -343,7 +343,7 @@
       return;
     }
     panel.target = name;
-    if (!session.heldAt() && !session.routesOn(name, session.liveNamed()).length) {
+    if (!session.heldAt() && !session.routesOn(name, session.liveControls()).length) {
       Editor.transition.snap();
       session.addRoute(name);
     }

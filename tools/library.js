@@ -7,20 +7,6 @@
 
   const byteOf = (bytes, name) => bytes[Patch.CC[name]] | 0;
 
-  function bytesFromNamed(named) {
-    const bytes = new Array(Protocol.PATCH_CC_COUNT).fill(0);
-    for (const name of Patch.NAMES) {
-      if (name in named) bytes[Patch.CC[name]] = Patch.clampToSevenBits(named[name]);
-    }
-    return bytes;
-  }
-
-  function namedFromBytes(bytes) {
-    const named = {};
-    for (const name of Patch.NAMES) named[name] = byteOf(bytes, name);
-    return named;
-  }
-
   const writeCC = (bytes, name, value) => { bytes[Patch.CC[name]] = Patch.clampToSevenBits(value); };
 
   const emptyOverrides = () => Array.from({ length: Protocol.PATCH_LAYERS },
@@ -33,7 +19,7 @@
     transitionTime: Patch.transitionValue(4),
     accentTime: Patch.periodValue(10),
     oneshots: NO_PICKS.slice(),
-    base: bytesFromNamed(Patch.DEFAULT),
+    base: Patch.DEFAULT.bytes.slice(),
     overrides: emptyOverrides(),
   });
 
@@ -50,7 +36,7 @@
     name: LibraryFile.printableName(name || 'untitled'),
     length: Patch.periodValue(4),
     marks: {},
-    base: bytesFromNamed(Patch.DEFAULT),
+    base: Patch.DEFAULT.bytes.slice(),
     overrides: emptyOverrides(),
   });
 
@@ -112,23 +98,23 @@
 
   function blend(fromBytes, toBytes, position, switchesFrom) {
     const switches = switchesFrom || fromBytes;
-    return namedFromBytes(global.AuroraPreview.blend(fromBytes, toBytes, position, switches, switches === fromBytes));
+    return Patch.controls(global.AuroraPreview.blend(fromBytes, toBytes, position, switches, switches === fromBytes));
   }
 
   const freeRouteFields = base => new Set(Patch.ROUTES
     .filter(route => !byteOf(base, route.destination))
     .flatMap(route => route.fields));
 
-  function keepAsBase(patch, named) {
-    for (const name of Patch.NAMES) writeBase(patch, name, named[name]);
+  function keepAsBase(patch, shown) {
+    for (const name of Patch.NAMES) writeBase(patch, name, shown[name]);
   }
 
-  function keepAsLayer(patch, layer, named) {
+  function keepAsLayer(patch, layer, shown) {
     const free = freeRouteFields(patch.base);
     const over = {};
     const leftOnBase = [];
     for (const name of Patch.NAMES) {
-      const value = Patch.clampToSevenBits(named[name]);
+      const value = Patch.clampToSevenBits(shown[name]);
       if (Patch.isSwitch(name) || free.has(name)) {
         if (value !== byteOf(patch.base, name)) leftOnBase.push(name);
       } else if (value !== byteOf(patch.base, name)) {
@@ -337,7 +323,7 @@
   }
 
   global.AuroraLibrary = {
-    bytesFromNamed, namedFromBytes, writeCC,
+    writeCC,
     newPatch, clonePatch, newOneshot, cloneOneshot, oneshotToFile, oneshotFromFile, isMarkable, markBytes, layerBytes, changedIn, writeBase, freeRoute,
     blend, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,

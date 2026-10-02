@@ -24,10 +24,10 @@
   let dragged = null;
 
   function patchColor(patch) {
-    const named = Library.namedFromBytes(patch.base);
-    const hue = Preview.convert(Patch.CC.hue, named.hue) & 255;
-    const saturation = Preview.convert(Patch.CC.saturation, named.saturation);
-    return `rgb(${Preview.paletteColor(named.palette, hue, saturation).join(',')})`;
+    const controls = Patch.controls(patch.base);
+    const hue = Preview.convert(Patch.CC.hue, controls.hue) & 255;
+    const saturation = Preview.convert(Patch.CC.saturation, controls.saturation);
+    return `rgb(${Preview.paletteColor(controls.palette, hue, saturation).join(',')})`;
   }
 
   const firstEmptySlot = () => Library.firstEmptySlot(session.library);

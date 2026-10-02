@@ -76,8 +76,8 @@
   }
 
   function paintShownValues() {
-    const shown = Editor.playback.shownNamed();
-    const text = JSON.stringify(shown);
+    const shown = Editor.playback.shownControls();
+    const text = shown.bytes.join(',');
     if (text === drawnText) return;
     drawnText = text;
     Editor.rows.paintFaderValues(shown);
@@ -89,7 +89,7 @@
     paintBeats(Editor.playback.beats());
     Editor.oneshots.keepRepeating();
     const progress = Editor.playback.oneshotProgress();
-    const live = session.liveNamed();
+    const live = session.liveControls();
     Editor.routes.paintPlayheads(session.editingOneshot() ? (progress < 0 ? null : progress) : drawn.lfo, live);
     Editor.oneshots.paintFiring(progress < 0 ? null : progress);
     paintShownValues();

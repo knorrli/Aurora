@@ -18,8 +18,8 @@
 
   function sendLive(force) {
     const live = session.editingOneshot()
-      ? Library.namedFromBytes(session.over().base)
-      : session.sounding(session.pinnedNamed() || Library.namedFromBytes(session.patch().base));
+      ? Patch.controls(session.over().base)
+      : session.sounding(session.pinnedControls() || Patch.controls(session.patch().base));
     for (const name of Patch.NAMES) {
       const cc = Patch.CC[name], value = live[name];
       if (!force && lastSent[cc] === value) continue;

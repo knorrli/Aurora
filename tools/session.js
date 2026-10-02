@@ -147,15 +147,14 @@
   const isRouteField = name => !Library.isMarkable(name);
   const marked = name => !!oneshot().marks[name];
 
-  function oneshotNamed() {
-    const under = Library.namedFromBytes(over().base);
-    const own = Library.namedFromBytes(oneshot().base);
-    const named = {};
-    for (const name of Patch.NAMES) named[name] = isRouteField(name) || marked(name) ? own[name] : under[name];
-    return named;
+  function oneshotControls() {
+    const shown = Patch.controls(over().base.slice());
+    const own = Patch.controls(oneshot().base);
+    for (const name of Patch.NAMES) if (isRouteField(name) || marked(name)) shown[name] = own[name];
+    return shown;
   }
 
-  function pinnedNamed() {
+  function pinnedControls() {
     if (editingOneshot()) return null;
     const current = patch();
     const position = session.transition.position;
@@ -166,9 +165,9 @@
     return null;
   }
 
-  function liveNamed() {
-    if (editingOneshot()) return oneshotNamed();
-    return pinnedNamed() || Library.namedFromBytes(patch().base);
+  function liveControls() {
+    if (editingOneshot()) return oneshotControls();
+    return pinnedControls() || Patch.controls(patch().base);
   }
 
   function changed() {
@@ -198,8 +197,8 @@
     changed();
   }
 
-  function applyNamed(named) {
-    for (const [name, value] of Object.entries(named)) {
+  function applyValues(values) {
+    for (const [name, value] of Object.entries(values)) {
       if (name in Patch.CC) write(name, value);
     }
     changed();
@@ -210,7 +209,7 @@
       delete editing().marks[name];
       changed();
     } else {
-      setValue(name, oneshotNamed()[name]);
+      setValue(name, oneshotControls()[name]);
     }
   }
 
@@ -224,7 +223,7 @@
       for (const name of names) if (!Patch.isSwitch(name)) delete over[name];
       changed();
     } else {
-      applyNamed(Object.fromEntries(names.filter(name => name in Patch.DEFAULT)
+      applyValues(Object.fromEntries(names.filter(name => name in Patch.DEFAULT)
         .map(name => [name, Patch.DEFAULT[name]])));
     }
   }
@@ -239,9 +238,9 @@
   const cardBypassed = card => session.bypassedCards.has(card);
   const toggleIn = (set, item) => { if (!set.delete(item)) set.add(item); };
 
-  function sounding(named) {
-    if (!session.bypassedRoutes.size && !session.bypassedCards.size) return named;
-    const out = Object.assign({}, named);
+  function sounding(live) {
+    if (!session.bypassedRoutes.size && !session.bypassedCards.size) return live;
+    const out = live.copy();
     for (const route of session.bypassedRoutes) out[route.destination] = 0;
     for (const card of session.bypassedCards) {
       if (card === Patch.LFO) for (const route of Patch.ROUTES) out[route.destination] = 0;
@@ -292,7 +291,7 @@
   function routeRemovable(route) {
     if (editingOneshot() || !isAboveBase()) return true;
     const current = patch();
-    const base = Library.namedFromBytes(current.base);
+    const base = Patch.controls(current.base);
     const tunedOnBase = route.fields.some(name => name !== route.destination && base[name] !== Patch.DEFAULT[name]);
     const tunedOnOtherLayer = current.overrides.some((over, layer) =>
       layer !== session.layerIndex && over && route.fields.some(name => name in over));
@@ -308,7 +307,7 @@
   const NEW_ROUTE_AMOUNT = 96;
 
   function addRoute(name) {
-    const free = freeRouteSlots(Library.namedFromBytes(patch().base))[0];
+    const free = freeRouteSlots(Patch.controls(patch().base))[0];
     if (!free) return null;
     const current = editing();
     Library.freeRoute(current, free);
@@ -363,7 +362,7 @@
     editingOneshot, underneath, over, overSlotShown, kitOneshot, resolvedPick, oneshot, oneshotBeats, marked, toggleMark, openOneshot,
     patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
     transitioning,
-    pinnedNamed, liveNamed, setValue, resetNames, changed,
+    pinnedControls, liveControls, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
     layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),

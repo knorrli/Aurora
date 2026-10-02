@@ -35,7 +35,7 @@
     slider.addEventListener('pointerdown', () => Editor.transition.snap());
     slider.addEventListener('keydown', () => Editor.transition.snap());
     slider.addEventListener('input', () => session.setValue(name,
-      positions ? positions.valueAt(+slider.value, session.liveNamed()) : +slider.value));
+      positions ? positions.valueAt(+slider.value, session.liveControls()) : +slider.value));
 
     const readout = element('output');
     const now = dom.labeled('span', '', '');
@@ -121,7 +121,7 @@
   }
 
   function withRouteAmounts(names) {
-    const live = session.liveNamed();
+    const live = session.liveControls();
     return [...names, ...names.flatMap(name => session.routesOn(name, live).map(route => route.amount))];
   }
 
@@ -248,7 +248,7 @@
   }
 
   function paint(live) {
-    const base = Library.namedFromBytes(session.patch().base);
+    const base = Patch.controls(session.patch().base);
     const overrides = session.overrides();
     const oneshot = session.editingOneshot();
     for (const row of Object.values(rows)) {

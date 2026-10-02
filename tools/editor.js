@@ -88,16 +88,16 @@
     for (const [field, steps] of Object.entries(TIME_FIELDS)) {
       byId(field).value = String(steps.value(steps.step(patch[field])));
     }
-    byId('tempoDivision').value = String(Library.namedFromBytes(patch.base).tempoDivision);
+    byId('tempoDivision').value = String(Patch.controls(patch.base).tempoDivision);
     const accentReachesNothing = !Library.changedIn(patch, Protocol.PATCH_LAYER_ACCENT).length;
     byId('accentTime').closest('.field').classList.toggle('inert', accentReachesNothing);
   }
 
   function paint() {
     document.body.classList.toggle('oneshot-mode', session.editingOneshot());
-    Editor.rows.paint(Editor.playback.shownNamed());
+    Editor.rows.paint(Editor.playback.shownControls());
     paintTabs();
-    Editor.routes.paint(session.liveNamed());
+    Editor.routes.paint(session.liveControls());
     paintHead();
     Editor.transition.paintShowing();
     Editor.transition.paintMix();
