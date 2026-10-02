@@ -68,7 +68,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Write the firmware for the second Teensy: keypad as a static code, two-key rejection, hook note, faders, pad, rockers, rotary, foot pedal, tap tempo, fresh clock, indicator pixels, DIN out.
 - Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
 - Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
-- Should a DAW automation lane drive the morph position, as one more CC beside the Program Change?
 - Find out whether the touchpad reads pressure usefully.
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
 - How does a pad-driven transition land its switches, with no key release left?
