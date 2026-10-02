@@ -2,7 +2,7 @@
   'use strict';
 
   const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
-  const WALL_PAR_ORDER = [1, 2, 3, 4];
+  const WALL_PAR_ORDER = [4, 3, 2, 1];
 
   const SCREEN_LEVEL_OF_STRIP_BYTE = Array.from({ length: 256 }, (_, byte) => {
     const light = byte / 255;
