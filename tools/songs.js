@@ -21,10 +21,7 @@
   const save = () => session.saveLibrary();
   const visible = () => !byId('songsPanel').hidden;
 
-  const BANKED_SLOTS = Protocol.BANKS * Protocol.KEYPAD_KEYS;
-
   function keyName(slot) {
-    if (slot > BANKED_SLOTS) return `PC ${slot}`;
     const bank = Math.floor((slot - 1) / Protocol.KEYPAD_KEYS);
     return `${String.fromCharCode('A'.charCodeAt(0) + bank)}${slot - bank * Protocol.KEYPAD_KEYS}`;
   }

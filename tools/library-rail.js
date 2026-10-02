@@ -38,8 +38,6 @@
     return session.slot === null ? firstEmptySlot() : null;
   }
 
-  const BANKED_SLOTS = Protocol.BANKS * Protocol.KEYPAD_KEYS;
-
   const bankLetter = bank => String.fromCharCode('A'.charCodeAt(0) + bank);
 
   function rowLabel(text) {
@@ -51,11 +49,6 @@
     for (let bank = 0; bank < Protocol.BANKS; bank++) {
       rows.push([rowLabel(bankLetter(bank)),
         ...Array.from({ length: Protocol.KEYPAD_KEYS }, (_, key) => cell(bank * Protocol.KEYPAD_KEYS + key + 1))]);
-    }
-    for (let first = BANKED_SLOTS + 1; first < Protocol.PATCH_MAX; first += Protocol.KEYPAD_KEYS) {
-      const last = Math.min(first + Protocol.KEYPAD_KEYS, Protocol.PATCH_MAX);
-      rows.push([rowLabel(first === BANKED_SLOTS + 1 ? 'PC' : ''),
-        ...Array.from({ length: last - first }, (_, offset) => cell(first + offset))]);
     }
     return rows.flat();
   }
@@ -130,7 +123,7 @@
   function paintList() {
     const filled = Library.filledSlots(session.library);
     byId('patchGrid').replaceChildren(...gridRows());
-    byId('libraryCount').textContent = `${filled.length} / ${Protocol.PATCH_MAX - 1}`;
+    byId('libraryCount').textContent = `${filled.length} / ${LibraryFile.LAST_PATCH_SLOT}`;
     paintSaving();
     Editor.oneshots.paintKit();
     Editor.transition.refreshPatchChoices();

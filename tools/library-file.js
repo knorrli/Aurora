@@ -12,7 +12,8 @@
   const isOneshotIndex = index => Number.isInteger(index) && index >= 0 && index < Protocol.ONESHOTS;
   const isPick = pick => pick === null || isOneshotIndex(pick);
   const NO_PICKS = [null, null];
-  const isPatchSlot = slot => isSlot(slot) && slot !== Protocol.PROGRAM_BLACKOUT;
+  const LAST_PATCH_SLOT = Protocol.PROGRAM_SONG_FIRST - 1;
+  const isPatchSlot = slot => isSlot(slot) && slot !== Protocol.PROGRAM_BLACKOUT && slot <= LAST_PATCH_SLOT;
 
   const printableName = text =>
     String(text == null ? '' : text).replace(/[^\x20-\x7E]/g, '').slice(0, Protocol.PATCH_NAME_LENGTH);
@@ -169,7 +170,7 @@
       const patch = file.patches[index];
       const slot = patch && patch.slot;
       if (!isPatchSlot(slot)) {
-        return `patch ${index} is in slot ${slot}, and patches go in slots 1–${Protocol.PATCH_MAX - 1}`;
+        return `patch ${index} is in slot ${slot}, and patches go in slots 1–${LAST_PATCH_SLOT}`;
       }
       if (taken.has(slot)) return `two patches in slot ${slot}`;
       taken.add(slot);
@@ -205,7 +206,7 @@
     .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
 
   global.AuroraLibraryFile = {
-    printableName, serialize, validate, validatePatch, validateOneshot, isPatchSlot,
+    printableName, serialize, validate, validatePatch, validateOneshot, isPatchSlot, LAST_PATCH_SLOT,
     headBytes, patchFromHead, slotMapBytes, slotsInMap,
   };
 })(window);
