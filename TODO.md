@@ -64,7 +64,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Socket both Teensys rather than soldering them down.
 - Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
 - Relabel the rotary's twelve positions A to L.
-- Fit a 3-way rocker by the pad for Width, in place of a 2-way.
+- Fit a 3-way rocker as touchpad rocker 2 (Width).
 - Build the eight-switch foot pedal on a TRS cable (`docs/design.md` § Foot pedal).
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
 
@@ -77,8 +77,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Per-patch pad mode: any two controls, or a fixed list of pairings?
 - Which four corner looks, and which five effects in which order?
 - Focus, taking energy away from part of the wall: one of the effects, or something that works in every mode?
-- How does a pad-driven transition land its switches, with no key release left?
-- Which rocker by the pad takes which job: mode (3-way), Width (3-way), Gaps (2-way), momentary or latching (2-way)? What does the fader rocker do?
+- What does the fader rocker do?
 - What do the indicator pixels show? Lead: the current song section.
 
 ### Songs in the editor
