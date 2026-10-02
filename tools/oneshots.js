@@ -128,7 +128,7 @@
   function paintFiring(progress) {
     const fired = progress === null ? null : session.fired();
     const editing = session.editingOneshot();
-    const length = fired ? Protocol.LFO_PERIODS[Patch.periodStep(fired.length)] : 0;
+    const length = fired ? Library.lengthBeats(fired) : 0;
     const text = fired && editing ? `${(progress * length).toFixed(1)} / ${length}` : '';
     const firingIndex = fired && !editing ? session.firing.index : null;
     const state = `${text}|${firingIndex}`;

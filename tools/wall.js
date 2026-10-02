@@ -1,7 +1,6 @@
 (function (global) {
   'use strict';
 
-  const Protocol = global.AuroraProtocol;
   const Patch = global.AuroraPatch;
   const Library = global.AuroraLibrary;
   const Preview = global.AuroraPreview;
@@ -67,8 +66,6 @@
     view.order = valid ? strips : defaultOrder();
   }
 
-  const lengthBeats = oneshot => Protocol.LFO_PERIODS[Patch.periodStep(oneshot.length)];
-
   function fire(index) {
     session.firing.index = session.editingOneshot() ? null : index;
     session.firing.at = beats.position;
@@ -78,7 +75,7 @@
     const firing = session.firing;
     const fired = firing.at === null ? null : session.fired();
     if (!fired) return null;
-    const length = lengthBeats(fired);
+    const length = Library.lengthBeats(fired);
     if (beats.position < firing.at) firing.at = beats.position;
     if (beats.position - firing.at >= length) {
       if (!firing.repeat || !session.editingOneshot()) {
@@ -92,7 +89,7 @@
 
   function oneshotInput(progress) {
     if (progress === null) return null;
-    return Object.assign(session.oneshotInput(), { progress, beats: lengthBeats(session.fired()) });
+    return Object.assign(session.oneshotInput(), { progress, beats: Library.lengthBeats(session.fired()) });
   }
 
   function drawBytes(wall, bytes, oneshot) {

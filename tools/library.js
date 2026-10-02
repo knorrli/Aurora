@@ -223,6 +223,7 @@
     return slot < 0 ? null : slot;
   };
 
+  const lengthBeats = oneshot => Protocol.LFO_PERIODS[Patch.periodStep(oneshot.length)];
   const emptyKit = () => new Array(Protocol.ONESHOTS).fill(null);
   const filledKit = library => library.kit.flatMap((oneshot, index) => (oneshot ? [index] : []));
   const firstEmptyKitPlace = library => {
@@ -283,7 +284,7 @@
     newPatch, clonePatch, newOneshot, cloneOneshot, oneshotToFile, oneshotFromFile, isMarkable, markBytes, layerBytes, changedIn, writeBase, freeRoute,
     blend, mix, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
-    filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, libraryToFile, libraryFromFile, newLibrary,
+    filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, lengthBeats, libraryToFile, libraryFromFile, newLibrary,
     upgradeFile, upgradeDraftPatch,
   };
 })(window);

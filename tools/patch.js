@@ -99,25 +99,26 @@
 
   const perSpot = destination => preview().spotDestination(Protocol.routeTarget(destination));
 
-  const cycleBeats = (live, route, ratioValue) => {
+  const cycleBeats = (live, route, ratioValue, oneshotBeats) => {
     const settings = live || DEFAULT;
-    const perCycle = perSpot(settings[route.destination])
-      ? 1 / real('scatterRate', settings.scatterRate) : real('lfoRate', settings.lfoRate);
+    const perCycle = perSpot(settings[route.destination]) ? 1 / real('scatterRate', settings.scatterRate)
+      : oneshotBeats || real('lfoRate', settings.lfoRate);
     return perCycle / Protocol.routeRatio(ratioValue);
   };
 
-  const phaseText = (value, live, route) => {
+  const phaseText = (value, live, route, oneshotBeats) => {
     const step = Protocol.routePhaseStep(value);
     if (step === 0) return '0°';
     const degrees = Math.round(step * 360 / Protocol.ROUTE_PHASE_STEPS);
-    const cycle = cycleBeats(live, route, (live || DEFAULT)[route.ratio]);
+    const cycle = cycleBeats(live, route, (live || DEFAULT)[route.ratio], oneshotBeats);
     return `${degrees}° · ${beatsText(step / Protocol.ROUTE_PHASE_STEPS * cycle)}`;
   };
 
   const ROUTE_READOUTS = {
     amount: () => value => signed(signedOf(value)),
-    ratio: route => (value, live) => `×${Protocol.routeRatio(value)} · ${beatsText(cycleBeats(live, route, value))}`,
-    phase: route => (value, live) => phaseText(value, live, route),
+    ratio: route => (value, live, oneshotBeats) =>
+      `×${Protocol.routeRatio(value)} · ${beatsText(cycleBeats(live, route, value, oneshotBeats))}`,
+    phase: route => (value, live, oneshotBeats) => phaseText(value, live, route, oneshotBeats),
     wave: () => waveText,
   };
 
@@ -276,7 +277,7 @@
   }
 
   for (const [name, readout] of Object.entries(READOUTS)) {
-    READOUTS[name] = (value, live) => inPulses(readout(value, live), live);
+    READOUTS[name] = (value, live, oneshotBeats) => inPulses(readout(value, live, oneshotBeats), live);
   }
 
   const DEFAULT = {};

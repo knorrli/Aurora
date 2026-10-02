@@ -112,6 +112,7 @@
     const pick = underneath().oneshots[place];
     return pick !== null ? pick : session.library.defaultOneshots[place];
   };
+  const oneshotBeats = () => (editingOneshot() ? Library.lengthBeats(oneshot()) : null);
   const fired = () => (editingOneshot() ? oneshot() : session.firing.index === null ? null : kitOneshot(session.firing.index));
   const patchAt = slot => (slot === session.slot && session.draft ? session.draft : session.library.slots[slot]) || null;
   const isAboveBase = () => Patch.isAboveBase(session.layerIndex);
@@ -376,7 +377,7 @@
 
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
-    editingOneshot, underneath, over, kitOneshot, resolvedPick, fired, oneshot, marked, toggleMark, oneshotInput, openOneshot,
+    editingOneshot, underneath, over, kitOneshot, resolvedPick, fired, oneshot, oneshotBeats, marked, toggleMark, oneshotInput, openOneshot,
     patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
     mixing, transitioning,
     liveNamed, layerNamed, setValue, resetNames, changed,

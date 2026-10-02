@@ -281,7 +281,7 @@
       if (!destination) continue;
       aimed++;
       target.textContent = destinationText(destination);
-      const readouts = route.controls.map(name => Patch.READOUTS[name](live[name], live));
+      const readouts = route.controls.map(name => Patch.READOUTS[name](live[name], live, session.oneshotBeats()));
       values.textContent = [...(Patch.perSpot(destination) ? [spotClockText(live)] : []), ...readouts].join(' · ');
       line.classList.toggle('bypassed', paintButtons(buttons, route));
       if (list.root.open) drawWave(canvas, route, live);

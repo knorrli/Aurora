@@ -198,7 +198,7 @@
     const position = sliderPosition(row.control, value);
     if (+row.slider.value !== position) row.slider.value = position;
     const readout = Patch.READOUTS[row.control.name];
-    dom.fillLabeled(row.now, String(value), readout ? readout(value, live) : '');
+    dom.fillLabeled(row.now, String(value), readout ? readout(value, live, session.oneshotBeats()) : '');
   }
 
   function paintFaderValues(live) {
