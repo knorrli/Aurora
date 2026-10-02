@@ -3,6 +3,7 @@ import AuroraRenderModule from './render.js';
 
 const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
 const WALL_PAR_ORDER = [4, 3, 2, 1];
+const PAR_BAND_SHARE = 0.2;
 
 const SCREEN_LEVEL_OF_STRIP_BYTE = Array.from({ length: 256 }, (_, byte) => {
   const light = byte / 255;
@@ -13,6 +14,7 @@ const SCREEN_LEVEL_OF_STRIP_BYTE = Array.from({ length: 256 }, (_, byte) => {
 const api = {
   WALL_STRIP_ORDER,
   WALL_PAR_ORDER,
+  PAR_BAND_SHARE,
 };
 
 function connect(renderer) {
@@ -244,7 +246,7 @@ function connect(renderer) {
 
 function draw(context, glow, frame, order, parOrder, width, height, overlays) {
   const { STRIPS, PIXELS } = api;
-  const PAR_BAND = height * 0.2;
+  const PAR_BAND = height * PAR_BAND_SHARE;
   const WALL_TOP = height * 0.025;
   const WALL_HEIGHT = height - PAR_BAND - WALL_TOP - height * 0.025;
   const glowContext = glow.getContext('2d');

@@ -1,6 +1,7 @@
 import { Protocol } from './cc.js';
 import * as dom from './dom.js';
 import * as Playback from './playback.js';
+import { Preview } from './preview.js';
 
 const { byId, element } = dom;
 
@@ -44,7 +45,10 @@ function settle() {
   finger.playing = finger.touching || (finger.playing && latching());
 }
 
-function drawFinger(context, width, height) {
+const stripHeight = height => height * (1 - Preview.PAR_BAND_SHARE);
+
+function drawFinger(context, width, wallHeight) {
+  const height = stripHeight(wallHeight);
   context.save();
   if (effects() && finger.touching) {
     context.strokeStyle = 'rgba(255,255,255,0.18)';
@@ -80,9 +84,14 @@ function follow(event) {
   const bounds = surface.getBoundingClientRect();
   const along = value => Math.round(Math.min(1, Math.max(0, value)) * 127);
   finger.x = along((event.clientX - bounds.left) / bounds.width);
-  finger.y = along(1 - (event.clientY - bounds.top) / bounds.height);
+  finger.y = along(1 - (event.clientY - bounds.top) / stripHeight(bounds.height));
   send(Protocol.CC.padX, finger.x);
   send(Protocol.CC.padY, finger.y);
+}
+
+function onStrips(event) {
+  const bounds = surface.getBoundingClientRect();
+  return event.clientY - bounds.top <= stripHeight(bounds.height);
 }
 
 function lift() {
@@ -94,7 +103,7 @@ function lift() {
 
 function wireSurface() {
   surface.addEventListener('pointerdown', event => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || !onStrips(event)) return;
     surface.setPointerCapture(event.pointerId);
     follow(event);
     finger.touching = true;
