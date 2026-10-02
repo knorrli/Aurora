@@ -49,6 +49,7 @@ float Playback::brightnessAt(float beats) const {
 void Playback::programChange(uint8_t program, uint32_t micros) {
   const float beats = tempo.beatsAt(micros);
   advance(beats);
+  pinned = false;
   if (program > AURORA_LAST_PATCH_SLOT) return;
   if (program != PROGRAM_BLACKOUT && !library.patch(program, arriving)) return;
 
@@ -68,17 +69,23 @@ void Playback::programChange(uint8_t program, uint32_t micros) {
 
 void Playback::controlChange(uint8_t cc, uint8_t value) {
   switch (cc) {
-    case CC_FADER_COLOR: faders[PATCH_LAYER_COLOR] = (float)value / 127.0f; return;
-    case CC_FADER_EXTENT: faders[PATCH_LAYER_EXTENT] = (float)value / 127.0f; return;
-    case CC_FADER_MOTION: faders[PATCH_LAYER_MOTION] = (float)value / 127.0f; return;
+    case CC_FADER_COLOR: moveFader(PATCH_LAYER_COLOR, value); return;
+    case CC_FADER_EXTENT: moveFader(PATCH_LAYER_EXTENT, value); return;
+    case CC_FADER_MOTION: moveFader(PATCH_LAYER_MOTION, value); return;
     default:
       if (cc < AURORA_PATCH_CC_COUNT) playing.layers[PATCH_LAYER_BASE][cc] = value;
   }
 }
 
+void Playback::moveFader(uint8_t layer, uint8_t value) {
+  faders[layer] = (float)value / 127.0f;
+  pinned = false;
+}
+
 void Playback::noteOn(uint8_t note, uint32_t micros) {
   const float beats = tempo.beatsAt(micros);
   advance(beats);
+  pinned = false;
   if (note == NOTE_KEY_HELD) {
     keyHeld = true;
   } else if (note == NOTE_PATCH_ONESHOT_FIRST || note == NOTE_PATCH_ONESHOT_SECOND) {

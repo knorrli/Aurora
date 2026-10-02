@@ -3,7 +3,6 @@ import * as dom from './dom.js';
 import * as Editor from './editor.js';
 import * as Rail from './library-rail.js';
 import * as Library from './library.js';
-import * as Midi from './midi-out.js';
 import * as Patch from './patch.js';
 import * as Playback from './playback.js';
 import { session } from './session.js';
@@ -105,7 +104,6 @@ function chooseOver() {
   session.overSlot = +byId('overPatch').value;
   Playback.cut();
   Editor.paint();
-  Midi.sendLive(true);
 }
 
 function firePick(place) {

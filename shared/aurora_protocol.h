@@ -368,6 +368,7 @@ enum AuroraSysEx : uint8_t {
     SYSEX_QUERY_PATCH    = 0x07,
     SYSEX_ONESHOT        = 0x08,
     SYSEX_QUERY_ONESHOT  = 0x09,
+    SYSEX_PIN            = 0x0A,
 
     SYSEX_ACK            = 0x40,
     SYSEX_LIBRARY_INFO   = 0x41,

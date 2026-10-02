@@ -84,6 +84,7 @@ class Playback {
   float brightnessAt(float beats) const;
   float nextBeat(float beats) const;
   void fire(uint8_t index, float beats);
+  void moveFader(uint8_t layer, uint8_t value);
 
   Library &library;
   Tempo tempo;

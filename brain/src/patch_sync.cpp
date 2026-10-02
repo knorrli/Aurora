@@ -160,6 +160,10 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
             sendPatch(payload[0]);
             return;
 
+        case SYSEX_PIN:
+            if (payloadLength == AURORA_PATCH_CC_COUNT) player::get().pin(payload);
+            return;
+
         case SYSEX_QUERY_ONESHOT:
             if (payloadLength != 1) { ack(type, SYSEX_ERROR_RANGE); return; }
             sendOneshot(payload[0]);

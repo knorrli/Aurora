@@ -155,6 +155,10 @@ class Link {
     patch.layers.forEach((bytes, layer) => this.sendSysEx(TYPE.patchLayer, [patch.slot, layer, ...bytes]));
   }
 
+  sendPin(controls) {
+    this.sendSysEx(TYPE.pin, controls);
+  }
+
   sendOneshot(oneshot) {
     this.sendSysEx(TYPE.oneshot, [oneshot.index, ...LibraryFile.oneshotBytes(oneshot)]);
   }

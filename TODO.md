@@ -8,6 +8,7 @@
 - Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 108.
 - From the editor, push a library with a kit and pull it back: the patches' picks, the kit and the default pair come back.
 - Play a song from the editor's songs view with the clock on: the wall follows the preview, tap, hold, accent and blackout included.
+- Dial with the brain attached: the wall matches the preview on a layer tab, mid-scrub and while editing a oneshot's controls; a key, a fader or a oneshot hands playing back to the brain.
 
 ### Playback
 
@@ -94,7 +95,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 - Give the hook a note number, and read it on the brain: dark at once, back on release.
 - Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
-- While the editor is dialing, have the brain show exactly what the preview shows, and hand playing back on a key, a fader or a oneshot. Today the editor streams CCs, which the brain takes as live edits of the patch it is playing.
 
 ## Once Aurora v2 works
 

@@ -50,7 +50,6 @@ function selectLayer(layer) {
   paint();
   Rail.paintList();
   Playback.changed();
-  Midi.sendLive();
 }
 
 const TIME_FIELDS = {
@@ -116,7 +115,6 @@ function paint() {
 function refresh() {
   Playback.changed();
   paint();
-  Midi.sendLive();
 }
 
 function open(slot, draft) {
@@ -125,10 +123,10 @@ function open(slot, draft) {
   Playback.cut();
   paint();
   Rail.paintList();
-  Midi.sendLive(true);
 }
 
 function follow(slot) {
+  session.layerIndex = Protocol.PATCH_LAYER_BASE;
   session.select(slot, null);
   Transition.rebuild();
   Playback.follow(slot);
@@ -137,7 +135,7 @@ function follow(slot) {
 }
 
 function sendPatchToWall() {
-  Midi.sendLive(true);
+  Playback.dial();
   say(`sent "${session.patch().name}"`);
 }
 

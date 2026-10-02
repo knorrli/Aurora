@@ -23,6 +23,7 @@ const micros = milliseconds => Math.round(milliseconds * 1000) >>> 0;
 const link = () => Midi.link;
 
 const clock = { sending: false, due: [], nextAt: null };
+const brain = { dialing: true, pinned: null };
 const fed = new Array(Protocol.PATCH_CC_COUNT).fill(-1);
 const faders = Object.fromEntries(Object.keys(FADERS).map(layer => [layer, 0]));
 let shown = null;
@@ -113,7 +114,26 @@ function syncPin() {
   else Preview.playback.unpin();
 }
 
+function dial() {
+  brain.dialing = true;
+  brain.pinned = null;
+}
+
+function play() {
+  brain.dialing = false;
+}
+
+function pinBrain(drawn) {
+  if (!brain.dialing || !link().output) return;
+  const controls = drawn.slice(0, Protocol.PATCH_CC_COUNT);
+  const sent = controls.join(',');
+  if (sent === brain.pinned) return;
+  link().sendPin(controls);
+  brain.pinned = sent;
+}
+
 function cut() {
+  dial();
   const patch = dialedPatch();
   Preview.playback.cut(dialedSlot() || 0, patchRecord(patch));
   forgetFed(patch.base);
@@ -122,9 +142,14 @@ function cut() {
 }
 
 function changed() {
+  const resuming = !brain.dialing || Preview.playback.slot() !== (dialedSlot() || 0);
   if (session.slot !== null) storeSlot(session.slot);
   if (session.editingOneshot() && session.oneshotIndex !== null) storeKitPlace(session.oneshotIndex);
   Preview.playback.defaultOneshots(session.library.defaultOneshots);
+  if (resuming) {
+    cut();
+    return;
+  }
   if (dialedSlot() !== null) Preview.playback.patchChanged(dialedSlot());
   feedBase();
   syncPin();
@@ -137,6 +162,7 @@ function follow(slot) {
 }
 
 function press(slot) {
+  play();
   both(NOTE_ON, Protocol.NOTE_KEY_HELD, FULL_VELOCITY);
   both(PROGRAM_CHANGE, slot);
 }
@@ -144,11 +170,13 @@ function press(slot) {
 const release = () => both(NOTE_OFF, Protocol.NOTE_KEY_HELD, 0);
 
 function fireNote(note) {
+  play();
   both(NOTE_ON, note, FULL_VELOCITY);
   both(NOTE_OFF, note, 0);
 }
 
 function setFader(layer, position) {
+  play();
   faders[layer] = position;
   both(CONTROL_CHANGE, Patch.CC[FADERS[layer]], Math.round(position * 127));
 }
@@ -156,6 +184,7 @@ function setFader(layer, position) {
 function run(fromSlot) {
   const from = session.patchAt(fromSlot);
   if (!from) return;
+  play();
   Preview.playback.cut(fromSlot, patchRecord(from));
   forgetFed(from.base);
   both(PROGRAM_CHANGE, session.slot);
@@ -164,6 +193,7 @@ function run(fromSlot) {
 function frame(now) {
   pumpClock(now);
   shown = Preview.playback.frame(micros(now));
+  pinBrain(shown.drawn);
   return shown;
 }
 
@@ -184,6 +214,6 @@ const oneshotProgress = () => Preview.playback.oneshotProgress();
 const oneshotIndex = () => Preview.playback.oneshotIndex();
 
 export {
-  FADERS, faders, start, syncLibrary, cut, changed, follow, press, release, fireNote, setFader, run,
+  FADERS, faders, start, syncLibrary, dial, cut, changed, follow, press, release, fireNote, setFader, run,
   sendClock, frame, shownControls, beats, slot, oneshotProgress, oneshotIndex,
 };

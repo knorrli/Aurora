@@ -112,7 +112,7 @@ const SYSEX_ID = 125;
 const SYSEX_SIGNATURE_A = 65;
 const SYSEX_SIGNATURE_B = 85;
 const SYSEX_HEADER_LENGTH = 5;
-const SYSEX_TYPE = {"syncBegin":1,"patchHead":2,"patchLayer":3,"syncCommit":4,"syncAbort":5,"queryLibrary":6,"queryPatch":7,"oneshot":8,"queryOneshot":9,"ack":64,"libraryInfo":65,"patchHeadOut":66,"patchLayerOut":67,"oneshotOut":68};
+const SYSEX_TYPE = {"syncBegin":1,"patchHead":2,"patchLayer":3,"syncCommit":4,"syncAbort":5,"queryLibrary":6,"queryPatch":7,"oneshot":8,"queryOneshot":9,"pin":10,"ack":64,"libraryInfo":65,"patchHeadOut":66,"patchLayerOut":67,"oneshotOut":68};
 const SYSEX_STATUS = {"ok":0,"errorFormat":1,"errorSequence":2,"errorIncomplete":3,"errorStorage":4,"errorRange":5};
 const LIBRARY_STATE = {"stored":0,"empty":1,"unreadable":2};
 

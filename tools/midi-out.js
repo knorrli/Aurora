@@ -1,30 +1,16 @@
 import { Protocol } from './cc.js';
 import * as dom from './dom.js';
 import { Link } from './link.js';
-import * as Patch from './patch.js';
 import * as Playback from './playback.js';
-import { session } from './session.js';
 
 const { byId } = dom;
 
 const DEFAULT_BPM = 120;
 
 const link = new Link();
-const lastSent = new Array(Protocol.PATCH_CC_COUNT).fill(-1);
 let clockSending = false;
 
 const bpm = () => +byId('bpm').value || DEFAULT_BPM;
-
-function sendLive(force) {
-  const live = session.editingOneshot()
-    ? Patch.controls(session.over().base)
-    : session.sounding(session.pinnedControls() || Patch.controls(session.patch().base));
-  for (const name of Patch.NAMES) {
-    const cc = Patch.CC[name], value = live[name];
-    if (!force && lastSent[cc] === value) continue;
-    if (link.sendCC(cc, value)) lastSent[cc] = value;
-  }
-}
 
 function setClock(sending) {
   clockSending = sending;
@@ -51,7 +37,7 @@ function paintPorts() {
 
 function connected() {
   paintPorts();
-  if (link.output) sendLive(true);
+  if (link.output) Playback.dial();
 }
 
 async function open() {
@@ -88,4 +74,4 @@ function wire() {
   });
 }
 
-export { link, bpm, sendLive, open, wire };
+export { link, bpm, open, wire };
