@@ -30,7 +30,7 @@
     const patch = session.editing();
     const leftOnBase = Patch.isAboveBase(layer) ? Library.keepAsLayer(patch, layer, named) : [];
     if (!Patch.isAboveBase(layer)) Library.keepAsBase(patch, named);
-    session.resetPreview();
+    session.resetTransition();
     Editor.transition.rebuild();
     session.changed();
     report(layer, leftOnBase);

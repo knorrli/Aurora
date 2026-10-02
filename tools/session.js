@@ -327,7 +327,7 @@
     session.draft = draft || null;
     session.bypassedRoutes.clear();
     session.bypassedCards.clear();
-    resetPreview();
+    resetTransition();
     saveDraft();
   }
 
@@ -338,21 +338,20 @@
     session.layerIndex = Protocol.PATCH_LAYER_BASE;
     session.bypassedRoutes.clear();
     session.bypassedCards.clear();
-    resetPreview();
+    resetTransition();
     saveDraft();
   }
 
   function selectLayer(layerIndex) {
     session.layerIndex = layerIndex;
     if (session.transition.from === null) session.transition.from = session.slot;
-    resetPreview();
+    resetTransition();
   }
 
   function resetTransition() {
     session.transition.position = 1;
   }
 
-  const resetPreview = resetTransition;
 
   function forgetMissingPatches() {
     const transition = session.transition;
@@ -366,7 +365,7 @@
     transitioning,
     pinnedNamed, liveNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-    layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
+    layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
     toggleCardBypass: card => toggleIn(session.bypassedCards, card),
   });
