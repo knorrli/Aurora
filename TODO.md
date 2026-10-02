@@ -76,7 +76,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Find out whether the touchpad reads pressure usefully.
 - Per-patch pad mode: any two controls, or a fixed list of pairings?
 - Which four corner looks, and which five effects in which order?
-- Focus, taking energy away from part of the wall: one of the effects, or something that works in every mode?
+- Focus, taking energy away from part of the wall. Current idea, to settle while designing the effects: a Focus column in Effects that darkens the strips outside Width and Gaps, Y sets how dark.
 - What does the fader rocker do?
 - What do the indicator pixels show? Lead: the current song section.
 
