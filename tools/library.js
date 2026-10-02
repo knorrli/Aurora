@@ -231,11 +231,96 @@
     return index < 0 ? null : index;
   };
 
+  const emptyGig = () => new Array(Protocol.SONGS).fill(null);
+
+  const newSong = name => ({
+    name: LibraryFile.printableName(name || 'untitled'),
+    oneshots: NO_PICKS.slice(),
+    sections: [],
+    patches: {},
+  });
+
+  const cloneSong = song => ({
+    name: song.name,
+    oneshots: song.oneshots.slice(),
+    sections: song.sections.slice(),
+    patches: Object.assign({}, song.patches),
+  });
+
+  const sectionSlot = (song, section) => {
+    const slot = song.patches[song.sections[section]];
+    return slot === undefined ? null : slot;
+  };
+
+  function unusedLabel(song) {
+    for (let number = song.sections.length + 1; ; number++) {
+      const label = `section ${number}`;
+      if (!song.sections.includes(label)) return label;
+    }
+  }
+
+  function forgetUnusedLabels(song) {
+    for (const label of Object.keys(song.patches)) {
+      if (!song.sections.includes(label)) delete song.patches[label];
+    }
+  }
+
+  function addSection(song) {
+    const label = unusedLabel(song);
+    song.sections.push(label);
+    song.patches[label] = null;
+    return song.sections.length - 1;
+  }
+
+  function relabelSection(song, section, label) {
+    const previous = song.sections[section];
+    if (label === previous) return;
+    if (!(label in song.patches)) song.patches[label] = sectionSlot(song, section);
+    song.sections[section] = label;
+    forgetUnusedLabels(song);
+  }
+
+  function removeSection(song, section) {
+    song.sections.splice(section, 1);
+    forgetUnusedLabels(song);
+  }
+
+  function moveSection(song, from, to) {
+    const [label] = song.sections.splice(from, 1);
+    song.sections.splice(to, 0, label);
+  }
+
+  function remapSongSlots(library, remap) {
+    for (const song of library.songs) {
+      for (const [label, slot] of Object.entries(song.patches)) {
+        if (slot !== null) song.patches[label] = remap(slot);
+      }
+    }
+  }
+
+  const swapSongSlots = (library, one, other) =>
+    remapSongSlots(library, slot => (slot === one ? other : slot === other ? one : slot));
+
+  const forgetSongSlot = (library, gone) => remapSongSlots(library, slot => (slot === gone ? null : slot));
+
+  function forgetSongOneshot(library, index) {
+    for (const song of library.songs) song.oneshots = song.oneshots.map(pick => (pick === index ? null : pick));
+  }
+
+  function removeSong(library, index) {
+    library.songs.splice(index, 1);
+    library.gig = library.gig.map(place => (place === index ? null : place !== null && place > index ? place - 1 : place));
+  }
+
+  const songToFile = cloneSong;
+
   const libraryToFile = library => ({
     patchFormat: Protocol.PATCH_FORMAT,
     patches: filledSlots(library).map(slot => Object.assign({ slot }, patchToFile(library.slots[slot]))),
     defaultOneshots: library.defaultOneshots.slice(),
     oneshots: filledKit(library).map(index => oneshotToFile(library.kit[index], index)),
+    songs: (library.songs || []).map(songToFile),
+    gig: (library.gig || emptyGig()).slice(),
   });
 
   function libraryFromFile(file) {
@@ -243,13 +328,19 @@
     for (const filePatch of file.patches) slots[filePatch.slot] = patchFromFile(filePatch);
     const kit = emptyKit();
     for (const fileOneshot of file.oneshots || []) kit[fileOneshot.index] = oneshotFromFile(fileOneshot);
-    return { slots, kit, defaultOneshots: (file.defaultOneshots || NO_PICKS).slice() };
+    return {
+      slots,
+      kit,
+      defaultOneshots: (file.defaultOneshots || NO_PICKS).slice(),
+      songs: (file.songs || []).map(cloneSong),
+      gig: (file.gig || emptyGig()).slice(),
+    };
   }
 
   function newLibrary() {
     const slots = emptySlots();
     slots[1] = newPatch('first');
-    return { slots, kit: emptyKit(), defaultOneshots: NO_PICKS.slice() };
+    return { slots, kit: emptyKit(), defaultOneshots: NO_PICKS.slice(), songs: [], gig: emptyGig() };
   }
 
   const FORMAT_BEFORE_ONCE = 4;
@@ -285,6 +376,8 @@
     blend, mix, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, lengthBeats, libraryToFile, libraryFromFile, newLibrary,
+    newSong, sectionSlot, addSection, relabelSection, removeSection, moveSection,
+    swapSongSlots, forgetSongSlot, forgetSongOneshot, removeSong,
     upgradeFile, upgradeDraftPatch,
   };
 })(window);

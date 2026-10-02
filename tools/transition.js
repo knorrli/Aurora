@@ -263,6 +263,6 @@
   }
 
   Editor.transition = {
-    snap, rebuild, refreshPatchChoices, paintShowing, paintMix, changesText,
+    snap, rebuild, refreshPatchChoices, paintShowing, paintMix, changesText, run, running: () => !!animationFrame,
   };
 })(window);

@@ -105,8 +105,9 @@
     Editor.midi.sendLive();
   }
 
-  function show(slot, draft) {
+  function show(slot, draft, position = 1) {
     session.select(slot, draft);
+    session.transition.position = position;
     Editor.transition.rebuild();
     paint();
     Editor.rail.paintList();
@@ -166,6 +167,7 @@
     buildHead();
     Editor.rail.wire();
     Editor.oneshots.wire();
+    Editor.songs.wire();
     Editor.keep.wire();
     Editor.midi.wire();
     byId('sendPatch').addEventListener('click', sendPatchToWall);

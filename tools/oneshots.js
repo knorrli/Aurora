@@ -183,6 +183,7 @@
     }
     if (session.draft) session.draft.oneshots = session.draft.oneshots.map(pick => (pick === index ? null : pick));
     session.library.defaultOneshots = session.library.defaultOneshots.map(pick => (pick === index ? null : pick));
+    Library.forgetSongOneshot(session.library, index);
     session.saveLibrary();
     backToPatch();
   }

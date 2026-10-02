@@ -81,7 +81,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Songs in the editor
 
-- Arrange songs in the editor: labeled sections, each label naming a patch, ordered into a song, with the song's two oneshot picks.
 - Push the gig's songs to the controller together with the patches to the brain.
 
 ### Patches on the brain

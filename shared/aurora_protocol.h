@@ -8,7 +8,10 @@ static const uint8_t AURORA_MIDI_CHANNEL = 1;
 enum AuroraProgram : uint8_t {
     PROGRAM_BLACKOUT = 0,
     PROGRAM_SHOW     = 10,
+    PROGRAM_SONG_FIRST = 109,
 };
+
+static const uint8_t AURORA_SONGS = 19;
 
 enum AuroraCC : uint8_t {
     CC_ROCKER_TOUCHPAD_A     = 2,  // [ambient]

@@ -196,6 +196,31 @@
   .kit-head { margin-top: 18px; }
   .kit-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 
+  .song-columns { display: grid; grid-template-columns: minmax(130px, 190px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .song-list { display: flex; flex-direction: column; gap: 3px; }
+  .song-list .song-item { display: flex; justify-content: space-between; gap: 8px; text-align: left; min-width: 0; }
+  .song-list .song-item .name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .song-list .song-item.on .cc { color: var(--bg); }
+  .song .fields { max-width: 440px; }
+  .song-steps { margin-top: 12px; }
+  .sections { display: flex; flex-direction: column; gap: 3px; margin: 9px 0; }
+  .section-row {
+    display: grid; grid-template-columns: auto 20px minmax(80px, 130px) minmax(0, 1fr) auto auto;
+    gap: 6px; align-items: center; padding: 2px 6px; border-left: 2px solid transparent; border-radius: 3px;
+  }
+  .section-row select { min-width: 0; }
+  .section-row.on { border-left-color: var(--select); background: #2b2d36; }
+  .section-row.missing select { color: var(--warn); }
+  .section-row.dragging { opacity: .4; }
+  .section-row.drop { outline: 1px solid var(--text); }
+  .section-grip { color: var(--faint); cursor: grab; user-select: none; }
+  .section-grip:hover { color: var(--text); }
+  .gig-head { margin-top: 18px; }
+  .gig { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 16px; }
+  .gig-place { display: flex; gap: 8px; align-items: center; }
+  .gig-place select { flex: 1 1 auto; min-width: 0; }
+  .gig-number { flex: 0 0 auto; min-width: 22px; display: flex; gap: 6px; align-items: baseline; color: var(--dim); }
+
   .track { position: relative; display: flex; align-items: center; height: 20px; }
   .track input[type=range] { width: 100%; margin: 0; }
 
@@ -339,6 +364,7 @@
   </div>
   <div class="group">
     <button id="libraryView">library</button>
+    <button id="songsView">songs</button>
   </div>
   <div class="group">
     <button id="sendPatch">send to the wall</button>
@@ -425,6 +451,26 @@
       <div class="patch-grid kit-grid" id="kitGrid"></div>
     </section>
 
+    <section class="panel songs" id="songsPanel" hidden>
+      <div class="library-head">
+        <h2>Songs</h2>
+        <span class="cc" id="songCount"></span>
+        <div class="rowline">
+          <button class="tiny" id="songNew">new</button>
+          <button class="tiny" id="songDelete">delete</button>
+        </div>
+      </div>
+      <div class="song-columns">
+        <nav class="song-list" id="songList"></nav>
+        <div class="song" id="songEditor"></div>
+      </div>
+      <div class="library-head gig-head">
+        <h2>Gig</h2>
+        <span class="cc" id="gigCount"></span>
+      </div>
+      <div class="gig" id="gigPlaces"></div>
+    </section>
+
     <div class="view" id="editorView">
 
       <section class="panel outputs">
@@ -496,6 +542,7 @@
 <script src="midi-out.js"></script>
 <script src="library-rail.js"></script>
 <script src="oneshots.js"></script>
+<script src="songs.js"></script>
 <script src="wall.js"></script>
 <script src="editor.js"></script>
 </body>

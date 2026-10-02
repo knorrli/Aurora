@@ -48,7 +48,19 @@
       lines.push(`      "bytes": [${oneshot.bytes.join(',')}]`);
       lines.push(`    }${index < oneshots.length - 1 ? ',' : ''}`);
     });
-    lines.push('  ]', '}');
+    lines.push('  ],');
+    const songs = file.songs || [];
+    lines.push('  "songs": [');
+    songs.forEach((song, index) => {
+      lines.push('    {');
+      lines.push(`      "name": ${JSON.stringify(song.name)}, "oneshots": ${JSON.stringify(song.oneshots)},`);
+      lines.push(`      "sections": ${JSON.stringify(song.sections)},`);
+      lines.push(`      "patches": ${JSON.stringify(song.patches)}`);
+      lines.push(`    }${index < songs.length - 1 ? ',' : ''}`);
+    });
+    lines.push('  ],');
+    lines.push(`  "gig": ${JSON.stringify(file.gig || new Array(Protocol.SONGS).fill(null))}`);
+    lines.push('}');
     return lines.join('\n');
   }
 
@@ -109,6 +121,43 @@
     return null;
   }
 
+  const isPicks = picks => Array.isArray(picks) && picks.length === 2 && picks.every(isPick);
+
+  function validateSong(song, where) {
+    if (!song || typeof song !== 'object') return `${where} is not a song`;
+    if (!isPrintableName(song.name)) {
+      return `${where} needs a name of up to ${Protocol.PATCH_NAME_LENGTH} printable ASCII characters`;
+    }
+    if (!isPicks(song.oneshots)) return `${where} picks oneshots that are not two kit numbers or empty`;
+    if (!Array.isArray(song.sections) || !song.sections.every(isPrintableName)) {
+      return `${where} has a section label that is not up to ${Protocol.PATCH_NAME_LENGTH} printable ASCII characters`;
+    }
+    if (!song.patches || typeof song.patches !== 'object' || Array.isArray(song.patches)) {
+      return `${where} names no patches for its sections`;
+    }
+    for (const label of song.sections) {
+      const slot = song.patches[label];
+      if (slot === undefined) return `${where}: the section "${label}" names no patch`;
+      if (slot !== null && !isPatchSlot(slot)) return `${where}: the section "${label}" names slot ${slot}`;
+    }
+    return null;
+  }
+
+  function validateSongs(file) {
+    const songs = file.songs === undefined ? [] : file.songs;
+    if (!Array.isArray(songs)) return 'the songs are not a list';
+    for (const [index, song] of songs.entries()) {
+      const fault = validateSong(song, `song ${index}`);
+      if (fault) return fault;
+    }
+    if (file.gig === undefined) return null;
+    const isPlace = place => place === null || (Number.isInteger(place) && place >= 0 && place < songs.length);
+    if (!Array.isArray(file.gig) || file.gig.length !== Protocol.SONGS || !file.gig.every(isPlace)) {
+      return `the gig is not ${Protocol.SONGS} places, each a song or empty`;
+    }
+    return null;
+  }
+
   function validate(file) {
     if (!file || typeof file !== 'object') return 'not a library file';
     if (file.patchFormat !== Protocol.PATCH_FORMAT) {
@@ -127,7 +176,7 @@
       const fault = validatePatch(patch, `patch ${index}`);
       if (fault) return fault;
     }
-    return validateKit(file);
+    return validateKit(file) || validateSongs(file);
   }
 
   function headBytes(patch) {

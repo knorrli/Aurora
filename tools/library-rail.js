@@ -118,6 +118,7 @@
   function swapSlots(from, to) {
     const { slots } = session.library;
     [slots[from], slots[to]] = [slots[to], slots[from]];
+    Library.swapSongSlots(session.library, from, to);
     if (session.slot === from) session.slot = to;
     else if (session.slot === to) session.slot = from;
     if (target === from || target === to) target = null;
@@ -133,6 +134,7 @@
     paintSaving();
     Editor.oneshots.paintKit();
     Editor.transition.refreshPatchChoices();
+    Editor.songs.paint();
   }
 
   function paintSaving() {
@@ -227,8 +229,8 @@
       const fault = Library.validateFile(pulled);
       if (fault) { say(`the brain's library: ${fault}`, 'bad'); return; }
       if (!leaveDraft()) return;
-      const { kit, defaultOneshots } = session.library;
-      replaceLibrary(Object.assign({}, pulled, Library.libraryToFile({ slots: [], kit, defaultOneshots }), { patches: pulled.patches }));
+      const kept = Library.libraryToFile(Object.assign({}, session.library, { slots: [] }));
+      replaceLibrary(Object.assign({}, pulled, kept, { patches: pulled.patches }));
       say(`the editor now holds what the brain holds — ${result.file.patches.length} patches`, 'ok');
     });
   }
@@ -311,19 +313,28 @@
       const patch = session.library.slots[session.slot];
       if (!confirm(`Empty slot ${session.slot}, "${patch.name}"? Keypad keys on it stay on the empty slot.`)) return;
       session.library.slots[session.slot] = null;
+      Library.forgetSongSlot(session.library, session.slot);
       session.draft = null;
       session.saveLibrary();
       showFirstOrNew();
     });
   }
 
+  const VIEWS = { libraryView: 'libraryPanel', songsView: 'songsPanel' };
+
+  function showView(chosen) {
+    for (const [button, panel] of Object.entries(VIEWS)) {
+      byId(panel).hidden = button !== chosen;
+      byId(button).classList.toggle('on', button === chosen);
+    }
+    byId('editorView').hidden = chosen !== null;
+    if (chosen === 'songsView') Editor.songs.paint();
+  }
+
   function wireViewToggle() {
-    byId('libraryView').addEventListener('click', () => {
-      const showLibrary = byId('libraryPanel').hidden;
-      byId('libraryPanel').hidden = !showLibrary;
-      byId('editorView').hidden = showLibrary;
-      byId('libraryView').classList.toggle('on', showLibrary);
-    });
+    for (const button of Object.keys(VIEWS)) {
+      byId(button).addEventListener('click', () => showView(byId(button).classList.contains('on') ? null : button));
+    }
   }
 
   function wire() {
