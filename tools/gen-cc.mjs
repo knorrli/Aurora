@@ -302,7 +302,7 @@ function checkRenderer() {
       plainLfo: new Set(tagged('plain')),
     }),
     ...checkCases(MORPH_SOURCE, {
-      performed: new Set([...tagged('ambient'), ...tagged('gesture')]),
+      performed: new Set(tagged('ambient')),
       switched: new Set(tagged('switch')),
     }),
   ];

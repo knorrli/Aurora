@@ -14,23 +14,9 @@ enum AuroraProgram : uint8_t {
 static const uint8_t AURORA_SONGS = 19;
 
 enum AuroraCC : uint8_t {
-    CC_ROCKER_TOUCHPAD_A     = 2,  // [ambient]
-    CC_ROCKER_TOUCHPAD_B     = 3,  // [ambient]
-    CC_ROCKER_TOUCHPAD_C     = 4,  // [ambient]
-    CC_ROCKER_TOUCHPAD_D     = 5,  // [ambient]
-    CC_ROCKER_FADERS         = 6,  // [ambient]
-
-    CC_AUDIO_FOLLOWER        = 8,  // [ambient]
-    CC_AUDIO_THRESHOLD       = 9,  // [ambient]
-
     CC_FADER_COLOR           = 12, // [ambient]
     CC_FADER_EXTENT          = 13, // [ambient]
     CC_FADER_MOTION          = 14, // [ambient]
-
-    CC_TOUCHPAD_X            = 15, // [gesture]
-    CC_TOUCHPAD_Y            = 16, // [gesture]
-    CC_TOUCHPAD_PRESSURE     = 17, // [gesture]
-    CC_TOUCHPAD_ENGAGE       = 18, // [gesture]
 
     CC_PALETTE               = 20, // [switch]
     CC_HUE                   = 21, // [patch][circular]

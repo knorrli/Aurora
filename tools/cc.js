@@ -2,20 +2,9 @@
   'use strict';
 
   const CC = {
-    rockerTouchpadA:   2,
-    rockerTouchpadB:   3,
-    rockerTouchpadC:   4,
-    rockerTouchpadD:   5,
-    rockerFaders:      6,
-    audioFollower:     8,
-    audioThreshold:    9,
     faderColor:        12,
     faderExtent:       13,
     faderMotion:       14,
-    touchpadX:         15,
-    touchpadY:         16,
-    touchpadPressure:  17,
-    touchpadEngage:    18,
     palette:           20,
     hue:               21,
     saturation:        22,
@@ -75,7 +64,7 @@
     coreDark:          79,
   };
 
-  const TAGS = {"rockerTouchpadA":["ambient"],"rockerTouchpadB":["ambient"],"rockerTouchpadC":["ambient"],"rockerTouchpadD":["ambient"],"rockerFaders":["ambient"],"audioFollower":["ambient"],"audioThreshold":["ambient"],"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"touchpadX":["gesture"],"touchpadY":["gesture"],"touchpadPressure":["gesture"],"touchpadEngage":["gesture"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","plain"],"parSaturation":["patch","plain"],"parValue":["patch","plain"],"parHueLayout":["switch"],"parHueRange":["patch","plain"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","plain"],"shapeCount":["patch","plain"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch"],"shapeBend":["patch","plain"],"shapeBendAt":["patch","plain"],"fanSpread":["patch","plain"],"fanSpeed":["patch","rate","plain"],"fanLfo":["patch","plain"],"fanFrequency":["patch","plain"],"fanPhase":["patch","circular","plain"],"fanRandomize":["patch","plain"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"]};
+  const TAGS = {"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","plain"],"parSaturation":["patch","plain"],"parValue":["patch","plain"],"parHueLayout":["switch"],"parHueRange":["patch","plain"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","plain"],"shapeCount":["patch","plain"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch"],"shapeBend":["patch","plain"],"shapeBendAt":["patch","plain"],"fanSpread":["patch","plain"],"fanSpeed":["patch","rate","plain"],"fanLfo":["patch","plain"],"fanFrequency":["patch","plain"],"fanPhase":["patch","circular","plain"],"fanRandomize":["patch","plain"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"]};
   const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"value":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"shapeWidth":64,"shapeSpeed":64,"shapePosition":64,"shapeBend":64,"shapeBendAt":64,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldDirection":64,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
 
   const MIDI_CHANNEL = 1;

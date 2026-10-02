@@ -12,20 +12,9 @@ static const int16_t TURN = 128;
 
 static bool performed(uint8_t cc) {
   switch (cc) {
-    case CC_ROCKER_TOUCHPAD_A:
-    case CC_ROCKER_TOUCHPAD_B:
-    case CC_ROCKER_TOUCHPAD_C:
-    case CC_ROCKER_TOUCHPAD_D:
-    case CC_ROCKER_FADERS:
-    case CC_AUDIO_FOLLOWER:
-    case CC_AUDIO_THRESHOLD:
     case CC_FADER_COLOR:
     case CC_FADER_EXTENT:
     case CC_FADER_MOTION:
-    case CC_TOUCHPAD_X:
-    case CC_TOUCHPAD_Y:
-    case CC_TOUCHPAD_PRESSURE:
-    case CC_TOUCHPAD_ENGAGE:
       return true;
     default:
       return false;
