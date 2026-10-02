@@ -57,6 +57,7 @@ void Playback::programChange(uint8_t program, uint32_t micros) {
   press.waiting = true;
   press.held = keyHeld;
   press.judging = keyHeld;
+  press.tapped = !keyHeld;
   press.slot = program;
   if (keyHeld) {
     press.startBeat = tempo.running() ? roundf(beats) : beats;

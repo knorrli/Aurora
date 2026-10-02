@@ -10,16 +10,6 @@
 - Play a song from the editor's songs view with the clock on: the wall follows the preview, tap, hold, accent and blackout included.
 - Dial with the brain attached: the wall matches the preview on a layer tab, mid-scrub and while editing a oneshot's controls; a key, a fader or a oneshot hands playing back to the brain.
 
-### Playback
-
-Built from `docs/design.md` where it was silent; confirm each by playing.
-
-- An unheld Program Change lands its switches at the start of its morph. Should they land on arrival?
-- An unheld Program Change 0 fades to black over the transition time from the next beat. Should it cut?
-- A tap pressed just after a beat cuts on that beat, since presses snap to the nearest beat.
-- Tap versus hold is judged 200 ms after the later of the press and its beat. Is that the right length?
-- Out of the blackout, the wall fades up along the new patch's morph.
-
 ### Looks
 
 Seen only in the preview so far. One look each, driven from the editor.
@@ -55,6 +45,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 ### Controller
 
 - Press two keys at once on the old box and watch the wall: does 2+3 black it out?
+- On the rebuilt controller's keypad: is tap versus hold, judged 200 ms after the later of the press and its beat, the right length?
 - The acceptance test: play a full DJ set to Justice, "Women Worldwide", on the rebuilt controller.
 
 ## At rehearsal
