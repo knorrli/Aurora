@@ -74,8 +74,24 @@ void Playback::controlChange(uint8_t cc, uint8_t value) {
     case CC_FADER_MOTION: moveFader(PATCH_LAYER_MOTION, value); return;
     case CC_FADER_EXTENT: moveFader(PATCH_LAYER_EXTENT, value); return;
     default:
+      if (movePad(cc, value)) return;
       if (cc < AURORA_PATCH_CC_COUNT) playing.layers[PATCH_LAYER_BASE][cc] = value;
   }
+}
+
+bool Playback::movePad(uint8_t cc, uint8_t value) {
+  switch (cc) {
+    case CC_PAD_X: pad.x = value; break;
+    case CC_PAD_Y: pad.y = value; break;
+    case CC_PAD_TOUCH: pad.touching = aurora_switch_is_on(value); break;
+    case CC_PAD_HOLD: pad.latching = aurora_switch_is_on(value); break;
+    case CC_PAD_MODE: pad.mode = aurora_three_way_position(value); break;
+    case CC_PAD_WIDTH: pad.width = aurora_three_way_position(value); break;
+    case CC_PAD_GAPS: pad.gaps = aurora_switch_is_on(value); break;
+    default: return false;
+  }
+  pad.playing = pad.touching || (pad.playing && pad.latching);
+  return true;
 }
 
 void Playback::moveFader(uint8_t layer, uint8_t value) {

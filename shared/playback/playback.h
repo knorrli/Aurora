@@ -48,6 +48,17 @@ struct Press {
   float judgeBeat;
 };
 
+struct Pad {
+  uint8_t x = 0;
+  uint8_t y = 0;
+  bool touching = false;
+  bool latching = false;
+  bool playing = false;
+  uint8_t mode = PAD_MODE_PER_PATCH;
+  uint8_t width = PAD_WIDTH_ALL;
+  bool gaps = false;
+};
+
 class Playback {
  public:
   Playback(Library &library, uint32_t micros);
@@ -85,6 +96,7 @@ class Playback {
   float nextBeat(float beats) const;
   void fire(uint8_t index, float beats);
   void moveFader(uint8_t layer, uint8_t value);
+  bool movePad(uint8_t cc, uint8_t value);
 
   Library &library;
   Tempo tempo;
@@ -106,6 +118,7 @@ class Playback {
   bool keyHeld = false;
 
   float faders[AURORA_PATCH_LAYERS] = {};
+  Pad pad;
 
   bool firing = false;
   Oneshot oneshot;

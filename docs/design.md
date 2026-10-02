@@ -94,7 +94,7 @@
 
 ## Touchpad and rockers
 
-- The pad sends X, Y, pressure and engage as raw values on CC 15–18.
+- The pad sends X, Y and touch as raw values. CC 17 is kept for pressure.
 - The pad has no off switch: not touching it means no effect.
 - The main touchpad rocker picks momentary or latching. Momentary: lifting the finger returns the wall to what the patch was doing. Latching: the last position stays after the finger lifts.
 - Touchpad rocker 1 picks one of three modes:
@@ -108,7 +108,7 @@
   - Stutter gates the strips on and off on the beat; Y sets how fast.
   - Strobe flashes the full strips white on the beat; Y sets the rate.
   - Focus darkens the strips outside Width and Gaps; Y sets how dark. The PARs stay as the patch has them.
-- The rockers report where they stand on CC 2–6.
+- The touchpad rockers report where they stand. The fader rocker sends nothing of its own.
 - Touchpad rockers 2 and 3 choose which strips the pad acts on, in every mode. Width (rocker 2): strip 3, strips 2–4, or all five. Gaps (rocker 3): solid, or every other strip counted in from the outer edge of the width. Together: 3; 2+3+4; 2+4; all; 1+3+5.
 - The PARs ignore Width and Gaps.
 - Whatever the pad plays changes only the controls it marks, PAR controls included; everything unmarked stays as the patch has it.

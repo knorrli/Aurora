@@ -335,10 +335,12 @@
   .dock .rowline { margin-top: 9px; }
   .dock input[type=text] { width: 84px; }
   .dock input.invalid { border-color: var(--bad); }
+  .dock { max-height: calc(100vh - var(--topbar) - 20px); overflow-y: auto; }
+  .dock .pad-surface { aspect-ratio: 2; margin-bottom: 10px; touch-action: none; cursor: crosshair; }
 
   @media (max-width: 1120px) {
     .shell { grid-template-columns: minmax(220px, 252px) minmax(0, 1fr); }
-    .dock { grid-column: 1 / -1; order: -1; position: static; }
+    .dock { grid-column: 1 / -1; order: -1; position: static; max-height: none; }
     .dockgrid { grid-template-columns: 172px minmax(0, 1fr); gap: 16px; align-items: start; }
   }
   @media (max-width: 780px) {
@@ -519,6 +521,7 @@
         </div>
       </div>
     </section>
+    <section class="panel" id="pad"></section>
   </aside>
 
 </div>

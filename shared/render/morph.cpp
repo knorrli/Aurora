@@ -12,9 +12,16 @@ static const float TURN = 128.0f;
 
 static bool performed(uint8_t cc) {
   switch (cc) {
+    case CC_PAD_HOLD:
+    case CC_PAD_MODE:
+    case CC_PAD_WIDTH:
+    case CC_PAD_GAPS:
     case CC_FADER_COLOR:
     case CC_FADER_MOTION:
     case CC_FADER_EXTENT:
+    case CC_PAD_X:
+    case CC_PAD_Y:
+    case CC_PAD_TOUCH:
       return true;
     default:
       return false;

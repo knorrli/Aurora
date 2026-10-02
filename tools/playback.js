@@ -185,6 +185,8 @@ function setFader(layer, position) {
   both(CONTROL_CHANGE, Patch.CC[FADERS[layer]], Math.round(position * 127));
 }
 
+const movePad = (cc, value) => both(CONTROL_CHANGE, cc, value);
+
 function run(fromSlot) {
   const from = session.patchAt(fromSlot);
   if (!from) return;
@@ -222,6 +224,6 @@ const oneshotProgress = () => Preview.playback.oneshotProgress();
 const oneshotIndex = () => Preview.playback.oneshotIndex();
 
 export {
-  FADERS, faders, start, syncLibrary, dial, cut, changed, follow, press, release, fireNote, setFader, run,
+  FADERS, faders, start, syncLibrary, dial, cut, changed, follow, press, release, fireNote, setFader, movePad, run,
   sendClock, frame, shownControls, beats, slot, oneshotProgress, oneshotIndex,
 };

@@ -13,9 +13,18 @@ enum AuroraProgram : uint8_t {
 static const uint8_t AURORA_SONGS = 19;
 
 enum AuroraCC : uint8_t {
+    CC_PAD_HOLD              = 3,  // [ambient]
+    CC_PAD_MODE              = 4,  // [ambient]
+    CC_PAD_WIDTH             = 5,  // [ambient]
+    CC_PAD_GAPS              = 6,  // [ambient]
+
     CC_FADER_COLOR           = 12, // [ambient]
     CC_FADER_MOTION          = 13, // [ambient]
     CC_FADER_EXTENT          = 14, // [ambient]
+
+    CC_PAD_X                 = 15, // [ambient]
+    CC_PAD_Y                 = 16, // [ambient]
+    CC_PAD_TOUCH             = 18, // [ambient]
 
     CC_PALETTE               = 20, // [switch]
     CC_HUE                   = 21, // [patch][circular]
@@ -339,6 +348,18 @@ enum AuroraFieldDirection : uint8_t {
     FIELD_DIRECTION_HORIZONTAL = 0,
     FIELD_DIRECTION_VERTICAL   = 1,
     FIELD_DIRECTION_SHAPE      = 2,
+};
+
+enum AuroraPadMode : uint8_t {
+    PAD_MODE_PER_PATCH = 0,
+    PAD_MODE_MORPH     = 1,
+    PAD_MODE_EFFECTS   = 2,
+};
+
+enum AuroraPadWidth : uint8_t {
+    PAD_WIDTH_CENTER = 0,
+    PAD_WIDTH_MIDDLE = 1,
+    PAD_WIDTH_ALL    = 2,
 };
 
 enum AuroraNote : uint8_t {
