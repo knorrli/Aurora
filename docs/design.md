@@ -103,7 +103,7 @@
   - Morph's X runs from still (left) to moving (right), Y from color (bottom) to white (top). The corners: a calm color wash, a fast color chase on the beat, a full white wash, a fast white chase. The color corners take the patch's palette.
   - Effects: five columns across X, left to right: focus, freeze, double time, stutter, strobe. Y sets how hard, from nothing at the bottom edge to full at the top. Corner looks are designed in the editor and kept in the library, like the kit. Effects are fixed behavior in the brain.
   - An effect plays on top of the patch.
-  - Double time runs the whole patch faster on the beat: ×2 in the lower half of Y, ×4 in the upper half. Letting go shows the patch where it is now at normal speed.
+  - Double time runs the whole wall faster on the beat, PARs included, ignoring Width and Gaps: ×2 in the lower half of Y, ×4 in the upper half. After letting go, the patch glides back onto the beat.
   - Freeze holds the picture while the patch keeps running underneath on the beat; Y blends from live to fully frozen. Letting go shows the patch where it is now.
   - Stutter gates the strips on and off on the beat; Y sets how fast.
   - Strobe flashes the full strips white on the beat; Y sets the rate.
