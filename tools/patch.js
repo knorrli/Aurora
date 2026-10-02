@@ -68,6 +68,9 @@
   const lapName = lapsPerBeat => PERIOD_NAMES[Math.round(1000 / Math.abs(lapsPerBeat)) / 1000];
   const periodStep = value => Protocol.steppedIndex(value, Protocol.LFO_PERIODS.length);
   const periodValue = step => Math.round(step * 127 / (Protocol.LFO_PERIODS.length - 1));
+  const TRANSITION_NAMES = [...LFO_PERIOD_NAMES, 'none'];
+  const transitionStep = value => Protocol.steppedIndex(value, TRANSITION_NAMES.length);
+  const transitionValue = step => Math.round(step * 127 / (TRANSITION_NAMES.length - 1));
 
   const TEMPO_DIVISION_NAMES = {
     bar: 'bar', half: 'half', quarter: 'quarter',
@@ -577,7 +580,7 @@
     LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
     CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT,
     clampToSevenBits, signedOf,
-    LFO_PERIOD_NAMES, periodStep, periodValue, TEMPO_DIVISIONS,
+    LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
     SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,
     routable, routableDestination, arpCapable, perSpot, isCircular, swings, pointsFor,
   };

@@ -3,23 +3,23 @@
 
   const Protocol = global.AuroraProtocol;
   const Patch = global.AuroraPatch;
+  const Library = global.AuroraLibrary;
   const Editor = global.AuroraEditor;
   const { session, dom } = Editor;
   const { byId } = dom;
 
-  const CLOCK_TICK = 0xF8, CLOCK_START = 0xFA;
-  const LOOKAHEAD_MILLISECONDS = 250, SCHEDULE_EVERY_MILLISECONDS = 100;
   const DEFAULT_BPM = 120;
 
   const link = new global.AuroraLink.Link();
   const lastSent = new Array(Protocol.PATCH_CC_COUNT).fill(-1);
-  const clock = { running: false, timer: null, nextTickAt: 0 };
+  let clockSending = false;
 
   const bpm = () => +byId('bpm').value || DEFAULT_BPM;
 
   function sendLive(force) {
     const live = session.editingOneshot()
-      ? global.AuroraLibrary.namedFromBytes(session.over().base) : session.sounding(session.liveNamed());
+      ? Library.namedFromBytes(session.over().base)
+      : session.sounding(session.pinnedNamed() || Library.namedFromBytes(session.patch().base));
     for (const name of Patch.NAMES) {
       const cc = Patch.CC[name], value = live[name];
       if (!force && lastSent[cc] === value) continue;
@@ -27,38 +27,10 @@
     }
   }
 
-  function arrive() {
-    sendLive(true);
-    link.sendProgram(Protocol.PROGRAM_SHOW);
-    Editor.wall.clearTails();
-  }
-
-  function blackout() {
-    link.sendProgram(Protocol.PROGRAM_BLACKOUT);
-    Editor.say(`PC ${Protocol.PROGRAM_BLACKOUT} — blackout`);
-  }
-
-  function pumpClock() {
-    const millisecondsPerTick = 60000 / bpm() / Protocol.TICKS_PER_BEAT;
-    const now = performance.now();
-    if (clock.nextTickAt < now) clock.nextTickAt = now;
-    while (clock.nextTickAt < now + LOOKAHEAD_MILLISECONDS) {
-      link.sendRaw([CLOCK_TICK], clock.nextTickAt);
-      clock.nextTickAt += millisecondsPerTick;
-    }
-  }
-
-  function setClock(running) {
-    clock.running = running;
-    byId('clockToggle').classList.toggle('on', running);
-    clearInterval(clock.timer);
-    clock.timer = null;
-    if (!running) return;
-    link.sendRaw([CLOCK_START]);
-    Editor.wall.restartBeats();
-    clock.nextTickAt = performance.now();
-    pumpClock();
-    clock.timer = setInterval(pumpClock, SCHEDULE_EVERY_MILLISECONDS);
+  function setClock(sending) {
+    clockSending = sending;
+    byId('clockToggle').classList.toggle('on', sending);
+    Editor.playback.sendClock(sending);
   }
 
   function paintPorts() {
@@ -103,9 +75,19 @@
   }
 
   function wire() {
-    byId('clockToggle').addEventListener('click', () => setClock(!clock.running));
-    byId('rigBlackout').addEventListener('click', blackout);
+    byId('clockToggle').addEventListener('click', () => setClock(!clockSending));
+    let pressed = false;
+    byId('rigBlackout').addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      pressed = true;
+      Editor.playback.press(Protocol.PROGRAM_BLACKOUT);
+    });
+    document.addEventListener('pointerup', () => {
+      if (!pressed) return;
+      pressed = false;
+      Editor.playback.release();
+    });
   }
 
-  Editor.midi = { link, bpm, sendLive, arrive, open, wire };
+  Editor.midi = { link, bpm, sendLive, open, wire };
 })(window);

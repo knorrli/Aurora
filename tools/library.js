@@ -30,7 +30,7 @@
 
   const newPatch = name => ({
     name: LibraryFile.printableName(name || 'untitled'),
-    transitionTime: Patch.periodValue(4),
+    transitionTime: Patch.transitionValue(4),
     accentTime: Patch.periodValue(10),
     oneshots: NO_PICKS.slice(),
     base: bytesFromNamed(Patch.DEFAULT),
@@ -113,13 +113,6 @@
   function blend(fromBytes, toBytes, position, switchesFrom) {
     const switches = switchesFrom || fromBytes;
     return namedFromBytes(global.AuroraPreview.blend(fromBytes, toBytes, position, switches, switches === fromBytes));
-  }
-
-  function mix(patch, positions) {
-    const weights = new Array(Protocol.PATCH_LAYERS).fill(0);
-    for (const [layer, position] of positions) weights[layer] = position;
-    const layers = Array.from({ length: Protocol.PATCH_LAYERS }, (_, layer) => layerBytes(patch, layer));
-    return namedFromBytes(global.AuroraPreview.mix(patch.base, layers, weights));
   }
 
   const freeRouteFields = base => new Set(Patch.ROUTES
@@ -346,7 +339,7 @@
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
     newPatch, clonePatch, newOneshot, cloneOneshot, oneshotToFile, oneshotFromFile, isMarkable, markBytes, layerBytes, changedIn, writeBase, freeRoute,
-    blend, mix, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
+    blend, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
     patchToFile, patchFromFile, validatePatch, validateFile,
     filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, lengthBeats, libraryToFile, libraryFromFile, newLibrary,
     newSong, sectionSlot, addSection, relabelSection, removeSection, moveSection,

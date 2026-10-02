@@ -88,11 +88,40 @@
       };
     }
 
+    const PATCH_BYTES = 4 + global.AuroraProtocol.PATCH_LAYERS * global.AuroraProtocol.PATCH_CC_COUNT;
+    const NO_ONESHOT = 127;
+    const drawnAt = renderer._aurora_drawn_controls();
+
+    function writePatch(patch) {
+      const at = renderer._aurora_patch_buffer();
+      const head = [patch.transitionTime, patch.accentTime,
+        ...patch.oneshots.map(pick => (pick === null ? NO_ONESHOT : pick))];
+      renderer.HEAPU8.set(head, at);
+      patch.layers.forEach((bytes, layer) => renderer.HEAPU8.set(bytes, at + 4 + layer * bytes.length));
+    }
+
+    function readFrame() {
+      const drawn = renderer.HEAPU8.subarray(drawnAt, drawnAt + global.AuroraProtocol.PATCH_CC_COUNT);
+      return {
+        pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
+        field: {
+          horizontal: global.AuroraProtocol.threeWayPosition(drawn[global.AuroraProtocol.CC.fieldDirection])
+            === global.AuroraProtocol.FIELD_DIRECTION.horizontal,
+          levels: Array.from(fieldLevels),
+          across: Array.from(fieldAcross),
+        },
+        centers: Array.from(centers),
+        hues: {
+          palette: drawn[global.AuroraProtocol.CC.palette],
+          strips: renderer._aurora_strips_hue(),
+          pars: Array.from(parHues),
+        },
+        drawn: Array.from(drawn),
+      };
+    }
+
     Object.assign(api, {
-      STRIPS, PIXELS, PARS,
-      makeMotion: () => renderer._aurora_motion_new(),
-      makeWallState: () => renderer._aurora_wall_new(),
-      clearTails: wallState => renderer._aurora_wall_clear_tails(wallState),
+      STRIPS, PIXELS, PARS, PATCH_BYTES,
       paletteNames: () => Array.from({ length: renderer._aurora_palette_count() }, (_, i) => {
         const at = renderer._aurora_palette_name(i);
         return String.fromCharCode(...renderer.HEAPU8.subarray(at, renderer.HEAPU8.indexOf(0, at)));
@@ -116,41 +145,50 @@
         renderer.HEAPU8.set(switchBytes, renderer._aurora_morph_switches());
         return morphed(renderer._aurora_blend(position, switchesFromStart ? 1 : 0));
       },
-      mix(baseBytes, layerBytes, positions) {
-        renderer.HEAPU8.set(baseBytes, renderer._aurora_morph_from());
-        const layersAt = renderer._aurora_morph_layers();
-        layerBytes.forEach((bytes, layer) => renderer.HEAPU8.set(bytes, layersAt + layer * baseBytes.length));
-        renderer.HEAPF32.set(positions, renderer._aurora_morph_positions() >> 2);
-        return morphed(renderer._aurora_mix());
-      },
       routeReach(cc) {
         const at = renderer._aurora_route_reach(cc);
         return at ? [renderer.HEAPF32[at >> 2], renderer.HEAPF32[(at >> 2) + 1]] : null;
       },
 
-      render(bytes, quarterNotes, milliseconds, motion, wallState, oneshot) {
-        renderer.HEAPU8.set(bytes, controls);
-        if (oneshot) {
-          renderer.HEAPU8.set(oneshot.bytes, renderer._aurora_oneshot_controls());
-          renderer.HEAPU8.set(oneshot.marks, renderer._aurora_oneshot_marks());
-        }
-        renderer._aurora_render(motion, wallState, quarterNotes, milliseconds,
-                                oneshot ? 1 : 0, oneshot ? oneshot.progress : 0, oneshot ? oneshot.beats : 1);
-        return {
-          pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
-          field: {
-            horizontal: global.AuroraProtocol.threeWayPosition(bytes[global.AuroraProtocol.CC.fieldDirection])
-              === global.AuroraProtocol.FIELD_DIRECTION.horizontal,
-            levels: Array.from(fieldLevels),
-            across: Array.from(fieldAcross),
-          },
-          centers: Array.from(centers),
-          hues: {
-            palette: bytes[global.AuroraProtocol.CC.palette],
-            strips: renderer._aurora_strips_hue(),
-            pars: Array.from(parHues),
-          },
-        };
+      playback: {
+        begin: micros => renderer._aurora_playback_begin(micros),
+        storePatch(slot, patch) {
+          writePatch(patch);
+          renderer._aurora_library_store_patch(slot);
+        },
+        clearPatch: slot => renderer._aurora_library_clear_patch(slot),
+        storeOneshot(index, oneshot) {
+          const at = renderer._aurora_oneshot_buffer();
+          renderer.HEAPU8[at] = oneshot.length;
+          renderer.HEAPU8.set(oneshot.marks, at + 1);
+          renderer.HEAPU8.set(oneshot.controls, at + 1 + oneshot.marks.length);
+          renderer._aurora_library_store_oneshot(index);
+        },
+        clearOneshot: index => renderer._aurora_library_clear_oneshot(index),
+        defaultOneshots: picks => renderer._aurora_library_default_oneshots(
+          ...picks.map(pick => (pick === null ? NO_ONESHOT : pick))),
+        message: (status, first, second, micros) => renderer._aurora_playback_message(status, first, second, micros),
+        cut(slot, patch) {
+          writePatch(patch);
+          renderer._aurora_playback_cut(slot);
+        },
+        patchChanged: slot => renderer._aurora_playback_patch_changed(slot),
+        pin(bytes) {
+          renderer.HEAPU8.set(bytes, controls);
+          renderer._aurora_playback_pin();
+        },
+        unpin: () => renderer._aurora_playback_unpin(),
+        frame(micros) {
+          renderer._aurora_playback_frame(micros);
+          return readFrame();
+        },
+        beats: () => renderer._aurora_playback_beats(),
+        slot: () => renderer._aurora_playback_slot(),
+        oneshotProgress: () => renderer._aurora_playback_oneshot_progress(),
+        oneshotIndex: () => {
+          const index = renderer._aurora_playback_oneshot_index();
+          return index === NO_ONESHOT ? null : index;
+        },
       },
       draw,
     });

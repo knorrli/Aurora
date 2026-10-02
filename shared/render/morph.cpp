@@ -118,15 +118,16 @@ void blendPatches(const uint8_t *from, const uint8_t *to, float position, const 
   holdRoutesChangingDestination(switches, to, out);
 }
 
-void mixLayers(const uint8_t *base, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
+void mixLayers(const uint8_t *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
                const float *positions, uint8_t *out) {
+  const uint8_t *base = layers[PATCH_LAYER_BASE];
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     const uint8_t cc = (uint8_t)i;
     if (performed(cc) || switchLike(cc)) {
-      out[cc] = base[cc];
+      out[cc] = live[cc];
       continue;
     }
-    float value = (float)base[cc];
+    float value = (float)live[cc];
     for (uint8_t layer = PATCH_LAYER_BASE + 1; layer < AURORA_PATCH_LAYERS; layer++) {
       value += positions[layer] * distance(cc, base[cc], layers[layer][cc]);
     }

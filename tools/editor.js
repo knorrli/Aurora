@@ -39,15 +39,19 @@
     Editor.transition.rebuild();
     paint();
     Editor.rail.paintList();
+    Editor.playback.changed();
     Editor.midi.sendLive();
   }
 
-  const TIME_FIELDS = ['transitionTime', 'accentTime'];
+  const TIME_FIELDS = {
+    transitionTime: { names: Patch.TRANSITION_NAMES, step: Patch.transitionStep, value: Patch.transitionValue },
+    accentTime: { names: Patch.LFO_PERIOD_NAMES, step: Patch.periodStep, value: Patch.periodValue },
+  };
 
   function buildHead() {
-    for (const field of TIME_FIELDS) {
+    for (const [field, steps] of Object.entries(TIME_FIELDS)) {
       const select = byId(field);
-      dom.setOptions(select, Patch.LFO_PERIOD_NAMES.map((text, step) => [Patch.periodValue(step), text]), '');
+      dom.setOptions(select, steps.names.map((text, step) => [steps.value(step), text]), '');
       select.addEventListener('change', () => {
         session.editing()[field] = +select.value;
         session.changed();
@@ -81,8 +85,8 @@
       return;
     }
     Editor.oneshots.paintPicks();
-    for (const field of TIME_FIELDS) {
-      byId(field).value = String(Patch.periodValue(Patch.periodStep(patch[field])));
+    for (const [field, steps] of Object.entries(TIME_FIELDS)) {
+      byId(field).value = String(steps.value(steps.step(patch[field])));
     }
     byId('tempoDivision').value = String(Library.namedFromBytes(patch.base).tempoDivision);
     const accentReachesNothing = !Library.changedIn(patch, Protocol.PATCH_LAYER_ACCENT).length;
@@ -91,31 +95,39 @@
 
   function paint() {
     document.body.classList.toggle('oneshot-mode', session.editingOneshot());
-    const live = session.liveNamed();
-    Editor.rows.paint(live);
+    Editor.rows.paint(Editor.playback.shownNamed());
     paintTabs();
-    Editor.routes.paint(live);
+    Editor.routes.paint(session.liveNamed());
     paintHead();
     Editor.transition.paintShowing();
     Editor.transition.paintMix();
   }
 
   function refresh() {
+    Editor.playback.changed();
     paint();
     Editor.midi.sendLive();
   }
 
-  function show(slot, draft, position = 1) {
+  function show(slot, draft) {
     session.select(slot, draft);
-    session.transition.position = position;
     Editor.transition.rebuild();
+    Editor.playback.cut();
     paint();
     Editor.rail.paintList();
-    Editor.midi.arrive();
+    Editor.midi.sendLive(true);
+  }
+
+  function follow(slot) {
+    session.select(slot, null);
+    Editor.transition.rebuild();
+    Editor.playback.follow(slot);
+    paint();
+    Editor.rail.paintList();
   }
 
   function sendPatchToWall() {
-    Editor.midi.arrive();
+    Editor.midi.sendLive(true);
     Editor.say(`sent "${session.patch().name}"`);
   }
 
@@ -151,13 +163,14 @@
     measure();
   }
 
-  Object.assign(Editor, { paint, refresh, show, selectLayer });
+  Object.assign(Editor, { paint, refresh, show, follow, selectLayer });
 
   global.AuroraPreview.ready.then(() => {
     session.load();
     session.transition.from = session.slot;
     session.onChange = refresh;
     session.onDraftStarted = () => Editor.rail.paintList();
+    session.onLibrarySaved = () => Editor.playback.syncLibrary();
     window.addEventListener('pagehide', session.flush);
     document.addEventListener('visibilitychange', session.flush);
 
@@ -174,6 +187,7 @@
     wireMidiToggle();
     measureTopbar();
 
+    Editor.playback.start();
     Editor.wall.start();
     Editor.transition.rebuild();
     paint();

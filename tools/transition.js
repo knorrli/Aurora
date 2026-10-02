@@ -9,21 +9,9 @@
   const { element, byId } = dom;
 
   const SCRUB_STEPS = 1000;
-  const SPRING_BACK_MILLISECONDS = 180;
 
   const bar = { scrub: null, run: null, from: null, clear: null };
   const mixBar = { sliders: {}, readouts: {} };
-  let animationFrame = null;
-
-  const MIX_FADERS = {
-    [Protocol.PATCH_LAYER_COLOR]: 'faderColor',
-    [Protocol.PATCH_LAYER_MOTION]: 'faderMotion',
-    [Protocol.PATCH_LAYER_EXTENT]: 'faderExtent',
-  };
-
-  const mixSource = layer => layer === Protocol.PATCH_LAYER_ACCENT
-    ? `note ${Protocol.NOTE_KEY_HELD}`
-    : `CC ${Patch.CC[MIX_FADERS[layer]]}`;
 
   const percentOf = position => Math.round(position * 100) + '%';
 
@@ -33,70 +21,30 @@
     return `${count} change${count === 1 ? '' : 's'}`;
   }
 
-  function stop() {
-    if (animationFrame) cancelAnimationFrame(animationFrame);
-    animationFrame = null;
-    if (bar.run) bar.run.classList.remove('on');
-  }
-
   function showPosition() {
     if (bar.scrub) bar.scrub.value = Math.round(session.transition.position * SCRUB_STEPS);
   }
 
   function snap() {
     if (session.transition.position === 1) return;
-    stop();
     session.resetTransition();
     showPosition();
     Editor.refresh();
   }
 
-  function animate(from, to, milliseconds, done) {
-    const startedAt = performance.now();
-    const step = now => {
-      const progress = Math.min(1, (now - startedAt) / milliseconds);
-      session.transition.position = from + (to - from) * progress;
-      showPosition();
-      paintLive();
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(step);
-        return;
-      }
-      animationFrame = null;
-      if (done) done();
-    };
-    animationFrame = requestAnimationFrame(step);
-  }
-
-  function springBack() {
-    if (session.transition.position === 1) {
-      Editor.paint();
-      return;
-    }
-    stop();
-    animate(session.transition.position, 1, SPRING_BACK_MILLISECONDS, Editor.paint);
-  }
-
-  function transitionMilliseconds(patch) {
-    return Protocol.LFO_PERIODS[Patch.periodStep(patch.transitionTime)] * 60000 / Editor.midi.bpm();
-  }
-
   function run() {
-    if (animationFrame) {
-      stop();
-      springBack();
-      return;
-    }
+    const from = session.transition.from;
     if (!session.comingFrom()) return;
-    bar.run.classList.add('on');
-    animate(0, 1, transitionMilliseconds(session.patch()), () => {
-      stop();
-      Editor.paint();
-    });
+    snap();
+    Editor.playback.run(from);
   }
 
   function paintRun() {
     if (bar.run) bar.run.disabled = !session.comingFrom();
+  }
+
+  function pushedFaders() {
+    return Object.entries(Editor.playback.faders).filter(([, position]) => position > 0);
   }
 
   function showingText() {
@@ -104,9 +52,9 @@
     const position = session.transition.position;
     if (session.isAboveBase()) return `${Patch.LAYER_NAMES[session.layerIndex]} ${percentOf(position)}`;
     if (session.transitioning()) return `from "${session.comingFrom().name}" ${percentOf(position)}`;
-    if (session.mixing()) {
-      return Object.entries(session.mix).filter(([, amount]) => amount > 0)
-        .map(([layer, amount]) => `${Patch.LAYER_NAMES[layer]} ${percentOf(amount)}`).join(' + ');
+    const pushed = pushedFaders();
+    if (pushed.length) {
+      return pushed.map(([layer, position]) => `${Patch.LAYER_NAMES[layer]} ${percentOf(position)}`).join(' + ');
     }
     return 'the patch';
   }
@@ -121,12 +69,6 @@
   function paintShowing() {
     byId('wallShowing').textContent = showingText();
     if (bar.clear) bar.clear.disabled = !Library.changedIn(session.patch(), session.layerIndex).length;
-  }
-
-  function paintLive() {
-    Editor.rows.paintFaderValues(session.liveNamed());
-    paintShowing();
-    Editor.midi.sendLive();
   }
 
   function labeledField(text, control) {
@@ -171,9 +113,8 @@
     bar.scrub = dom.rangeInput(SCRUB_STEPS);
     bar.scrub.id = 'transitionScrub';
     bar.scrub.addEventListener('input', () => {
-      stop();
       session.transition.position = +bar.scrub.value / SCRUB_STEPS;
-      paintLive();
+      Editor.refresh();
     });
     scrub.appendChild(bar.scrub);
 
@@ -214,54 +155,52 @@
     const head = element('h2', null, 'Mix');
     const allDown = element('button', 'tiny', 'all down');
     allDown.addEventListener('click', () => {
-      session.resetPreview();
+      for (const layer of Object.keys(Editor.playback.FADERS)) Editor.playback.setFader(+layer, 0);
       paintMix();
-      Editor.refresh();
+      paintShowing();
     });
     head.appendChild(allDown);
 
     const rows = element('div', 'mix-rows');
-    for (const layer of Patch.LAYERS_ABOVE_BASE) {
+    for (const [layer, fader] of Object.entries(Editor.playback.FADERS)) {
       const row = element('div', 'row');
-      const label = dom.midiLabeled('label', Patch.LAYER_NAMES[layer], mixSource(layer));
+      const label = dom.ccLabeled('label', Patch.LAYER_NAMES[layer], Patch.CC[fader]);
       const track = element('div', 'track');
-      const slider = dom.rangeInput(SCRUB_STEPS);
+      const slider = dom.rangeInput(127);
       slider.id = 'mix' + layer;
-      slider.value = Math.round(session.mix[layer] * SCRUB_STEPS);
       const readout = element('output');
       slider.addEventListener('input', () => {
-        session.mix[layer] = +slider.value / SCRUB_STEPS;
+        Editor.playback.setFader(+layer, +slider.value / 127);
         paintMixReadout(layer);
-        paintLive();
+        paintShowing();
       });
       track.append(slider);
       row.append(label, track, readout);
       rows.appendChild(row);
       mixBar.sliders[layer] = slider;
       mixBar.readouts[layer] = readout;
-      paintMixReadout(layer);
     }
     host.replaceChildren(head, rows);
+    paintMix();
   }
 
   function paintMix() {
     for (const [layer, slider] of Object.entries(mixBar.sliders)) {
-      slider.value = Math.round(session.mix[layer] * SCRUB_STEPS);
+      slider.value = Math.round(Editor.playback.faders[layer] * 127);
       paintMixReadout(layer);
     }
   }
 
   function paintMixReadout(layer) {
-    mixBar.readouts[layer].textContent = percentOf(session.mix[layer]);
+    mixBar.readouts[layer].textContent = percentOf(Editor.playback.faders[layer]);
   }
 
   function rebuild() {
-    stop();
     build();
     buildMix();
   }
 
   Editor.transition = {
-    snap, rebuild, refreshPatchChoices, paintShowing, paintMix, changesText, run, running: () => !!animationFrame,
+    snap, rebuild, refreshPatchChoices, paintShowing, paintMix, changesText,
   };
 })(window);

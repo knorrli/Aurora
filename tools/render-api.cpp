@@ -1,17 +1,17 @@
 #include <stddef.h>
+#include <string.h>
 
 #include <emscripten/emscripten.h>
 #include <engines.h>
 #include <morph.h>
 #include <palettes.h>
 #include <pars.h>
+#include <playback.h>
 #include <reading.h>
 #include <render.h>
 #include <routes.h>
 
 static uint8_t live[AURORA_PATCH_CC_COUNT];
-static uint8_t oneshotControls[AURORA_PATCH_CC_COUNT];
-static uint8_t oneshotMarks[AURORA_PATCH_CC_COUNT];
 static uint8_t controls[render::RENDER_CONTROL_COUNT];
 static render::Frame frame;
 static float reach[2];
@@ -19,10 +19,38 @@ static render::ArpPass arpPass;
 static uint8_t morphFrom[AURORA_PATCH_CC_COUNT];
 static uint8_t morphTo[AURORA_PATCH_CC_COUNT];
 static uint8_t morphSwitches[AURORA_PATCH_CC_COUNT];
-static uint8_t morphLayers[AURORA_PATCH_LAYERS][AURORA_PATCH_CC_COUNT];
-static float morphPositions[AURORA_PATCH_LAYERS];
 static uint8_t morphOut[AURORA_PATCH_CC_COUNT];
 
+class EditorLibrary : public playback::Library {
+ public:
+  playback::Patch patches[AURORA_LAST_PATCH_SLOT + 1];
+  bool filled[AURORA_LAST_PATCH_SLOT + 1] = {};
+  playback::Oneshot kit[AURORA_ONESHOTS];
+  bool kitFilled[AURORA_ONESHOTS] = {};
+  uint8_t defaults[2] = { playback::NO_ONESHOT, playback::NO_ONESHOT };
+
+  bool patch(uint8_t slot, playback::Patch &out) override {
+    if (slot > AURORA_LAST_PATCH_SLOT || !filled[slot]) return false;
+    out = patches[slot];
+    return true;
+  }
+
+  bool oneshot(uint8_t index, playback::Oneshot &out) override {
+    if (index >= AURORA_ONESHOTS || !kitFilled[index]) return false;
+    out = kit[index];
+    return true;
+  }
+
+  uint8_t defaultOneshot(uint8_t place) override { return defaults[place]; }
+};
+
+static EditorLibrary library;
+static playback::Patch patchBuffer;
+static playback::Oneshot oneshotBuffer;
+static playback::Playback *player = nullptr;
+
+static_assert(sizeof(playback::Patch) == 4 + AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT, "");
+static_assert(sizeof(playback::Oneshot) == 1 + 2 * AURORA_PATCH_CC_COUNT, "");
 static_assert(offsetof(render::FanReading, curve) == sizeof(float) * render::STRIPS, "");
 static_assert(offsetof(render::FanReading, turns)
                   == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS), "");
@@ -37,8 +65,7 @@ static_assert(sizeof(render::FanReading)
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return live; }
-EMSCRIPTEN_KEEPALIVE uint8_t *aurora_oneshot_controls() { return oneshotControls; }
-EMSCRIPTEN_KEEPALIVE uint8_t *aurora_oneshot_marks() { return oneshotMarks; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_drawn_controls() { return controls; }
 EMSCRIPTEN_KEEPALIVE render::Rgb *aurora_pixels() { return frame.pixels; }
 EMSCRIPTEN_KEEPALIVE render::Par *aurora_pars() { return frame.pars; }
 EMSCRIPTEN_KEEPALIVE float *aurora_par_hue_places() { return frame.parHuePlaces; }
@@ -61,21 +88,70 @@ EMSCRIPTEN_KEEPALIVE int aurora_pixels_per_strip() { return render::PIXELS; }
 EMSCRIPTEN_KEEPALIVE int aurora_fan_curve_points() { return render::FAN_CURVE_POINTS; }
 EMSCRIPTEN_KEEPALIVE int aurora_bend_points() { return render::BEND_POINTS; }
 
-EMSCRIPTEN_KEEPALIVE render::Motion *aurora_motion_new() { return new render::Motion(); }
+EMSCRIPTEN_KEEPALIVE playback::Patch *aurora_patch_buffer() { return &patchBuffer; }
+EMSCRIPTEN_KEEPALIVE playback::Oneshot *aurora_oneshot_buffer() { return &oneshotBuffer; }
 
-EMSCRIPTEN_KEEPALIVE render::Wall *aurora_wall_new() { return new render::Wall(); }
-
-EMSCRIPTEN_KEEPALIVE void aurora_wall_clear_tails(render::Wall *wall) { render::clearTails(*wall); }
-
-EMSCRIPTEN_KEEPALIVE void aurora_render(render::Motion *motion, render::Wall *wall,
-                                       float quarterNotes, uint32_t milliseconds,
-                                       int oneshot, float oneshotProgress, float oneshotBeats) {
-  render::composeOneshot(live, oneshot ? oneshotControls : nullptr, oneshotMarks, controls);
-  const render::OneshotClock clock = {
-    oneshotProgress, oneshotBeats, oneshot != 0 && oneshotMarks[CC_FAN_LFO] != 0,
-  };
-  render::renderFrame(controls, quarterNotes, milliseconds, clock, *motion, *wall, frame);
+EMSCRIPTEN_KEEPALIVE void aurora_library_store_patch(int slot) {
+  if (slot < 0 || slot > AURORA_LAST_PATCH_SLOT) return;
+  library.patches[slot] = patchBuffer;
+  library.filled[slot] = true;
 }
+
+EMSCRIPTEN_KEEPALIVE void aurora_library_clear_patch(int slot) {
+  if (slot >= 0 && slot <= AURORA_LAST_PATCH_SLOT) library.filled[slot] = false;
+}
+
+EMSCRIPTEN_KEEPALIVE void aurora_library_store_oneshot(int index) {
+  if (index < 0 || index >= AURORA_ONESHOTS) return;
+  library.kit[index] = oneshotBuffer;
+  library.kitFilled[index] = true;
+}
+
+EMSCRIPTEN_KEEPALIVE void aurora_library_clear_oneshot(int index) {
+  if (index >= 0 && index < AURORA_ONESHOTS) library.kitFilled[index] = false;
+}
+
+EMSCRIPTEN_KEEPALIVE void aurora_library_default_oneshots(int first, int second) {
+  library.defaults[0] = (uint8_t)first;
+  library.defaults[1] = (uint8_t)second;
+}
+
+EMSCRIPTEN_KEEPALIVE void aurora_playback_begin(uint32_t micros) {
+  if (!player) player = new playback::Playback(library, micros);
+}
+
+EMSCRIPTEN_KEEPALIVE void aurora_playback_message(int status, int first, int second, uint32_t micros) {
+  switch (status & 0xF0) {
+    case 0xC0: player->programChange((uint8_t)first, micros); return;
+    case 0xB0: player->controlChange((uint8_t)first, (uint8_t)second); return;
+    case 0x90:
+      if (second) player->noteOn((uint8_t)first, micros);
+      else player->noteOff((uint8_t)first, micros);
+      return;
+    case 0x80: player->noteOff((uint8_t)first, micros); return;
+  }
+  switch (status) {
+    case 0xF8: player->clockTick(micros); return;
+    case 0xFA: player->clockStart(micros); return;
+    case 0xFB: player->clockContinue(micros); return;
+    case 0xFC: player->clockStop(); return;
+  }
+}
+
+EMSCRIPTEN_KEEPALIVE void aurora_playback_cut(int slot) { player->cutTo(patchBuffer, (uint8_t)slot); }
+EMSCRIPTEN_KEEPALIVE void aurora_playback_patch_changed(int slot) { player->patchChanged((uint8_t)slot); }
+EMSCRIPTEN_KEEPALIVE void aurora_playback_pin() { player->pin(live); }
+EMSCRIPTEN_KEEPALIVE void aurora_playback_unpin() { player->unpin(); }
+
+EMSCRIPTEN_KEEPALIVE void aurora_playback_frame(uint32_t micros) {
+  frame = player->frame(micros);
+  memcpy(controls, player->drawnControls(), sizeof(controls));
+}
+
+EMSCRIPTEN_KEEPALIVE float aurora_playback_beats() { return player->beats(); }
+EMSCRIPTEN_KEEPALIVE int aurora_playback_slot() { return player->slot(); }
+EMSCRIPTEN_KEEPALIVE float aurora_playback_oneshot_progress() { return player->oneshotProgress(); }
+EMSCRIPTEN_KEEPALIVE int aurora_playback_oneshot_index() { return player->oneshotIndex(); }
 
 EMSCRIPTEN_KEEPALIVE int aurora_palette_count() { return render::paletteCount(); }
 
@@ -132,16 +208,9 @@ EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefu
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_from() { return morphFrom; }
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_to() { return morphTo; }
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_switches() { return morphSwitches; }
-EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_layers() { return &morphLayers[0][0]; }
-EMSCRIPTEN_KEEPALIVE float *aurora_morph_positions() { return morphPositions; }
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_blend(float position, int switchesFromStart) {
   render::blendPatches(morphFrom, morphTo, position, morphSwitches, switchesFromStart != 0, morphOut);
-  return morphOut;
-}
-
-EMSCRIPTEN_KEEPALIVE uint8_t *aurora_mix() {
-  render::mixLayers(morphFrom, morphLayers, morphPositions, morphOut);
   return morphOut;
 }
 

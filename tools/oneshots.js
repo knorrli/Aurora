@@ -14,6 +14,7 @@
 
   const noteOf = index => Protocol.NOTE_ONESHOT_FIRST + index;
   const kitOneshot = session.kitOneshot;
+  let repeat = true;
 
   const leaveOneshotDraft = () =>
     !session.oneshotDraft || confirm(`Discard your changes to the oneshot "${session.oneshotDraft.name}"?`);
@@ -54,8 +55,13 @@
   function paintOver() {
     const slots = Library.filledSlots(session.library);
     if (session.slot !== null && !slots.includes(session.slot)) slots.unshift(session.slot);
-    const chosen = session.overSlot !== null && slots.includes(session.overSlot) ? session.overSlot : session.slot;
-    dom.setOptions(byId('overPatch'), slots.map(slot => [slot, patchName(slot)]), String(chosen));
+    dom.setOptions(byId('overPatch'), slots.map(slot => [slot, patchName(slot)]), String(session.overSlotShown()));
+  }
+
+  const fireDraft = () => Editor.playback.fireNote(noteOf(session.oneshotIndex));
+
+  function keepRepeating() {
+    if (session.editingOneshot() && repeat && Editor.playback.oneshotProgress() < 0) fireDraft();
   }
 
   function paintHead() {
@@ -70,7 +76,8 @@
     const draft = keepsDraft ? session.oneshotDraft
       : session.library.kit[index] ? null : Library.newOneshot('untitled');
     session.openOneshot(index, draft);
-    if (session.firing.repeat) Editor.wall.fire();
+    Editor.playback.changed();
+    Editor.playback.cut();
     Editor.transition.rebuild();
     Editor.paint();
     Editor.rail.paintList();
@@ -92,6 +99,7 @@
 
   function chooseOver() {
     session.overSlot = +byId('overPatch').value;
+    Editor.playback.cut();
     Editor.paint();
     Editor.midi.sendLive(true);
   }
@@ -99,7 +107,7 @@
   function firePick(place) {
     const index = session.resolvedPick(place);
     if (index === null || !kitOneshot(index)) return;
-    Editor.wall.fire(index);
+    Editor.playback.fireNote(Protocol.NOTE_PATCH_ONESHOT_FIRST + place);
   }
 
   function cell(index) {
@@ -126,16 +134,15 @@
   let firingText = null;
 
   function paintFiring(progress) {
-    const fired = progress === null ? null : session.fired();
     const editing = session.editingOneshot();
-    const length = fired ? Library.lengthBeats(fired) : 0;
-    const text = fired && editing ? `${(progress * length).toFixed(1)} / ${length}` : '';
-    const firingIndex = fired && !editing ? session.firing.index : null;
+    const length = editing ? Library.lengthBeats(session.oneshot()) : 0;
+    const text = editing && progress !== null ? `${(progress * length).toFixed(1)} / ${length}` : '';
+    const firingIndex = !editing ? Editor.playback.oneshotIndex() : null;
     const state = `${text}|${firingIndex}`;
     if (state === firingText) return;
     firingText = state;
     byId('firingAt').textContent = text;
-    byId('oneshotFire').classList.toggle('on', !!fired && editing);
+    byId('oneshotFire').classList.toggle('on', editing && progress !== null);
     FIRE_BUTTONS.forEach((id, place) => byId(id).classList.toggle('on',
       firingIndex !== null && session.resolvedPick(place) === firingIndex));
   }
@@ -208,12 +215,12 @@
       Editor.paint();
     }));
 
-    byId('oneshotFire').addEventListener('click', () => Editor.wall.fire(null));
-    const repeat = byId('oneshotRepeat');
-    repeat.classList.toggle('on', session.firing.repeat);
-    repeat.addEventListener('click', () => {
-      session.firing.repeat = !session.firing.repeat;
-      repeat.classList.toggle('on', session.firing.repeat);
+    byId('oneshotFire').addEventListener('click', fireDraft);
+    const repeatButton = byId('oneshotRepeat');
+    repeatButton.classList.toggle('on', repeat);
+    repeatButton.addEventListener('click', () => {
+      repeat = !repeat;
+      repeatButton.classList.toggle('on', repeat);
     });
     byId('overPatch').addEventListener('change', chooseOver);
     byId('editOver').addEventListener('click', editOver);
@@ -221,5 +228,5 @@
     byId('oneshotDelete').addEventListener('click', remove);
   }
 
-  Editor.oneshots = { wire, open, paintKit, paintPicks, paintHead, paintFiring, save, discard, startNew, leaveOneshotDraft };
+  Editor.oneshots = { wire, open, paintKit, paintPicks, paintHead, paintFiring, keepRepeating, save, discard, startNew, leaveOneshotDraft };
 })(window);

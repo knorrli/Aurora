@@ -8,7 +8,6 @@
   const { session, dom } = Editor;
   const { element, byId } = dom;
 
-  const HOLD_AFTER_MILLISECONDS = 200;
   const PICK_NOTES = [Protocol.NOTE_PATCH_ONESHOT_FIRST, Protocol.NOTE_PATCH_ONESHOT_SECOND];
 
   const selection = { song: null, section: null };
@@ -105,7 +104,7 @@
     const fire = element('button', 'tiny', 'fire');
     fire.addEventListener('click', () => {
       const index = resolvedPick(place);
-      if (index !== null && session.kitOneshot(index)) Editor.wall.fire(index);
+      if (index !== null && session.kitOneshot(index)) Editor.playback.fireNote(Protocol.NOTE_ONESHOT_FIRST + index);
     });
     const line = element('div', 'pick-line');
     line.append(select, fire);
@@ -284,47 +283,27 @@
     paintGig();
   }
 
-  function play(section, held) {
-    const current = song();
-    const slot = Library.sectionSlot(current, section);
-    selection.section = section;
-    if (slot === session.slot) {
-      if (session.editingOneshot()) Editor.show(slot, session.draft);
-      else refreshRows();
-      return;
-    }
-    Editor.show(slot, null, held ? 0 : 1);
-    if (held) Editor.transition.run();
-  }
-
   function startPress(sectionOf) {
     const current = song();
     if (press || !current || !current.sections.length) return;
     const section = sectionOf();
     const slot = Library.sectionSlot(current, section);
+    selection.section = section;
     if (slot === null || !session.library.slots[slot]) {
-      selection.section = section;
       refreshRows();
       Editor.say(`"${current.sections[section]}" plays no patch`, 'warn');
       return;
     }
-    if (slot !== session.slot && session.draft) {
-      if (Editor.rail.leaveDraft()) play(section, false);
-      return;
-    }
-    press = { section, held: false };
-    press.timer = setTimeout(() => {
-      press.held = true;
-      play(press.section, true);
-    }, HOLD_AFTER_MILLISECONDS);
+    if (slot !== session.slot && session.draft && !Editor.rail.leaveDraft()) return;
+    press = { section };
+    Editor.follow(slot);
+    Editor.playback.press(slot);
   }
 
   function endPress() {
     if (!press) return;
-    clearTimeout(press.timer);
-    if (!press.held) play(press.section, false);
-    else if (Editor.transition.running()) Editor.transition.run();
     press = null;
+    Editor.playback.release();
   }
 
   function wirePress(button, sectionOf) {

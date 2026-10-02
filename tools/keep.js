@@ -26,7 +26,7 @@
   }
 
   function keepAsLayer(layer) {
-    const named = session.liveNamed();
+    const named = Editor.playback.shownNamed();
     const patch = session.editing();
     const leftOnBase = Patch.isAboveBase(layer) ? Library.keepAsLayer(patch, layer, named) : [];
     if (!Patch.isAboveBase(layer)) Library.keepAsBase(patch, named);
@@ -37,7 +37,7 @@
   }
 
   function keepAsNewPatch() {
-    const named = session.liveNamed();
+    const named = Editor.playback.shownNamed();
     const current = session.patch();
     if (!Editor.rail.leaveDraft()) return;
     const patch = Library.newPatch(current.name);

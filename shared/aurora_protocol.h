@@ -300,6 +300,14 @@ static inline float aurora_lfo_period(uint8_t value) {
     return AURORA_LFO_PERIODS[step > last ? last : step];
 }
 
+static const uint8_t AURORA_TRANSITION_STEPS = AURORA_LFO_PERIOD_COUNT + 1;
+
+static inline float aurora_transition_beats(uint8_t value) {
+    const uint8_t last = AURORA_TRANSITION_STEPS - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return step >= last ? 0.0f : AURORA_LFO_PERIODS[step];
+}
+
 static inline uint16_t aurora_ticks_per_division(uint8_t division) {
     switch (division) {
         case TEMPO_DIVISION_BAR:            return 96;

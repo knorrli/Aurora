@@ -18,15 +18,14 @@
     mode: 'patch',
     oneshotIndex: null,
     oneshotDraft: null,
-    firing: { at: null, repeat: true, index: null },
     overSlot: null,
     layerIndex: Protocol.PATCH_LAYER_BASE,
     transition: { position: 1, from: null },
-    mix: Object.fromEntries(Patch.LAYERS_ABOVE_BASE.map(layer => [layer, 0])),
     bypassedRoutes: new Set(),
     bypassedCards: new Set(),
     onChange: null,
     onDraftStarted: null,
+    onLibrarySaved: null,
   };
 
   const readStored = key => {
@@ -90,6 +89,7 @@
   function saveLibrary() {
     writeStored(STORE_LIBRARY, Library.libraryToFile(session.library));
     saveDraft();
+    if (session.onLibrarySaved) session.onLibrarySaved();
   }
 
   const flush = () => { if (draftTimer) saveDraft(); };
@@ -103,8 +103,9 @@
   const underneath = () => session.draft || session.library.slots[session.slot];
   const oneshot = () => session.oneshotDraft || session.library.kit[session.oneshotIndex];
   const patch = () => (editingOneshot() ? oneshot() : underneath());
-  const over = () => (session.overSlot !== null && session.overSlot !== session.slot
-    && session.library.slots[session.overSlot]) || underneath();
+  const overSlotShown = () => (session.overSlot !== null && session.overSlot !== session.slot
+    && session.library.slots[session.overSlot] ? session.overSlot : session.slot);
+  const over = () => (overSlotShown() === session.slot ? underneath() : session.library.slots[overSlotShown()]);
   const kitOneshot = index =>
     (index === session.oneshotIndex && session.oneshotDraft) || session.library.kit[index] || null;
   const resolvedPick = place => {
@@ -112,7 +113,6 @@
     return pick !== null ? pick : session.library.defaultOneshots[place];
   };
   const oneshotBeats = () => (editingOneshot() ? Library.lengthBeats(oneshot()) : null);
-  const fired = () => (editingOneshot() ? oneshot() : session.firing.index === null ? null : kitOneshot(session.firing.index));
   const patchAt = slot => (slot === session.slot && session.draft ? session.draft : session.library.slots[slot]) || null;
   const isAboveBase = () => Patch.isAboveBase(session.layerIndex);
   const overrides = () => patch().overrides[session.layerIndex] || {};
@@ -141,7 +141,6 @@
 
   const switchSource = () => (heldAt() || patch()).base;
 
-  const mixing = () => !editingOneshot() && Object.values(session.mix).some(position => position > 0);
   const transitioning = () =>
     !editingOneshot() && !isAboveBase() && !!comingFrom() && session.transition.position < 1;
 
@@ -156,25 +155,20 @@
     return named;
   }
 
-  function oneshotInput() {
-    const firedOneshot = fired();
-    const named = Library.namedFromBytes(firedOneshot.base);
-    const own = editingOneshot() ? sounding(named) : named;
-    return { bytes: Library.bytesFromNamed(own), marks: Library.markBytes(firedOneshot) };
-  }
-
-  function liveNamed() {
-    if (editingOneshot()) return oneshotNamed();
+  function pinnedNamed() {
+    if (editingOneshot()) return null;
     const current = patch();
     const position = session.transition.position;
     if (isAboveBase()) {
       return Library.blend(current.base, Library.layerBytes(current, session.layerIndex), position, switchSource());
     }
     if (transitioning()) return Library.blend(comingFrom().base, current.base, position, comingFrom().base);
-    if (mixing()) {
-      return Library.mix(current, Object.entries(session.mix).map(([layer, amount]) => [+layer, amount]));
-    }
-    return Library.namedFromBytes(current.base);
+    return null;
+  }
+
+  function liveNamed() {
+    if (editingOneshot()) return oneshotNamed();
+    return pinnedNamed() || Library.namedFromBytes(patch().base);
   }
 
   function changed() {
@@ -326,7 +320,6 @@
 
   function select(slot, draft) {
     session.mode = 'patch';
-    session.firing.at = null;
     session.overSlot = null;
     const previous = session.slot;
     if (previous !== slot) session.transition.from = previous !== null && patchAt(previous) ? previous : slot;
@@ -343,8 +336,6 @@
     session.oneshotIndex = index;
     session.oneshotDraft = draft || null;
     session.layerIndex = Protocol.PATCH_LAYER_BASE;
-    session.firing.at = null;
-    session.firing.index = null;
     session.bypassedRoutes.clear();
     session.bypassedCards.clear();
     resetPreview();
@@ -361,10 +352,7 @@
     session.transition.position = 1;
   }
 
-  function resetPreview() {
-    resetTransition();
-    for (const layer of Object.keys(session.mix)) session.mix[layer] = 0;
-  }
+  const resetPreview = resetTransition;
 
   function forgetMissingPatches() {
     const transition = session.transition;
@@ -373,10 +361,10 @@
 
   Object.assign(session, {
     load, saveLibrary, flush, firstFilled,
-    editingOneshot, underneath, over, kitOneshot, resolvedPick, fired, oneshot, oneshotBeats, marked, toggleMark, oneshotInput, openOneshot,
+    editingOneshot, underneath, over, overSlotShown, kitOneshot, resolvedPick, oneshot, oneshotBeats, marked, toggleMark, openOneshot,
     patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
-    mixing, transitioning,
-    liveNamed, setValue, resetNames, changed,
+    transitioning,
+    pinnedNamed, liveNamed, setValue, resetNames, changed,
     routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
     layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, resetPreview, forgetMissingPatches,
     toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),

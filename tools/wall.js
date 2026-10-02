@@ -1,7 +1,6 @@
 (function (global) {
   'use strict';
 
-  const Library = global.AuroraLibrary;
   const Preview = global.AuroraPreview;
   const Editor = global.AuroraEditor;
   const { session, dom } = Editor;
@@ -14,7 +13,8 @@
   const STORE_OVERLAYS = 'aurora.editor.overlays';
 
   const view = { overlays: readOverlays(), order: null, parOrder: null };
-  const beats = { position: 0, lastFrameAt: 0, dots: [] };
+  const beats = { dots: [] };
+  let drawnText = null;
 
   function readOverlays() {
     let stored = null;
@@ -45,14 +45,8 @@
     const glow = document.createElement('canvas');
     glow.width = width;
     glow.height = height;
-    return { context, glow, width, height, motion: Preview.makeMotion(), wallState: Preview.makeWallState() };
+    return { context, glow, width, height };
   }
-
-  function clearTails() {
-    Preview.clearTails(wall.wallState);
-  }
-
-  const restartBeats = () => { beats.position = 0; };
 
   function readOrder(input, fallback) {
     const count = fallback.length;
@@ -71,43 +65,9 @@
     read();
   }
 
-  function fire(index) {
-    session.firing.index = session.editingOneshot() ? null : index;
-    session.firing.at = beats.position;
-  }
-
-  function oneshotProgress() {
-    const firing = session.firing;
-    const fired = firing.at === null ? null : session.fired();
-    if (!fired) return null;
-    const length = Library.lengthBeats(fired);
-    if (beats.position < firing.at) firing.at = beats.position;
-    if (beats.position - firing.at >= length) {
-      if (!firing.repeat || !session.editingOneshot()) {
-        firing.at = null;
-        return null;
-      }
-      firing.at += length * Math.floor((beats.position - firing.at) / length);
-    }
-    return (beats.position - firing.at) / length;
-  }
-
-  function oneshotInput(progress) {
-    if (progress === null) return null;
-    return Object.assign(session.oneshotInput(), { progress, beats: Library.lengthBeats(session.fired()) });
-  }
-
-  function drawBytes(bytes, oneshot) {
-    const frame = Preview.render(bytes, beats.position, Math.round(performance.now()), wall.motion, wall.wallState, oneshot);
-    Preview.draw(wall.context, wall.glow, frame, view.order, view.parOrder, wall.width, wall.height, view.overlays);
-    return frame;
-  }
-
-  const draw = (named, oneshot) => drawBytes(Library.bytesFromNamed(session.sounding(named)), oneshot);
-
-  function paintBeats() {
-    const beat = Math.floor(beats.position);
-    const hit = beats.position - beat < BEAT_FLASH;
+  function paintBeats(position) {
+    const beat = Math.floor(position);
+    const hit = position - beat < BEAT_FLASH;
     beats.dots.forEach((dot, index) => {
       const on = index === beat % beats.dots.length;
       dot.classList.toggle('on', on);
@@ -115,20 +75,24 @@
     });
   }
 
+  function paintShownValues() {
+    const shown = Editor.playback.shownNamed();
+    const text = JSON.stringify(shown);
+    if (text === drawnText) return;
+    drawnText = text;
+    Editor.rows.paintFaderValues(shown);
+  }
+
   function frame() {
-    const now = performance.now();
-    beats.position += (now - beats.lastFrameAt) / 60000 * Editor.midi.bpm();
-    beats.lastFrameAt = now;
-    paintBeats();
+    const drawn = Editor.playback.frame(performance.now());
+    Preview.draw(wall.context, wall.glow, drawn, view.order, view.parOrder, wall.width, wall.height, view.overlays);
+    paintBeats(Editor.playback.beats());
+    Editor.oneshots.keepRepeating();
+    const progress = Editor.playback.oneshotProgress();
     const live = session.liveNamed();
-    const progress = oneshotProgress();
-    if (session.editingOneshot()) {
-      drawBytes(session.over().base, oneshotInput(progress));
-      Editor.routes.paintPlayheads(progress, live);
-    } else {
-      Editor.routes.paintPlayheads(draw(live, oneshotInput(progress)).lfo, live);
-    }
-    Editor.oneshots.paintFiring(progress);
+    Editor.routes.paintPlayheads(session.editingOneshot() ? (progress < 0 ? null : progress) : drawn.lfo, live);
+    Editor.oneshots.paintFiring(progress < 0 ? null : progress);
+    paintShownValues();
     Editor.tracks.paint();
     requestAnimationFrame(frame);
   }
@@ -149,9 +113,8 @@
       });
     }
 
-    beats.lastFrameAt = performance.now();
     requestAnimationFrame(frame);
   }
 
-  Editor.wall = { start, clearTails, restartBeats, fire };
+  Editor.wall = { start };
 })(window);
