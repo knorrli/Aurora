@@ -74,7 +74,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
 - Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
 - Find out whether the touchpad reads pressure usefully.
-- What is the touchpad for? Lean: a 3-way rocker picks one of three modes. Per patch: X and Y each push controls the patch picks, perhaps from a fixed list of pairings. Morph: four fixed looks in the corners, the same on every patch. Effects: five columns (riser, freeze, stutter and the like), Y sets how hard; designed in the editor like the kit.
+- Per-patch pad mode: any two controls, or a fixed list of pairings?
+- Which four corner looks, and which five effects in which order?
 - Focus, taking energy away from part of the wall: one of the effects, or something that works in every mode?
 - How does a pad-driven transition land its switches, with no key release left?
 - Which rocker by the pad takes which job: mode (3-way), Width (3-way), Gaps (2-way), momentary or latching (2-way)? What does the fader rocker do?

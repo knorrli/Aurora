@@ -94,12 +94,16 @@
 ## Touchpad and rockers
 
 - The pad sends X, Y, pressure and engage as raw values on CC 15–18.
-- The pad has no off switch: not touching it means no effect. Lifting the finger returns the wall to what the patch was doing.
+- The pad has no off switch: not touching it means no effect.
+- A 2-way rocker by the pad picks momentary or latching. Momentary: lifting the finger returns the wall to what the patch was doing. Latching: the last position stays after the finger lifts.
+- A 3-way rocker by the pad picks one of three modes:
+  - Per patch: X and Y each push controls the patch picks.
+  - Morph: four fixed looks in the corners, the same on every patch; the finger blends between them, and landing near a corner cuts to it.
+  - Effects: five columns across X (riser, freeze, stutter and the like), Y sets how hard. Effects and corner looks are designed in the editor, like the kit.
 - The rockers report where they stand on CC 2–6.
 - Two rockers by the pad choose which strips the pad acts on, in every mode. Width: strip 3, strips 2–4, or all five. Gaps: solid, or every other strip counted in from the outer edge of the width. Together: 3; 2+3+4; 2+4; all; 1+3+5.
 - The PARs ignore Width and Gaps.
 - Whatever the pad plays changes only the controls it marks, PAR controls included; everything unmarked stays as the patch has it.
-- The pad never sets a value and never arrives on its own.
 - Nothing depends on pressure until it has been measured on this pad.
 
 ## The controller
