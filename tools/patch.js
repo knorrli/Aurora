@@ -2,7 +2,7 @@ import { Protocol } from './cc.js';
 import { Preview } from './preview.js';
 
 
-const LAYER_NAMES = ['Base', 'Color', 'Extent', 'Motion', 'Accent'];
+const LAYER_NAMES = ['Base', 'Color', 'Motion', 'Extent', 'Accent'];
 const LAYERS_ABOVE_BASE = [Protocol.PATCH_LAYER_COLOR, Protocol.PATCH_LAYER_MOTION,
                  Protocol.PATCH_LAYER_EXTENT, Protocol.PATCH_LAYER_ACCENT];
 const LAYERS = [Protocol.PATCH_LAYER_BASE, ...LAYERS_ABOVE_BASE];

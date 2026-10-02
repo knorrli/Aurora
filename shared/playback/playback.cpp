@@ -71,8 +71,8 @@ void Playback::programChange(uint8_t program, uint32_t micros) {
 void Playback::controlChange(uint8_t cc, uint8_t value) {
   switch (cc) {
     case CC_FADER_COLOR: moveFader(PATCH_LAYER_COLOR, value); return;
-    case CC_FADER_EXTENT: moveFader(PATCH_LAYER_EXTENT, value); return;
     case CC_FADER_MOTION: moveFader(PATCH_LAYER_MOTION, value); return;
+    case CC_FADER_EXTENT: moveFader(PATCH_LAYER_EXTENT, value); return;
     default:
       if (cc < AURORA_PATCH_CC_COUNT) playing.layers[PATCH_LAYER_BASE][cc] = value;
   }

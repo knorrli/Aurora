@@ -71,15 +71,15 @@
 
 - Eight switches over a TRS cable: tip and ring each carry the four-switch ladder in `docs/hardware.md`.
 - Every switch has a fixed role, the same for every patch, the way each fader has its layer. A switch with nothing to do on a patch does nothing.
-- Roles: Prev, Next, Color, Extent, Motion, Tap, Oneshot 1, Oneshot 2.
+- Roles: Prev, Next, Color, Motion, Extent, Tap, Oneshot 1, Oneshot 2.
 - Prev and Next step through the song's sections; with no song loaded, through the keys of the current bank.
-- Color, Extent and Motion push their layer the way its fader does. Pressing starts the push at once; a quick release latches it at full and the next tap drops it; a long hold pushes only while held.
+- Color, Motion and Extent push their layer the way its fader does. Pressing starts the push at once; a quick release latches it at full and the next tap drops it; a long hold pushes only while held.
 - Tap is tap tempo.
 - Two rows of four, the back row offset half a switch, Next under the right foot:
 
 ```
  back    [Oneshot 1] [Oneshot 2]      [ Color ]       [ Prev ]
- front          [  Tap  ]        [Extent] [Motion]    [ Next ]
+ front          [  Tap  ]        [Motion] [Extent]    [ Next ]
 ```
 
 - Switch centers about 10 cm apart, rows about 12 cm apart, wider gaps between the three groups.

@@ -75,7 +75,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Find out whether the touchpad reads pressure usefully.
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
 - How does a pad-driven transition land its switches, with no key release left?
-- What does the fourth rocker do?
+- What do the rockers do: fader rocker, main touchpad rocker, touchpad rockers 1 to 3 (`docs/hardware.md`)?
 - What do the indicator pixels show? Lead: the current song section.
 
 ### Songs in the editor

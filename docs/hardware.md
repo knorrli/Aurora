@@ -98,15 +98,15 @@ Wired to an Arduino Nano (5 V). Its firmware is at git tag `aurora-nano-final` (
 |----------|---------|---------|
 | D2 | WS2812 data out: box pixels, then the strips | output |
 | D3 | Tempo gate from the second Arduino | digital |
-| D4 | Touchpad effect rocker (2-way) | digital |
-| D5 | Touchpad hold rocker (2-way) | digital |
+| D4 | A 2-way rocker (v1 label: touchpad effect) | digital |
+| D5 | A 2-way rocker (v1 label: touchpad hold) | digital |
 | D6, D7 | Touchpad XP, YM | 4-wire resistive |
 | D8–D12 | Phone keypad + cradle switch | static code, see below |
 | D13 | Tap button LED | output |
 | A0, A1, A2 | Faders (v1 labels: saturation, hue, value) | analog |
 | A3 | TRIG / mic gate input | digital |
 | A4, A5 | Touchpad YP, XM | 4-wire resistive |
-| A6 | Touchpad strip-mode rocker (3-way) | analog |
+| A6 | Touchpad rocker 1 (3-way) | analog |
 | A7 | Two 2-way rockers on one analog line | analog |
 
 - Tap tempo button and foot pedal: not in the Nano map; where they land physically is not recorded.
@@ -114,7 +114,7 @@ Wired to an Arduino Nano (5 V). Its firmware is at git tag `aurora-nano-final` (
 - A6 levels: ≤ 400, 401–1000, > 1000.
 - A7 levels (four combinations): < 450, 450–599, 600–999, ≥ 1000.
 - Touchpad: Adafruit `TouchScreen`, X-plate 230 Ω, usable raw range X 90–930, Y 220–860 (10-bit at 5 V).
-- Which fader, and which touchpad rocker, does what is not recorded.
+- Which fader is which, and which 2-way rocker sits on D4, D5 and A7, is not recorded.
 
 ### Keypad — a static code, not a matrix
 
@@ -142,8 +142,19 @@ One WS2812 chain inside the box, driven ahead of the strips in v1: index 0 right
 ### Other controls
 
 - Audio-in jack → peak-follower circuit (built for 5 V; re-reference for 3.3 V) with its on/off toggle, threshold pot (about 10 kΩ linear) and the TRIG button with LED. The handset earpiece is wired as a microphone into this jack.
+- TRIG fires the trigger by hand. It is part of the peak-follower circuit, not wired to the controller's microcontroller.
 - 12-position rotary (tempo source and division): was on the second Arduino, not the Nano. Panel reads MIDI divisions (sixteenth, dotted sixteenth through quarter to half), TRIG (quarter, eighth) and tap (half, quarter, eighth).
-- Fader-mode rocker below the faders; power rocker (hardwired to the 9 V, never read).
+- Power rocker: hardwired to the 9 V, never read.
+
+### Rockers
+
+| Name | Positions | Where |
+|------|-----------|-------|
+| Fader rocker | 2 | Lower center-left, right of the faders |
+| Main touchpad rocker | 2 | Lower center-right, left of the touchpad |
+| Touchpad rocker 1 | 3 | Above the touchpad, left |
+| Touchpad rocker 2 | 2 | Above the touchpad, center |
+| Touchpad rocker 3 | 2 | Above the touchpad, right |
 
 ### Foot pedal — four switches per line, two lines
 

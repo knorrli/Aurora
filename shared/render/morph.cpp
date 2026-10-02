@@ -13,8 +13,8 @@ static const float TURN = 128.0f;
 static bool performed(uint8_t cc) {
   switch (cc) {
     case CC_FADER_COLOR:
-    case CC_FADER_EXTENT:
     case CC_FADER_MOTION:
+    case CC_FADER_EXTENT:
       return true;
     default:
       return false;

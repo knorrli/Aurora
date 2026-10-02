@@ -1,7 +1,7 @@
 const CC = {
   faderColor:        12,
-  faderExtent:       13,
-  faderMotion:       14,
+  faderMotion:       13,
+  faderExtent:       14,
   palette:           20,
   hue:               21,
   saturation:        22,
@@ -61,7 +61,7 @@ const CC = {
   coreDark:          79,
 };
 
-const TAGS = {"faderColor":["ambient"],"faderExtent":["ambient"],"faderMotion":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"shapeCount":["patch","unstaggered"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch"],"shapeBend":["patch","unstaggered"],"shapeBendAt":["patch","unstaggered"],"fanSpread":["patch","unstaggered"],"fanSpeed":["patch","rate","unstaggered"],"fanLfo":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"]};
+const TAGS = {"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"shapeCount":["patch","unstaggered"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch"],"shapeBend":["patch","unstaggered"],"shapeBendAt":["patch","unstaggered"],"fanSpread":["patch","unstaggered"],"fanSpeed":["patch","rate","unstaggered"],"fanLfo":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"]};
 const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"value":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"shapeWidth":64,"shapeSpeed":64,"shapePosition":64,"shapeBend":64,"shapeBendAt":64,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldDirection":64,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
 
 const MIDI_CHANNEL = 1;
@@ -97,8 +97,8 @@ const PATCH_NAME_LENGTH = 16;
 const PATCH_HEAD_LENGTH = 20;
 const PATCH_LAYER_BASE = 0;
 const PATCH_LAYER_COLOR = 1;
-const PATCH_LAYER_EXTENT = 2;
-const PATCH_LAYER_MOTION = 3;
+const PATCH_LAYER_EXTENT = 3;
+const PATCH_LAYER_MOTION = 2;
 const PATCH_LAYER_ACCENT = 4;
 const PATCH_LAYERS = 5;
 const KEYPAD_KEYS = 9;

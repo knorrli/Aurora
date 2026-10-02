@@ -16,8 +16,8 @@ const RELEASE_BEFORE_ARRIVAL_BEATS = 0.05;
 
 const FADERS = {
   [Protocol.PATCH_LAYER_COLOR]: 'faderColor',
-  [Protocol.PATCH_LAYER_EXTENT]: 'faderExtent',
   [Protocol.PATCH_LAYER_MOTION]: 'faderMotion',
+  [Protocol.PATCH_LAYER_EXTENT]: 'faderExtent',
 };
 
 const micros = milliseconds => Math.round(milliseconds * 1000) >>> 0;

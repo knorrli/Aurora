@@ -14,8 +14,8 @@ static const uint8_t AURORA_SONGS = 19;
 
 enum AuroraCC : uint8_t {
     CC_FADER_COLOR           = 12, // [ambient]
-    CC_FADER_EXTENT          = 13, // [ambient]
-    CC_FADER_MOTION          = 14, // [ambient]
+    CC_FADER_MOTION          = 13, // [ambient]
+    CC_FADER_EXTENT          = 14, // [ambient]
 
     CC_PALETTE               = 20, // [switch]
     CC_HUE                   = 21, // [patch][circular]
@@ -415,8 +415,8 @@ static inline bool aurora_is_patch_slot(uint8_t slot) {
 enum AuroraPatchLayer : uint8_t {
     PATCH_LAYER_BASE          = 0,
     PATCH_LAYER_COLOR  = 1,
-    PATCH_LAYER_EXTENT = 2,
-    PATCH_LAYER_MOTION = 3,
+    PATCH_LAYER_MOTION = 2,
+    PATCH_LAYER_EXTENT = 3,
     PATCH_LAYER_ACCENT = 4,
     AURORA_PATCH_LAYERS  = 5,
 };
