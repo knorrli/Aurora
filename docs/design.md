@@ -95,7 +95,10 @@
 
 - The pad sends X, Y, pressure and engage as raw values on CC 15–18.
 - The pad has no off switch: not touching it means no effect. Lifting the finger returns the wall to what the patch was doing.
-- The rockers report where they stand on CC 2–6. What that does belongs to the patch.
+- The rockers report where they stand on CC 2–6.
+- Two rockers by the pad choose which strips the pad acts on, in every mode. Width: strip 3, strips 2–4, or all five. Gaps: solid, or every other strip counted in from the outer edge of the width. Together: 3; 2+3+4; 2+4; all; 1+3+5.
+- The PARs ignore Width and Gaps.
+- Whatever the pad plays changes only the controls it marks, PAR controls included; everything unmarked stays as the patch has it.
 - The pad never sets a value and never arrives on its own. Switches never move during a pad gesture.
 - Nothing depends on pressure until it has been measured on this pad.
 
