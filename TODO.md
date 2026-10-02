@@ -77,9 +77,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Per-patch pad mode: how many pad routes per patch, and do they share the LFO's eight?
 - Which four corner looks, and which five effects in which order?
 - Focus, taking energy away from part of the wall. Current idea, to settle while designing the effects: a Focus column in Effects that darkens the strips outside Width and Gaps, Y sets how dark.
-- How does the pad's grid also show the strips Width and Gaps select, alongside the mode colors?
 - Is the song position on the pad's grid worth having?
-- The controller needs each effect's color for the grid: does it come with the songs from the editor?
+- Colors on the pad's grid: send each effect's color to the controller, or even the patches, so the grid can show the wall's real colors?
 
 ### Songs in the editor
 
