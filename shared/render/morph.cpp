@@ -26,7 +26,6 @@ static bool performed(uint8_t cc) {
     case CC_TOUCHPAD_Y:
     case CC_TOUCHPAD_PRESSURE:
     case CC_TOUCHPAD_ENGAGE:
-    case CC_KEY_HELD:
       return true;
     default:
       return false;

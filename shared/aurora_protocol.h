@@ -29,8 +29,6 @@ enum AuroraCC : uint8_t {
     CC_TOUCHPAD_PRESSURE     = 17, // [gesture]
     CC_TOUCHPAD_ENGAGE       = 18, // [gesture]
 
-    CC_KEY_HELD              = 19, // [gesture]
-
     CC_PALETTE               = 20, // [switch]
     CC_HUE                   = 21, // [patch][circular]
     CC_SATURATION            = 22, // [patch]
@@ -345,6 +343,7 @@ enum AuroraFieldDirection : uint8_t {
 };
 
 enum AuroraNote : uint8_t {
+    NOTE_KEY_HELD             = 57,
     NOTE_PATCH_ONESHOT_FIRST  = 58,
     NOTE_PATCH_ONESHOT_SECOND = 59,
     NOTE_ONESHOT_FIRST        = 60,

@@ -5,6 +5,7 @@
 ### Brain
 
 - Reflash the brain. Its flash predates the scatter rework and the last CC renumbers, so wall and preview disagree until then.
+- Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 108.
 
 ### Looks
 
@@ -66,7 +67,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 - Write the firmware for the second Teensy: keypad as a static code, two-key rejection, hook note, faders, pad, rockers, rotary, foot pedal, tap tempo, fresh clock, indicator pixels, DIN out.
 - Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
-- Send a key as CC 19 = 127, the Program Change of its bank and key, then CC 19 = 0 on release (`docs/design.md` § Recalling a patch).
+- Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
 - Should a DAW automation lane drive the morph position, as one more CC beside the Program Change?
 - Find out whether the touchpad reads pressure usefully.
 - What is the touchpad for? Leads: collapse the wall to the position under the thumb; pushes that work on any patch.
@@ -86,13 +87,15 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-- Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 108.
 - Recall a patch on a Program Change: write through the live handlers, clear the tails (`docs/design.md` § Recalling a patch).
 - Give transition time a step for none, and morph a Program Change without a hold over the patch's transition time.
-- Compile in a default set (`docs/design.md` § Patch storage).
 - Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent), and the blackout's tap and hold (`docs/design.md` § Blackout).
 - Read the hook's note on the brain: dark at once, back on release.
 - Limit the library to slots 1–108 and ignore Program Changes 109–127.
 - Read the faders and mix their layers the way the editor does.
 - Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
-- Read CC 19 for tap versus hold.
+- Read note 57 for tap versus hold.
+
+## Once Aurora v2 works
+
+- Compile in a default set (`docs/design.md` § Patch storage).

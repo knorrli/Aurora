@@ -15,12 +15,15 @@
   const mixBar = { sliders: {}, readouts: {} };
   let animationFrame = null;
 
-  const MIX_CONTROLS = {
+  const MIX_FADERS = {
     [Protocol.PATCH_LAYER_COLOR]: 'faderColor',
     [Protocol.PATCH_LAYER_MOTION]: 'faderMotion',
     [Protocol.PATCH_LAYER_EXTENT]: 'faderExtent',
-    [Protocol.PATCH_LAYER_ACCENT]: 'keyHeld',
   };
+
+  const mixSource = layer => layer === Protocol.PATCH_LAYER_ACCENT
+    ? `note ${Protocol.NOTE_KEY_HELD}`
+    : `CC ${Patch.CC[MIX_FADERS[layer]]}`;
 
   const percentOf = position => Math.round(position * 100) + '%';
 
@@ -220,7 +223,7 @@
     const rows = element('div', 'mix-rows');
     for (const layer of Patch.LAYERS_ABOVE_BASE) {
       const row = element('div', 'row');
-      const label = dom.ccLabeled('label', Patch.LAYER_NAMES[layer], Patch.CC[MIX_CONTROLS[layer]]);
+      const label = dom.midiLabeled('label', Patch.LAYER_NAMES[layer], mixSource(layer));
       const track = element('div', 'track');
       const slider = dom.rangeInput(SCRUB_STEPS);
       slider.id = 'mix' + layer;
