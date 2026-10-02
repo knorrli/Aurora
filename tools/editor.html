@@ -139,8 +139,14 @@
   #mixBar .mix-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 2px 22px; }
   .rail h2, .dock h2 { display: flex; align-items: baseline; gap: 6px; }
   .rail h2 > .tiny:first-of-type { margin-left: auto; }
-  .overlay-buttons { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 9px; }
+  .overlay-buttons { display: grid; gap: 3px; margin-top: 9px; }
+  .overlay-buttons > div { display: flex; gap: 3px; }
   .overlay-buttons .tiny { padding: 2px 5px; }
+  .overlay-buttons button:not(.on)[data-tone=shape] { color: var(--shape); }
+  .overlay-buttons button:not(.on)[data-tone=lfo] { color: var(--lfo); }
+  .overlay-buttons button:not(.on)[data-tone=scatter] { color: var(--scatter); }
+  .overlay-buttons button:not(.on)[data-tone=color] { color: var(--color); }
+  .overlay-buttons button:not(.on)[data-tone=out] { color: var(--out); }
   .overlay-buttons button.on[data-tone=shape] { background: var(--shape); border-color: var(--shape); }
   .overlay-buttons button.on[data-tone=lfo] { background: var(--lfo); border-color: var(--lfo); }
   .overlay-buttons button.on[data-tone=scatter] { background: var(--scatter); border-color: var(--scatter); }
@@ -286,7 +292,8 @@
 
   .dock canvas { width: 100%; border-radius: 4px; display: block; background: #0a0b0e; }
   .dockgrid { display: grid; grid-template-columns: 1fr; gap: 0; }
-  .showing-row { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 6px; }
+  .showing-row { display: flex; gap: 10px; align-items: center; margin-bottom: 9px; }
+  .showing-row h2 { margin: 0 auto 0 0; }
   .showing-row .showing { margin-top: 0; }
   .showing { text-align: center; color: var(--select); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
   .dock .rowline { margin-top: 9px; }
@@ -425,25 +432,27 @@
 
   <aside class="dock">
     <section class="panel">
-      <h2>The wall</h2>
-      <div class="overlay-buttons" id="wallOverlays">
-        <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
-        <button class="tiny" data-overlay="fan" data-tone="shape">fan</button>
-        <button class="tiny" data-overlay="bend" data-tone="shape">bend</button>
-        <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
-        <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
-        <button class="tiny" data-overlay="spots" data-tone="scatter">spots</button>
-        <button class="tiny" data-overlay="field" data-tone="color">field</button>
+      <div class="showing-row">
+        <h2>The wall</h2>
+        <p class="showing" id="wallShowing"></p>
+        <select id="keepAs" class="tiny"></select>
       </div>
       <div class="dockgrid">
+        <canvas id="wallMain"></canvas>
         <div>
-          <canvas id="wallMain"></canvas>
-          <div class="showing-row">
-            <p class="showing" id="wallShowing"></p>
-            <select id="keepAs" class="tiny"></select>
+          <div class="overlay-buttons" id="wallOverlays">
+            <div>
+              <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
+              <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
+              <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
+              <button class="tiny" data-overlay="fan" data-tone="shape">fan</button>
+              <button class="tiny" data-overlay="bend" data-tone="shape">bend</button>
+            </div>
+            <div>
+              <button class="tiny" data-overlay="spots" data-tone="scatter">spots</button>
+              <button class="tiny" data-overlay="field" data-tone="color">field</button>
+            </div>
           </div>
-        </div>
-        <div>
           <div class="rowline">
             <button class="tiny" id="wallFlip">pixel 0 at bottom</button>
             <label class="cc">order <input type="text" id="wallOrder"></label>
