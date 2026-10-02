@@ -64,6 +64,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Socket both Teensys rather than soldering them down.
 - Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
 - Relabel the rotary's twelve positions A to L.
+- Cap the faders Color red, Motion green, Extent blue.
 - Fit a 3-way rocker as touchpad rocker 2 (Width).
 - Build the eight-switch foot pedal on a TRS cable (`docs/design.md` § Foot pedal).
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
@@ -74,7 +75,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
 - Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
 - Find out whether the touchpad reads pressure usefully.
-- Colors on the pad's grid: send each effect's color to the controller, or even the patches, so the grid can show the wall's real colors?
 
 ### Songs in the editor
 

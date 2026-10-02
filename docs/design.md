@@ -117,8 +117,10 @@
 
 - A second Teensy 4.0: pure input to MIDI. Keypad, three faders, touchpad, rockers, foot pedal, tap tempo, mic trigger. Every control is in `docs/hardware.md`.
 - It drives its own 12 indicator pixels from what it sends. Nothing is streamed back from the brain.
-- The left indicator blinks while Cue is on. The right indicator blinks while the pad is latching.
+- The left indicator mixes the faders as light: Color is red, Motion green, Extent blue, matching the fader caps; all three up is white. While Cue is on, it alternates between the mix the wall plays and where the faders stand, or with dim white when the two match.
+- The right indicator shows the pad mode's color, and blinks while the pad is latching.
 - The pad's 5×2 grid shows the pad mode in that mode's own color; in Effects, each column shows its effect's color. Columns of strips outside Width and Gaps are dim. The pixels under the finger light up where the pad is pressed.
+- The three mode colors and five effect colors are eight different colors, fixed in the controller's firmware.
 - The foot pedal's switches emit messages that already exist, the way the tap tempo button does.
 
 ## Out of scope
