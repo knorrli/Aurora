@@ -22,7 +22,7 @@
   };
   const LIBRARY_STATE_TEXT = {
     stored: 'a synced library is live',
-    empty: 'empty — running compiled defaults',
+    empty: 'empty',
     unreadable: 'something stored that cannot be read',
   };
   const textFor = (codes, texts, value, unknown) => {

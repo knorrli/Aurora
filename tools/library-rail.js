@@ -302,7 +302,7 @@
     });
     byId('patchDelete').addEventListener('click', () => {
       const patch = session.library.slots[session.slot];
-      if (!confirm(`Empty slot ${session.slot}, "${patch.name}"? Keypad keys on it stay on the empty slot.`)) return;
+      if (!confirm(`Empty slot ${session.slot}, "${patch.name}"?`)) return;
       session.library.slots[session.slot] = null;
       Library.forgetSongSlot(session.library, session.slot);
       session.draft = null;

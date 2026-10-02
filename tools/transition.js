@@ -241,8 +241,7 @@
       mixBar.readouts[layer] = readout;
       paintMixReadout(layer);
     }
-    host.replaceChildren(head, rows,
-      element('p', 'note', '⚠ The brain does not combine the faders yet — this is the editor’s guess.'));
+    host.replaceChildren(head, rows);
   }
 
   function paintMix() {
