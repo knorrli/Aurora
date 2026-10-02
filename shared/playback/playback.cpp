@@ -3,12 +3,15 @@
 #include <math.h>
 #include <string.h>
 
+#include "effects.h"
 #include "morph.h"
 #include "render_math.h"
 
 namespace playback {
 
 static const float HOLD_JUDGED_AFTER_MICROS = 200000.0f;
+static const float STUTTER_OPEN_SHARE = 0.5f;
+static const float STROBE_LIT_SHARE = 0.25f;
 
 float Ramp::at(float beats) const {
   if (beats >= endBeat) return end;
@@ -79,17 +82,70 @@ void Playback::controlChange(uint8_t cc, uint8_t value) {
   }
 }
 
+void Playback::markedStrips(bool *out) const {
+  const uint8_t middle = render::STRIPS / 2;
+  const uint8_t reach = pad.width == PAD_WIDTH_CENTER ? 0 : pad.width == PAD_WIDTH_MIDDLE ? 1 : middle;
+  for (uint8_t strip = 0; strip < render::STRIPS; strip++) {
+    const bool within = strip + reach >= middle && strip <= middle + reach;
+    out[strip] = within && (!pad.gaps || (strip + reach - middle) % 2 == 0);
+  }
+}
+
 render::PadFinger Playback::padFinger() const {
   render::PadFinger finger;
   finger.playing = pad.playing && pad.mode == PAD_MODE_PER_PATCH;
   finger.x = (float)pad.x / 127.0f;
   finger.y = (float)pad.y / 127.0f;
-  const uint8_t middle = render::STRIPS / 2;
-  const uint8_t reach = pad.width == PAD_WIDTH_CENTER ? 0 : pad.width == PAD_WIDTH_MIDDLE ? 1 : middle;
-  for (uint8_t strip = middle - reach; strip <= middle + reach; strip++) {
-    finger.strips[strip] = !pad.gaps || (strip - (middle - reach)) % 2 == 0;
-  }
+  markedStrips(finger.strips);
   return finger;
+}
+
+uint8_t Playback::padEffect() const {
+  if (!pad.playing || pad.mode != PAD_MODE_EFFECTS) return PAD_EFFECTS;
+  const uint8_t column = (uint8_t)((uint16_t)pad.x * PAD_EFFECTS / 128);
+  return column < PAD_EFFECTS ? column : PAD_EFFECTS - 1;
+}
+
+float Playback::padSpeed() const {
+  if (padEffect() != PAD_EFFECT_DOUBLE_TIME) return 1.0f;
+  return pad.y < 64 ? 2.0f : 4.0f;
+}
+
+static float gateBeats(uint8_t y) {
+  static const float BEATS[] = { 1.0f, 0.5f, 0.25f, 0.125f };
+  const uint8_t steps = sizeof(BEATS) / sizeof(BEATS[0]);
+  const uint8_t step = (uint8_t)((uint16_t)y * steps / 128);
+  return BEATS[step < steps ? step : steps - 1];
+}
+
+void Playback::playEffect(float beats) {
+  const uint8_t effect = padEffect();
+  if (effect != PAD_EFFECT_FREEZE) frozen = false;
+  if (effect == PAD_EFFECTS) return;
+
+  bool marked[render::STRIPS];
+  markedStrips(marked);
+  const float strength = (float)pad.y / 127.0f;
+  const float along = render::fract(beats / gateBeats(pad.y));
+  switch (effect) {
+    case PAD_EFFECT_FOCUS:
+      render::darkenOutside(rendered, marked, strength);
+      return;
+    case PAD_EFFECT_FREEZE:
+      if (!frozen) {
+        memcpy(frozenPixels, rendered.pixels, sizeof(frozenPixels));
+        memcpy(frozenPars, rendered.pars, sizeof(frozenPars));
+        frozen = true;
+      }
+      render::blendToward(rendered, frozenPixels, frozenPars, marked, strength);
+      return;
+    case PAD_EFFECT_STUTTER:
+      if (along >= STUTTER_OPEN_SHARE) render::blackOut(rendered, marked);
+      return;
+    case PAD_EFFECT_STROBE:
+      if (along < STROBE_LIT_SHARE) render::flashWhite(rendered, marked);
+      return;
+  }
 }
 
 bool Playback::movePad(uint8_t cc, uint8_t value) {
@@ -307,7 +363,8 @@ const render::Frame &Playback::frame(uint32_t micros) {
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }
 
-  render::renderFrame(composed, beats, micros / 1000, clock, padFinger(), motion, wall, rendered);
+  render::renderFrame(composed, beats, micros / 1000, clock, padFinger(), padSpeed(), motion, wall, rendered);
+  playEffect(beats);
   if (level < 255) {
     for (render::Rgb &pixel : rendered.pixels) {
       pixel = { render::scale8(pixel.r, level), render::scale8(pixel.g, level), render::scale8(pixel.b, level) };

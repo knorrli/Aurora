@@ -377,6 +377,15 @@ enum AuroraPadWidth : uint8_t {
     PAD_WIDTH_ALL    = 2,
 };
 
+enum AuroraPadEffect : uint8_t {
+    PAD_EFFECT_FOCUS       = 0,
+    PAD_EFFECT_FREEZE      = 1,
+    PAD_EFFECT_DOUBLE_TIME = 2,
+    PAD_EFFECT_STUTTER     = 3,
+    PAD_EFFECT_STROBE      = 4,
+    PAD_EFFECTS            = 5,
+};
+
 enum AuroraNote : uint8_t {
     NOTE_KEY_HELD             = 57,
     NOTE_PATCH_ONESHOT_FIRST  = 58,

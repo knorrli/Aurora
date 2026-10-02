@@ -86,6 +86,8 @@ float lapPixels(const Shape &shape);
 
 void readControls(const float *dialed, const Modulation *modulation, Reading &out);
 
+void hurry(Reading &reading, float speed);
+
 Hsv routedColor(const float *dialed, const Modulation *modulation);
 
 }

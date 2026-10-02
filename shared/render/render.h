@@ -158,7 +158,7 @@ struct Frame {
 };
 
 void renderFrame(const float *controls, float quarterNotes, uint32_t milliseconds,
-                 const OneshotClock &oneshot, const PadFinger &pad, Motion &motion, Wall &wall,
-                 Frame &out);
+                 const OneshotClock &oneshot, const PadFinger &pad, float speed, Motion &motion,
+                 Wall &wall, Frame &out);
 
 }

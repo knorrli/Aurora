@@ -98,6 +98,10 @@ class Playback {
   void fire(uint8_t index, float beats);
   void moveFader(uint8_t layer, uint8_t value);
   bool movePad(uint8_t cc, uint8_t value);
+  void markedStrips(bool *out) const;
+  uint8_t padEffect() const;
+  float padSpeed() const;
+  void playEffect(float beats);
 
   Library &library;
   Tempo tempo;
@@ -120,6 +124,9 @@ class Playback {
 
   float faders[AURORA_PATCH_LAYERS] = {};
   Pad pad;
+  bool frozen = false;
+  render::Rgb frozenPixels[render::STRIPS * render::PIXELS];
+  render::Par frozenPars[render::PARS];
 
   bool firing = false;
   Oneshot oneshot;

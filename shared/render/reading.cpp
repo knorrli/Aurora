@@ -201,4 +201,15 @@ Hsv routedColor(const float *dialed, const Modulation *modulation) {
   return { at(CC_HUE), at(CC_SATURATION), at(CC_VALUE) };
 }
 
+void hurry(Reading &reading, float speed) {
+  reading.lfoBeats /= speed;
+  reading.shape.lapsPerBeat *= speed;
+  reading.shape.tailBeats /= speed;
+  reading.fan.speedPixels *= speed;
+  reading.field.cellsPerBeat *= speed;
+  reading.flow.cyclesPerBeat *= speed;
+  reading.scatter.rate *= speed;
+  reading.scatter.speed *= speed;
+}
+
 }

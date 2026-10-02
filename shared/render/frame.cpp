@@ -38,6 +38,7 @@ struct FrameContext {
   uint8_t spotRouteCount;
   float stripLaps[STRIPS];
   const PadFinger *pad;
+  float speed;
   PadLevels padLevels;
   float padElapsed;
 };
@@ -136,6 +137,7 @@ static void readStrip(const FrameContext &context, uint8_t index, float *padShif
                padReaching(context, (int8_t)index), modulation);
   carryPadShift(context.padElapsed, padShift, modulation);
   readControls(context.dialed, &modulation, strip.reading);
+  hurry(strip.reading, context.speed);
 
   strip.flowTime = context.flowTime + modulation.shift[CC_FLOW_RATE];
   strip.fieldDrift = context.fieldDrift + modulation.shift[CC_FIELD_SPEED];
@@ -294,17 +296,19 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
 }
 
 void renderFrame(const float *controls, float quarterNotes, uint32_t milliseconds,
-                 const OneshotClock &oneshot, const PadFinger &pad, Motion &motion, Wall &wall,
-                 Frame &out) {
+                 const OneshotClock &oneshot, const PadFinger &pad, float speed, Motion &motion,
+                 Wall &wall, Frame &out) {
   setOneshotClock(oneshot);
   FrameContext context;
   context.dialed = controls;
   context.pad = &pad;
+  context.speed = speed;
   context.padLevels = { pad.x, pad.y };
   context.palette = roundedControl(controls[CC_PALETTE]);
   context.beats = beatsAt(quarterNotes, roundedControl(controls[CC_TEMPO_DIVISION]));
 
   readControls(controls, nullptr, context.wallReading);
+  hurry(context.wallReading, speed);
   context.lfo = anchoredLfoPhase(motion, context.beats, 1.0f / context.wallReading.lfoBeats);
   out.lfo = context.lfo;
 
@@ -312,6 +316,7 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   gatherRoutes(controls, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
                modulation);
   readControls(controls, &modulation, context.wallReading);
+  hurry(context.wallReading, speed);
   readPars(controls, modulation, context.lfo, out);
   holdParPulses(milliseconds, wall, out);
   readFan(context.wallReading, out.fan);
