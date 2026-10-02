@@ -72,7 +72,7 @@ A 5 V WS2812 needs about 3.5 V for a high. Unshifted 3.3 V data gives random spe
 
 - Full scale is far brighter than the strips; the per-fixture `master` has to be set in the room.
 - Dimming on +0 holds hue down to 5 %; scaling RGB down does not.
-- The four PARs stand on the floor pointing up; their order is known, their position is not.
+- The four PARs stand on the floor pointing up; their order is known, their position is not. From left to right: PAR 4, 3, 2, 1.
 
 ## Measured
 
