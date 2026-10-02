@@ -34,7 +34,7 @@
                                 ['#fff', offset(at, -1), offset(at, 1)], ['var(--bg)', offset(at, 1), offset(at, 2)],
                                 ['transparent', offset(at, 2), '100%']);
 
-  const HUE_STEPS_PER_FADER_STEP = 2;
+  const hueStepsPerFaderStep = () => Preview.convert(Patch.CC.parHueOffset, 127) / 127;
 
   function wrappedSpans(low, high) {
     const spans = [[Math.max(0, low), Math.min(127, high)]];
@@ -45,14 +45,14 @@
 
   function hueBandOf(input) {
     const live = Editor.session.liveNamed();
-    const reach = Math.abs(Preview.convert(Patch.CC.parHueRange, live.parHueRange)) / HUE_STEPS_PER_FADER_STEP;
+    const reach = Math.abs(Preview.convert(Patch.CC.parHueRange, live.parHueRange)) / hueStepsPerFaderStep();
     if (reach < 0.5) return null;
     const center = +input.value;
     const offsets = Preview.controlAtPars(Patch.CC.parHueOffset);
     const places = Preview.parHuePlaces();
     return {
       spans: wrappedSpans(center - reach, center + reach),
-      marks: offsets.map((offset, par) => (((offset + places[par] / HUE_STEPS_PER_FADER_STEP) % 128) + 128) % 128),
+      marks: offsets.map((offset, par) => (((offset + places[par] / hueStepsPerFaderStep()) % 128) + 128) % 128),
     };
   }
 

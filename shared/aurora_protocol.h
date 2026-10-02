@@ -138,10 +138,13 @@ static const uint8_t WAVE_SQUARE = 96;
 
 static const uint8_t AURORA_ROUTE_PHASE_STEPS = 16;
 
-static inline float aurora_route_delay(uint8_t value) {
+static inline uint8_t aurora_route_phase_step(uint8_t value) {
     const uint8_t last = AURORA_ROUTE_PHASE_STEPS - 1;
-    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
-    return (float)step / (float)AURORA_ROUTE_PHASE_STEPS;
+    return (uint8_t)(((uint16_t)value * last + 63) / 127);
+}
+
+static inline float aurora_route_delay(uint8_t value) {
+    return (float)aurora_route_phase_step(value) / (float)AURORA_ROUTE_PHASE_STEPS;
 }
 
 static const uint8_t AURORA_ROUTES = 8;

@@ -88,6 +88,51 @@
       };
     }
 
+    const Protocol = global.AuroraProtocol;
+
+    function stepsOf(reader) {
+      const outputs = Array.from({ length: 128 }, (_, value) => reader(value));
+      const starts = outputs.flatMap((output, value) => (value === 0 || output !== outputs[value - 1] ? [value] : []));
+      const last = starts.length - 1;
+      return {
+        count: starts.length,
+        stepOf: value => starts.filter(start => start <= value).length - 1,
+        valueOf: step => (step <= 0 ? 0 : step >= last ? 127 : Math.round((starts[step] + starts[step + 1] - 1) / 2)),
+        outputOf: step => outputs[starts[step]],
+      };
+    }
+
+    const steps = {
+      lfoPeriod: stepsOf(value => renderer._aurora_lfo_period_beats(value)),
+      transition: stepsOf(value => renderer._aurora_transition_length(value)),
+      ratio: stepsOf(value => renderer._aurora_ratio_step(value)),
+      arpMode: stepsOf(value => renderer._aurora_arp_mode_of(value)),
+      hueLayout: stepsOf(value => renderer._aurora_hue_layout_of(value)),
+      threeWay: stepsOf(value => renderer._aurora_three_way(value)),
+    };
+
+    Object.assign(Protocol, {
+      steps,
+      signedOf: value => renderer._aurora_signed(value),
+      lfoPeriodBeats: value => renderer._aurora_lfo_period_beats(value),
+      transitionBeats: value => renderer._aurora_transition_length(value),
+      routeRatio: value => renderer._aurora_ratio(value),
+      routeOnce: value => !!renderer._aurora_once(value),
+      routeRatioValue: (ratio, once) => steps.ratio.valueOf((once ? Protocol.ROUTE_MAX_RATIO : 0) + ratio - 1),
+      routePhaseStep: value => renderer._aurora_phase_step(value),
+      arpMode: value => renderer._aurora_arp_mode_of(value),
+      arpModeValue: mode => steps.arpMode.valueOf(mode),
+      hueLayout: value => renderer._aurora_hue_layout_of(value),
+      hueLayoutValue: layout => steps.hueLayout.valueOf(layout),
+      isOn: value => !!renderer._aurora_switch_on(value),
+      threeWayPosition: value => renderer._aurora_three_way(value),
+      threeWayValue: position => steps.threeWay.valueOf(position),
+      routeArp: destination => renderer._aurora_destination_arp(destination),
+      routeBipolar: destination => !!renderer._aurora_destination_bipolar(destination),
+      routeTarget: destination => renderer._aurora_destination_target(destination),
+      routeDestination: (target, arp, bipolar) => renderer._aurora_destination(target, arp, bipolar ? 1 : 0),
+    });
+
     const PATCH_BYTES = 4 + global.AuroraProtocol.PATCH_LAYERS * global.AuroraProtocol.PATCH_CC_COUNT;
     const NO_ONESHOT = 127;
     const drawnAt = renderer._aurora_drawn_controls();
@@ -133,6 +178,12 @@
       lfoWave: (phase, wave) => renderer._aurora_lfo_wave(phase, wave),
       waveMean: wave => renderer._aurora_wave_mean(wave),
       convert: (cc, value) => renderer._aurora_convert(cc, value),
+      fanWaveAt: (phase, frequency, strip) => renderer._aurora_fan_wave_at(phase, frequency, strip),
+      arpPassLength: mode => renderer._aurora_arp_pass_length(mode),
+      arpTurnsPerPass: (mode, spread) => renderer._aurora_arp_turns_per_pass(mode, spread),
+      arpReversed: (mode, spread) => !!renderer._aurora_arp_reversed(mode, spread),
+      routeTurns: (ratio, phase, clock) => renderer._aurora_route_turns(ratio, phase, clock),
+      bendSpeedRatio: bend => renderer._aurora_bend_speed_ratio(bend),
 
       controlAtStrips: cc => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_control_at_strip(cc, i)),
       parHuePlaces: () => Array.from(huePlaces),

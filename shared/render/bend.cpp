@@ -24,6 +24,11 @@ static float bendSpeed(float along, float amount, float at) {
   return 1.0f + amount * BEND_MAX * cosf(0.5f * TURN * fabsf(along - at) / reach);
 }
 
+float bendSpeedRatio(float amount) {
+  const float reach = fabsf(amount) * BEND_MAX;
+  return (1.0f + reach) / (1.0f - reach);
+}
+
 const BendTable *bendFor(float amount, float at) {
   if (fabsf(amount) <= 0.001f) return nullptr;
   static BendTable table;

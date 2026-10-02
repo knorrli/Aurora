@@ -80,18 +80,9 @@
   const TEMPO_DIVISION = {"quarter":0,"bar":1,"half":2,"eighth":3,"eighthTriplet":4,"sixteenth":5};
   const FIELD_FORM = {"gradient":0,"region":1,"allButRegion":2};
   const FIELD_DIRECTION = {"horizontal":0,"vertical":1,"shape":2};
-  const SWITCH_ON_AT = 64;
-  const THREE_WAY_STARTS = [0,43,86];
-  const THREE_WAY_VALUES = [0,64,127];
   const ARP = {"unison":0,"steps":1,"ripple":2};
   const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
-  const ARP_MODE_COUNT = 6;
   const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
-  const HUE_LAYOUT_COUNT = 5;
-  const ARP_DESTINATION_BASE = 120;
-  const ARP_CONTROLS = ["parHueOffset","parSaturation","parValue"];
-  const BIPOLAR_DESTINATION_BASE = 80;
-  const BIPOLAR_CONTROLS = ["hue","parHueOffset","parHueRange","arpSpread","shapePosition","shapeBend","shapeBendAt","fanSpread","fanLfo","fanPhase","fieldPosition","fieldHue","flowHue","coreHue"];
   const WAVE_SWELL = 32;
   const WAVE_FALL = 64;
   const WAVE_SQUARE = 96;
@@ -134,45 +125,7 @@
   const NAME_BY_CC = {};
   for (const [name, number] of Object.entries(CC)) NAME_BY_CC[number] = name;
 
-  const steppedIndex = (value, count) =>
-    Math.min(count - 1, Math.floor((value * (count - 1) + 63) / 127));
-
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
-  const routeRatioStep = value => steppedIndex(value, 2 * ROUTE_MAX_RATIO);
-  const routeRatio = value => 1 + routeRatioStep(value) % ROUTE_MAX_RATIO;
-  const routeOnce = value => routeRatioStep(value) >= ROUTE_MAX_RATIO;
-  const routeRatioValue = (ratio, once) =>
-    Math.round(((once ? ROUTE_MAX_RATIO : 0) + ratio - 1) * 127 / (2 * ROUTE_MAX_RATIO - 1));
-  const routePhaseStep = value => steppedIndex(value, ROUTE_PHASE_STEPS);
-
-  const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
-  const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
-  const hueLayout = value => steppedIndex(value, HUE_LAYOUT_COUNT);
-  const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
-
-  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
-    : ARP.steps + (destination - ARP_DESTINATION_BASE) % 2);
-  const routeBipolar = destination => destination >= BIPOLAR_DESTINATION_BASE
-    && destination < BIPOLAR_DESTINATION_BASE + BIPOLAR_CONTROLS.length;
-  const routeTarget = destination => {
-    if (destination < BIPOLAR_DESTINATION_BASE) return destination;
-    if (routeBipolar(destination)) return CC[BIPOLAR_CONTROLS[destination - BIPOLAR_DESTINATION_BASE]];
-    if (destination < ARP_DESTINATION_BASE) return 0;
-    const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
-    return name ? CC[name] : 0;
-  };
-  const routeDestination = (target, arp, bipolar) => {
-    if (arp === ARP.unison) {
-      const index = BIPOLAR_CONTROLS.indexOf(NAME_BY_CC[target]);
-      return bipolar && index >= 0 ? BIPOLAR_DESTINATION_BASE + index : target;
-    }
-    const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
-    return index < 0 ? target : ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
-  };
-
-  const isOn = value => value >= SWITCH_ON_AT;
-  const threeWayPosition = value =>
-    THREE_WAY_STARTS.filter(start => value >= start).length - 1;
 
   global.AuroraProtocol = {
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
@@ -189,12 +142,9 @@
     TEMPO_DIVISION,
     FIELD_FORM,
     FIELD_DIRECTION,
-    THREE_WAY_VALUES,
     ARP,
     ARP_MODE,
     HUE_LAYOUT,
-    ARP_CONTROLS,
-    BIPOLAR_CONTROLS,
     WAVE_SWELL,
     WAVE_FALL,
     WAVE_SQUARE,
@@ -229,7 +179,6 @@
     SYSEX_TYPE,
     SYSEX_STATUS,
     LIBRARY_STATE,
-    steppedIndex, routeCC, routeRatio, routeOnce, routeRatioValue, routePhaseStep, isOn, threeWayPosition,
-    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeBipolar, routeTarget, routeDestination,
+    routeCC,
   };
 })(typeof window === 'undefined' ? globalThis : window);

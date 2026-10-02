@@ -41,14 +41,14 @@ uint8_t arpGroupOf(const Arp &arp, uint8_t par) {
   }
 }
 
-static uint8_t passLength(const Arp &arp) {
+uint8_t passLength(const Arp &arp) {
   if (arp.mode == ARP_MODE_BOUNCE) return PARS > 1 ? 2 * PARS - 2 : 1;
   return arpGroupCount(arp);
 }
 
-static bool reversed(const Arp &arp) { return arp.spread < 0.0f && hasDirection(arp.mode); }
+bool reversed(const Arp &arp) { return arp.spread < 0.0f && hasDirection(arp.mode); }
 
-static int32_t turnsPerPass(const Arp &arp) {
+int32_t turnsPerPass(const Arp &arp) {
   const long turns = lroundf(fabsf(arp.spread) * (float)passLength(arp));
   return turns < 1 ? 1 : (int32_t)turns;
 }

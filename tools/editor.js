@@ -44,14 +44,14 @@
   }
 
   const TIME_FIELDS = {
-    transitionTime: { names: Patch.TRANSITION_NAMES, step: Patch.transitionStep, value: Patch.transitionValue },
-    accentTime: { names: Patch.LFO_PERIOD_NAMES, step: Patch.periodStep, value: Patch.periodValue },
+    transitionTime: { names: Patch.transitionNames, step: Patch.transitionStep, value: Patch.transitionValue },
+    accentTime: { names: () => Patch.LFO_PERIOD_NAMES, step: Patch.periodStep, value: Patch.periodValue },
   };
 
   function buildHead() {
     for (const [field, steps] of Object.entries(TIME_FIELDS)) {
       const select = byId(field);
-      dom.setOptions(select, steps.names.map((text, step) => [steps.value(step), text]), '');
+      dom.setOptions(select, steps.names().map((text, step) => [steps.value(step), text]), '');
       select.addEventListener('change', () => {
         session.editing()[field] = +select.value;
         session.changed();

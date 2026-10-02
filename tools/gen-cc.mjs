@@ -56,12 +56,6 @@ function constant(name) {
   return constants[name];
 }
 
-function functionBody(name) {
-  const at = header.indexOf(` ${name}(`);
-  if (at < 0) fail(`${name}()`);
-  return header.slice(at, header.indexOf('\n}', at));
-}
-
 const cc = {};
 const tags = {};
 for (const match of enumBody('AuroraCC').matchAll(/^\s*CC_([A-Z0-9_]+)\s*=\s*(\d+),(?: *\/\/ *([^\n]*))?/gm)) {
@@ -105,40 +99,6 @@ const routeDefaults = Object.fromEntries(Object.entries(routeField)
 const lfoPeriods = (header.match(/AURORA_LFO_PERIODS\[\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_LFO_PERIODS'))[1]
   .split(',').map(text => text.trim().replace(/f$/, '')).filter(Boolean).map(Number);
 
-const STEPPED = /step = \(uint8_t\)\(\(\(uint16_t\)value \* last \+ 63\) \/ 127\);/;
-for (const name of ['aurora_route_ratio_step', 'aurora_route_delay', 'aurora_lfo_period', 'aurora_arp_mode', 'aurora_hue_layout']) {
-  if (!STEPPED.test(functionBody(name))) {
-    throw new Error(`${HEADER}: ${name}() no longer steps as steppedIndex() in tools/cc.js does`);
-  }
-}
-
-const switchOnAt = Number((functionBody('aurora_switch_is_on').match(/value >= (\d+)/) || fail('the switch threshold'))[1]);
-const threeWayStarts = [0, ...[...functionBody('aurora_three_way_position').matchAll(/value < (\d+)/g)].map(match => Number(match[1]))];
-if (threeWayStarts.length !== 3) fail('the three-way bands');
-const threeWayValues = threeWayStarts.map((start, position) =>
-  position === 0 ? 0 : position === threeWayStarts.length - 1 ? 127
-    : Math.round((start + threeWayStarts[position + 1] - 1) / 2));
-
-const controlList = name => (header.match(new RegExp(`${name}\\[\\]\\s*=\\s*\\{([^}]*)\\}`)) || fail(name))[1]
-  .split(',').map(text => text.trim()).filter(Boolean)
-  .map(text => camel((text.match(/^CC_([A-Z0-9_]+)$/) || fail(`a CC in ${name}, not ${text}`))[1]));
-const arpControls = controlList('AURORA_ARP_CONTROLS');
-const bipolarControls = controlList('AURORA_BIPOLAR_CONTROLS');
-const DESTINATION_PACKING = [
-  ['aurora_route_arp', /ARP_STEPS \+ \(destination - AURORA_ARP_DESTINATION_BASE\) % 2/],
-  ['aurora_route_bipolar', /destination >= AURORA_BIPOLAR_DESTINATION_BASE\s+&& destination < AURORA_BIPOLAR_DESTINATION_BASE \+ AURORA_BIPOLAR_CONTROL_COUNT/],
-  ['aurora_route_target', /AURORA_BIPOLAR_CONTROLS\[destination - AURORA_BIPOLAR_DESTINATION_BASE\][\s\S]*\(destination - AURORA_ARP_DESTINATION_BASE\) \/ 2/],
-  ['aurora_route_destination', /AURORA_BIPOLAR_DESTINATION_BASE \+ index\)[\s\S]*AURORA_ARP_DESTINATION_BASE \+ index \* 2 \+ \(arp - ARP_STEPS\)/],
-];
-for (const [name, shape] of DESTINATION_PACKING) {
-  if (!shape.test(functionBody(name))) {
-    throw new Error(`${HEADER}: ${name}() no longer packs destinations as routeTarget() in tools/cc.js does`);
-  }
-}
-const arpModeEntries = enumEntries('AuroraArpMode');
-const arpModeCount = (arpModeEntries.find(([key]) => key === 'ARP_MODES') || fail('ARP_MODES'))[1];
-const hueLayoutCount = (enumEntries('AuroraHueLayout').find(([key]) => key === 'HUE_LAYOUTS') || fail('HUE_LAYOUTS'))[1];
-
 const programs = Object.fromEntries(enumEntries('AuroraProgram'));
 const notes = Object.fromEntries(enumEntries('AuroraNote'));
 const patchLayers = Object.fromEntries(enumEntries('AuroraPatchLayer'));
@@ -157,18 +117,9 @@ const generated = {
   TEMPO_DIVISION: enumByPrefix('AuroraTempoDivision', 'TEMPO_DIVISION_'),
   FIELD_FORM: enumByPrefix('AuroraFieldForm', 'FIELD_FORM_'),
   FIELD_DIRECTION: enumByPrefix('AuroraFieldDirection', 'FIELD_DIRECTION_'),
-  SWITCH_ON_AT: switchOnAt,
-  THREE_WAY_STARTS: threeWayStarts,
-  THREE_WAY_VALUES: threeWayValues,
   ARP: enumByPrefix('AuroraArp', 'ARP_'),
   ARP_MODE: enumByPrefix('AuroraArpMode', 'ARP_MODE_'),
-  ARP_MODE_COUNT: arpModeCount,
   HUE_LAYOUT: enumByPrefix('AuroraHueLayout', 'HUE_LAYOUT_'),
-  HUE_LAYOUT_COUNT: hueLayoutCount,
-  ARP_DESTINATION_BASE: constant('AURORA_ARP_DESTINATION_BASE'),
-  ARP_CONTROLS: arpControls,
-  BIPOLAR_DESTINATION_BASE: constant('AURORA_BIPOLAR_DESTINATION_BASE'),
-  BIPOLAR_CONTROLS: bipolarControls,
   WAVE_SWELL: constant('WAVE_SWELL'),
   WAVE_FALL: constant('WAVE_FALL'),
   WAVE_SQUARE: constant('WAVE_SQUARE'),
@@ -209,8 +160,7 @@ const generated = {
 const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
 const width = Math.max(...pairs.map(([name]) => name.length));
 const ccBody = pairs.map(([name, number]) => `    ${name}:${' '.repeat(width - name.length)} ${number},`).join('\n');
-const INTERNAL = new Set(['SWITCH_ON_AT', 'THREE_WAY_STARTS', 'ROUTE_BASE',
-  'ARP_DESTINATION_BASE', 'BIPOLAR_DESTINATION_BASE', 'ARP_MODE_COUNT', 'HUE_LAYOUT_COUNT']);
+const INTERNAL = new Set(['ROUTE_BASE']);
 const constantLines = Object.entries(generated)
   .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');
 
@@ -232,51 +182,12 @@ ${constantLines}
   const NAME_BY_CC = {};
   for (const [name, number] of Object.entries(CC)) NAME_BY_CC[number] = name;
 
-  const steppedIndex = (value, count) =>
-    Math.min(count - 1, Math.floor((value * (count - 1) + 63) / 127));
-
   const routeCC = (route, field) => ROUTE_BASE[route] + field;
-  const routeRatioStep = value => steppedIndex(value, 2 * ROUTE_MAX_RATIO);
-  const routeRatio = value => 1 + routeRatioStep(value) % ROUTE_MAX_RATIO;
-  const routeOnce = value => routeRatioStep(value) >= ROUTE_MAX_RATIO;
-  const routeRatioValue = (ratio, once) =>
-    Math.round(((once ? ROUTE_MAX_RATIO : 0) + ratio - 1) * 127 / (2 * ROUTE_MAX_RATIO - 1));
-  const routePhaseStep = value => steppedIndex(value, ROUTE_PHASE_STEPS);
-
-  const arpMode = value => steppedIndex(value, ARP_MODE_COUNT);
-  const arpModeValue = mode => Math.round(mode * 127 / (ARP_MODE_COUNT - 1));
-  const hueLayout = value => steppedIndex(value, HUE_LAYOUT_COUNT);
-  const hueLayoutValue = layout => Math.round(layout * 127 / (HUE_LAYOUT_COUNT - 1));
-
-  const routeArp = destination => (destination < ARP_DESTINATION_BASE ? ARP.unison
-    : ARP.steps + (destination - ARP_DESTINATION_BASE) % 2);
-  const routeBipolar = destination => destination >= BIPOLAR_DESTINATION_BASE
-    && destination < BIPOLAR_DESTINATION_BASE + BIPOLAR_CONTROLS.length;
-  const routeTarget = destination => {
-    if (destination < BIPOLAR_DESTINATION_BASE) return destination;
-    if (routeBipolar(destination)) return CC[BIPOLAR_CONTROLS[destination - BIPOLAR_DESTINATION_BASE]];
-    if (destination < ARP_DESTINATION_BASE) return 0;
-    const name = ARP_CONTROLS[Math.floor((destination - ARP_DESTINATION_BASE) / 2)];
-    return name ? CC[name] : 0;
-  };
-  const routeDestination = (target, arp, bipolar) => {
-    if (arp === ARP.unison) {
-      const index = BIPOLAR_CONTROLS.indexOf(NAME_BY_CC[target]);
-      return bipolar && index >= 0 ? BIPOLAR_DESTINATION_BASE + index : target;
-    }
-    const index = ARP_CONTROLS.indexOf(NAME_BY_CC[target]);
-    return index < 0 ? target : ARP_DESTINATION_BASE + index * 2 + (arp - ARP.steps);
-  };
-
-  const isOn = value => value >= SWITCH_ON_AT;
-  const threeWayPosition = value =>
-    THREE_WAY_STARTS.filter(start => value >= start).length - 1;
 
   global.AuroraProtocol = {
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
 ${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `    ${name},`).join('\n')}
-    steppedIndex, routeCC, routeRatio, routeOnce, routeRatioValue, routePhaseStep, isOn, threeWayPosition,
-    arpMode, arpModeValue, hueLayout, hueLayoutValue, routeArp, routeBipolar, routeTarget, routeDestination,
+    routeCC,
   };
 })(typeof window === 'undefined' ? globalThis : window);
 `;

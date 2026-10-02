@@ -17,6 +17,12 @@ uint8_t arpGroupCount(const Arp &arp);
 
 uint8_t arpGroupOf(const Arp &arp, uint8_t par);
 
+uint8_t passLength(const Arp &arp);
+
+int32_t turnsPerPass(const Arp &arp);
+
+bool reversed(const Arp &arp);
+
 struct Pulse {
   float start;
   float length;

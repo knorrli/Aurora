@@ -2,6 +2,9 @@
 #include <string.h>
 
 #include <emscripten/emscripten.h>
+#include <arp.h>
+#include <bend.h>
+#include <fan.h>
 #include <engines.h>
 #include <morph.h>
 #include <palettes.h>
@@ -172,8 +175,47 @@ EMSCRIPTEN_KEEPALIVE float aurora_convert(int cc, int value) {
   return render::controlValue((uint8_t)cc, (uint8_t)value);
 }
 
-EMSCRIPTEN_KEEPALIVE float aurora_lfo_period_beats(int value) {
-  return aurora_lfo_period((uint8_t)value);
+EMSCRIPTEN_KEEPALIVE float aurora_lfo_period_beats(int value) { return aurora_lfo_period((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE float aurora_transition_length(int value) { return aurora_transition_beats((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE float aurora_signed(int value) { return render::signedOf((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_ratio_step(int value) { return aurora_route_ratio_step((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_ratio(int value) { return aurora_route_ratio((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_once(int value) { return aurora_route_once((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_phase_step(int value) { return aurora_route_phase_step((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_arp_mode_of(int value) { return aurora_arp_mode((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_hue_layout_of(int value) { return aurora_hue_layout((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_switch_on(int value) { return aurora_switch_is_on((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_three_way(int value) { return aurora_three_way_position((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_destination_arp(int destination) { return aurora_route_arp((uint8_t)destination); }
+EMSCRIPTEN_KEEPALIVE int aurora_destination_bipolar(int destination) { return aurora_route_bipolar((uint8_t)destination); }
+EMSCRIPTEN_KEEPALIVE int aurora_destination_target(int destination) { return aurora_route_target((uint8_t)destination); }
+EMSCRIPTEN_KEEPALIVE int aurora_destination(int target, int arp, int bipolar) {
+  return aurora_route_destination((uint8_t)target, (uint8_t)arp, bipolar != 0);
+}
+
+EMSCRIPTEN_KEEPALIVE float aurora_fan_wave_at(int phase, int frequency, int strip) {
+  render::Fan fan = {};
+  fan.phase = render::controlValue(CC_FAN_PHASE, (uint8_t)phase);
+  fan.frequency = render::controlValue(CC_FAN_FREQUENCY, (uint8_t)frequency);
+  return render::fanWave(fan, (uint8_t)strip);
+}
+
+static render::Arp arpOf(int mode, int spread) {
+  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CC_ARP_SPREAD, (uint8_t)spread) };
+}
+
+EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_length(int mode) { return render::passLength(arpOf(mode, 127)); }
+EMSCRIPTEN_KEEPALIVE int aurora_arp_turns_per_pass(int mode, int spread) { return render::turnsPerPass(arpOf(mode, spread)); }
+EMSCRIPTEN_KEEPALIVE int aurora_arp_reversed(int mode, int spread) { return render::reversed(arpOf(mode, spread)); }
+
+EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int phase, float clock) {
+  const render::RouteTiming timing = { 0, aurora_route_ratio((uint8_t)ratio), aurora_route_once((uint8_t)ratio),
+                                       aurora_route_delay((uint8_t)phase) };
+  return render::turnsOn(timing, clock, 0.0f);
+}
+
+EMSCRIPTEN_KEEPALIVE float aurora_bend_speed_ratio(int bend) {
+  return render::bendSpeedRatio(render::controlValue(CC_SHAPE_BEND, (uint8_t)bend));
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {

@@ -38,7 +38,6 @@
   const CONTINUOUS = NAMES.filter(name => !isSwitch(name));
 
   const clampToSevenBits = value => (value < 0 ? 0 : value > 127 ? 127 : value | 0);
-  const signedOf = value => (value < 64 ? (value - 64) / 64 : (value - 64) / 63);
 
   const real = (name, value) => preview().convert(CC[name], value);
 
@@ -66,11 +65,14 @@
   };
   const LFO_PERIOD_NAMES = Protocol.LFO_PERIODS.map(beats => PERIOD_NAMES[beats]);
   const lapName = lapsPerBeat => PERIOD_NAMES[Math.round(1000 / Math.abs(lapsPerBeat)) / 1000];
-  const periodStep = value => Protocol.steppedIndex(value, Protocol.LFO_PERIODS.length);
-  const periodValue = step => Math.round(step * 127 / (Protocol.LFO_PERIODS.length - 1));
-  const TRANSITION_NAMES = [...LFO_PERIOD_NAMES, 'none'];
-  const transitionStep = value => Protocol.steppedIndex(value, TRANSITION_NAMES.length);
-  const transitionValue = step => Math.round(step * 127 / (TRANSITION_NAMES.length - 1));
+  const periodStep = value => Protocol.steps.lfoPeriod.stepOf(value);
+  const periodValue = step => Protocol.steps.lfoPeriod.valueOf(step);
+  const transitionNames = () => Array.from({ length: Protocol.steps.transition.count }, (_, step) => {
+    const beats = Protocol.steps.transition.outputOf(step);
+    return beats === 0 ? 'none' : PERIOD_NAMES[beats];
+  });
+  const transitionStep = value => Protocol.steps.transition.stepOf(value);
+  const transitionValue = step => Protocol.steps.transition.valueOf(step);
 
   const TEMPO_DIVISION_NAMES = {
     bar: 'bar', half: 'half', quarter: 'quarter',
@@ -118,7 +120,7 @@
   };
 
   const ROUTE_READOUTS = {
-    amount: () => value => signed(signedOf(value)),
+    amount: () => value => signed(Protocol.signedOf(value)),
     ratio: route => (value, live, oneshotBeats) =>
       `×${Protocol.routeRatio(value)} · ${beatsText(cycleBeats(live, route, value, oneshotBeats))}`,
     phase: route => (value, live, oneshotBeats) => phaseText(value, live, route, oneshotBeats),
@@ -130,10 +132,8 @@
 
   const BARS = '▁▂▃▄▅▆▇█';
   const FAN_LANDMARKS = { 0: 'alike', 0.125: 'slope', 0.25: 'peak', 0.5: 'alternate' };
-  const fanTriangle = u => (u < 0.5 ? 4 * u - 1 : 3 - 4 * u);
-  const fract = x => x - Math.floor(x);
   const fanPicture = live => preview().WALL_STRIP_ORDER.map(strip => {
-    const wave = fanTriangle(fract(real('fanPhase', live.fanPhase) + real('fanFrequency', live.fanFrequency) * (strip - 1)));
+    const wave = preview().fanWaveAt(live.fanPhase, live.fanFrequency, strip - 1);
     return BARS[Math.round((wave + 1) / 2 * (BARS.length - 1))];
   }).join('');
 
@@ -176,10 +176,9 @@
       return arrow + ' ' + lapName(laps);
     },
     shapeBend: value => {
-      const bend = real('shapeBend', value) * 0.95;
-      if (Math.abs(bend) < 0.005) return 'even';
-      const ratio = (1 + Math.abs(bend)) / (1 - Math.abs(bend));
-      return ratio.toFixed(ratio < 10 ? 1 : 0) + '× ' + (bend > 0 ? 'faster' : 'slower');
+      const ratio = preview().bendSpeedRatio(value);
+      if (ratio < 1.01) return 'even';
+      return ratio.toFixed(ratio < 10 ? 1 : 0) + '× ' + (real('shapeBend', value) > 0 ? 'faster' : 'slower');
     },
     shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
     fanSpread: (value, live) => fanShift(live, Math.abs(real('fanSpread', value))),
@@ -197,7 +196,7 @@
 
     lfoRate: value => PERIOD_NAMES[real('lfoRate', value)],
 
-    scatterRate: value => 'every ' + PERIOD_NAMES[Protocol.LFO_PERIODS[periodStep(value)]],
+    scatterRate: value => 'every ' + PERIOD_NAMES[Protocol.lfoPeriodBeats(value)],
     scatterCount: value => real('scatterCount', value).toFixed(1) + ' a strip',
     scatterWidth: (value, live) => pixels(Math.max(1, real('scatterWidth', value) * preview().PIXELS / real('scatterCount', live.scatterCount))),
     scatterEdge: (value, live) => {
@@ -259,13 +258,9 @@
 
     parHueOffset: value => '+' + degrees(real('parHueOffset', value)),
     arpSpread: (value, live) => {
-      const spread = real('arpSpread', value);
-      const mode = Protocol.arpMode((live || DEFAULT).arpMode);
-      const steps = passLength(mode);
-      const cycles = Math.max(1, Math.round(Math.abs(spread) * steps));
-      const pace = `${Math.round(steps / cycles * 100) / 100} a cycle`;
-      const hasDirection = mode !== Protocol.ARP_MODE.random;
-      return spread < 0 && hasDirection ? '← ' + pace : pace;
+      const mode = (live || DEFAULT).arpMode;
+      const pace = `${Math.round(preview().arpPassLength(mode) / preview().arpTurnsPerPass(mode, value) * 100) / 100} a cycle`;
+      return preview().arpReversed(mode, value) ? '← ' + pace : pace;
     },
     parHueRange: value => {
       const reach = Math.round(real('parHueRange', value));
@@ -296,8 +291,8 @@
   };
 
   const OFF = 0, ON = 127;
-  const threeWayOptions = (positions, labels) =>
-    Object.entries(positions).map(([key, position]) => [Protocol.THREE_WAY_VALUES[position], labels[key]]);
+  const threeWayOptions = (positions, labels) => () =>
+    Object.entries(positions).map(([key, position]) => [Protocol.threeWayValue(position), labels[key]]);
 
   const soundingRoutes = live => ROUTES.filter(route =>
     Protocol.routeTarget(live[route.destination]) !== 0 && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
@@ -370,14 +365,6 @@
     pairs: 'pairs', mirror: 'mirror', random: 'random',
   };
 
-  const PARS_COUNT = 4;
-  const passLength = mode => ({
-    [Protocol.ARP_MODE.bounce]: 2 * PARS_COUNT - 2,
-    [Protocol.ARP_MODE.evensOdds]: 2,
-    [Protocol.ARP_MODE.pairs]: PARS_COUNT / 2,
-    [Protocol.ARP_MODE.mirror]: PARS_COUNT / 2,
-  }[mode] || PARS_COUNT);
-
   const arpRouted = live =>
     soundingRoutes(live).some(route => Protocol.routeArp(live[route.destination]) !== Protocol.ARP.unison);
 
@@ -387,8 +374,8 @@
     amounts: [],
     arpeggiator: [
       control('arpMode', 'Mode',
-        { kind: 'steps', step: Protocol.arpMode,
-          options: Object.entries(Protocol.ARP_MODE)
+        { kind: 'steps', step: value => Protocol.arpMode(value),
+          options: () => Object.entries(Protocol.ARP_MODE)
             .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]),
           inertWhen: live => !arpRouted(live) }),
       control('arpSpread', 'Steps',
@@ -497,8 +484,8 @@
       ]],
       ['Hue across them', [
         control('parHueLayout', 'Hue layout',
-          { kind: 'steps', step: Protocol.hueLayout,
-            options: Object.entries(Protocol.HUE_LAYOUT)
+          { kind: 'steps', step: value => Protocol.hueLayout(value),
+            options: () => Object.entries(Protocol.HUE_LAYOUT)
               .map(([key, layout]) => [Protocol.hueLayoutValue(layout), HUE_LAYOUT_NAMES[key]]),
             inertWhen: live => Math.round(real('parHueRange', live.parHueRange)) === 0 }),
         control('parHueRange', 'Hue range'),
@@ -533,7 +520,8 @@
     const target = Protocol.routeTarget(number);
     return number === 0 || (target !== 0 && routable(Protocol.NAME_BY_CC[target]));
   };
-  const arpCapable = name => Protocol.ARP_CONTROLS.includes(name);
+  const arpCapable = name => Protocol.routeDestination(CC[name], Protocol.ARP.steps, false) !== CC[name];
+  const bipolarCapable = name => Protocol.routeDestination(CC[name], Protocol.ARP.unison, true) !== CC[name];
   const isCircular = name => Protocol.hasTag(name, 'circular');
   const swings = name => Protocol.hasTag(name, 'rate');
 
@@ -579,9 +567,9 @@
   global.AuroraPatch = {
     LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
     CC, NAMES, CONTINUOUS, isSwitch, CONTROLS, READOUTS, DEFAULT,
-    clampToSevenBits, signedOf,
-    LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
+    clampToSevenBits,
+    LFO_PERIOD_NAMES, periodStep, periodValue, transitionNames, transitionStep, transitionValue, TEMPO_DIVISIONS,
     SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,
-    routable, routableDestination, arpCapable, perSpot, isCircular, swings, pointsFor,
+    routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
   };
 })(window);

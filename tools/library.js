@@ -216,7 +216,7 @@
     return slot < 0 ? null : slot;
   };
 
-  const lengthBeats = oneshot => Protocol.LFO_PERIODS[Patch.periodStep(oneshot.length)];
+  const lengthBeats = oneshot => Protocol.lfoPeriodBeats(oneshot.length);
   const emptyKit = () => new Array(Protocol.ONESHOTS).fill(null);
   const filledKit = library => library.kit.flatMap((oneshot, index) => (oneshot ? [index] : []));
   const firstEmptyKitPlace = library => {

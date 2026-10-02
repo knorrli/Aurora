@@ -16,19 +16,14 @@
   const panel = { root: null, blocks: [], add: null, free: null, target: null };
   const list = { root: null, count: null, lines: [] };
 
-  const ONCE_END = 0.9999;
+  const LAST_PHASE_DRAWN = 0.9999;
   const wrapped = value => value - Math.floor(value);
   const cycles = () => (session.editingOneshot() ? 1 : WAVE_CYCLES);
 
-  function turnsOf(route, clock, live) {
-    const ratio = Protocol.routeRatio(live[route.ratio]);
-    const delay = Protocol.routePhaseStep(live[route.phase]) / Protocol.ROUTE_PHASE_STEPS;
-    if (!Protocol.routeOnce(live[route.ratio])) return clock * ratio - delay;
-    return Math.min(ONCE_END, Math.max(0, (wrapped(clock) - delay) * ratio));
-  }
+  const turnsOf = (route, clock, live) => Preview.routeTurns(live[route.ratio], live[route.phase], clock);
 
   const shownPhase = phase => (phase < 0 || phase > cycles()
-    ? phase - Math.floor(phase / cycles()) * cycles() : Math.min(phase, cycles() * ONCE_END));
+    ? phase - Math.floor(phase / cycles()) * cycles() : Math.min(phase, cycles() * LAST_PHASE_DRAWN));
 
   const periodWidth = width => width - 2 * WAVE_OVERHANG;
   const xOfPhase = (phase, width) => WAVE_OVERHANG + phase / cycles() * periodWidth(width);
@@ -39,7 +34,7 @@
     const destination = Protocol.NAME_BY_CC[Protocol.routeTarget(live[route.destination])];
     const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live), wave);
     const centered = Patch.swings(destination) || Protocol.routeBipolar(live[route.destination]);
-    return Patch.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
+    return Protocol.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
   }
 
   function drawWave(canvas, route, live) {
@@ -181,7 +176,7 @@
 
   function paintPolarityRow(row, route, live) {
     const destination = live[route.destination];
-    const shown = Protocol.BIPOLAR_CONTROLS.includes(panel.target) && Protocol.routeArp(destination) === Protocol.ARP.unison;
+    const shown = Patch.bipolarCapable(panel.target) && Protocol.routeArp(destination) === Protocol.ARP.unison;
     paintDestinationRow(row, shown, Protocol.routeBipolar(destination));
   }
 
