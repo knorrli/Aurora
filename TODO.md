@@ -35,6 +35,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 ### PARs
 
 - Set the remaining two BCC145 to `A017` and `A025`, watching the personality (`docs/hardware.md`).
+- Give each PAR a different color and check the preview shows them in the same order as the wall.
 - Does a PAR want FastLED's squared value curve? Compare a strip and a PAR side by side at evenly spaced values.
 
 ### Controller
