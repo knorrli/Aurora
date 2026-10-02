@@ -88,6 +88,7 @@ const ARP = {"unison":0,"steps":1,"ripple":2};
 const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
 const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
 const PAD_MODE = {"perPatch":0,"morph":1,"effects":2};
+const ROUTE_SOURCE = {"lfo":0,"padX":1,"padY":2};
 const PAD_WIDTH = {"center":0,"middle":1,"all":2};
 const WAVE_SWELL = 32;
 const WAVE_FALL = 64;
@@ -99,7 +100,7 @@ const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4};
 const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0};
 const ROUTE_MAX_RATIO = 8;
 const ROUTE_PHASE_STEPS = 16;
-const PATCH_FORMAT = 5;
+const PATCH_FORMAT = 6;
 const LAST_PATCH_SLOT = 108;
 const PATCH_CC_COUNT = 128;
 const PATCH_NAME_LENGTH = 16;
@@ -152,6 +153,7 @@ export const Protocol = {
   ARP_MODE,
   HUE_LAYOUT,
   PAD_MODE,
+  ROUTE_SOURCE,
   PAD_WIDTH,
   WAVE_SWELL,
   WAVE_FALL,

@@ -37,6 +37,9 @@ struct FrameContext {
   SpotRoute spotRoutes[RENDER_ROUTES];
   uint8_t spotRouteCount;
   float stripLaps[STRIPS];
+  const PadFinger *pad;
+  PadLevels padLevels;
+  float padElapsed;
 };
 
 struct StripContext {
@@ -115,15 +118,23 @@ static void startTails(FrameContext &context, const Wall &wall, float quarterNot
   tail.flipped = context.travel.flipped;
 }
 
-static void readStrip(const FrameContext &context, uint8_t index, Modulation &modulation,
-                      StripContext &strip, Frame &out) {
+static const PadLevels *padReaching(const FrameContext &context, int8_t strip) {
+  if (!context.pad->playing) return nullptr;
+  if (strip >= 0 && !context.pad->strips[strip]) return nullptr;
+  return &context.padLevels;
+}
+
+static void readStrip(const FrameContext &context, uint8_t index, float *padShift,
+                      Modulation &modulation, StripContext &strip, Frame &out) {
   const Fan &fan = context.wallReading.fan;
   const float wave = fanWave(fan, index);
   strip.index = index;
   strip.fanShift = fan.lfo * wave;
   out.stripFanShift[index] = strip.fanShift;
 
-  gatherRoutes(context.dialed, context.wallReading.lfoBeats, context.lfo, strip.fanShift, modulation);
+  gatherRoutes(context.dialed, context.wallReading.lfoBeats, context.lfo, strip.fanShift,
+               padReaching(context, (int8_t)index), modulation);
+  carryPadShift(context.padElapsed, padShift, modulation);
   readControls(context.dialed, &modulation, strip.reading);
 
   strip.flowTime = context.flowTime + modulation.shift[CC_FLOW_RATE];
@@ -283,10 +294,13 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
 }
 
 void renderFrame(const float *controls, float quarterNotes, uint32_t milliseconds,
-                 const OneshotClock &oneshot, Motion &motion, Wall &wall, Frame &out) {
+                 const OneshotClock &oneshot, const PadFinger &pad, Motion &motion, Wall &wall,
+                 Frame &out) {
   setOneshotClock(oneshot);
   FrameContext context;
   context.dialed = controls;
+  context.pad = &pad;
+  context.padLevels = { pad.x, pad.y };
   context.palette = roundedControl(controls[CC_PALETTE]);
   context.beats = beatsAt(quarterNotes, roundedControl(controls[CC_TEMPO_DIVISION]));
 
@@ -295,7 +309,8 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   out.lfo = context.lfo;
 
   Modulation modulation;
-  gatherRoutes(controls, context.wallReading.lfoBeats, context.lfo, 0.0f, modulation);
+  gatherRoutes(controls, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
+               modulation);
   readControls(controls, &modulation, context.wallReading);
   readPars(controls, modulation, context.lfo, out);
   holdParPulses(milliseconds, wall, out);
@@ -307,6 +322,8 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   readBend(context.bend, shape.bounce, context.cellLength, shape.count, out.bend);
 
   startTravel(context, wall);
+  const float sinceLastFrame = context.beats - wall.lastBeats;
+  context.padElapsed = (sinceLastFrame > 0.0f && sinceLastFrame < (float)TAIL_MAX_BEATS) ? sinceLastFrame : 0.0f;
   startTails(context, wall, quarterNotes);
   context.flowTime = clockPhase(motion.flow, context.beats, context.wallReading.flow.cyclesPerBeat);
   const float fieldElapsed = context.beats - motion.lastFieldBeats;
@@ -333,7 +350,7 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
 
   for (uint8_t index = 0; index < STRIPS; index++) {
     StripContext strip;
-    readStrip(context, index, modulation, strip, out);
+    readStrip(context, index, motion.padShift[index], modulation, strip, out);
     const float randomize = strip.reading.scatter.randomize;
     const ScatterClock scatterNow = { strip.scatterTime, randomize };
     placeScatter(strip.reading.scatter, context.dialed, context.spotRoutes, context.spotRouteCount,

@@ -20,7 +20,7 @@ const EXPORTS = [
   'aurora_strip_count', 'aurora_par_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
   'aurora_palette_count', 'aurora_palette_name', 'aurora_palette_color', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats', 'aurora_transition_length', 'aurora_signed',
-  'aurora_ratio_step', 'aurora_ratio', 'aurora_once', 'aurora_phase_step', 'aurora_arp_mode_of', 'aurora_hue_layout_of',
+  'aurora_ratio_step', 'aurora_ratio', 'aurora_once', 'aurora_source', 'aurora_phase_step', 'aurora_arp_mode_of', 'aurora_hue_layout_of',
   'aurora_switch_on', 'aurora_three_way', 'aurora_destination_arp', 'aurora_destination_bipolar',
   'aurora_destination_target', 'aurora_destination', 'aurora_fan_wave_at', 'aurora_arp_pass_length',
   'aurora_arp_turns_per_pass', 'aurora_arp_reversed', 'aurora_route_turns', 'aurora_bend_speed_ratio',

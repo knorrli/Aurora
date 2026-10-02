@@ -79,6 +79,19 @@ void Playback::controlChange(uint8_t cc, uint8_t value) {
   }
 }
 
+render::PadFinger Playback::padFinger() const {
+  render::PadFinger finger;
+  finger.playing = pad.playing && pad.mode == PAD_MODE_PER_PATCH;
+  finger.x = (float)pad.x / 127.0f;
+  finger.y = (float)pad.y / 127.0f;
+  const uint8_t middle = render::STRIPS / 2;
+  const uint8_t reach = pad.width == PAD_WIDTH_CENTER ? 0 : pad.width == PAD_WIDTH_MIDDLE ? 1 : middle;
+  for (uint8_t strip = middle - reach; strip <= middle + reach; strip++) {
+    finger.strips[strip] = !pad.gaps || (strip - (middle - reach)) % 2 == 0;
+  }
+  return finger;
+}
+
 bool Playback::movePad(uint8_t cc, uint8_t value) {
   switch (cc) {
     case CC_PAD_X: pad.x = value; break;
@@ -294,7 +307,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }
 
-  render::renderFrame(composed, beats, micros / 1000, clock, motion, wall, rendered);
+  render::renderFrame(composed, beats, micros / 1000, clock, padFinger(), motion, wall, rendered);
   if (level < 255) {
     for (render::Rgb &pixel : rendered.pixels) {
       pixel = { render::scale8(pixel.r, level), render::scale8(pixel.g, level), render::scale8(pixel.b, level) };

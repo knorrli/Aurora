@@ -117,6 +117,8 @@ function connect(renderer) {
     transitionBeats: value => renderer._aurora_transition_length(value),
     routeRatio: value => renderer._aurora_ratio(value),
     routeOnce: value => !!renderer._aurora_once(value),
+    routeSource: value => renderer._aurora_source(value),
+    routeSourceValue: source => steps.ratio.valueOf(2 * Protocol.ROUTE_MAX_RATIO + source - 1),
     routeRatioValue: (ratio, once) => steps.ratio.valueOf((once ? Protocol.ROUTE_MAX_RATIO : 0) + ratio - 1),
     routePhaseStep: value => renderer._aurora_phase_step(value),
     arpMode: value => renderer._aurora_arp_mode_of(value),

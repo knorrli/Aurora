@@ -361,17 +361,22 @@ const SHAPE = {
   ],
 };
 
+const fromPad = (live, route) => Protocol.routeSource(live[route.ratio]) !== Protocol.ROUTE_SOURCE.lfo;
+
 for (const route of ROUTES) {
+  const followsPad = { inertWhen: live => fromPad(live, route) };
   control(route.amount, 'Amount');
   control(route.ratio, 'Ratio', {
+    ...followsPad,
     positions: {
       count: Protocol.ROUTE_MAX_RATIO,
       positionOf: value => Protocol.routeRatio(value) - 1,
-      valueAt: (position, live) => Protocol.routeRatioValue(position + 1, Protocol.routeOnce(live[route.ratio])),
+      valueAt: (position, live) => (fromPad(live, route) ? live[route.ratio]
+        : Protocol.routeRatioValue(position + 1, Protocol.routeOnce(live[route.ratio]))),
     },
   });
-  control(route.wave, 'Wave');
-  control(route.phase, 'Phase');
+  control(route.wave, 'Wave', followsPad);
+  control(route.phase, 'Phase', followsPad);
 }
 
 const gradientInert = { inertWhen: isGradient };
@@ -591,5 +596,5 @@ export {
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
   SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
-  routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
+  fromPad, routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

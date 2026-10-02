@@ -98,7 +98,7 @@
 - The pad has no off switch: not touching it means no effect.
 - The main touchpad rocker picks momentary or latching. Momentary: lifting the finger returns the wall to what the patch was doing. Latching: the last position stays after the finger lifts.
 - Touchpad rocker 1 picks one of three modes:
-  - Per patch: X and Y are route sources, like the LFO. A route's Wave also offers Pad X and Pad Y; such a route follows the finger, ignores its ratio and phase, and shares the patch's eight routes with the LFO.
+  - Per patch: X and Y are route sources, like the LFO. A route's Source picks the LFO, Pad X or Pad Y; a pad route follows the finger, ignores its ratio, wave and phase, and shares the patch's eight routes with the LFO.
   - Morph: four fixed looks in the corners, the same on every patch; the finger blends between them, and landing near a corner cuts to it. A corner look's switches land on the press and return on release.
   - Morph's X runs from still (left) to moving (right), Y from color (bottom) to white (top). The corners: a calm color wash, a fast color chase on the beat, a full white wash, a fast white chase. The color corners take the patch's palette.
   - Effects: five columns across X, left to right: focus, freeze, double time, stutter, strobe. Y sets how hard, from nothing at the bottom edge to full at the top. Corner looks are designed in the editor and kept in the library, like the kit. Effects are fixed behavior in the brain.

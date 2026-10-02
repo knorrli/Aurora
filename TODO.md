@@ -82,7 +82,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-- Build the pad on the brain: Pad X and Pad Y in the route's Wave, latching, the five effects, Morph's corner looks dialed in the library (`docs/design.md` § Touchpad and rockers).
+- Build the pad on the brain: the five effects, Morph's corner looks dialed in the library (`docs/design.md` § Touchpad and rockers).
 - Give the hook a note number, and read it on the brain: dark at once, back on release.
 
 ## Once Aurora v2 works

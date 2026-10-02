@@ -269,6 +269,13 @@ function setRouteArp(route, arp) {
 function setRouteBipolar(route, bipolar) {
   setValue(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison, bipolar));
 }
+
+function setRouteSource(route, source) {
+  const lfo = source === Protocol.ROUTE_SOURCE.lfo;
+  const arpeggiated = Protocol.routeArp(editing().base[Patch.CC[route.destination]] | 0) !== Protocol.ARP.unison;
+  if (!lfo && arpeggiated) write(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison, false));
+  setValue(route.ratio, lfo ? Protocol.routeRatioValue(1, false) : Protocol.routeSourceValue(source));
+}
 const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
 
 function sameOverrides(one, other) {
@@ -362,7 +369,7 @@ Object.assign(session, {
   transitioning,
   pinnedControls, liveControls, setValue, resetNames, changed,
   routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-  layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, select, selectLayer, resetTransition, forgetMissingPatches,
+  layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, setRouteSource, select, selectLayer, resetTransition, forgetMissingPatches,
   toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
   toggleCardBypass: card => toggleIn(session.bypassedCards, card),
 });

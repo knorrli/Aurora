@@ -85,6 +85,7 @@ class Playback {
   const float *drawnControls() const { return composed; }
   float oneshotProgress() const { return firing ? lastOneshotProgress : -1.0f; }
   uint8_t oneshotIndex() const { return firing ? firedIndex : AURORA_NO_ONESHOT; }
+  render::PadFinger padFinger() const;
 
  private:
   void advance(float beats);

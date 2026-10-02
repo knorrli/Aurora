@@ -3,6 +3,7 @@ import * as Rows from './control-rows.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
 import * as LayerDrop from './layer-drop.js';
+import * as Pad from './pad.js';
 import * as Patch from './patch.js';
 import { Preview } from './preview.js';
 import { session } from './session.js';
@@ -39,6 +40,17 @@ function departureAt(route, phase, live) {
   return Protocol.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
 }
 
+const SOURCE_NAMES = [['LFO', Protocol.ROUTE_SOURCE.lfo], ['pad X', Protocol.ROUTE_SOURCE.padX], ['pad Y', Protocol.ROUTE_SOURCE.padY]];
+const sourceOf = (route, live) => Protocol.routeSource(live[route.ratio]);
+const clockedPerSpot = (route, live) =>
+  Patch.perSpot(live[route.destination]) && sourceOf(route, live) === Protocol.ROUTE_SOURCE.lfo;
+const sourceName = source => SOURCE_NAMES.find(([, value]) => value === source)[0];
+
+function padDeparture(route, level, live) {
+  const bipolar = Protocol.routeBipolar(live[route.destination]);
+  return Protocol.signedOf(live[route.amount]) * (bipolar ? level - 0.5 : level);
+}
+
 function drawWave(canvas, route, live) {
   const width = canvas.clientWidth, height = canvas.clientHeight;
   if (!width || !height) return;
@@ -63,9 +75,10 @@ function drawWave(canvas, route, live) {
   rail(1, 'rgba(255,255,255,.06)');
   rail(-1, 'rgba(255,255,255,.06)');
   rail(0, 'rgba(255,255,255,.22)', true);
+  const padSource = sourceOf(route, live) !== Protocol.ROUTE_SOURCE.lfo;
   context.strokeStyle = 'rgba(255,255,255,.22)';
   context.lineWidth = 1;
-  for (const phase of [0, cycles()]) {
+  for (const phase of padSource ? [] : [0, cycles()]) {
     const x = Math.round(xOfPhase(phase, width)) + 0.5;
     context.beginPath();
     context.moveTo(x, 0);
@@ -78,7 +91,7 @@ function drawWave(canvas, route, live) {
   context.lineJoin = 'round';
   context.beginPath();
   for (let x = 0; x <= width; x++) {
-    const value = departureAt(route, phaseOfX(x, width), live);
+    const value = padSource ? padDeparture(route, x / width, live) : departureAt(route, phaseOfX(x, width), live);
     if (x === 0) context.moveTo(x, y(value));
     else context.lineTo(x, y(value));
   }
@@ -89,14 +102,24 @@ function drawWave(canvas, route, live) {
 const spotClockText = live => 'per spot, ' + Patch.READOUTS.scatterRate(live.scatterRate, live);
 
 function drawPlayhead(canvas, route, lfo, live) {
-  if (!canvas.wave || canvas.wave.width !== canvas.width || Patch.perSpot(live[route.destination])) return;
+  if (!canvas.wave || canvas.wave.width !== canvas.width || clockedPerSpot(route, live)) return;
   const width = canvas.clientWidth, height = canvas.clientHeight;
   const context = canvas.getContext('2d');
   context.putImageData(canvas.wave, 0, 0);
-  if (lfo === null) return;
-  const along = wrapped(lfo / cycles());
-  const x = xOfPhase(along * cycles(), width);
-  const y = (height / 2) - departureAt(route, along * cycles(), live) * (height / 2 - WAVE_PADDING);
+  const source = sourceOf(route, live);
+  let x, value;
+  if (source !== Protocol.ROUTE_SOURCE.lfo) {
+    const level = Pad.fingerLevel(source);
+    if (level === null) return;
+    x = level * width;
+    value = padDeparture(route, level, live);
+  } else {
+    if (lfo === null) return;
+    const along = wrapped(lfo / cycles());
+    x = xOfPhase(along * cycles(), width);
+    value = departureAt(route, along * cycles(), live);
+  }
+  const y = (height / 2) - value * (height / 2 - WAVE_PADDING);
   context.strokeStyle = 'rgba(255,255,255,.35)';
   context.lineWidth = 1;
   context.beginPath();
@@ -149,7 +172,7 @@ function destinationRow(route, label, options, choose, name = route.destination)
   const buttons = options.map(([name, option]) => {
     const button = element('button', null, name);
     button.addEventListener('click', () => {
-      if (root.classList.contains('locked')) return;
+      if (root.classList.contains('locked') || root.classList.contains('inert')) return;
       Transition.snap();
       choose(route, option);
     });
@@ -162,6 +185,7 @@ function destinationRow(route, label, options, choose, name = route.destination)
 
 const setCycle = (route, once) =>
   session.setValue(route.ratio, Protocol.routeRatioValue(Protocol.routeRatio(session.liveControls()[route.ratio]), once));
+const sourceRow = route => destinationRow(route, 'Source', SOURCE_NAMES, session.setRouteSource, route.ratio);
 const cycleRow = route => destinationRow(route, 'Cycle', [['loop', false], ['once', true]], setCycle, route.ratio);
 const arpRow = route => destinationRow(route, 'Arp', Object.entries(Protocol.ARP), session.setRouteArp);
 const polarityRow = route => destinationRow(route, 'Polarity', [['unipolar', false], ['bipolar', true]], session.setRouteBipolar);
@@ -173,7 +197,13 @@ function paintDestinationRow(row, shown, chosen) {
 }
 
 function paintArpRow(row, route, live) {
-  paintDestinationRow(row, Patch.arpCapable(panel.target), Protocol.routeArp(live[route.destination]));
+  const shown = Patch.arpCapable(panel.target) && sourceOf(route, live) === Protocol.ROUTE_SOURCE.lfo;
+  paintDestinationRow(row, shown, Protocol.routeArp(live[route.destination]));
+}
+
+function paintCycleRow(row, route, live) {
+  paintDestinationRow(row, true, Protocol.routeOnce(live[route.ratio]));
+  row.root.classList.toggle('inert', Patch.fromPad(live, route));
 }
 
 function paintPolarityRow(row, route, live) {
@@ -197,16 +227,17 @@ function buildPanel() {
     const buttons = routeButtons(route);
     const clock = element('span', 'cc route-clock');
     head.append(element('span', 'route-name', route.name), clock, buttons.root);
+    const source = sourceRow(route);
     const arp = arpRow(route);
     const polarity = polarityRow(route);
     const cycle = cycleRow(route);
     const body = element('div');
-    body.append(arp.root, polarity.root, cycle.root);
+    body.append(source.root, arp.root, polarity.root, cycle.root);
     Rows.buildRows(body, route.controls);
     const canvas = element('canvas', 'route-wave');
     block.append(head, body, canvas);
     root.appendChild(block);
-    panel.blocks.push({ route, block, canvas, buttons, arp, polarity, cycle, clock });
+    panel.blocks.push({ route, block, canvas, buttons, source, arp, polarity, cycle, clock });
   }
   const foot = element('div', 'route-foot');
   const add = element('button', 'tiny', '+ add a route');
@@ -279,8 +310,11 @@ function paintList(live) {
     aimed++;
     target.textContent = destinationText(destination);
     line.style.setProperty('--tone', `var(--${Patch.TONES[Protocol.NAME_BY_CC[Protocol.routeTarget(destination)]]})`);
-    const readouts = route.controls.map(name => Patch.READOUTS[name](live[name], live, session.oneshotBeats()));
-    values.textContent = [...(Patch.perSpot(destination) ? [spotClockText(live)] : []), ...readouts].join(' · ');
+    const source = sourceOf(route, live);
+    const shownControls = source === Protocol.ROUTE_SOURCE.lfo ? route.controls : [route.amount];
+    const readouts = shownControls.map(name => Patch.READOUTS[name](live[name], live, session.oneshotBeats()));
+    if (source !== Protocol.ROUTE_SOURCE.lfo) readouts.push(sourceName(source));
+    values.textContent = [...(clockedPerSpot(route, live) ? [spotClockText(live)] : []), ...readouts].join(' · ');
     line.classList.toggle('bypassed', paintButtons(buttons, route));
     if (list.root.open) drawWave(canvas, route, live);
   }
@@ -305,13 +339,14 @@ function paintPanel(live) {
   if (!panel.target) return;
   const held = session.heldAt();
   const destination = Patch.CC[panel.target];
-  for (const { route, block, canvas, buttons, arp, polarity, cycle, clock } of panel.blocks) {
+  for (const { route, block, canvas, buttons, source, arp, polarity, cycle, clock } of panel.blocks) {
     block.hidden = Protocol.routeTarget(live[route.destination]) !== destination;
-    clock.textContent = Patch.perSpot(live[route.destination]) ? spotClockText(live) : '';
+    clock.textContent = clockedPerSpot(route, live) ? spotClockText(live) : '';
     block.classList.toggle('bypassed', paintButtons(buttons, route));
     paintArpRow(arp, route, live);
     paintPolarityRow(polarity, route, live);
-    paintDestinationRow(cycle, true, Protocol.routeOnce(live[route.ratio]));
+    paintDestinationRow(source, true, sourceOf(route, live));
+    paintCycleRow(cycle, route, live);
     if (!block.hidden) drawWave(canvas, route, live);
   }
   const free = session.freeRouteSlots(live).length;

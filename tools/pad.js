@@ -41,6 +41,12 @@ function send(cc, value) {
   Playback.movePad(cc, value);
 }
 
+function fingerLevel(source) {
+  const perPatch = Protocol.threeWayPosition(rockers[Protocol.CC.padMode]) === Protocol.PAD_MODE.perPatch;
+  if (!finger.playing || !perPatch) return null;
+  return (source === Protocol.ROUTE_SOURCE.padX ? finger.x : finger.y) / 127;
+}
+
 function settle() {
   finger.playing = finger.touching || (finger.playing && latching());
 }
@@ -151,4 +157,4 @@ function start(wall) {
   paintRockers();
 }
 
-export { start, drawFinger };
+export { start, drawFinger, fingerLevel };

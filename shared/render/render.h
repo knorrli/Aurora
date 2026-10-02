@@ -52,6 +52,15 @@ struct ScatterClock {
   float randomize;
 };
 
+static const uint8_t SWINGING_CONTROLS = 5;
+
+struct PadFinger {
+  bool playing = false;
+  float x = 0.0f;
+  float y = 0.0f;
+  bool strips[STRIPS] = {};
+};
+
 struct Motion {
   Clock travel[STRIPS] = {};
   Clock swing[STRIPS] = {};
@@ -64,6 +73,7 @@ struct Motion {
   float lastScatterBeats = 0.0f;
   float lastLfoBeats = 0.0f;
   float lastFieldBeats = 0.0f;
+  float padShift[STRIPS][SWINGING_CONTROLS] = {};
 };
 
 struct TailHistory {
@@ -148,6 +158,7 @@ struct Frame {
 };
 
 void renderFrame(const float *controls, float quarterNotes, uint32_t milliseconds,
-                 const OneshotClock &oneshot, Motion &motion, Wall &wall, Frame &out);
+                 const OneshotClock &oneshot, const PadFinger &pad, Motion &motion, Wall &wall,
+                 Frame &out);
 
 }

@@ -201,23 +201,62 @@ static float swingReach(uint8_t cc, float amount) {
   return 2.0f * ((amount < 0.0f) ? -1.0f : 1.0f) * fabsf(controlValue(cc, (uint8_t)byte));
 }
 
+static uint8_t sourceOf(const float *dialed, uint8_t route) {
+  return aurora_route_source(roundedControl(dialed[routeByte(route, ROUTE_RATIO)]));
+}
+
+static void addPadRoute(uint8_t aimedAt, uint8_t destination, float amount, float level,
+                        Modulation &out) {
+  if (aurora_route_bipolar(aimedAt)) {
+    out.bipolar[destination] += bipolarReach(destination, amount) * (level - 0.5f);
+    return;
+  }
+  if (!swings(destination)) {
+    out.amount[destination] += amount * level;
+    return;
+  }
+  const float push = swingReach(destination, amount) * 0.5f * level;
+  out.swing[destination] += push;
+  out.padSwing[destination] += push;
+}
+
+static const uint8_t SWINGING[SWINGING_CONTROLS] = {
+    CC_SHAPE_SPEED, CC_FAN_SPEED, CC_FIELD_SPEED, CC_FLOW_RATE, CC_SCATTER_RATE,
+};
+
+void carryPadShift(float elapsedBeats, float *carried, Modulation &modulation) {
+  for (uint8_t i = 0; i < SWINGING_CONTROLS; i++) {
+    const uint8_t cc = SWINGING[i];
+    carried[i] += modulation.padSwing[cc] * elapsedBeats;
+    modulation.shift[cc] += carried[i];
+  }
+}
+
 void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
-                  Modulation &out) {
+                  const PadLevels *pad, Modulation &out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     out.amount[i] = 0.0f;
     out.swing[i] = 0.0f;
     out.shift[i] = 0.0f;
     out.bipolar[i] = 0.0f;
+    out.padSwing[i] = 0.0f;
   }
 
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     const uint8_t aimedAt = roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]);
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
-    if (routeRefused(destination) || spotDestination(destination)) continue;
+    if (routeRefused(destination)) continue;
 
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
+
+    const uint8_t source = sourceOf(dialed, route);
+    if (source != ROUTE_SOURCE_LFO) {
+      if (pad) addPadRoute(aimedAt, destination, amount, source == ROUTE_SOURCE_PAD_X ? pad->x : pad->y, out);
+      continue;
+    }
+    if (spotDestination(destination)) continue;
 
     const RouteTiming timing = routeTiming(dialed, route);
     const uint8_t wave = roundedControl(dialed[routeByte(route, ROUTE_WAVE)]);
@@ -275,7 +314,7 @@ uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out) {
     const uint8_t aimedAt = roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]);
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
-    if (!spotDestination(destination)) continue;
+    if (!spotDestination(destination) || sourceOf(dialed, route) != ROUTE_SOURCE_LFO) continue;
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     out[count++] = {
@@ -343,16 +382,17 @@ bool routeReach(const float *dialed, uint8_t cc, int16_t &low, int16_t &high) {
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     aimed = true;
+    const bool fromPad = sourceOf(dialed, route) != ROUTE_SOURCE_LFO;
     if (aurora_route_bipolar(roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]))) {
-      const float mean = waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
+      const float mean = fromPad ? 0.5f : waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
       const float reach = bipolarReach(cc, amount);
       bipolarUp += fmaxf(-reach * mean, reach * (1.0f - mean));
       bipolarDown += fminf(-reach * mean, reach * (1.0f - mean));
     } else if (swings(cc)) {
-      const float mean = waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
       const float reach = swingReach(cc, amount);
+      const float mean = fromPad ? 0.0f : waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
       const float atTrough = -reach * mean;
-      const float atPeak = reach * (1.0f - mean);
+      const float atPeak = reach * ((fromPad ? 0.5f : 1.0f) - mean);
       up += (atPeak > atTrough) ? atPeak : atTrough;
       down += (atPeak > atTrough) ? atTrough : atPeak;
     } else if (amount > 0.0f) {

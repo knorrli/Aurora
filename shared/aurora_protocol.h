@@ -181,18 +181,33 @@ static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
 
 static const uint8_t AURORA_ROUTE_MAX_RATIO = 8;
 
+enum AuroraRouteSource : uint8_t {
+    ROUTE_SOURCE_LFO   = 0,
+    ROUTE_SOURCE_PAD_X = 1,
+    ROUTE_SOURCE_PAD_Y = 2,
+};
+
+static const uint8_t AURORA_ROUTE_LFO_STEPS = 2 * AURORA_ROUTE_MAX_RATIO;
+
 static inline uint8_t aurora_route_ratio_step(uint8_t value) {
-    const uint8_t last = 2 * AURORA_ROUTE_MAX_RATIO - 1;
+    const uint8_t last = AURORA_ROUTE_LFO_STEPS + ROUTE_SOURCE_PAD_Y - 1;
     const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
     return step > last ? last : step;
 }
 
+static inline uint8_t aurora_route_source(uint8_t value) {
+    const uint8_t step = aurora_route_ratio_step(value);
+    return step < AURORA_ROUTE_LFO_STEPS ? ROUTE_SOURCE_LFO : (uint8_t)(step - AURORA_ROUTE_LFO_STEPS + 1);
+}
+
 static inline uint8_t aurora_route_ratio(uint8_t value) {
-    return (uint8_t)(1 + aurora_route_ratio_step(value) % AURORA_ROUTE_MAX_RATIO);
+    const uint8_t step = aurora_route_ratio_step(value);
+    return step < AURORA_ROUTE_LFO_STEPS ? (uint8_t)(1 + step % AURORA_ROUTE_MAX_RATIO) : 1;
 }
 
 static inline bool aurora_route_once(uint8_t value) {
-    return aurora_route_ratio_step(value) >= AURORA_ROUTE_MAX_RATIO;
+    const uint8_t step = aurora_route_ratio_step(value);
+    return step >= AURORA_ROUTE_MAX_RATIO && step < AURORA_ROUTE_LFO_STEPS;
 }
 
 enum AuroraArp : uint8_t {
@@ -413,7 +428,7 @@ enum AuroraLibraryState : uint8_t {
     LIBRARY_UNREADABLE = 2,
 };
 
-static const uint8_t AURORA_PATCH_FORMAT    = 5;
+static const uint8_t AURORA_PATCH_FORMAT    = 6;
 static const uint8_t AURORA_LAST_PATCH_SLOT = PROGRAM_SONG_FIRST - 1;
 static const uint8_t AURORA_PATCH_CC_COUNT  = 128;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;

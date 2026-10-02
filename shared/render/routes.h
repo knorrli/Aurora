@@ -11,6 +11,12 @@ struct Modulation {
   float swing[AURORA_PATCH_CC_COUNT];
   float shift[AURORA_PATCH_CC_COUNT];
   float bipolar[AURORA_PATCH_CC_COUNT];
+  float padSwing[AURORA_PATCH_CC_COUNT];
+};
+
+struct PadLevels {
+  float x;
+  float y;
 };
 
 struct RouteTiming {
@@ -44,7 +50,9 @@ uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out);
 float landedControl(uint8_t cc, float base, float amount);
 
 void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
-                  Modulation &out);
+                  const PadLevels *pad, Modulation &out);
+
+void carryPadShift(float elapsedBeats, float *carried, Modulation &modulation);
 
 float routed(const float *dialed, const Modulation *modulation, uint8_t cc);
 

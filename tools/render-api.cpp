@@ -185,6 +185,7 @@ EMSCRIPTEN_KEEPALIVE float aurora_signed(int value) { return render::signedOf((f
 EMSCRIPTEN_KEEPALIVE int aurora_ratio_step(int value) { return aurora_route_ratio_step((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_ratio(int value) { return aurora_route_ratio((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_once(int value) { return aurora_route_once((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_source(int value) { return aurora_route_source((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_phase_step(int value) { return aurora_route_phase_step((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_arp_mode_of(int value) { return aurora_arp_mode((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_hue_layout_of(int value) { return aurora_hue_layout((uint8_t)value); }
@@ -222,24 +223,36 @@ EMSCRIPTEN_KEEPALIVE float aurora_bend_speed_ratio(int bend) {
   return render::bendSpeedRatio(render::controlValue(CC_SHAPE_BEND, (float)bend));
 }
 
+static const render::PadLevels *padReaching(int strip, render::PadLevels &levels) {
+  if (!player) return nullptr;
+  const render::PadFinger finger = player->padFinger();
+  if (!finger.playing || (strip >= 0 && !finger.strips[strip])) return nullptr;
+  levels = { finger.x, finger.y };
+  return &levels;
+}
+
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {
   render::Modulation modulation;
+  render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripFanShift[strip], modulation);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripFanShift[strip], padReaching(strip, levels),
+                       modulation);
   return render::routedForDisplay(controls, &modulation, (uint8_t)cc);
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
   render::Modulation modulation;
+  render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, modulation);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, padReaching(-1, levels), modulation);
   return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)cc, (uint8_t)par);
 }
 
 EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
   render::Modulation modulation;
+  render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, modulation);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, padReaching(-1, levels), modulation);
   return render::firstArpPass(controls, modulation, frame.lfo, arpPass) ? &arpPass : nullptr;
 }
 

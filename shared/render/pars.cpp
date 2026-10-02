@@ -27,6 +27,8 @@ static bool readArpRoute(const float *dialed, uint8_t route, ArpRoute &out) {
   out.arp = aurora_route_arp(aimedAt);
   out.target = aurora_route_target(aimedAt);
   if (out.arp == ARP_UNISON || !out.target) return false;
+  const uint8_t ratio = roundedControl(dialed[routeByte(route, ROUTE_RATIO)]);
+  if (aurora_route_source(ratio) != ROUTE_SOURCE_LFO) return false;
   out.amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
   if (fabsf(out.amount) < 0.001f) return false;
   out.wave = roundedControl(dialed[routeByte(route, ROUTE_WAVE)]);
