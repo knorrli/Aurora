@@ -32,41 +32,18 @@
 
 - Every source changes patch the same way: a Program Change naming a slot. The drum pad and MainStage send nothing else.
 - The 12-position rotary is a patch bank, labeled A to L. Bank b, key k plays slot (b − 1) × 9 + k, counting A as 1: A1 is slot 1, C5 is slot 23, L9 is slot 108.
-- Program Changes 109–127 are songs, never patches. The brain ignores them.
+- Program Changes 109–127 are songs, never patches.
 - The controller works that Program Change out from the bank and the key. There is no keymap.
-- Recall writes the patch's `[patch]` and `[switch]` CCs through the same handlers a live CC goes through, then clears the tails.
-- A patch change lands on the next beat.
 
 ## Patch transition and the accent
 
-- One mechanism: from the live values toward the patch of the last key pressed, at whatever rate the driver sets.
-- The start is a snapshot of what is on the wall at the press, never a patch number. Re-targeting mid-transition never lurches.
 - A source that can hold sends note 57 on before the Program Change and note 57 off on release. The keypad, the foot pedal and a DAW can hold.
-- A Program Change without a hold starts its morph on the next beat, runs it over the patch's transition time, and never reaches the accent. A transition time of none is a cut on the beat.
-- Tap: a cut, on the beat.
-- Hold: a transition toward the patch over its transition time.
-- Release before arrival: the remaining distance is re-timed to land exactly on the next beat. No jump.
-- Hold past arrival: the morph pushes on toward that patch's Accent layer over its accent time.
-- Release during the accent: hold course to the next beat, then drop to the patch in one step.
-- Holding the key of the patch already playing goes straight to the accent.
-- Every keypad effect lands on a beat. A press is snapped to the nearest beat, not the next; tap versus hold is judged a short fixed time after that beat.
-- Each patch carries a transition time and an accent time, in beats, stepped through `AURORA_LFO_PERIODS`. Transition time also has a step for none.
-- A morph interpolates the raw CC bytes, all together, linearly. Circular controls (hue, PAR hue offset, fan phase) take the short way around.
-- Switches (and route destinations) never interpolate. The destination patch's land on the release, not on arrival.
-- An engine that shows nothing at one end of a morph takes the other end's values at once, its switches included; only the controls that make it visible blend (`hiddenEngines` in `shared/render/engines.cpp`).
-- During an accent the source patch's switches are still in force.
-- A route whose destination differs between two patches holds whole (destination, amount, ratio, wave, phase) and lands with the switches.
 - A code arriving within a few tens of milliseconds of another key's is a fumbled two-key press and is ignored.
 
 ## The faders
 
-- CC 12, 13 and 14 carry positions. Each morphs the patch toward one of its layers: Color, Extent and Motion.
 - A layer is the patch's look pushed further. What further means is up to the patch.
-- A layer is per patch and covers every control, the PARs included.
-- A fader never arrives: it never moves a switch, whatever its position.
-- A fader's position is its push. A patch change does not reset it: the new patch arrives pushed by wherever the faders sit. The controller sends every fader's position when it starts.
-- A patch and its layers share switches.
-- Several layers at once add: each contributes its fader position times the distance from the patch to that layer, and the sum is clamped per byte; a circular control takes the short way and wraps. The brain matches the editor's rule.
+- The controller sends every fader's position when it starts.
 - Faders move energy; the keypad moves character. Mid-song lifts are fader moves; sideways changes at the same energy are patch changes.
 
 ## Songs
@@ -80,13 +57,7 @@
 
 ## Oneshots
 
-- A oneshot is a single triggered effect with a length in beats. At the end of its length the wall snaps back to what is playing; any fade is part of the oneshot.
-- A oneshot marks the controls it sets, explicitly, even where the value equals the default. While it plays, a marked control overrides the wall, ignores the faders, and silences the patch's routes aimed at it; an unmarked control keeps playing the wall, fader push included.
-- A oneshot carries its own routes, run alongside the patch's. They start at the trigger, and their period is the oneshot's length, except a route aimed at a Scatter control, which runs on each spot's Scatter clock as in a patch. The Fan LFO staggers them across the strips only when the oneshot marks Fan LFO itself.
-- A oneshot starts the moment its note arrives. If presses are ever snapped to the beat, the controller snaps them before sending.
-- The last oneshot fired wins: a new trigger replaces the one playing, or restarts it.
-- Oneshots form one kit of up to 20, shared by every patch, on notes 60–79, one note each.
-- Each patch picks two oneshots from the kit, stored in the patch on the brain. Notes 58 and 59 fire the playing patch's first and second pick, or the default pair when the patch has none.
+- If presses are ever snapped to the beat, the controller snaps oneshot presses before sending.
 - The pedal's Oneshot 1 and 2 send the song's pick for that switch as its kit note; with no song or no pick, they send note 58 or 59. The controller holds no patch data.
 - The mic trigger fires whatever Oneshot 1 fires.
 
@@ -115,9 +86,7 @@
 
 ## Blackout
 
-- Key 0 is the blackout (PC 0): not a patch, no slot, in every bank. It holds until the next key press and never returns on its own.
-- Tapping 0 cuts to black on the next beat.
-- Holding 0 fades the brightness to black over the playing patch's transition time, leaving the look itself untouched. Release before black: the rest of the fade is re-timed to land on the next beat. Holding past black stays black; the blackout has no accent.
+- Key 0 sends Program Change 0, the blackout, in every bank.
 - The phone's hook switch is the master kill. It works on any patch and is pressed by a finger; the handset almost never rests on it.
 - The hook is a mute, not a latch: the wall goes dark the moment it is pressed, not on a beat, and is back on the playing patch the moment it is released.
 - The hook sends its own note: note-on while held, note-off on release. It is never a Program Change or a CC.

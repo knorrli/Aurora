@@ -148,13 +148,17 @@
       }
     }
 
-    begin(file, slots) {
-      return this.request(TYPE.syncBegin, [file.patchFormat, ...LibraryFile.slotMapBytes(slots)]);
+    begin(file) {
+      return this.request(TYPE.syncBegin, [file.patchFormat, ...LibraryFile.libraryHeadBytes(file)]);
     }
 
     sendPatch(patch) {
       this.sendSysEx(TYPE.patchHead, [patch.slot, ...LibraryFile.headBytes(patch)]);
       patch.layers.forEach((bytes, layer) => this.sendSysEx(TYPE.patchLayer, [patch.slot, layer, ...bytes]));
+    }
+
+    sendOneshot(oneshot) {
+      this.sendSysEx(TYPE.oneshot, [oneshot.index, ...LibraryFile.oneshotBytes(oneshot)]);
     }
 
     commit() { return this.request(TYPE.syncCommit); }
@@ -170,10 +174,12 @@
 
     async push(file) {
       const patches = file.patches.slice().sort((a, b) => a.slot - b.slot);
-      const begun = await this.begin(file, patches.map(patch => patch.slot));
+      const oneshots = (file.oneshots || []).slice().sort((a, b) => a.index - b.index);
+      const begun = await this.begin(file);
       if (begun !== STATUS.ok) return { ok: false, where: 'sync begin', status: begun };
       try {
         patches.forEach(patch => this.sendPatch(patch));
+        oneshots.forEach(oneshot => this.sendOneshot(oneshot));
         const committed = await this.commit();
         return { ok: committed === STATUS.ok, where: 'commit', status: committed, count: patches.length };
       } catch (error) {
@@ -185,11 +191,9 @@
     async queryLibrary() {
       const answer = this.expect(message => message.type === TYPE.libraryInfo);
       this.sendSysEx(TYPE.queryLibrary);
-      const [format, state, ...map] = (await answer).payload;
-      return {
-        format, state, stateText: libraryStateText(state),
-        slots: LibraryFile.slotsInMap(map.slice(0, Protocol.SLOT_MAP_LENGTH)),
-      };
+      const [format, state, ...head] = (await answer).payload;
+      return Object.assign({ format, state, stateText: libraryStateText(state) },
+        LibraryFile.libraryFromHeadBytes(head.slice(0, Protocol.LIBRARY_HEAD_LENGTH)));
     }
 
     async readPatch(slot) {
@@ -212,6 +216,15 @@
       };
     }
 
+    async readOneshot(index) {
+      const answer = this.expect(message => Link.isAckFor(TYPE.queryOneshot, message)
+        || (message.type === TYPE.oneshotOut && message.payload[0] === index));
+      this.sendSysEx(TYPE.queryOneshot, [index]);
+      const message = await answer;
+      if (message.type !== TYPE.oneshotOut) return { status: message.payload[1] };
+      return { oneshot: LibraryFile.oneshotFromBytes(index, message.payload.slice(1)) };
+    }
+
     async pull() {
       const info = await this.queryLibrary();
       if (info.state !== Protocol.LIBRARY_STATE.stored || !info.slots.length) {
@@ -223,7 +236,16 @@
         if (!read.patch) return { error: `slot ${slot}: ${statusText(read.status)}`, info };
         patches.push(read.patch);
       }
-      return { file: { patchFormat: Protocol.PATCH_FORMAT, patches }, info };
+      const oneshots = [];
+      for (const index of info.kit) {
+        const read = await this.readOneshot(index);
+        if (!read.oneshot) return { error: `oneshot ${index}: ${statusText(read.status)}`, info };
+        oneshots.push(read.oneshot);
+      }
+      return {
+        file: { patchFormat: Protocol.PATCH_FORMAT, patches, oneshots, defaultOneshots: info.defaultOneshots },
+        info,
+      };
     }
   }
 

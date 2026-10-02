@@ -5,7 +5,7 @@
 
   const KIND = 'patch library';
   const NAME_AT = Protocol.PATCH_HEAD_LENGTH - Protocol.PATCH_NAME_LENGTH;
-  const HEAD = { transitionTime: 0, accentTime: 1 };
+  const HEAD = { transitionTime: 0, accentTime: 1, oneshots: 2 };
 
   const isSevenBit = value => Number.isInteger(value) && value >= 0 && value <= 127;
   const isOneshotIndex = index => Number.isInteger(index) && index >= 0 && index < Protocol.ONESHOTS;
@@ -179,32 +179,71 @@
     return validateKit(file) || validateSongs(file);
   }
 
+  const nameBytes = name => Array.from(printableName(name).padEnd(Protocol.PATCH_NAME_LENGTH, ' '), c => c.charCodeAt(0));
+  const nameFrom = bytes => String.fromCharCode(...bytes).trim();
+  const pickByte = pick => (pick === null || pick === undefined ? Protocol.NO_ONESHOT : pick);
+  const pickFrom = byte => (byte === Protocol.NO_ONESHOT ? null : byte);
+
   function headBytes(patch) {
     const head = new Array(Protocol.PATCH_HEAD_LENGTH).fill(0);
     head[HEAD.transitionTime] = patch.transitionTime;
     head[HEAD.accentTime] = patch.accentTime;
-    const name = printableName(patch.name).padEnd(Protocol.PATCH_NAME_LENGTH, ' ');
-    for (let i = 0; i < Protocol.PATCH_NAME_LENGTH; i++) head[NAME_AT + i] = name.charCodeAt(i);
+    (patch.oneshots || NO_PICKS).forEach((pick, place) => { head[HEAD.oneshots + place] = pickByte(pick); });
+    head.splice(NAME_AT, Protocol.PATCH_NAME_LENGTH, ...nameBytes(patch.name));
     return head;
   }
 
   const patchFromHead = head => ({
-    name: String.fromCharCode(...head.slice(NAME_AT, NAME_AT + Protocol.PATCH_NAME_LENGTH)).trim(),
+    name: nameFrom(head.slice(NAME_AT, NAME_AT + Protocol.PATCH_NAME_LENGTH)),
     transitionTime: head[HEAD.transitionTime],
     accentTime: head[HEAD.accentTime],
+    oneshots: [pickFrom(head[HEAD.oneshots]), pickFrom(head[HEAD.oneshots + 1])],
   });
 
-  function slotMapBytes(slots) {
-    const map = new Array(Protocol.SLOT_MAP_LENGTH).fill(0);
-    for (const slot of slots) map[Math.floor(slot / 7)] |= 1 << (slot % 7);
+  function mapBytes(indexes, length) {
+    const map = new Array(length).fill(0);
+    for (const index of indexes) map[Math.floor(index / 7)] |= 1 << (index % 7);
     return map;
   }
 
-  const slotsInMap = map => Array.from({ length: LAST_PATCH_SLOT + 1 }, (_, slot) => slot)
-    .filter(slot => (map[Math.floor(slot / 7)] >> (slot % 7)) & 1);
+  const indexesInMap = (map, count) => Array.from({ length: count }, (_, index) => index)
+    .filter(index => (map[Math.floor(index / 7)] >> (index % 7)) & 1);
+
+  const libraryHeadBytes = file => [
+    ...mapBytes(file.patches.map(patch => patch.slot), Protocol.SLOT_MAP_LENGTH),
+    ...mapBytes((file.oneshots || []).map(oneshot => oneshot.index), Protocol.KIT_MAP_LENGTH),
+    ...(file.defaultOneshots || NO_PICKS).map(pickByte),
+  ];
+
+  function libraryFromHeadBytes(head) {
+    const kitAt = Protocol.SLOT_MAP_LENGTH, defaultsAt = kitAt + Protocol.KIT_MAP_LENGTH;
+    return {
+      slots: indexesInMap(head.slice(0, kitAt), LAST_PATCH_SLOT + 1),
+      kit: indexesInMap(head.slice(kitAt, defaultsAt), Protocol.ONESHOTS),
+      defaultOneshots: head.slice(defaultsAt, defaultsAt + 2).map(pickFrom),
+    };
+  }
+
+  const oneshotBytes = oneshot => [
+    oneshot.length,
+    ...nameBytes(oneshot.name),
+    ...mapBytes(oneshot.marks, Protocol.MARK_MAP_LENGTH),
+    ...oneshot.bytes,
+  ];
+
+  function oneshotFromBytes(index, bytes) {
+    const marksAt = 1 + Protocol.PATCH_NAME_LENGTH, controlsAt = marksAt + Protocol.MARK_MAP_LENGTH;
+    return {
+      index,
+      name: nameFrom(bytes.slice(1, marksAt)),
+      length: bytes[0],
+      marks: indexesInMap(bytes.slice(marksAt, controlsAt), Protocol.PATCH_CC_COUNT),
+      bytes: bytes.slice(controlsAt, controlsAt + Protocol.PATCH_CC_COUNT),
+    };
+  }
 
   global.AuroraLibraryFile = {
     printableName, serialize, validate, validatePatch, validateOneshot, isPatchSlot, LAST_PATCH_SLOT,
-    headBytes, patchFromHead, slotMapBytes, slotsInMap,
+    headBytes, patchFromHead, libraryHeadBytes, libraryFromHeadBytes, oneshotBytes, oneshotFromBytes,
   };
 })(window);

@@ -26,10 +26,8 @@ void showStartupSequence() {
     FastLED.clear(true);
 }
 
-void show(const render::Rgb *pixels, bool blackout) {
-    for (uint16_t i = 0; i < PIXEL_COUNT; i++) {
-        leds[i] = blackout ? CRGB::Black : CRGB(pixels[i].r, pixels[i].g, pixels[i].b);
-    }
+void show(const render::Rgb *pixels) {
+    for (uint16_t i = 0; i < PIXEL_COUNT; i++) leds[i] = CRGB(pixels[i].r, pixels[i].g, pixels[i].b);
     FastLED.show();
 }
 

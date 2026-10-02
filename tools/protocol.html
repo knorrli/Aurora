@@ -168,7 +168,7 @@
 
   async function pushLibrary(file, stopEarly) {
     const patches = file.patches.slice().sort((a, b) => a.slot - b.slot);
-    const begun = await link.begin(file, patches.map(patch => patch.slot));
+    const begun = await link.begin(file);
     if (!reportStatus('sync begin', begun)) return;
 
     const sent = stopEarly ? Math.max(1, Math.floor(patches.length / 2)) : patches.length;

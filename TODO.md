@@ -6,6 +6,18 @@
 
 - Reflash the brain. Its flash predates the scatter rework and the last CC renumbers, so wall and preview disagree until then.
 - Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 108.
+- From the editor, push a library with a kit and pull it back: the patches' picks, the kit and the default pair come back.
+- Play a song from the editor's songs view with the clock on: the wall follows the preview, tap, hold, accent and blackout included.
+
+### Playback
+
+Built from `docs/design.md` where it was silent; confirm each by playing.
+
+- An unheld Program Change lands its switches at the start of its morph. Should they land on arrival?
+- An unheld Program Change 0 fades to black over the transition time from the next beat. Should it cut?
+- A tap pressed just after a beat cuts on that beat, since presses snap to the nearest beat.
+- Tap versus hold is judged 200 ms after the later of the press and its beat. Is that the right length?
+- Out of the blackout, the wall fades up along the new patch's morph.
 
 ### Looks
 
@@ -74,24 +86,15 @@ Seen only in the preview so far. One look each, driven from the editor.
 - What does the fourth rocker do?
 - What do the indicator pixels show? Lead: the current song section.
 
-### Oneshots
-
-- Push the kit and the patches' oneshot picks to the brain with the patches. Until then, pulling the library back keeps the editor's kit but loses the picks.
-- Play oneshots on the brain in place of the fixed trigger flash: notes 58–79 (`docs/design.md` § Oneshots).
-
 ### Songs in the editor
 
 - Push the gig's songs to the controller together with the patches to the brain.
 
 ### Patches on the brain
 
-- Recall a patch on a Program Change: write through the live handlers, clear the tails (`docs/design.md` § Recalling a patch).
-- Give transition time a step for none, and morph a Program Change without a hold over the patch's transition time.
-- Build the patch transition, the accent and their times in the brain (`docs/design.md` § Patch transition and the accent), and the blackout's tap and hold (`docs/design.md` § Blackout).
-- Read the hook's note on the brain: dark at once, back on release.
-- Read the faders and mix their layers the way the editor does.
+- Give the hook a note number, and read it on the brain: dark at once, back on release.
 - Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
-- Read note 57 for tap versus hold.
+- While the editor is dialing, have the brain show exactly what the preview shows, and hand playing back on a key, a fader or a oneshot. Today the editor streams CCs, which the brain takes as live edits of the patch it is playing.
 
 ## Once Aurora v2 works
 

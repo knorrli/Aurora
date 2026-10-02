@@ -4,9 +4,10 @@
 
 #include "aurora_protocol.h"
 #include "patch_store.h"
+#include "player.h"
 
 namespace {
-const uint16_t REPLY_MAX = AURORA_SYSEX_FRAME_LENGTH + 2 + AURORA_PATCH_CC_COUNT;
+const uint16_t REPLY_MAX = AURORA_SYSEX_FRAME_LENGTH + 1 + AURORA_ONESHOT_LENGTH;
 
 uint8_t reply[REPLY_MAX];
 
@@ -38,13 +39,13 @@ void fail(uint8_t type, uint8_t status) {
 }
 
 void sendLibraryInfo() {
-    const uint8_t MAP_AT = 2;
-    uint8_t payload[MAP_AT + AURORA_SLOT_MAP_LENGTH];
+    const uint8_t HEAD_AT = 2;
+    uint8_t payload[HEAD_AT + AURORA_LIBRARY_HEAD_LENGTH];
     payload[0] = AURORA_PATCH_FORMAT;
     payload[1] = (uint8_t)patch_store::state();
 
-    const uint8_t *map = patch_store::slotMap();
-    for (uint8_t i = 0; i < AURORA_SLOT_MAP_LENGTH; i++) payload[MAP_AT + i] = map[i];
+    const uint8_t *head = patch_store::libraryHead();
+    for (uint8_t i = 0; i < AURORA_LIBRARY_HEAD_LENGTH; i++) payload[HEAD_AT + i] = head[i];
 
     send(SYSEX_LIBRARY_INFO, payload, sizeof(payload));
 }
@@ -70,6 +71,16 @@ void sendPatch(uint8_t slot) {
     }
 }
 
+void sendOneshot(uint8_t index) {
+    uint8_t payload[1 + AURORA_ONESHOT_LENGTH];
+    payload[0] = index;
+    if (!patch_store::readOneshot(index, payload + 1)) {
+        ack(SYSEX_QUERY_ONESHOT, SYSEX_ERROR_RANGE);
+        return;
+    }
+    send(SYSEX_ONESHOT_OUT, payload, sizeof(payload));
+}
+
 }
 
 namespace patch_sync {
@@ -88,7 +99,7 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
 
     switch (type) {
         case SYSEX_SYNC_BEGIN: {
-            if (payloadLength != 1 + AURORA_SLOT_MAP_LENGTH) {
+            if (payloadLength != 1 + AURORA_LIBRARY_HEAD_LENGTH) {
                 ack(type, SYSEX_ERROR_RANGE);
                 return;
             }
@@ -115,11 +126,21 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
             return;
         }
 
+        case SYSEX_ONESHOT: {
+            if (payloadLength != 1 + AURORA_ONESHOT_LENGTH) {
+                fail(type, SYSEX_ERROR_RANGE);
+                return;
+            }
+            fail(type, patch_store::stageOneshot(payload[0], payload + 1));
+            return;
+        }
+
         case SYSEX_SYNC_COMMIT: {
             const uint8_t status = pendingError != SYSEX_OK
                                  ? pendingError
                                  : patch_store::stageCommit();
             pendingError = SYSEX_OK;
+            if (status == SYSEX_OK) player::libraryChanged();
             ack(type, status);
             return;
         }
@@ -137,6 +158,11 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
         case SYSEX_QUERY_PATCH:
             if (payloadLength != 1) { ack(type, SYSEX_ERROR_RANGE); return; }
             sendPatch(payload[0]);
+            return;
+
+        case SYSEX_QUERY_ONESHOT:
+            if (payloadLength != 1) { ack(type, SYSEX_ERROR_RANGE); return; }
+            sendOneshot(payload[0]);
             return;
 
         default:

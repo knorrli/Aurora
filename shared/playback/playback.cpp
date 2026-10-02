@@ -19,7 +19,7 @@ float Ramp::at(float beats) const {
 static void defaultPatch(Patch &out) {
   out.transitionTime = 0;
   out.accentTime = 0;
-  out.oneshots[0] = out.oneshots[1] = NO_ONESHOT;
+  out.oneshots[0] = out.oneshots[1] = AURORA_NO_ONESHOT;
   uint8_t *base = out.layers[PATCH_LAYER_BASE];
   memset(base, 0, AURORA_PATCH_CC_COUNT);
   for (const AuroraControlDefault &control : AURORA_CONTROL_DEFAULTS) base[control.cc] = control.value;
@@ -84,7 +84,7 @@ void Playback::noteOn(uint8_t note, uint32_t micros) {
   } else if (note == NOTE_PATCH_ONESHOT_FIRST || note == NOTE_PATCH_ONESHOT_SECOND) {
     const uint8_t place = note - NOTE_PATCH_ONESHOT_FIRST;
     const uint8_t pick = playing.oneshots[place];
-    fire(pick != NO_ONESHOT ? pick : library.defaultOneshot(place), beats);
+    fire(pick != AURORA_NO_ONESHOT ? pick : library.defaultOneshot(place), beats);
   } else if (note >= NOTE_ONESHOT_FIRST && note < NOTE_ONESHOT_FIRST + AURORA_ONESHOTS) {
     fire(note - NOTE_ONESHOT_FIRST, beats);
   }

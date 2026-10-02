@@ -6,8 +6,7 @@
 static const uint8_t AURORA_MIDI_CHANNEL = 1;
 
 enum AuroraProgram : uint8_t {
-    PROGRAM_BLACKOUT = 0,
-    PROGRAM_SHOW     = 10,
+    PROGRAM_BLACKOUT   = 0,
     PROGRAM_SONG_FIRST = 109,
 };
 
@@ -344,10 +343,10 @@ enum AuroraNote : uint8_t {
     NOTE_PATCH_ONESHOT_FIRST  = 58,
     NOTE_PATCH_ONESHOT_SECOND = 59,
     NOTE_ONESHOT_FIRST        = 60,
-    NOTE_TRIGGER_FLASH        = 60,
 };
 
 static const uint8_t AURORA_ONESHOTS = 20;
+static const uint8_t AURORA_NO_ONESHOT = 127;
 
 static const uint8_t AURORA_SYSEX_ID       = 0x7D;
 static const uint8_t AURORA_SYSEX_SIGNATURE_A    = 0x41;
@@ -364,11 +363,14 @@ enum AuroraSysEx : uint8_t {
     SYSEX_SYNC_ABORT     = 0x05,
     SYSEX_QUERY_LIBRARY  = 0x06,
     SYSEX_QUERY_PATCH    = 0x07,
+    SYSEX_ONESHOT        = 0x08,
+    SYSEX_QUERY_ONESHOT  = 0x09,
 
     SYSEX_ACK            = 0x40,
     SYSEX_LIBRARY_INFO   = 0x41,
     SYSEX_PATCH_HEAD_OUT = 0x42,
     SYSEX_PATCH_LAYER_OUT = 0x43,
+    SYSEX_ONESHOT_OUT    = 0x44,
 };
 
 enum AuroraSysExStatus : uint8_t {
@@ -394,9 +396,12 @@ static const uint8_t AURORA_KEYPAD_KEYS     = 9;
 static const uint8_t AURORA_BANKS           = 12;
 
 static const uint8_t AURORA_SLOT_MAP_LENGTH    = (AURORA_LAST_PATCH_SLOT + 7) / 7;
+static const uint8_t AURORA_KIT_MAP_LENGTH     = (AURORA_ONESHOTS + 6) / 7;
+static const uint8_t AURORA_MARK_MAP_LENGTH    = (AURORA_PATCH_CC_COUNT + 6) / 7;
+static const uint8_t AURORA_LIBRARY_HEAD_LENGTH = AURORA_SLOT_MAP_LENGTH + AURORA_KIT_MAP_LENGTH + 2;
 
-static inline bool aurora_slot_filled(const uint8_t *map, uint8_t slot) {
-    return (map[slot / 7] >> (slot % 7)) & 1;
+static inline bool aurora_map_has(const uint8_t *map, uint8_t index) {
+    return (map[index / 7] >> (index % 7)) & 1;
 }
 
 static inline bool aurora_is_patch_slot(uint8_t slot) {
@@ -412,9 +417,12 @@ enum AuroraPatchLayer : uint8_t {
     AURORA_PATCH_LAYERS  = 5,
 };
 
-static const uint8_t AURORA_PATCH_HEAD_LENGTH = 2 + AURORA_PATCH_NAME_LENGTH;
+static const uint8_t AURORA_PATCH_HEAD_LENGTH = 4 + AURORA_PATCH_NAME_LENGTH;
 
 static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT;
+
+static const uint16_t AURORA_ONESHOT_LENGTH =
+    1 + AURORA_PATCH_NAME_LENGTH + AURORA_MARK_MAP_LENGTH + AURORA_PATCH_CC_COUNT;
 
 #endif

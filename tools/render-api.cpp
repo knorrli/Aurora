@@ -27,7 +27,7 @@ class EditorLibrary : public playback::Library {
   bool filled[AURORA_LAST_PATCH_SLOT + 1] = {};
   playback::Oneshot kit[AURORA_ONESHOTS];
   bool kitFilled[AURORA_ONESHOTS] = {};
-  uint8_t defaults[2] = { playback::NO_ONESHOT, playback::NO_ONESHOT };
+  uint8_t defaults[2] = { AURORA_NO_ONESHOT, AURORA_NO_ONESHOT };
 
   bool patch(uint8_t slot, playback::Patch &out) override {
     if (slot > AURORA_LAST_PATCH_SLOT || !filled[slot]) return false;

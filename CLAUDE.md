@@ -16,7 +16,7 @@
 ## Generated files
 
 - `tools/cc.js`: `node tools/gen-cc.mjs` after changing `shared/aurora_protocol.h`.
-- `tools/render.js`: `node tools/build-render.mjs` after changing `shared/render/` (needs Emscripten).
+- `tools/render.js`: `node tools/build-render.mjs` after changing `shared/render/` or `shared/playback/` (needs Emscripten).
 - Both have `--check`.
 
 ## Build gotcha

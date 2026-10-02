@@ -8,18 +8,19 @@ The Arduino Nano rig it replaces is at the tag `aurora-nano-final`.
 
 - `brain/`: the Teensy firmware. Strips on pin 2, PARs over DMX on `Serial4`, USB MIDI in.
 - `shared/render/`: the renderer. The brain runs it natively; the editor runs it compiled to WebAssembly.
+- `shared/playback/`: what plays when: the clock, recall, holds, the morph and the accent, the blackout, the faders and the oneshots. Built into the brain and the editor the same way.
 - `shared/aurora_protocol.h`: every MIDI number Aurora uses.
 - `tools/editor.html`: builds patches, drives the rig over Web MIDI, and previews it with the same renderer.
 
 ## MIDI
 
-Channel 1 only. Program Change 10 runs the generator, Program Change 0 is blackout, CCs carry every control, MIDI clock carries tempo.
+Channel 1 only. Program Changes 1–108 recall patches, 0 is the blackout, 109–127 are songs. Note 57 holds a key, notes 58–79 fire oneshots, CCs carry every control, MIDI clock carries tempo.
 
 ## Commands
 
 ```bash
 cd brain && pio run -t upload        # flash the brain
-node tools/build-render.mjs          # after changing shared/render/
+node tools/build-render.mjs          # after changing shared/render/ or shared/playback/
 node tools/gen-cc.mjs                # after changing shared/aurora_protocol.h
 cd tools && python3 -m http.server   # then open http://localhost:8000/editor.html in Chrome
 ```

@@ -1,7 +1,6 @@
 #include "par_output.h"
 
 #include <TeensyDMX.h>
-#include <string.h>
 
 namespace par_output {
 
@@ -28,7 +27,7 @@ void begin() {
     dmx.begin();
 }
 
-void show(const render::Par *pars, bool blackout) {
+void show(const render::Par *pars) {
     for (uint8_t i = 0; i < render::PARS; i++) {
         const Fixture &fixture = fixtures[i];
         const render::Rgb rgb = pars[i].color;
@@ -43,7 +42,6 @@ void show(const render::Par *pars, bool blackout) {
             0,
             0,
         };
-        if (blackout) memset(channels, 0, sizeof(channels));
         dmx.set(fixture.address, channels, CHANNELS_PER_PAR);
     }
 }

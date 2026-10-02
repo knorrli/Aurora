@@ -8,8 +8,6 @@
 
 namespace playback {
 
-static const uint8_t NO_ONESHOT = 127;
-
 struct Patch {
   uint8_t transitionTime;
   uint8_t accentTime;
@@ -75,7 +73,7 @@ class Playback {
   uint8_t slot() const { return playingSlot; }
   const uint8_t *drawnControls() const { return composed; }
   float oneshotProgress() const { return firing ? lastOneshotProgress : -1.0f; }
-  uint8_t oneshotIndex() const { return firing ? firedIndex : NO_ONESHOT; }
+  uint8_t oneshotIndex() const { return firing ? firedIndex : AURORA_NO_ONESHOT; }
 
  private:
   void advance(float beats);
@@ -110,7 +108,7 @@ class Playback {
 
   bool firing = false;
   Oneshot oneshot;
-  uint8_t firedIndex = NO_ONESHOT;
+  uint8_t firedIndex = AURORA_NO_ONESHOT;
   float firedAtBeats = 0.0f;
   float lastOneshotProgress = 0.0f;
 

@@ -221,8 +221,8 @@
       const fault = Library.validateFile(result.file);
       if (fault) { say(`the brain's library: ${fault}`, 'bad'); return; }
       if (!leaveDraft()) return;
-      const kept = Library.libraryToFile(Object.assign({}, session.library, { slots: [] }));
-      replaceLibrary(Object.assign({}, result.file, kept, { patches: result.file.patches }));
+      const { songs, gig } = Library.libraryToFile(session.library);
+      replaceLibrary(Object.assign({}, result.file, { songs, gig }));
       say(`the editor now holds what the brain holds — ${result.file.patches.length} patches`, 'ok');
     });
   }

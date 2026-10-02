@@ -69,7 +69,6 @@
 
   const MIDI_CHANNEL = 1;
   const PROGRAM_BLACKOUT = 0;
-  const PROGRAM_SHOW = 10;
   const PROGRAM_SONG_FIRST = 109;
   const SONGS = 19;
   const NOTE_KEY_HELD = 57;
@@ -107,7 +106,7 @@
   const LAST_PATCH_SLOT = 108;
   const PATCH_CC_COUNT = 128;
   const PATCH_NAME_LENGTH = 16;
-  const PATCH_HEAD_LENGTH = 18;
+  const PATCH_HEAD_LENGTH = 20;
   const PATCH_LAYER_BASE = 0;
   const PATCH_LAYER_COLOR = 1;
   const PATCH_LAYER_EXTENT = 2;
@@ -117,11 +116,15 @@
   const KEYPAD_KEYS = 9;
   const BANKS = 12;
   const SLOT_MAP_LENGTH = 16;
+  const KIT_MAP_LENGTH = 3;
+  const MARK_MAP_LENGTH = 19;
+  const NO_ONESHOT = 127;
+  const LIBRARY_HEAD_LENGTH = 21;
   const SYSEX_ID = 125;
   const SYSEX_SIGNATURE_A = 65;
   const SYSEX_SIGNATURE_B = 85;
   const SYSEX_HEADER_LENGTH = 5;
-  const SYSEX_TYPE = {"syncBegin":1,"patchHead":2,"patchLayer":3,"syncCommit":4,"syncAbort":5,"queryLibrary":6,"queryPatch":7,"ack":64,"libraryInfo":65,"patchHeadOut":66,"patchLayerOut":67};
+  const SYSEX_TYPE = {"syncBegin":1,"patchHead":2,"patchLayer":3,"syncCommit":4,"syncAbort":5,"queryLibrary":6,"queryPatch":7,"oneshot":8,"queryOneshot":9,"ack":64,"libraryInfo":65,"patchHeadOut":66,"patchLayerOut":67,"oneshotOut":68};
   const SYSEX_STATUS = {"ok":0,"errorFormat":1,"errorSequence":2,"errorIncomplete":3,"errorStorage":4,"errorRange":5};
   const LIBRARY_STATE = {"stored":0,"empty":1,"unreadable":2};
 
@@ -175,7 +178,6 @@
     CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
     MIDI_CHANNEL,
     PROGRAM_BLACKOUT,
-    PROGRAM_SHOW,
     PROGRAM_SONG_FIRST,
     SONGS,
     NOTE_KEY_HELD,
@@ -216,6 +218,10 @@
     KEYPAD_KEYS,
     BANKS,
     SLOT_MAP_LENGTH,
+    KIT_MAP_LENGTH,
+    MARK_MAP_LENGTH,
+    NO_ONESHOT,
+    LIBRARY_HEAD_LENGTH,
     SYSEX_ID,
     SYSEX_SIGNATURE_A,
     SYSEX_SIGNATURE_B,

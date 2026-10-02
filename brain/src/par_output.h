@@ -5,6 +5,6 @@
 namespace par_output {
 
 void begin();
-void show(const render::Par *pars, bool blackout);
+void show(const render::Par *pars);
 
 }

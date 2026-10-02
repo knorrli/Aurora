@@ -146,7 +146,6 @@ const patchLayers = Object.fromEntries(enumEntries('AuroraPatchLayer'));
 const generated = {
   MIDI_CHANNEL: constant('AURORA_MIDI_CHANNEL'),
   PROGRAM_BLACKOUT: programs.PROGRAM_BLACKOUT,
-  PROGRAM_SHOW: programs.PROGRAM_SHOW,
   PROGRAM_SONG_FIRST: programs.PROGRAM_SONG_FIRST,
   SONGS: constant('AURORA_SONGS'),
   NOTE_KEY_HELD: notes.NOTE_KEY_HELD,
@@ -194,6 +193,10 @@ const generated = {
   KEYPAD_KEYS: constant('AURORA_KEYPAD_KEYS'),
   BANKS: constant('AURORA_BANKS'),
   SLOT_MAP_LENGTH: constant('AURORA_SLOT_MAP_LENGTH'),
+  KIT_MAP_LENGTH: constant('AURORA_KIT_MAP_LENGTH'),
+  MARK_MAP_LENGTH: constant('AURORA_MARK_MAP_LENGTH'),
+  NO_ONESHOT: constant('AURORA_NO_ONESHOT'),
+  LIBRARY_HEAD_LENGTH: constant('AURORA_LIBRARY_HEAD_LENGTH'),
   SYSEX_ID: constant('AURORA_SYSEX_ID'),
   SYSEX_SIGNATURE_A: constant('AURORA_SYSEX_SIGNATURE_A'),
   SYSEX_SIGNATURE_B: constant('AURORA_SYSEX_SIGNATURE_B'),
