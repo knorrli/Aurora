@@ -37,6 +37,7 @@ struct FrameContext {
   SpotRoute spotRoutes[RENDER_ROUTES];
   uint8_t spotRouteCount;
   float stripLaps[STRIPS];
+  const float *stripDialed[STRIPS];
   const PadFinger *pad;
   float speed;
   PadLevels padLevels;
@@ -85,16 +86,20 @@ static float beatsAt(float quarterNotes, uint8_t division) {
   return quarterNotes * (float)AURORA_TICKS_PER_BEAT / (float)aurora_ticks_per_division(division);
 }
 
+static float lapsOf(const Reading &reading, uint8_t strip) {
+  const float lap = lapPixels(reading.shape);
+  const float fanLaps = lap > 0.0001f ? reading.fan.speedPixels / lap : 0.0f;
+  const float laps = reading.shape.lapsPerBeat + fanLaps * fanWave(reading.fan, strip);
+  return fabsf(laps * lap) < STILL_PIXELS_PER_BEAT ? 0.0f : laps;
+}
+
 static void startTravel(FrameContext &context, const Wall &wall) {
   const Reading &wallReading = context.wallReading;
   bool anyMoving =
       routeAims(context.dialed, CC_SHAPE_SPEED, RENDER_ROUTES)
       || routeAims(context.dialed, CC_FAN_SPEED, RENDER_ROUTES);
-  const float lap = lapPixels(wallReading.shape);
-  const float fanLaps = lap > 0.0001f ? wallReading.fan.speedPixels / lap : 0.0f;
   for (uint8_t i = 0; i < STRIPS; i++) {
-    context.stripLaps[i] = wallReading.shape.lapsPerBeat + fanLaps * fanWave(wallReading.fan, i);
-    if (fabsf(context.stripLaps[i] * lap) < STILL_PIXELS_PER_BEAT) context.stripLaps[i] = 0.0f;
+    context.stripLaps[i] = lapsOf(wallReading, i);
     if (context.stripLaps[i] != 0.0f) anyMoving = true;
   }
 
@@ -133,10 +138,11 @@ static void readStrip(const FrameContext &context, uint8_t index, float *padShif
   strip.fanShift = fan.lfo * wave;
   out.stripFanShift[index] = strip.fanShift;
 
-  gatherRoutes(context.dialed, context.wallReading.lfoBeats, context.lfo, strip.fanShift,
+  const float *dialed = context.stripDialed[index];
+  gatherRoutes(dialed, context.wallReading.lfoBeats, context.lfo, strip.fanShift,
                padReaching(context, (int8_t)index), modulation);
   carryPadShift(context.padElapsed, padShift, modulation);
-  readControls(context.dialed, &modulation, strip.reading);
+  readControls(dialed, &modulation, strip.reading);
   hurry(strip.reading, context.speed);
 
   strip.flowTime = context.flowTime + modulation.shift[CC_FLOW_RATE];
@@ -144,7 +150,7 @@ static void readStrip(const FrameContext &context, uint8_t index, float *padShif
   strip.scatterTime = context.scatterTime + modulation.shift[CC_SCATTER_RATE];
 
   const float lap = lapPixels(context.wallReading.shape);
-  strip.travel.lapsPerBeat = context.stripLaps[index];
+  strip.travel.lapsPerBeat = dialed == context.dialed ? context.stripLaps[index] : lapsOf(strip.reading, index);
   strip.travel.shiftLaps = modulation.shift[CC_SHAPE_SPEED]
       + (lap > 0.0001f ? modulation.shift[CC_FAN_SPEED] * wave / lap : 0.0f);
   strip.travel.positionCells =
@@ -284,9 +290,10 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
 
   const Reading &reading = strip.reading;
   PixelEngines engines;
-  engines.fieldOn = fieldActive(reading, context.dialed, RENDER_ROUTES);
+  const float *dialed = context.stripDialed[strip.index];
+  engines.fieldOn = fieldActive(reading, dialed, RENDER_ROUTES);
   engines.flowOn = flowActive(reading);
-  engines.scatterOn = scatterActive(reading, context.dialed, RENDER_ROUTES);
+  engines.scatterOn = scatterActive(reading, dialed, RENDER_ROUTES);
   engines.flat =
       !engines.fieldOn && !engines.flowOn && !coreActive(reading);
 
@@ -300,24 +307,37 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
                  Wall &wall, Frame &out) {
   setOneshotClock(oneshot);
   FrameContext context;
-  context.dialed = controls;
+  bool everyStrip = true;
+  for (uint8_t i = 0; i < STRIPS; i++) everyStrip = everyStrip && pad.strips[i];
+  const float *wallControls = pad.morphed && everyStrip ? pad.morphed : controls;
+  context.dialed = wallControls;
+  for (uint8_t i = 0; i < STRIPS; i++) {
+    context.stripDialed[i] = pad.morphed && pad.strips[i] ? pad.morphed : wallControls;
+  }
   context.pad = &pad;
   context.speed = speed;
   context.padLevels = { pad.x, pad.y };
-  context.palette = roundedControl(controls[CC_PALETTE]);
-  context.beats = beatsAt(quarterNotes, roundedControl(controls[CC_TEMPO_DIVISION]));
+  context.palette = roundedControl(wallControls[CC_PALETTE]);
+  context.beats = beatsAt(quarterNotes, roundedControl(wallControls[CC_TEMPO_DIVISION]));
 
-  readControls(controls, nullptr, context.wallReading);
+  readControls(wallControls, nullptr, context.wallReading);
   hurry(context.wallReading, speed);
   context.lfo = anchoredLfoPhase(motion, context.beats, 1.0f / context.wallReading.lfoBeats);
   out.lfo = context.lfo;
 
   Modulation modulation;
-  gatherRoutes(controls, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
+  gatherRoutes(wallControls, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
                modulation);
-  readControls(controls, &modulation, context.wallReading);
+  readControls(wallControls, &modulation, context.wallReading);
   hurry(context.wallReading, speed);
-  readPars(controls, modulation, context.lfo, out);
+  if (pad.morphed && wallControls != pad.morphed) {
+    Modulation parModulation;
+    gatherRoutes(pad.morphed, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
+                 parModulation);
+    readPars(pad.morphed, parModulation, context.lfo, out);
+  } else {
+    readPars(wallControls, modulation, context.lfo, out);
+  }
   holdParPulses(milliseconds, wall, out);
   readFan(context.wallReading, out.fan);
 
@@ -344,7 +364,7 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   motion.lastScatterBeats = context.beats;
   context.scatterTime =
       anchoredPhase(motion.scatter, context.beats, scatterElapsed, context.wallReading.scatter.rate);
-  context.spotRouteCount = gatherSpotRoutes(controls, context.spotRoutes);
+  context.spotRouteCount = gatherSpotRoutes(wallControls, context.spotRoutes);
   if (scatterElapsed < 0.0f) {
     for (auto &drifts : motion.spotDrift) {
       for (float &drift : drifts) drift = 0.0f;

@@ -29,8 +29,8 @@ class EditorLibrary : public playback::Library {
  public:
   playback::Patch patches[AURORA_LAST_PATCH_SLOT + 1];
   bool filled[AURORA_LAST_PATCH_SLOT + 1] = {};
-  playback::Oneshot kit[AURORA_ONESHOTS];
-  bool kitFilled[AURORA_ONESHOTS] = {};
+  playback::Oneshot kit[AURORA_KIT_PLACES];
+  bool kitFilled[AURORA_KIT_PLACES] = {};
   uint8_t defaults[2] = { AURORA_NO_ONESHOT, AURORA_NO_ONESHOT };
 
   bool patch(uint8_t slot, playback::Patch &out) override {
@@ -40,7 +40,7 @@ class EditorLibrary : public playback::Library {
   }
 
   bool oneshot(uint8_t index, playback::Oneshot &out) override {
-    if (index >= AURORA_ONESHOTS || !kitFilled[index]) return false;
+    if (index >= AURORA_KIT_PLACES || !kitFilled[index]) return false;
     out = kit[index];
     return true;
   }
@@ -106,13 +106,13 @@ EMSCRIPTEN_KEEPALIVE void aurora_library_clear_patch(int slot) {
 }
 
 EMSCRIPTEN_KEEPALIVE void aurora_library_store_oneshot(int index) {
-  if (index < 0 || index >= AURORA_ONESHOTS) return;
+  if (index < 0 || index >= AURORA_KIT_PLACES) return;
   library.kit[index] = oneshotBuffer;
   library.kitFilled[index] = true;
 }
 
 EMSCRIPTEN_KEEPALIVE void aurora_library_clear_oneshot(int index) {
-  if (index >= 0 && index < AURORA_ONESHOTS) library.kitFilled[index] = false;
+  if (index >= 0 && index < AURORA_KIT_PLACES) library.kitFilled[index] = false;
 }
 
 EMSCRIPTEN_KEEPALIVE void aurora_library_default_oneshots(int first, int second) {

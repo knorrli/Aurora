@@ -6,7 +6,7 @@ const NAME_AT = Protocol.PATCH_HEAD_LENGTH - Protocol.PATCH_NAME_LENGTH;
 const HEAD = { transitionTime: 0, accentTime: 1, oneshots: 2 };
 
 const isSevenBit = value => Number.isInteger(value) && value >= 0 && value <= 127;
-const isOneshotIndex = index => Number.isInteger(index) && index >= 0 && index < Protocol.ONESHOTS;
+const isOneshotIndex = index => Number.isInteger(index) && index >= 0 && index < Protocol.KIT_PLACES;
 const isPick = pick => pick === null || isOneshotIndex(pick);
 const NO_PICKS = [null, null];
 const LAST_PATCH_SLOT = Protocol.LAST_PATCH_SLOT;
@@ -89,7 +89,7 @@ function validatePatch(patch, where) {
 
 function validateOneshot(oneshot, where) {
   if (!oneshot || typeof oneshot !== 'object') return `${where} is not a oneshot`;
-  if (!isOneshotIndex(oneshot.index)) return `${where} is in kit place ${oneshot.index}, not 0–${Protocol.ONESHOTS - 1}`;
+  if (!isOneshotIndex(oneshot.index)) return `${where} is in kit place ${oneshot.index}, not 0–${Protocol.KIT_PLACES - 1}`;
   if (!isPrintableName(oneshot.name)) {
     return `${where} needs a name of up to ${Protocol.PATCH_NAME_LENGTH} printable ASCII characters`;
   }
@@ -217,7 +217,7 @@ function libraryFromHeadBytes(head) {
   const kitAt = Protocol.SLOT_MAP_LENGTH, defaultsAt = kitAt + Protocol.KIT_MAP_LENGTH;
   return {
     slots: indexesInMap(head.slice(0, kitAt), LAST_PATCH_SLOT + 1),
-    kit: indexesInMap(head.slice(kitAt, defaultsAt), Protocol.ONESHOTS),
+    kit: indexesInMap(head.slice(kitAt, defaultsAt), Protocol.KIT_PLACES),
     defaultOneshots: head.slice(defaultsAt, defaultsAt + 2).map(pickFrom),
   };
 }

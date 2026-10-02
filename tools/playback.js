@@ -87,7 +87,7 @@ function storeKitPlace(index) {
 
 function syncLibrary() {
   for (let slot = 1; slot <= Protocol.LAST_PATCH_SLOT; slot++) storeSlot(slot);
-  for (let index = 0; index < Protocol.ONESHOTS; index++) storeKitPlace(index);
+  for (let index = 0; index < Protocol.KIT_PLACES; index++) storeKitPlace(index);
   Preview.playback.defaultOneshots(session.library.defaultOneshots);
 }
 

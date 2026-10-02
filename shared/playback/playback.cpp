@@ -12,6 +12,7 @@ namespace playback {
 static const float HOLD_JUDGED_AFTER_MICROS = 200000.0f;
 static const float STUTTER_OPEN_SHARE = 0.5f;
 static const float STROBE_LIT_SHARE = 0.25f;
+static const float CORNER_CUT_SHARE = 0.15f;
 
 float Ramp::at(float beats) const {
   if (beats >= endBeat) return end;
@@ -161,7 +162,42 @@ bool Playback::movePad(uint8_t cc, uint8_t value) {
     default: return false;
   }
   pad.playing = pad.touching || (pad.playing && pad.latching);
+  const bool morphing = pad.playing && pad.mode == PAD_MODE_MORPH;
+  if (morphing && !cornersLoaded) loadCorners();
+  if (!morphing) cornersLoaded = false;
   return true;
+}
+
+void Playback::loadCorners() {
+  for (uint8_t corner = 0; corner < AURORA_CORNERS; corner++) {
+    cornerFilled[corner] = library.oneshot(AURORA_ONESHOTS + corner, corners[corner]);
+  }
+  const uint8_t right = pad.x >= 64 ? 1 : 0;
+  const uint8_t top = pad.y >= 64 ? 2 : 0;
+  switchCorner = (int8_t)(top + right);
+  cornersLoaded = true;
+}
+
+static float cornerAxis(uint8_t value) {
+  return render::clampUnit(((float)value / 127.0f - CORNER_CUT_SHARE) / (1.0f - 2.0f * CORNER_CUT_SHARE));
+}
+
+const float *Playback::morphCorners(const float *composed) {
+  if (!cornersLoaded) return nullptr;
+  const float right = cornerAxis(pad.x);
+  const float top = cornerAxis(pad.y);
+  const float weights[AURORA_CORNERS] = {
+      (1.0f - right) * (1.0f - top), right * (1.0f - top), (1.0f - right) * top, right * top,
+  };
+  const uint8_t *controls[AURORA_CORNERS];
+  const uint8_t *marks[AURORA_CORNERS];
+  for (uint8_t corner = 0; corner < AURORA_CORNERS; corner++) {
+    controls[corner] = cornerFilled[corner] ? corners[corner].controls : nullptr;
+    marks[corner] = corners[corner].marks;
+  }
+  memcpy(morphed, composed, sizeof(morphed));
+  render::morphCorners(composed, controls, marks, weights, switchCorner, morphed);
+  return morphed;
 }
 
 void Playback::moveFader(uint8_t layer, uint8_t value) {
@@ -364,7 +400,9 @@ const render::Frame &Playback::frame(uint32_t micros) {
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }
 
-  render::renderFrame(composed, beats, micros / 1000, clock, padFinger(), padSpeed(), motion, wall, rendered);
+  render::PadFinger finger = padFinger();
+  finger.morphed = morphCorners(composed);
+  render::renderFrame(composed, beats, micros / 1000, clock, finger, padSpeed(), motion, wall, rendered);
   playEffect(beats);
   if (level < 255) {
     for (render::Rgb &pixel : rendered.pixels) {

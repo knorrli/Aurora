@@ -88,6 +88,8 @@ const ARP = {"unison":0,"steps":1,"ripple":2};
 const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
 const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
 const PAD_MODE = {"perPatch":0,"morph":1,"effects":2};
+const CORNER = {"bottomLeft":0,"bottomRight":1,"topLeft":2,"topRight":3};
+const KIT_PLACES = 24;
 const ROUTE_SOURCE = {"lfo":0,"padX":1,"padY":2};
 const PAD_WIDTH = {"center":0,"middle":1,"all":2};
 const WAVE_SWELL = 32;
@@ -114,10 +116,10 @@ const PATCH_LAYERS = 5;
 const KEYPAD_KEYS = 9;
 const BANKS = 12;
 const SLOT_MAP_LENGTH = 16;
-const KIT_MAP_LENGTH = 3;
+const KIT_MAP_LENGTH = 4;
 const MARK_MAP_LENGTH = 19;
 const NO_ONESHOT = 127;
-const LIBRARY_HEAD_LENGTH = 21;
+const LIBRARY_HEAD_LENGTH = 22;
 const SYSEX_ID = 125;
 const SYSEX_SIGNATURE_A = 65;
 const SYSEX_SIGNATURE_B = 85;
@@ -153,6 +155,8 @@ export const Protocol = {
   ARP_MODE,
   HUE_LAYOUT,
   PAD_MODE,
+  CORNER,
+  KIT_PLACES,
   ROUTE_SOURCE,
   PAD_WIDTH,
   WAVE_SWELL,

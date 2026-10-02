@@ -13,6 +13,9 @@ void blendPatches(const float *from, const float *to, float position, const floa
 
 void composeOneshot(const float *live, const uint8_t *oneshot, const uint8_t *marks, float *out);
 
+void morphCorners(const float *live, const uint8_t *const *controls, const uint8_t *const *marks,
+                  const float *weights, int8_t switchCorner, float *out);
+
 void mixLayers(const float *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
                const float *positions, float *out);
 

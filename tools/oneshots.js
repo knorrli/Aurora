@@ -16,6 +16,14 @@ const FIRE_BUTTONS = ['oneshotFire0', 'oneshotFire1'];
 const DEFAULT_FIELDS = ['defaultOneshot0', 'defaultOneshot1'];
 
 const noteOf = index => Protocol.NOTE_ONESHOT_FIRST + index;
+const CORNER_NAMES = {
+  [Protocol.CORNER.bottomLeft]: 'bottom left', [Protocol.CORNER.bottomRight]: 'bottom right',
+  [Protocol.CORNER.topLeft]: 'top left', [Protocol.CORNER.topRight]: 'top right',
+};
+const CORNERS_AS_ON_THE_PAD = [Protocol.CORNER.topLeft, Protocol.CORNER.topRight,
+  Protocol.CORNER.bottomLeft, Protocol.CORNER.bottomRight];
+const placeText = index =>
+  (index < Protocol.ONESHOTS ? `note ${noteOf(index)}` : `${CORNER_NAMES[index - Protocol.ONESHOTS]} corner`);
 const kitOneshot = session.kitOneshot;
 let repeat = true;
 
@@ -64,7 +72,7 @@ function paintOver() {
 const fireDraft = () => Playback.fireNote(noteOf(session.oneshotIndex));
 
 function keepRepeating() {
-  if (session.editingOneshot() && repeat && Playback.oneshotProgress() < 0) fireDraft();
+  if (session.editingOneshot() && !session.editingCorner() && repeat && Playback.oneshotProgress() < 0) fireDraft();
 }
 
 function paintHead() {
@@ -120,7 +128,7 @@ function cell(index) {
   button.classList.toggle('on', current);
   button.classList.toggle('dirty', index === session.oneshotIndex && !!session.oneshotDraft);
   const head = element('span', 'cell-head');
-  head.append(element('span', 'slot cc midi-number', `note ${noteOf(index)}`));
+  head.append(element('span', 'slot cc midi-number', placeText(index)));
   button.append(head, element('span', 'name', oneshot ? oneshot.name || '(unnamed)' : ''));
   button.addEventListener('click', () => open(index));
   return button;
@@ -128,6 +136,7 @@ function cell(index) {
 
 function paintKit() {
   byId('kitGrid').replaceChildren(...Array.from({ length: Protocol.ONESHOTS }, (_, index) => cell(index)));
+  byId('cornerGrid').replaceChildren(...CORNERS_AS_ON_THE_PAD.map(corner => cell(Protocol.ONESHOTS + corner)));
   byId('kitCount').textContent = `${Library.filledKit(session.library).length} / ${Protocol.ONESHOTS}`;
   paintPickSelects(DEFAULT_FIELDS, session.library.defaultOneshots, () => '—');
   byId('oneshotDelete').disabled = !session.editingOneshot() || !session.library.kit[session.oneshotIndex];
@@ -154,7 +163,7 @@ function save() {
   session.oneshotDraft = null;
   session.saveLibrary();
   Rail.paintList();
-  say(`saved the oneshot "${session.patch().name}" on note ${noteOf(session.oneshotIndex)}`, 'ok');
+  say(`saved "${session.patch().name}" as the ${placeText(session.oneshotIndex)}`, 'ok');
 }
 
 function discard() {
@@ -184,7 +193,7 @@ function startNew() {
 function remove() {
   const index = session.oneshotIndex;
   const oneshot = session.library.kit[index];
-  if (!confirm(`Empty note ${noteOf(index)}, "${oneshot.name}"?`)) return;
+  if (!confirm(`Empty the ${placeText(index)}, "${oneshot.name}"?`)) return;
   session.library.kit[index] = null;
   session.oneshotDraft = null;
   for (const patch of session.library.slots) {

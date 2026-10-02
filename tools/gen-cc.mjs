@@ -121,6 +121,8 @@ const generated = {
   ARP_MODE: enumByPrefix('AuroraArpMode', 'ARP_MODE_'),
   HUE_LAYOUT: enumByPrefix('AuroraHueLayout', 'HUE_LAYOUT_'),
   PAD_MODE: enumByPrefix('AuroraPadMode', 'PAD_MODE_'),
+  CORNER: enumByPrefix('AuroraCorner', 'CORNER_'),
+  KIT_PLACES: constant('AURORA_KIT_PLACES'),
   ROUTE_SOURCE: enumByPrefix('AuroraRouteSource', 'ROUTE_SOURCE_'),
   PAD_WIDTH: enumByPrefix('AuroraPadWidth', 'PAD_WIDTH_'),
   WAVE_SWELL: constant('WAVE_SWELL'),

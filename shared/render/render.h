@@ -59,6 +59,7 @@ struct PadFinger {
   float x = 0.0f;
   float y = 0.0f;
   bool strips[STRIPS] = {};
+  const float *morphed = nullptr;
 };
 
 struct Motion {

@@ -102,6 +102,8 @@ class Playback {
   uint8_t padEffect() const;
   float padSpeed() const;
   void playEffect(float beats);
+  void loadCorners();
+  const float *morphCorners(const float *composed);
 
   Library &library;
   Tempo tempo;
@@ -124,6 +126,11 @@ class Playback {
 
   float faders[AURORA_PATCH_LAYERS] = {};
   Pad pad;
+  Oneshot corners[AURORA_CORNERS];
+  bool cornerFilled[AURORA_CORNERS] = {};
+  bool cornersLoaded = false;
+  int8_t switchCorner = -1;
+  float morphed[render::RENDER_CONTROL_COUNT];
   bool frozen = false;
   render::Rgb frozenPixels[render::STRIPS * render::PIXELS];
   render::Par frozenPars[render::PARS];

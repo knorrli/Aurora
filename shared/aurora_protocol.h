@@ -377,6 +377,13 @@ enum AuroraPadWidth : uint8_t {
     PAD_WIDTH_ALL    = 2,
 };
 
+enum AuroraCorner : uint8_t {
+    CORNER_BOTTOM_LEFT  = 0,
+    CORNER_BOTTOM_RIGHT = 1,
+    CORNER_TOP_LEFT     = 2,
+    CORNER_TOP_RIGHT    = 3,
+};
+
 enum AuroraPadEffect : uint8_t {
     PAD_EFFECT_FOCUS       = 0,
     PAD_EFFECT_FREEZE      = 1,
@@ -394,6 +401,8 @@ enum AuroraNote : uint8_t {
 };
 
 static const uint8_t AURORA_ONESHOTS = 20;
+static const uint8_t AURORA_CORNERS = 4;
+static const uint8_t AURORA_KIT_PLACES = AURORA_ONESHOTS + AURORA_CORNERS;
 static const uint8_t AURORA_NO_ONESHOT = 127;
 
 static const uint8_t AURORA_SYSEX_ID       = 0x7D;
@@ -445,7 +454,7 @@ static const uint8_t AURORA_KEYPAD_KEYS     = 9;
 static const uint8_t AURORA_BANKS           = 12;
 
 static const uint8_t AURORA_SLOT_MAP_LENGTH    = (AURORA_LAST_PATCH_SLOT + 7) / 7;
-static const uint8_t AURORA_KIT_MAP_LENGTH     = (AURORA_ONESHOTS + 6) / 7;
+static const uint8_t AURORA_KIT_MAP_LENGTH     = (AURORA_KIT_PLACES + 6) / 7;
 static const uint8_t AURORA_MARK_MAP_LENGTH    = (AURORA_PATCH_CC_COUNT + 6) / 7;
 static const uint8_t AURORA_LIBRARY_HEAD_LENGTH = AURORA_SLOT_MAP_LENGTH + AURORA_KIT_MAP_LENGTH + 2;
 

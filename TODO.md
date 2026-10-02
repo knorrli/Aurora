@@ -82,7 +82,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-- Build the pad on the brain: Morph's corner looks dialed in the library (`docs/design.md` § Touchpad and rockers).
+- Dial Morph's four corner looks in the editor's Corners block (`docs/design.md` § Touchpad and rockers).
 - Give the hook a note number, and read it on the brain: dark at once, back on release.
 
 ## Once Aurora v2 works

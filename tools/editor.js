@@ -87,7 +87,7 @@ function buildHead() {
 
 function paintHead() {
   const patch = session.patch();
-  byId('subjectKind').textContent = session.editingOneshot() ? 'Oneshot' : 'Patch';
+  byId('subjectKind').textContent = session.editingCorner() ? 'Corner' : session.editingOneshot() ? 'Oneshot' : 'Patch';
   if (byId('patchName').value !== patch.name) byId('patchName').value = patch.name;
   if (session.editingOneshot()) {
     Oneshots.paintHead();
@@ -104,6 +104,7 @@ function paintHead() {
 
 function paint() {
   document.body.classList.toggle('oneshot-mode', session.editingOneshot());
+  document.body.classList.toggle('corner-mode', session.editingCorner());
   Rows.paint(Playback.shownControls());
   paintTabs();
   Routes.paint(session.liveControls());

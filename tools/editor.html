@@ -194,6 +194,9 @@
   .pick-line select { flex: 1 1 auto; min-width: 0; }
   .kit-head { margin-top: 18px; }
   .kit-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  .corner-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.corner-mode #firingBar, body.corner-mode .field:has(#oneshotLength), body.corner-mode #lfo,
+  body.corner-mode .routes-button { display: none; }
 
   .song-columns { display: grid; grid-template-columns: minmax(130px, 190px) minmax(0, 1fr); gap: 16px; align-items: start; }
   .song-list { display: flex; flex-direction: column; gap: 3px; }
@@ -451,6 +454,8 @@
         </div>
       </div>
       <div class="patch-grid kit-grid" id="kitGrid"></div>
+      <div class="library-head kit-head"><h2>Corners</h2></div>
+      <div class="patch-grid corner-grid" id="cornerGrid"></div>
     </section>
 
     <section class="panel songs" id="songsPanel" hidden>

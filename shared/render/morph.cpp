@@ -145,4 +145,25 @@ void mixLayers(const float *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT]
   }
 }
 
+void morphCorners(const float *live, const uint8_t *const *controls, const uint8_t *const *marks,
+                  const float *weights, int8_t switchCorner, float *out) {
+  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
+    const uint8_t cc = (uint8_t)i;
+    out[cc] = live[cc];
+    if (performed(cc) || routeByteOfPatch(cc)) continue;
+    if (switchLike(cc)) {
+      if (switchCorner >= 0 && controls[switchCorner] && marks[switchCorner][cc]) {
+        out[cc] = controls[switchCorner][cc];
+      }
+      continue;
+    }
+    float value = live[cc];
+    for (uint8_t corner = 0; corner < AURORA_CORNERS; corner++) {
+      if (!controls[corner] || !marks[corner][cc]) continue;
+      value += weights[corner] * distance(cc, live[cc], controls[corner][cc]);
+    }
+    out[cc] = settle(cc, value);
+  }
+}
+
 }

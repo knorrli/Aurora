@@ -98,6 +98,7 @@ const firstFilled = () => {
 };
 
 const editingOneshot = () => session.mode === 'oneshot';
+const editingCorner = () => editingOneshot() && session.oneshotIndex >= Protocol.ONESHOTS;
 const underneath = () => session.draft || session.library.slots[session.slot];
 const oneshot = () => session.oneshotDraft || session.library.kit[session.oneshotIndex];
 const patch = () => (editingOneshot() ? oneshot() : underneath());
@@ -148,11 +149,13 @@ const marked = name => !!oneshot().marks[name];
 function oneshotControls() {
   const shown = Patch.controls(over().base.slice());
   const own = Patch.controls(oneshot().base);
-  for (const name of Patch.NAMES) if (isRouteField(name) || marked(name)) shown[name] = own[name];
+  const ownRoutes = !editingCorner();
+  for (const name of Patch.NAMES) if ((ownRoutes && isRouteField(name)) || marked(name)) shown[name] = own[name];
   return shown;
 }
 
 function pinnedControls() {
+  if (editingCorner()) return oneshotControls();
   if (editingOneshot()) return null;
   const current = patch();
   const position = session.transition.position;
@@ -364,7 +367,7 @@ function forgetMissingPatches() {
 
 Object.assign(session, {
   load, saveLibrary, flush, firstFilled,
-  editingOneshot, underneath, over, overSlotShown, kitOneshot, resolvedPick, oneshot, oneshotBeats, marked, toggleMark, openOneshot,
+  editingOneshot, editingCorner, underneath, over, overSlotShown, kitOneshot, resolvedPick, oneshot, oneshotBeats, marked, toggleMark, openOneshot,
   patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
   transitioning,
   pinnedControls, liveControls, setValue, resetNames, changed,

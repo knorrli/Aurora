@@ -28,7 +28,7 @@ bool    staging   = false;
 uint8_t stageHeadBytes[AURORA_LIBRARY_HEAD_LENGTH];
 uint8_t nextSlot  = SLOTS_END;
 uint8_t nextPiece = 0;
-uint8_t nextOneshot = AURORA_ONESHOTS;
+uint8_t nextOneshot = AURORA_KIT_PLACES;
 
 uint8_t filledFrom(const uint8_t *map, uint16_t index, uint8_t end) {
     while (index < end && !aurora_map_has(map, index)) index++;
@@ -48,7 +48,7 @@ bool mapFits(const uint8_t *map, uint8_t length, bool (*allowed)(uint8_t)) {
     return true;
 }
 
-bool isKitPlace(uint8_t index) { return index < AURORA_ONESHOTS; }
+bool isKitPlace(uint8_t index) { return index < AURORA_KIT_PLACES; }
 
 bool isPick(uint8_t pick) { return pick == AURORA_NO_ONESHOT || pick < AURORA_ONESHOTS; }
 
@@ -93,7 +93,7 @@ void loadLive() {
     const uint8_t *head = header + HEAD_AT;
     if (header[4] != AURORA_PATCH_FORMAT || !headFits(head)) { liveState = LIBRARY_UNREADABLE; return; }
     const uint8_t patches = filledBelow(slotMapOf(head), SLOTS_END);
-    const uint8_t oneshots = filledBelow(kitMapOf(head), AURORA_ONESHOTS);
+    const uint8_t oneshots = filledBelow(kitMapOf(head), AURORA_KIT_PLACES);
     if (patches == 0 || size != oneshotOffset(head, oneshots)) { liveState = LIBRARY_UNREADABLE; return; }
 
     for (uint8_t i = 0; i < AURORA_LIBRARY_HEAD_LENGTH; i++) liveHead[i] = head[i];
@@ -123,7 +123,7 @@ uint8_t writeStage(const uint8_t *bytes, uint16_t length) {
 void finishPatches() {
     nextPiece = 0;
     nextSlot = filledFrom(slotMapOf(stageHeadBytes), (uint16_t)nextSlot + 1, SLOTS_END);
-    if (nextSlot == SLOTS_END) nextOneshot = filledFrom(kitMapOf(stageHeadBytes), 0, AURORA_ONESHOTS);
+    if (nextSlot == SLOTS_END) nextOneshot = filledFrom(kitMapOf(stageHeadBytes), 0, AURORA_KIT_PLACES);
 }
 
 }
@@ -164,7 +164,7 @@ uint8_t stageBegin(uint8_t format, const uint8_t *head) {
 
     nextSlot = filledFrom(slotMapOf(stageHeadBytes), 0, SLOTS_END);
     nextPiece = 0;
-    nextOneshot = AURORA_ONESHOTS;
+    nextOneshot = AURORA_KIT_PLACES;
     return SYSEX_OK;
 }
 
@@ -187,13 +187,13 @@ uint8_t stageLayer(uint8_t slot, uint8_t layer, const uint8_t *cc) {
 uint8_t stageOneshot(uint8_t index, const uint8_t *oneshot) {
     if (!staging || nextSlot != SLOTS_END || index != nextOneshot) return SYSEX_ERROR_SEQUENCE;
     const uint8_t status = writeStage(oneshot, AURORA_ONESHOT_LENGTH);
-    if (status == SYSEX_OK) nextOneshot = filledFrom(kitMapOf(stageHeadBytes), (uint16_t)index + 1, AURORA_ONESHOTS);
+    if (status == SYSEX_OK) nextOneshot = filledFrom(kitMapOf(stageHeadBytes), (uint16_t)index + 1, AURORA_KIT_PLACES);
     return status;
 }
 
 uint8_t stageCommit() {
     if (!staging) return SYSEX_ERROR_SEQUENCE;
-    if (nextSlot != SLOTS_END || nextOneshot != AURORA_ONESHOTS) {
+    if (nextSlot != SLOTS_END || nextOneshot != AURORA_KIT_PLACES) {
         stageAbort();
         return SYSEX_ERROR_INCOMPLETE;
     }
@@ -224,7 +224,7 @@ void stageAbort() {
     if (mounted && filesystem.exists(STAGE_PATH)) filesystem.remove(STAGE_PATH);
     nextSlot  = SLOTS_END;
     nextPiece = 0;
-    nextOneshot = AURORA_ONESHOTS;
+    nextOneshot = AURORA_KIT_PLACES;
 }
 
 bool readHead(uint8_t slot, uint8_t *out) {

@@ -202,10 +202,11 @@ const firstEmptySlot = library => {
 };
 
 const lengthBeats = oneshot => Protocol.lfoPeriodBeats(oneshot.length);
-const emptyKit = () => new Array(Protocol.ONESHOTS).fill(null);
-const filledKit = library => library.kit.flatMap((oneshot, index) => (oneshot ? [index] : []));
+const emptyKit = () => new Array(Protocol.KIT_PLACES).fill(null);
+const filledPlaces = library => library.kit.flatMap((oneshot, index) => (oneshot ? [index] : []));
+const filledKit = library => filledPlaces(library).filter(index => index < Protocol.ONESHOTS);
 const firstEmptyKitPlace = library => {
-  const index = library.kit.findIndex(oneshot => !oneshot);
+  const index = library.kit.slice(0, Protocol.ONESHOTS).findIndex(oneshot => !oneshot);
   return index < 0 ? null : index;
 };
 
@@ -296,7 +297,7 @@ const libraryToFile = library => ({
   patchFormat: Protocol.PATCH_FORMAT,
   patches: filledSlots(library).map(slot => Object.assign({ slot }, patchToFile(library.slots[slot]))),
   defaultOneshots: library.defaultOneshots.slice(),
-  oneshots: filledKit(library).map(index => oneshotToFile(library.kit[index], index)),
+  oneshots: filledPlaces(library).map(index => oneshotToFile(library.kit[index], index)),
   songs: (library.songs || []).map(songToFile),
   gig: (library.gig || emptyGig()).slice(),
 });
