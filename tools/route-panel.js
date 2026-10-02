@@ -11,6 +11,7 @@
   const WAVE_CYCLES = 2;
   const PANEL_MIN_WIDTH = 420;
   const WAVE_PADDING = 7;
+  const WAVE_OVERHANG = 10;
 
   const panel = { root: null, blocks: [], add: null, free: null, target: null };
   const list = { root: null, count: null, lines: [] };
@@ -26,10 +27,17 @@
     return Math.min(ONCE_END, Math.max(0, (wrapped(clock) - delay) * ratio));
   }
 
+  const shownPhase = phase => (phase < 0 || phase > cycles()
+    ? phase - Math.floor(phase / cycles()) * cycles() : Math.min(phase, cycles() * ONCE_END));
+
+  const periodWidth = width => width - 2 * WAVE_OVERHANG;
+  const xOfPhase = (phase, width) => WAVE_OVERHANG + phase / cycles() * periodWidth(width);
+  const phaseOfX = (x, width) => (x - WAVE_OVERHANG) / periodWidth(width) * cycles();
+
   function departureAt(route, phase, live) {
     const wave = live[route.wave];
     const destination = Protocol.NAME_BY_CC[Protocol.routeTarget(live[route.destination])];
-    const at = Preview.lfoWave(turnsOf(route, Math.min(phase, cycles() * ONCE_END), live), wave);
+    const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live), wave);
     const centered = Patch.swings(destination) || Protocol.routeBipolar(live[route.destination]);
     return Patch.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
   }
@@ -58,13 +66,22 @@
     rail(1, 'rgba(255,255,255,.06)');
     rail(-1, 'rgba(255,255,255,.06)');
     rail(0, 'rgba(255,255,255,.22)', true);
+    context.strokeStyle = 'rgba(255,255,255,.22)';
+    context.lineWidth = 1;
+    for (const phase of [0, cycles()]) {
+      const x = Math.round(xOfPhase(phase, width)) + 0.5;
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, height);
+      context.stroke();
+    }
 
     context.strokeStyle = '#cf7d93';
     context.lineWidth = 2;
     context.lineJoin = 'round';
     context.beginPath();
     for (let x = 0; x <= width; x++) {
-      const value = departureAt(route, x / width * cycles(), live);
+      const value = departureAt(route, phaseOfX(x, width), live);
       if (x === 0) context.moveTo(x, y(value));
       else context.lineTo(x, y(value));
     }
@@ -81,7 +98,7 @@
     context.putImageData(canvas.wave, 0, 0);
     if (lfo === null) return;
     const along = wrapped(lfo / cycles());
-    const x = along * width;
+    const x = xOfPhase(along * cycles(), width);
     const y = (height / 2) - departureAt(route, along * cycles(), live) * (height / 2 - WAVE_PADDING);
     context.strokeStyle = 'rgba(255,255,255,.35)';
     context.lineWidth = 1;
