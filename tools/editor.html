@@ -336,7 +336,8 @@
   .dock input[type=text] { width: 84px; }
   .dock input.invalid { border-color: var(--bad); }
   .dock { max-height: calc(100vh - var(--topbar) - 20px); overflow-y: auto; }
-  .dock .pad-surface { aspect-ratio: 2; margin-bottom: 10px; touch-action: none; cursor: crosshair; }
+  #wallMain { touch-action: none; cursor: crosshair; }
+  .pad-rockers { margin-top: 10px; }
 
   @media (max-width: 1120px) {
     .shell { grid-template-columns: minmax(220px, 252px) minmax(0, 1fr); }
@@ -499,6 +500,7 @@
       <div class="dockgrid">
         <canvas id="wallMain"></canvas>
         <div>
+          <div class="pad-rockers" id="pad"></div>
           <div class="overlay-buttons" id="wallOverlays">
             <div>
               <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
@@ -521,7 +523,6 @@
         </div>
       </div>
     </section>
-    <section class="panel" id="pad"></section>
   </aside>
 
 </div>

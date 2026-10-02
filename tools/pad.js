@@ -6,7 +6,7 @@ const { byId, element } = dom;
 
 const OFF = 0, ON = 127;
 const EFFECT_COLUMNS = 5;
-const DOT_RADIUS = 6;
+const DOT_RADIUS = 7;
 
 const threeWay = (positions, labels) =>
   Object.entries(positions).map(([key, position]) => [Protocol.threeWayValue(position), labels[key]]);
@@ -28,7 +28,7 @@ const rockers = Object.fromEntries([
 ]);
 const finger = { x: 0, y: 0, touching: false, playing: false };
 const sent = {};
-let canvas = null;
+let surface = null;
 const rows = [];
 
 const latching = () => rockers[Protocol.CC.padHold] === ON;
@@ -42,20 +42,14 @@ function send(cc, value) {
 
 function settle() {
   finger.playing = finger.touching || (finger.playing && latching());
-  draw();
 }
 
-function draw() {
-  const width = canvas.clientWidth, height = canvas.clientHeight;
-  const scale = Math.min(2, window.devicePixelRatio || 1);
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
-  const context = canvas.getContext('2d');
-  context.setTransform(scale, 0, 0, scale, 0, 0);
-  context.clearRect(0, 0, width, height);
-  if (effects()) {
-    context.strokeStyle = 'rgba(255,255,255,0.12)';
+function drawFinger(context, width, height) {
+  context.save();
+  if (effects() && finger.touching) {
+    context.strokeStyle = 'rgba(255,255,255,0.18)';
     context.lineWidth = 1;
+    context.setLineDash([3, 4]);
     context.beginPath();
     for (let column = 1; column < EFFECT_COLUMNS; column++) {
       const x = Math.round(width * column / EFFECT_COLUMNS) + 0.5;
@@ -63,16 +57,27 @@ function draw() {
       context.lineTo(x, height);
     }
     context.stroke();
+    context.setLineDash([]);
   }
-  if (!finger.playing) return;
-  context.fillStyle = finger.touching ? '#fff' : 'rgba(255,255,255,0.55)';
-  context.beginPath();
-  context.arc(finger.x / 127 * width, (1 - finger.y / 127) * height, DOT_RADIUS, 0, Math.PI * 2);
-  context.fill();
+  if (finger.playing) {
+    context.beginPath();
+    context.arc(finger.x / 127 * width, (1 - finger.y / 127) * height, DOT_RADIUS, 0, Math.PI * 2);
+    context.strokeStyle = 'rgba(10,11,14,0.85)';
+    context.lineWidth = 4;
+    context.stroke();
+    context.strokeStyle = '#fff';
+    context.lineWidth = 1.5;
+    context.stroke();
+    if (finger.touching) {
+      context.fillStyle = 'rgba(255,255,255,0.35)';
+      context.fill();
+    }
+  }
+  context.restore();
 }
 
 function follow(event) {
-  const bounds = canvas.getBoundingClientRect();
+  const bounds = surface.getBoundingClientRect();
   const along = value => Math.round(Math.min(1, Math.max(0, value)) * 127);
   finger.x = along((event.clientX - bounds.left) / bounds.width);
   finger.y = along(1 - (event.clientY - bounds.top) / bounds.height);
@@ -87,23 +92,20 @@ function lift() {
   settle();
 }
 
-function wirePad() {
-  canvas.addEventListener('pointerdown', event => {
+function wireSurface() {
+  surface.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
-    canvas.setPointerCapture(event.pointerId);
+    surface.setPointerCapture(event.pointerId);
     follow(event);
     finger.touching = true;
     send(Protocol.CC.padTouch, ON);
     settle();
   });
-  canvas.addEventListener('pointermove', event => {
-    if (!finger.touching) return;
-    follow(event);
-    draw();
+  surface.addEventListener('pointermove', event => {
+    if (finger.touching) follow(event);
   });
-  canvas.addEventListener('pointerup', lift);
-  canvas.addEventListener('pointercancel', lift);
-  window.addEventListener('resize', draw);
+  surface.addEventListener('pointerup', lift);
+  surface.addEventListener('pointercancel', lift);
 }
 
 function rockerRow(rocker) {
@@ -132,14 +134,12 @@ function paintRockers() {
   }
 }
 
-function start() {
-  canvas = element('canvas', 'pad-surface');
-  const host = byId('pad');
-  host.replaceChildren(element('h2', null, 'The pad'), canvas, ...ROCKERS.map(rockerRow));
-  wirePad();
+function start(wall) {
+  surface = wall;
+  byId('pad').replaceChildren(...ROCKERS.map(rockerRow));
+  wireSurface();
   for (const [cc, value] of Object.entries(rockers)) send(+cc, value);
   paintRockers();
-  draw();
 }
 
-export { start };
+export { start, drawFinger };

@@ -8,7 +8,6 @@ import * as Rail from './library-rail.js';
 import * as Library from './library.js';
 import * as Midi from './midi-out.js';
 import * as Oneshots from './oneshots.js';
-import * as Pad from './pad.js';
 import * as Patch from './patch.js';
 import * as Playback from './playback.js';
 import * as Routes from './route-panel.js';
@@ -197,7 +196,6 @@ measureTopbar();
 
 Playback.start();
 Wall.start();
-Pad.start();
 Transition.rebuild();
 paint();
 Rail.paintList();

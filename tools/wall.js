@@ -1,6 +1,7 @@
 import * as Rows from './control-rows.js';
 import * as dom from './dom.js';
 import * as Oneshots from './oneshots.js';
+import * as Pad from './pad.js';
 import * as Playback from './playback.js';
 import { Preview } from './preview.js';
 import * as Routes from './route-panel.js';
@@ -89,6 +90,7 @@ function paintShownValues() {
 function frame() {
   const drawn = Playback.frame(performance.now());
   Preview.draw(wall.context, wall.glow, drawn, view.order, view.parOrder, wall.width, wall.height, view.overlays);
+  Pad.drawFinger(wall.context, wall.width, wall.height);
   paintBeats(Playback.beats());
   Oneshots.keepRepeating();
   const progress = Playback.oneshotProgress();
@@ -103,6 +105,7 @@ function frame() {
 function start() {
   beats.dots = [...document.querySelectorAll('#beats i')];
   wall = makeWall('wallMain', 300, 480);
+  Pad.start(byId('wallMain'));
 
   wireOrder('stripOrder', Preview.WALL_STRIP_ORDER, order => { view.order = order; });
   wireOrder('parOrder', Preview.WALL_PAR_ORDER, order => { view.parOrder = order; });
