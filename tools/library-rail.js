@@ -218,12 +218,11 @@
       const result = await link.pull();
       if (result.error) { say(result.error, 'bad'); return; }
       say(`read ${result.file.patches.length} patches`);
-      const pulled = Library.upgradeFile(result.file);
-      const fault = Library.validateFile(pulled);
+      const fault = Library.validateFile(result.file);
       if (fault) { say(`the brain's library: ${fault}`, 'bad'); return; }
       if (!leaveDraft()) return;
       const kept = Library.libraryToFile(Object.assign({}, session.library, { slots: [] }));
-      replaceLibrary(Object.assign({}, pulled, kept, { patches: pulled.patches }));
+      replaceLibrary(Object.assign({}, result.file, kept, { patches: result.file.patches }));
       say(`the editor now holds what the brain holds — ${result.file.patches.length} patches`, 'ok');
     });
   }
@@ -248,7 +247,6 @@
         say(`${file.name} is not readable JSON`, 'bad');
         return;
       }
-      loaded = Library.upgradeFile(loaded);
       const fault = Library.validateFile(loaded);
       if (fault) { say(`${file.name}: ${fault}`, 'bad'); return; }
       if (!leaveDraft()) return;

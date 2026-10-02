@@ -48,17 +48,16 @@
   };
 
   function load() {
-    const stored = Library.upgradeFile(readStored(STORE_LIBRARY));
+    const stored = readStored(STORE_LIBRARY);
     session.library = stored && !Library.validateFile(stored)
       ? Library.libraryFromFile(stored) : Library.newLibrary();
     loadOneshotDraft();
     const draft = readStored(STORE_DRAFT);
-    const draftPatch = draft && Library.upgradeDraftPatch(draft.patch, draft.format);
-    const fits = draft && !Library.validatePatch(draftPatch, 'the draft')
+    const fits = draft && !Library.validatePatch(draft.patch, 'the draft')
       && (draft.slot === null || LibraryFile.isPatchSlot(draft.slot));
     if (fits) {
       session.slot = draft.slot;
-      session.draft = Library.patchFromFile(draftPatch);
+      session.draft = Library.patchFromFile(draft.patch);
       return;
     }
     const first = firstFilled();
@@ -72,7 +71,7 @@
     clearTimeout(draftTimer);
     draftTimer = null;
     writeStored(STORE_DRAFT, session.draft
-      ? { slot: session.slot, format: Protocol.PATCH_FORMAT, patch: Library.patchToFile(session.draft) } : null);
+      ? { slot: session.slot, patch: Library.patchToFile(session.draft) } : null);
     writeStored(STORE_ONESHOT_DRAFT, session.oneshotDraft
       ? { index: session.oneshotIndex, oneshot: Library.oneshotToFile(session.oneshotDraft, session.oneshotIndex) } : null);
   }

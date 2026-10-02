@@ -343,33 +343,6 @@
     return { slots, kit: emptyKit(), defaultOneshots: NO_PICKS.slice(), songs: [], gig: emptyGig() };
   }
 
-  const FORMAT_BEFORE_ONCE = 4;
-  const RATIOS_BEFORE_ONCE = 8;
-
-  function upgradedRatios(bytes) {
-    const upgraded = bytes.slice();
-    for (const route of Patch.ROUTES) {
-      const cc = Patch.CC[route.ratio];
-      const ratio = 1 + Protocol.steppedIndex(upgraded[cc], RATIOS_BEFORE_ONCE);
-      upgraded[cc] = Protocol.routeRatioValue(ratio, false);
-    }
-    return upgraded;
-  }
-
-  const upgradedPatch = filePatch => Object.assign({}, filePatch, { layers: filePatch.layers.map(upgradedRatios) });
-
-  function upgradeFile(file) {
-    if (!file || file.patchFormat !== FORMAT_BEFORE_ONCE || !Array.isArray(file.patches)) return file;
-    const valid = file.patches.every(filePatch => filePatch && Array.isArray(filePatch.layers)
-      && filePatch.layers.every(Array.isArray));
-    if (!valid) return file;
-    return Object.assign({}, file, { patchFormat: Protocol.PATCH_FORMAT, patches: file.patches.map(upgradedPatch) });
-  }
-
-  const upgradeDraftPatch = (filePatch, format) =>
-    (format === Protocol.PATCH_FORMAT || !filePatch || !Array.isArray(filePatch.layers)
-      ? filePatch : upgradedPatch(filePatch));
-
   global.AuroraLibrary = {
     bytesFromNamed, namedFromBytes, writeCC,
     newPatch, clonePatch, newOneshot, cloneOneshot, oneshotToFile, oneshotFromFile, isMarkable, markBytes, layerBytes, changedIn, writeBase, freeRoute,
@@ -378,6 +351,5 @@
     filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, lengthBeats, libraryToFile, libraryFromFile, newLibrary,
     newSong, sectionSlot, addSection, relabelSection, removeSection, moveSection,
     swapSongSlots, forgetSongSlot, forgetSongOneshot, removeSong,
-    upgradeFile, upgradeDraftPatch,
   };
 })(window);
