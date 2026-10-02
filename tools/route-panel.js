@@ -73,7 +73,7 @@ function drawWave(canvas, route, live) {
     context.stroke();
   }
 
-  context.strokeStyle = '#d466d6';
+  context.strokeStyle = getComputedStyle(canvas).color;
   context.lineWidth = 2;
   context.lineJoin = 'round';
   context.beginPath();
@@ -278,6 +278,7 @@ function paintList(live) {
     if (!destination) continue;
     aimed++;
     target.textContent = destinationText(destination);
+    line.style.setProperty('--tone', `var(--${Patch.TONES[Protocol.NAME_BY_CC[Protocol.routeTarget(destination)]]})`);
     const readouts = route.controls.map(name => Patch.READOUTS[name](live[name], live, session.oneshotBeats()));
     values.textContent = [...(Patch.perSpot(destination) ? [spotClockText(live)] : []), ...readouts].join(' · ');
     line.classList.toggle('bypassed', paintButtons(buttons, route));

@@ -342,7 +342,7 @@ function paletteRibbon(palette) {
 function drawPalette(context, hues, width, height) {
   const left = width * 0.04;
   const span = width * 0.92;
-  const top = height - 27;
+  const top = height - 20;
   const ribbonHeight = 5;
   const xAt = hue => left + span * (hue + 0.5) / 256;
   const ribbon = paletteRibbon(hues.palette);
@@ -469,11 +469,11 @@ function drawArpPass(context, pass, pars, width, top, bandHeight) {
   const left = width * 0.04;
   const span = width * 0.92;
   const rowHeight = bandHeight * 0.5 / pars;
-  const first = top + bandHeight * 0.3;
+  const first = top + bandHeight * 0.1;
   const xAt = turns => left + span * turns / pass.turns;
 
   context.save();
-  context.fillStyle = 'rgba(10,11,14,0.55)';
+  context.fillStyle = 'rgba(10,11,14,0.25)';
   context.fillRect(left - 4, first - 4, span + 8, rowHeight * pars + 8);
   context.beginPath();
   context.rect(left, first - 4, span, rowHeight * pars + 8);

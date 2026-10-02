@@ -327,7 +327,7 @@ const SHAPE = {
   name: 'Shape',
   groups: [
     {
-      title: 'Form',
+      title: 'Form', tone: 'shape',
       names: [
         control('shapeCount', 'Count'),
         control('shapeWidth', 'Width'),
@@ -336,7 +336,7 @@ const SHAPE = {
       ],
     },
     {
-      title: 'Travel',
+      title: 'Travel', tone: 'travel',
       names: [
         control('shapeBounce', 'Bounce',
           { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
@@ -348,7 +348,7 @@ const SHAPE = {
       ],
     },
     {
-      title: 'Fan',
+      title: 'Fan', tone: 'fan',
       names: [
         control('fanSpread', 'Spread'),
         control('fanSpeed', 'Speed'),
@@ -524,6 +524,17 @@ for (const output of OUTPUTS) {
   for (const name of outputNames(output)) PLACES[name] = output.title;
 }
 
+const TONES = {};
+for (const group of SHAPE.groups) {
+  for (const name of group.names) TONES[name] = group.tone;
+}
+for (const card of [LFO, ...ENGINES]) {
+  for (const name of cardNames(card)) TONES[name] = card.tone;
+}
+for (const output of OUTPUTS) {
+  for (const name of outputNames(output)) TONES[name] = 'out';
+}
+
 const ROUTABLE = new Set(Protocol.tagged('patch').filter(name => CONTROLS[name] && !Preview.routeRefused(CC[name])));
 const routable = name => ROUTABLE.has(name);
 const routableDestination = number => {
@@ -579,6 +590,6 @@ export {
   CC, NAMES, CONTINUOUS, isSwitch, controls, CONTROLS, READOUTS, DEFAULT,
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
-  SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, cardNames,
+  SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
   routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

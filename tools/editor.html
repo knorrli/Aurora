@@ -297,7 +297,7 @@
   .route-clock { margin-right: auto; margin-left: 10px; }
   .route-buttons { display: flex; gap: 5px; }
   .route-block.bypassed > :not(.route-head) { opacity: .38; }
-  .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; }
+  .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; color: var(--tone, var(--lfo)); }
   .route-foot { display: flex; justify-content: space-between; align-items: center; }
   .route-list { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
   .route-list summary {
@@ -311,7 +311,7 @@
   .route-line:last-child { border-bottom: none; }
   .route-line[hidden] { display: none; }
   .route-line-target {
-    grid-column: 2; background: none; border: none; padding: 0; text-align: left; color: var(--lfo);
+    grid-column: 2; background: none; border: none; padding: 0; text-align: left; color: var(--tone);
   }
   .route-line > .grip { grid-column: 1; grid-row: 1 / span 2; margin-right: 0; }
   .route-line-values { grid-column: 2; }
@@ -500,7 +500,7 @@
           <div class="overlay-buttons" id="wallOverlays">
             <div>
               <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
-              <button class="tiny" data-overlay="arp" data-tone="lfo">arp</button>
+              <button class="tiny" data-overlay="arp" data-tone="lfo">arpeggiator</button>
             </div>
             <div>
               <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
