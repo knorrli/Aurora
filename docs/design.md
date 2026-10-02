@@ -102,6 +102,7 @@
   - Morph: four fixed looks in the corners, the same on every patch; the finger blends between them, and landing near a corner cuts to it. A corner look's switches land on the press and return on release.
   - Effects: five columns across X (riser, freeze, stutter and the like), Y sets how hard, from nothing at the bottom edge to full at the top. Effects and corner looks are designed in the editor, like the kit.
   - An effect plays on top of the patch. The riser washes the strips toward white, full white at the top.
+  - Freeze holds the picture while the patch keeps running underneath on the beat; Y blends from live to fully frozen. Letting go shows the patch where it is now.
 - The rockers report where they stand on CC 2–6.
 - Touchpad rockers 2 and 3 choose which strips the pad acts on, in every mode. Width (rocker 2): strip 3, strips 2–4, or all five. Gaps (rocker 3): solid, or every other strip counted in from the outer edge of the width. Together: 3; 2+3+4; 2+4; all; 1+3+5.
 - The PARs ignore Width and Gaps.
