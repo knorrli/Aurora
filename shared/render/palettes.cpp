@@ -1,5 +1,9 @@
 #include "palettes.h"
 
+#include <math.h>
+
+#include "render_math.h"
+
 namespace render {
 
 namespace {
@@ -256,8 +260,19 @@ static Rgb paletteRgb(uint8_t index, uint8_t hue) {
   return blend(a, b, (uint16_t)(b.at - a.at), (uint16_t)(hue - a.at));
 }
 
-Rgb paletteColor(uint8_t palette, uint8_t hue, uint8_t saturation) {
-  return withSaturationAndValue(paletteRgb(palette, hue), saturation, 255);
+static uint8_t between(uint8_t from, uint8_t to, float position) {
+  return (uint8_t)lroundf((float)from + ((float)to - (float)from) * position);
+}
+
+Rgb paletteColor(uint8_t palette, float hue, float saturation) {
+  const float wrapped = wrappedHue(hue);
+  const uint8_t below = (uint8_t)(int32_t)wrapped;
+  const float position = fract(wrapped);
+  const Rgb from = paletteRgb(palette, below);
+  const Rgb to = paletteRgb(palette, (uint8_t)(below + 1));
+  const Rgb blended = { between(from.r, to.r, position), between(from.g, to.g, position),
+                        between(from.b, to.b, position) };
+  return withSaturationAndValue(blended, (uint8_t)lroundf(saturation), 255);
 }
 
 }

@@ -11,8 +11,8 @@ namespace render {
 
 static const uint8_t SHUFFLE_SALT = 71;
 
-Arp readArp(const uint8_t *dialed, const Modulation *modulation) {
-  return { aurora_arp_mode(dialed[CC_ARP_MODE]),
+Arp readArp(const float *dialed, const Modulation *modulation) {
+  return { aurora_arp_mode(roundedControl(dialed[CC_ARP_MODE])),
            controlValue(CC_ARP_SPREAD, routed(dialed, modulation, CC_ARP_SPREAD)) };
 }
 

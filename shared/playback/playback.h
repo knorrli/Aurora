@@ -71,7 +71,7 @@ class Playback {
 
   float beats() const { return lastBeats; }
   uint8_t slot() const { return playingSlot; }
-  const uint8_t *drawnControls() const { return composed; }
+  const float *drawnControls() const { return composed; }
   float oneshotProgress() const { return firing ? lastOneshotProgress : -1.0f; }
   uint8_t oneshotIndex() const { return firing ? firedIndex : AURORA_NO_ONESHOT; }
 
@@ -80,7 +80,7 @@ class Playback {
   void begin(float beats);
   void beginBlackout(float beats);
   void release(float beats);
-  void computeLive(float beats, uint8_t *out) const;
+  void computeLive(float beats, float *out) const;
   float brightnessAt(float beats) const;
   float nextBeat(float beats) const;
   void fire(uint8_t index, float beats);
@@ -92,7 +92,7 @@ class Playback {
   Patch playing;
   Patch arriving;
   uint8_t playingSlot = 0;
-  uint8_t from[AURORA_PATCH_CC_COUNT];
+  float from[AURORA_PATCH_CC_COUNT];
   Ramp morph = Ramp::steady(1.0f);
   Ramp accent = Ramp::steady(0.0f);
   bool switchesLanded = true;
@@ -114,10 +114,10 @@ class Playback {
   float lastOneshotProgress = 0.0f;
 
   bool pinned = false;
-  uint8_t pinnedControls[AURORA_PATCH_CC_COUNT];
+  float pinnedControls[AURORA_PATCH_CC_COUNT];
 
   float lastBeats = 0.0f;
-  uint8_t composed[render::RENDER_CONTROL_COUNT];
+  float composed[render::RENDER_CONTROL_COUNT];
   render::Motion motion;
   render::Wall wall;
   render::Frame rendered;

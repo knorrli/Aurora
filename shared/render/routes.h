@@ -29,7 +29,7 @@ struct SpotRoute {
 
 void setOneshotClock(const OneshotClock &clock);
 
-RouteTiming routeTiming(const uint8_t *dialed, uint8_t route);
+RouteTiming routeTiming(const float *dialed, uint8_t route);
 
 float turnsOn(const RouteTiming &timing, float clock, float shift);
 
@@ -39,24 +39,26 @@ bool spotDestination(uint8_t cc);
 
 bool circular(uint8_t cc);
 
-uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out);
+uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out);
 
-uint8_t landedByte(uint8_t cc, uint8_t base, float amount);
+float landedControl(uint8_t cc, float base, float amount);
 
-void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float fanShift,
+void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
                   Modulation &out);
 
-uint8_t routed(const uint8_t *dialed, const Modulation *modulation, uint8_t cc);
+float routed(const float *dialed, const Modulation *modulation, uint8_t cc);
 
-uint8_t routedForDisplay(const uint8_t *dialed, const Modulation *modulation, uint8_t cc);
+uint8_t displayedByte(uint8_t cc, float value);
+
+uint8_t routedForDisplay(const float *dialed, const Modulation *modulation, uint8_t cc);
 
 bool routeRefused(uint8_t cc);
 
-uint8_t routeTarget(const uint8_t *dialed, uint8_t route);
+uint8_t routeTarget(const float *dialed, uint8_t route);
 
-bool routeAims(const uint8_t *dialed, uint8_t cc, uint8_t routes);
+bool routeAims(const float *dialed, uint8_t cc, uint8_t routes);
 
-bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high);
+bool routeReach(const float *dialed, uint8_t cc, int16_t &low, int16_t &high);
 
 float waveRise(uint8_t wave);
 

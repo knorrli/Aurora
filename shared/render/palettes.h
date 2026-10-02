@@ -9,6 +9,6 @@ namespace render {
 uint8_t paletteCount();
 const char *paletteName(uint8_t index);
 
-Rgb paletteColor(uint8_t palette, uint8_t hue, uint8_t saturation);
+Rgb paletteColor(uint8_t palette, float hue, float saturation);
 
 }

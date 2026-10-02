@@ -8,7 +8,7 @@
 
 namespace render {
 
-static const int16_t TURN = 128;
+static const float TURN = 128.0f;
 
 static bool performed(uint8_t cc) {
   switch (cc) {
@@ -50,15 +50,19 @@ static bool routeByteOfPatch(uint8_t cc) {
   return false;
 }
 
-void composeOneshot(const uint8_t *live, const uint8_t *oneshot, const uint8_t *marks, uint8_t *out) {
+void controlsOf(const uint8_t *bytes, float *out) {
+  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) out[i] = (float)bytes[i];
+}
+
+void composeOneshot(const float *live, const uint8_t *oneshot, const uint8_t *marks, float *out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     const uint8_t cc = (uint8_t)i;
     const bool overridden = oneshot && marks[cc] && !performed(cc) && !routeByteOfPatch(cc);
-    out[cc] = overridden ? oneshot[cc] : live[cc];
+    out[cc] = overridden ? (float)oneshot[cc] : live[cc];
   }
   for (uint8_t route = 0; oneshot && route < AURORA_ROUTES; route++) {
     const uint8_t destination = aurora_route_cc(route, ROUTE_DESTINATION);
-    const uint8_t target = aurora_route_target(out[destination]);
+    const uint8_t target = aurora_route_target(roundedControl(out[destination]));
     if (target && marks[target]) out[destination] = AURORA_ROUTE_DEFAULTS[ROUTE_DESTINATION];
   }
   for (uint8_t route = AURORA_ROUTES; route < RENDER_ROUTES; route++) {
@@ -72,22 +76,21 @@ void composeOneshot(const uint8_t *live, const uint8_t *oneshot, const uint8_t *
 
 static bool switchLike(uint8_t cc) { return switched(cc) || routeDestination(cc); }
 
-static float distance(uint8_t cc, uint8_t from, uint8_t to) {
-  const int16_t apart = (int16_t)to - (int16_t)from;
-  if (!circular(cc)) return (float)apart;
-  return (float)((apart + TURN + TURN / 2) % TURN - TURN / 2);
+static float distance(uint8_t cc, float from, float to) {
+  const float apart = to - from;
+  if (!circular(cc)) return apart;
+  return apart - TURN * floorf((apart + TURN / 2) / TURN);
 }
 
-static uint8_t settle(uint8_t cc, float value) {
-  const int32_t rounded = (int32_t)floorf(value + 0.5f);
-  if (circular(cc)) return (uint8_t)(((rounded % TURN) + TURN) % TURN);
-  return (uint8_t)(rounded < 0 ? 0 : (rounded > 127 ? 127 : rounded));
+static float settle(uint8_t cc, float value) {
+  if (circular(cc)) return value - TURN * floorf(value / TURN);
+  return fminf(fmaxf(value, 0.0f), 127.0f);
 }
 
-static void holdRoutesChangingDestination(const uint8_t *switches, const uint8_t *to, uint8_t *out) {
+static void holdRoutesChangingDestination(const float *switches, const float *to, float *out) {
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     const uint8_t destination = aurora_route_cc(route, ROUTE_DESTINATION);
-    if (switches[destination] == to[destination]) continue;
+    if (roundedControl(switches[destination]) == roundedControl(to[destination])) continue;
     for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
       const uint8_t cc = aurora_route_cc(route, field);
       out[cc] = switches[cc];
@@ -95,8 +98,8 @@ static void holdRoutesChangingDestination(const uint8_t *switches, const uint8_t
   }
 }
 
-void blendPatches(const uint8_t *from, const uint8_t *to, float position, const uint8_t *switches,
-                  bool switchesFromStart, uint8_t *out) {
+void blendPatches(const float *from, const float *to, float position, const float *switches,
+                  bool switchesFromStart, float *out) {
   const uint8_t hiddenFrom = hiddenEngines(from);
   const uint8_t hiddenTo = hiddenEngines(to);
   const uint8_t appearing = hiddenFrom & ~hiddenTo;
@@ -112,14 +115,14 @@ void blendPatches(const uint8_t *from, const uint8_t *to, float position, const 
       const uint8_t engine = showsEngine(cc) ? 0 : engineOf(cc);
       if (engine & appearing) out[cc] = to[cc];
       else if ((engine & vanishing) && position < 1.0f) out[cc] = from[cc];
-      else out[cc] = settle(cc, (float)from[cc] + distance(cc, from[cc], to[cc]) * position);
+      else out[cc] = settle(cc, from[cc] + distance(cc, from[cc], to[cc]) * position);
     }
   }
   holdRoutesChangingDestination(switches, to, out);
 }
 
-void mixLayers(const uint8_t *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
-               const float *positions, uint8_t *out) {
+void mixLayers(const float *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
+               const float *positions, float *out) {
   const uint8_t *base = layers[PATCH_LAYER_BASE];
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     const uint8_t cc = (uint8_t)i;
@@ -127,7 +130,7 @@ void mixLayers(const uint8_t *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUN
       out[cc] = live[cc];
       continue;
     }
-    float value = (float)live[cc];
+    float value = live[cc];
     for (uint8_t layer = PATCH_LAYER_BASE + 1; layer < AURORA_PATCH_LAYERS; layer++) {
       value += positions[layer] * distance(cc, base[cc], layers[layer][cc]);
     }

@@ -9,6 +9,8 @@
 - From the editor, push a library with a kit and pull it back: the patches' picks, the kit and the default pair come back.
 - Play a song from the editor's songs view with the clock on: the wall follows the preview, tap, hold, accent and blackout included.
 - Dial with the brain attached: the wall matches the preview on a layer tab, mid-scrub and while editing a oneshot's controls; a key, a fader or a oneshot hands playing back to the brain.
+- A slow hue route, a slow morph and a slow Value swell glide without visible steps, apart from Value near the dark end.
+- Dither the strips on the brain against the steps near the dark end. Judge a slow swell into the dark by eye and on a phone camera; drop it if it shimmers.
 
 ### Looks
 
@@ -85,7 +87,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 ### Patches on the brain
 
 - Give the hook a note number, and read it on the brain: dark at once, back on release.
-- Carry the morph's and the fader mix's in-between values through to the renderer rather than rounding them to 0–127.
 
 ## Once Aurora v2 works
 

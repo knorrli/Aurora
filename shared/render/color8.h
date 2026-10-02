@@ -16,8 +16,12 @@ inline uint8_t scale8Video(uint8_t i, uint8_t scale) {
   return (uint8_t)((((int)i * (int)scale) >> 8) + ((i && scale) ? 1 : 0));
 }
 
-inline Rgb scaleVideo(Rgb c, uint8_t scale) {
-  return { scale8Video(c.r, scale), scale8Video(c.g, scale), scale8Video(c.b, scale) };
+inline uint8_t scaleVideo(uint8_t i, float scale) {
+  return (uint8_t)((float)i * scale / 256.0f) + ((i && scale >= 1.0f) ? 1 : 0);
+}
+
+inline Rgb scaleVideo(Rgb c, float scale) {
+  return { scaleVideo(c.r, scale), scaleVideo(c.g, scale), scaleVideo(c.b, scale) };
 }
 
 inline Rgb rainbowRgb(uint8_t hue) {

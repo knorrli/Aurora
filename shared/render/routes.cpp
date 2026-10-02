@@ -14,10 +14,10 @@ static OneshotClock oneshotClock = { 0.0f, 1.0f, false };
 
 void setOneshotClock(const OneshotClock &clock) { oneshotClock = clock; }
 
-RouteTiming routeTiming(const uint8_t *dialed, uint8_t route) {
-  const uint8_t ratio = dialed[routeByte(route, ROUTE_RATIO)];
+RouteTiming routeTiming(const float *dialed, uint8_t route) {
+  const uint8_t ratio = roundedControl(dialed[routeByte(route, ROUTE_RATIO)]);
   return { route, aurora_route_ratio(ratio), aurora_route_once(ratio),
-           aurora_route_phase(dialed[routeByte(route, ROUTE_PHASE)]) };
+           aurora_route_phase(roundedControl(dialed[routeByte(route, ROUTE_PHASE)])) };
 }
 
 float turnsOn(const RouteTiming &timing, float clock, float shift) {
@@ -201,7 +201,7 @@ static float swingReach(uint8_t cc, float amount) {
   return 2.0f * ((amount < 0.0f) ? -1.0f : 1.0f) * fabsf(controlValue(cc, (uint8_t)byte));
 }
 
-void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float fanShift,
+void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
                   Modulation &out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
     out.amount[i] = 0.0f;
@@ -211,7 +211,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
   }
 
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
-    const uint8_t aimedAt = dialed[routeByte(route, ROUTE_DESTINATION)];
+    const uint8_t aimedAt = roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]);
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
     if (routeRefused(destination) || spotDestination(destination)) continue;
@@ -220,7 +220,7 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
     if (amount > -0.001f && amount < 0.001f) continue;
 
     const RouteTiming timing = routeTiming(dialed, route);
-    const uint8_t wave = dialed[routeByte(route, ROUTE_WAVE)];
+    const uint8_t wave = roundedControl(dialed[routeByte(route, ROUTE_WAVE)]);
     const bool oneshotUnstaggered = oneshotRoute(route) && !oneshotClock.staggered;
     const float shift = unstaggered(destination) || oneshotUnstaggered ? 0.0f : fanShift;
     const float phase = routeTurns(timing, lfo, shift);
@@ -244,33 +244,35 @@ void gatherRoutes(const uint8_t *dialed, float beatsPerCycle, float lfo, float f
   }
 }
 
-static int16_t landing(uint8_t cc, uint8_t base, float amount) {
+static float landing(uint8_t cc, float base, float amount) {
   if (amount > 1.0f) amount = 1.0f;
   else if (amount < -1.0f) amount = -1.0f;
 
-  if (circular(cc)) {
-    return (int16_t)base + (int16_t)lroundf(amount * 64.0f);
-  }
+  if (circular(cc)) return base + amount * 64.0f;
 
   const float limit = (amount >= 0.0f) ? 127.0f : 0.0f;
-  const long reached = lroundf((float)base + fabsf(amount) * (limit - (float)base));
-  return (int16_t)(reached < 0 ? 0 : (reached > 127 ? 127 : reached));
+  return fminf(fmaxf(base + fabsf(amount) * (limit - base), 0.0f), 127.0f);
 }
 
-static uint8_t settled(uint8_t cc, int16_t landed) {
-  if (circular(cc)) return (uint8_t)((landed % 128 + 128) % 128);
-  return (uint8_t)(landed < 0 ? 0 : (landed > 127 ? 127 : landed));
+static float settled(uint8_t cc, float landed) {
+  if (circular(cc)) return 128.0f * fract(landed / 128.0f);
+  return fminf(fmaxf(landed, 0.0f), 127.0f);
 }
 
-uint8_t landedByte(uint8_t cc, uint8_t base, float amount) {
+float landedControl(uint8_t cc, float base, float amount) {
   if (amount > -0.001f && amount < 0.001f) return base;
   return settled(cc, landing(cc, base, amount));
 }
 
-uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
+uint8_t displayedByte(uint8_t cc, float value) {
+  const uint8_t rounded = roundedControl(settled(cc, value));
+  return circular(cc) ? (uint8_t)(rounded % 128) : rounded;
+}
+
+uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out) {
   uint8_t count = 0;
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
-    const uint8_t aimedAt = dialed[routeByte(route, ROUTE_DESTINATION)];
+    const uint8_t aimedAt = roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]);
     if (aurora_route_arp(aimedAt) != ARP_UNISON) continue;
     const uint8_t destination = aurora_route_target(aimedAt);
     if (!spotDestination(destination)) continue;
@@ -279,28 +281,28 @@ uint8_t gatherSpotRoutes(const uint8_t *dialed, SpotRoute *out) {
     out[count++] = {
       destination,
       amount,
-      dialed[routeByte(route, ROUTE_WAVE)],
+      roundedControl(dialed[routeByte(route, ROUTE_WAVE)]),
       routeTiming(dialed, route),
     };
   }
   return count;
 }
 
-uint8_t routed(const uint8_t *dialed, const Modulation *modulation, uint8_t cc) {
-  const uint8_t base = dialed[cc];
+float routed(const float *dialed, const Modulation *modulation, uint8_t cc) {
+  const float base = dialed[cc];
   if (!modulation || swings(cc)) return base;
   const float amount = modulation->amount[cc];
   const float bipolar = modulation->bipolar[cc];
   if (fabsf(amount) < 0.001f && fabsf(bipolar) < 0.001f) return base;
 
-  return settled(cc, landing(cc, base, amount) + (int16_t)lroundf(bipolar));
+  return settled(cc, landing(cc, base, amount) + bipolar);
 }
 
-uint8_t routeTarget(const uint8_t *dialed, uint8_t route) {
-  return aurora_route_target(dialed[routeByte(route, ROUTE_DESTINATION)]);
+uint8_t routeTarget(const float *dialed, uint8_t route) {
+  return aurora_route_target(roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]));
 }
 
-bool routeAims(const uint8_t *dialed, uint8_t cc, uint8_t routes) {
+bool routeAims(const float *dialed, uint8_t cc, uint8_t routes) {
   for (uint8_t route = 0; route < routes; route++) {
     if (routeTarget(dialed, route) != cc) continue;
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
@@ -322,13 +324,13 @@ static uint8_t nearestByte(uint8_t cc, float value) {
   return best;
 }
 
-uint8_t routedForDisplay(const uint8_t *dialed, const Modulation *modulation, uint8_t cc) {
-  if (!modulation || !swings(cc)) return routed(dialed, modulation, cc);
+uint8_t routedForDisplay(const float *dialed, const Modulation *modulation, uint8_t cc) {
+  if (!modulation || !swings(cc)) return displayedByte(cc, routed(dialed, modulation, cc));
   return nearestByte(cc, controlValue(cc, dialed[cc]) + modulation->swing[cc]);
 }
 
-bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) {
-  low = high = dialed[cc];
+bool routeReach(const float *dialed, uint8_t cc, int16_t &low, int16_t &high) {
+  low = high = displayedByte(cc, dialed[cc]);
   if (routeRefused(cc)) return false;
 
   float up = 0.0f;
@@ -341,13 +343,13 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     aimed = true;
-    if (aurora_route_bipolar(dialed[routeByte(route, ROUTE_DESTINATION)])) {
-      const float mean = waveMean(dialed[routeByte(route, ROUTE_WAVE)]);
+    if (aurora_route_bipolar(roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]))) {
+      const float mean = waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
       const float reach = bipolarReach(cc, amount);
       bipolarUp += fmaxf(-reach * mean, reach * (1.0f - mean));
       bipolarDown += fminf(-reach * mean, reach * (1.0f - mean));
     } else if (swings(cc)) {
-      const float mean = waveMean(dialed[routeByte(route, ROUTE_WAVE)]);
+      const float mean = waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
       const float reach = swingReach(cc, amount);
       const float atTrough = -reach * mean;
       const float atPeak = reach * (1.0f - mean);
@@ -364,8 +366,8 @@ bool routeReach(const uint8_t *dialed, uint8_t cc, int16_t &low, int16_t &high) 
     low = nearestByte(cc, value + down);
     high = nearestByte(cc, value + up);
   } else {
-    low = landing(cc, dialed[cc], down) + (int16_t)lroundf(bipolarDown);
-    high = landing(cc, dialed[cc], up) + (int16_t)lroundf(bipolarUp);
+    low = (int16_t)lroundf(landing(cc, dialed[cc], down) + bipolarDown);
+    high = (int16_t)lroundf(landing(cc, dialed[cc], up) + bipolarUp);
     if (!circular(cc)) {
       low = low < 0 ? 0 : low;
       high = high > 127 ? 127 : high;

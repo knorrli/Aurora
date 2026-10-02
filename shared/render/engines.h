@@ -15,12 +15,12 @@ enum Engine : uint8_t {
 
 uint8_t engineOf(uint8_t cc);
 bool showsEngine(uint8_t cc);
-uint8_t hiddenEngines(const uint8_t *dialed);
+uint8_t hiddenEngines(const float *dialed);
 
-bool fieldActive(const Reading &reading, const uint8_t *dialed, uint8_t routes);
+bool fieldActive(const Reading &reading, const float *dialed, uint8_t routes);
 bool flowActive(const Reading &reading);
 bool coreActive(const Reading &reading);
-bool scatterActive(const Reading &reading, const uint8_t *dialed, uint8_t routes);
+bool scatterActive(const Reading &reading, const float *dialed, uint8_t routes);
 
 float fieldAtPosition(const Field &field, float u, float drift);
 float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
@@ -45,7 +45,7 @@ struct ScatterSample {
   float value;
 };
 
-void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute *routes,
+void placeScatter(const Scatter &scatter, const float *dialed, const SpotRoute *routes,
                   uint8_t routeCount, uint8_t stripIndex, const ScatterClock &now,
                   const ScatterClock &before, float *drifts, float elapsedCycles,
                   ScatterSpots &out);

@@ -6,12 +6,14 @@
 
 namespace render {
 
-void blendPatches(const uint8_t *from, const uint8_t *to, float position, const uint8_t *switches,
-                  bool switchesFromStart, uint8_t *out);
+void controlsOf(const uint8_t *bytes, float *out);
 
-void composeOneshot(const uint8_t *live, const uint8_t *oneshot, const uint8_t *marks, uint8_t *out);
+void blendPatches(const float *from, const float *to, float position, const float *switches,
+                  bool switchesFromStart, float *out);
 
-void mixLayers(const uint8_t *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
-               const float *positions, uint8_t *out);
+void composeOneshot(const float *live, const uint8_t *oneshot, const uint8_t *marks, float *out);
+
+void mixLayers(const float *live, const uint8_t (*layers)[AURORA_PATCH_CC_COUNT],
+               const float *positions, float *out);
 
 }

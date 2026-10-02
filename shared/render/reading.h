@@ -78,14 +78,14 @@ struct Reading {
   Hsv color;
 };
 
-float signedOf(uint8_t value);
+float signedOf(float value);
 
-float controlValue(uint8_t cc, uint8_t value);
+float controlValue(uint8_t cc, float value);
 
 float lapPixels(const Shape &shape);
 
-void readControls(const uint8_t *dialed, const Modulation *modulation, Reading &out);
+void readControls(const float *dialed, const Modulation *modulation, Reading &out);
 
-Hsv routedColor(const uint8_t *dialed, const Modulation *modulation);
+Hsv routedColor(const float *dialed, const Modulation *modulation);
 
 }

@@ -9,6 +9,8 @@ static const float TURN = 6.28318530718f;
 
 inline float fract(float x) { return x - floorf(x); }
 
+inline float wrappedHue(float hue) { return 256.0f * fract(hue / 256.0f); }
+
 inline uint8_t hash8(uint32_t a, uint32_t b, uint32_t c) {
   uint32_t h = a * 73856093u ^ b * 19349663u ^ c * 83492791u;
   h ^= h >> 13;

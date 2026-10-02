@@ -22,7 +22,8 @@ static const float DARKEST_DRAWN = 0.002f;
 static const float STILL_PIXELS_PER_BEAT = 0.05f;
 
 struct FrameContext {
-  const uint8_t *dialed;
+  const float *dialed;
+  uint8_t palette;
   float beats;
   float lfo;
   Reading wallReading;
@@ -250,16 +251,13 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip,
       ? reading.color
       : tintAt(reading, strip.index, pixelIndex, fieldTotal / (float)SAMPLES_PER_PIXEL, shape,
                engines.flowOn, strip.flowTime);
-  const float baseValue = baseLit ? (float)tint.v * shape : 0.0f;
-  if (cover <= DARKEST_DRAWN) {
-    return scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s), (uint8_t)baseValue);
-  }
+  const float baseValue = baseLit ? tint.v * shape : 0.0f;
+  const Rgb base = scaleVideo(paletteColor(context.palette, tint.h, tint.s), baseValue);
+  if (cover <= DARKEST_DRAWN) return base;
 
-  const Rgb base = scaleVideo(paletteColor(context.dialed[CC_PALETTE], tint.h, tint.s), (uint8_t)baseValue);
   const Rgb painted = scaleVideo(
-      paletteColor(context.dialed[CC_PALETTE], (uint8_t)(reading.color.h + lroundf(spot.hue)),
-                   (uint8_t)(spot.saturation * 255.0f)),
-      (uint8_t)(spot.value * 255.0f));
+      paletteColor(context.palette, reading.color.h + spot.hue, spot.saturation * 255.0f),
+      spot.value * 255.0f);
   const auto mixed = [cover](uint8_t below, uint8_t above) {
     return (uint8_t)lroundf((float)below + ((float)above - (float)below) * cover);
   };
@@ -284,12 +282,13 @@ static void drawStrip(const FrameContext &context, const StripContext &strip,
   }
 }
 
-void renderFrame(const uint8_t *controls, float quarterNotes, uint32_t milliseconds,
+void renderFrame(const float *controls, float quarterNotes, uint32_t milliseconds,
                  const OneshotClock &oneshot, Motion &motion, Wall &wall, Frame &out) {
   setOneshotClock(oneshot);
   FrameContext context;
   context.dialed = controls;
-  context.beats = beatsAt(quarterNotes, controls[CC_TEMPO_DIVISION]);
+  context.palette = roundedControl(controls[CC_PALETTE]);
+  context.beats = beatsAt(quarterNotes, roundedControl(controls[CC_TEMPO_DIVISION]));
 
   readControls(controls, nullptr, context.wallReading);
   context.lfo = anchoredLfoPhase(motion, context.beats, 1.0f / context.wallReading.lfoBeats);

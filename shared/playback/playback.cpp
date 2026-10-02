@@ -35,7 +35,7 @@ static void defaultPatch(Patch &out) {
 
 Playback::Playback(Library &library, uint32_t micros) : library(library), tempo(micros) {
   defaultPatch(playing);
-  memcpy(from, playing.layers[PATCH_LAYER_BASE], AURORA_PATCH_CC_COUNT);
+  render::controlsOf(playing.layers[PATCH_LAYER_BASE], from);
 }
 
 float Playback::nextBeat(float beats) const {
@@ -209,20 +209,23 @@ void Playback::advance(float beats) {
   }
 }
 
-void Playback::computeLive(float beats, uint8_t *out) const {
-  const uint8_t *base = playing.layers[PATCH_LAYER_BASE];
-  const uint8_t *switches = switchesLanded ? base : from;
+void Playback::computeLive(float beats, float *out) const {
+  float base[AURORA_PATCH_CC_COUNT];
+  render::controlsOf(playing.layers[PATCH_LAYER_BASE], base);
+  const float *switches = switchesLanded ? base : from;
   render::blendPatches(from, base, morph.at(beats), switches, !switchesLanded, out);
   const float pushed = accent.at(beats);
   if (pushed > 0.0f) {
-    render::blendPatches(base, playing.layers[PATCH_LAYER_ACCENT], pushed, switches, false, out);
+    float accentLayer[AURORA_PATCH_CC_COUNT];
+    render::controlsOf(playing.layers[PATCH_LAYER_ACCENT], accentLayer);
+    render::blendPatches(base, accentLayer, pushed, switches, false, out);
   }
 }
 
 void Playback::cutTo(const Patch &patch, uint8_t slot) {
   playing = patch;
   playingSlot = slot;
-  memcpy(from, playing.layers[PATCH_LAYER_BASE], AURORA_PATCH_CC_COUNT);
+  render::controlsOf(playing.layers[PATCH_LAYER_BASE], from);
   morph = Ramp::steady(1.0f);
   accent = Ramp::steady(0.0f);
   switchesLanded = true;
@@ -247,7 +250,7 @@ void Playback::patchChanged(uint8_t slot) {
 }
 
 void Playback::pin(const uint8_t *controls) {
-  memcpy(pinnedControls, controls, AURORA_PATCH_CC_COUNT);
+  render::controlsOf(controls, pinnedControls);
   pinned = true;
 }
 
@@ -255,7 +258,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
   const float beats = tempo.beatsAt(micros);
   advance(beats);
   lastBeats = beats;
-  uint8_t live[AURORA_PATCH_CC_COUNT];
+  float live[AURORA_PATCH_CC_COUNT];
   computeLive(beats, live);
 
   render::OneshotClock clock = { 0.0f, 1.0f, false };
@@ -263,7 +266,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
   if (pinned) {
     render::composeOneshot(pinnedControls, nullptr, nullptr, composed);
   } else {
-    uint8_t mixed[AURORA_PATCH_CC_COUNT];
+    float mixed[AURORA_PATCH_CC_COUNT];
     render::mixLayers(live, playing.layers, faders, mixed);
     const float lengthBeats = aurora_lfo_period(oneshot.length);
     if (firing) {

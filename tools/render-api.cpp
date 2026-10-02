@@ -15,7 +15,8 @@
 #include <routes.h>
 
 static uint8_t live[AURORA_PATCH_CC_COUNT];
-static uint8_t controls[render::RENDER_CONTROL_COUNT];
+static float controls[render::RENDER_CONTROL_COUNT];
+static uint8_t drawnBytes[render::RENDER_CONTROL_COUNT];
 static render::Frame frame;
 static float reach[2];
 static render::ArpPass arpPass;
@@ -68,7 +69,7 @@ static_assert(sizeof(render::FanReading)
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_controls() { return live; }
-EMSCRIPTEN_KEEPALIVE uint8_t *aurora_drawn_controls() { return controls; }
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_drawn_controls() { return drawnBytes; }
 EMSCRIPTEN_KEEPALIVE render::Rgb *aurora_pixels() { return frame.pixels; }
 EMSCRIPTEN_KEEPALIVE render::Par *aurora_pars() { return frame.pars; }
 EMSCRIPTEN_KEEPALIVE float *aurora_par_hue_places() { return frame.parHuePlaces; }
@@ -149,6 +150,9 @@ EMSCRIPTEN_KEEPALIVE void aurora_playback_unpin() { player->unpin(); }
 EMSCRIPTEN_KEEPALIVE void aurora_playback_frame(uint32_t micros) {
   frame = player->frame(micros);
   memcpy(controls, player->drawnControls(), sizeof(controls));
+  for (uint16_t i = 0; i < render::RENDER_CONTROL_COUNT; i++) {
+    drawnBytes[i] = render::displayedByte((uint8_t)i, controls[i]);
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_playback_beats() { return player->beats(); }
@@ -163,7 +167,7 @@ EMSCRIPTEN_KEEPALIVE const char *aurora_palette_name(int index) {
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_palette_color(int palette, int hue, int saturation) {
-  const render::Rgb rgb = render::paletteColor((uint8_t)palette, (uint8_t)hue, (uint8_t)saturation);
+  const render::Rgb rgb = render::paletteColor((uint8_t)palette, (float)hue, (float)saturation);
   return (rgb.r << 16) | (rgb.g << 8) | rgb.b;
 }
 
@@ -172,12 +176,12 @@ EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave) {
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_convert(int cc, int value) {
-  return render::controlValue((uint8_t)cc, (uint8_t)value);
+  return render::controlValue((uint8_t)cc, (float)value);
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_lfo_period_beats(int value) { return aurora_lfo_period((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE float aurora_transition_length(int value) { return aurora_transition_beats((uint8_t)value); }
-EMSCRIPTEN_KEEPALIVE float aurora_signed(int value) { return render::signedOf((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE float aurora_signed(int value) { return render::signedOf((float)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_ratio_step(int value) { return aurora_route_ratio_step((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_ratio(int value) { return aurora_route_ratio((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_once(int value) { return aurora_route_once((uint8_t)value); }
@@ -195,13 +199,13 @@ EMSCRIPTEN_KEEPALIVE int aurora_destination(int target, int arp, int bipolar) {
 
 EMSCRIPTEN_KEEPALIVE float aurora_fan_wave_at(int phase, int frequency, int strip) {
   render::Fan fan = {};
-  fan.phase = render::controlValue(CC_FAN_PHASE, (uint8_t)phase);
-  fan.frequency = render::controlValue(CC_FAN_FREQUENCY, (uint8_t)frequency);
+  fan.phase = render::controlValue(CC_FAN_PHASE, (float)phase);
+  fan.frequency = render::controlValue(CC_FAN_FREQUENCY, (float)frequency);
   return render::fanWave(fan, (uint8_t)strip);
 }
 
 static render::Arp arpOf(int mode, int spread) {
-  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CC_ARP_SPREAD, (uint8_t)spread) };
+  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CC_ARP_SPREAD, (float)spread) };
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_length(int mode) { return render::passLength(arpOf(mode, 127)); }
@@ -215,7 +219,7 @@ EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int phase, float clock)
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_bend_speed_ratio(int bend) {
-  return render::bendSpeedRatio(render::controlValue(CC_SHAPE_BEND, (uint8_t)bend));
+  return render::bendSpeedRatio(render::controlValue(CC_SHAPE_BEND, (float)bend));
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {
@@ -252,7 +256,13 @@ EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_to() { return morphTo; }
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_switches() { return morphSwitches; }
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_blend(float position, int switchesFromStart) {
-  render::blendPatches(morphFrom, morphTo, position, morphSwitches, switchesFromStart != 0, morphOut);
+  float from[AURORA_PATCH_CC_COUNT], to[AURORA_PATCH_CC_COUNT], switches[AURORA_PATCH_CC_COUNT];
+  float blended[AURORA_PATCH_CC_COUNT];
+  render::controlsOf(morphFrom, from);
+  render::controlsOf(morphTo, to);
+  render::controlsOf(morphSwitches, switches);
+  render::blendPatches(from, to, position, switches, switchesFromStart != 0, blended);
+  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) morphOut[i] = render::displayedByte((uint8_t)i, blended[i]);
   return morphOut;
 }
 

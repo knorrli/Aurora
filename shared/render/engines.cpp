@@ -40,7 +40,7 @@ bool showsEngine(uint8_t cc) {
   }
 }
 
-uint8_t hiddenEngines(const uint8_t *dialed) {
+uint8_t hiddenEngines(const float *dialed) {
   Reading reading;
   readControls(dialed, nullptr, reading);
   uint8_t hidden = 0;
@@ -49,14 +49,14 @@ uint8_t hiddenEngines(const uint8_t *dialed) {
   if (!flowActive(reading)) hidden |= ENGINE_FLOW;
   if (!scatterActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_SCATTER;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    const uint8_t target = aurora_route_target(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]);
+    const uint8_t target = aurora_route_target(roundedControl(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]));
     const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
     if (fabsf(amount) > 0.001f && showsEngine(target)) hidden &= (uint8_t)~engineOf(target);
   }
   return hidden;
 }
 
-bool fieldActive(const Reading &reading, const uint8_t *dialed, uint8_t routes) {
+bool fieldActive(const Reading &reading, const float *dialed, uint8_t routes) {
   return pushesColor(reading.field.hue, reading.field.white, reading.field.dark)
       || routeAims(dialed, CC_FIELD_HUE, routes) || routeAims(dialed, CC_FIELD_WHITE, routes)
       || routeAims(dialed, CC_FIELD_DARK, routes);
@@ -70,7 +70,7 @@ bool coreActive(const Reading &reading) {
   return pushesColor(reading.core.hue, reading.core.white, reading.core.dark);
 }
 
-bool scatterActive(const Reading &reading, const uint8_t *dialed, uint8_t routes) {
+bool scatterActive(const Reading &reading, const float *dialed, uint8_t routes) {
   return reading.scatter.mix > 0.001f || routeAims(dialed, CC_SCATTER_MIX, routes);
 }
 
@@ -155,16 +155,16 @@ static float spotWave(const SpotRoute &route, float clock, float before) {
   return fmaxf(now, lfoWave(earlier, route.wave));
 }
 
-static float spotControl(uint8_t cc, const uint8_t *dialed, const SpotRoute *routes,
+static float spotControl(uint8_t cc, const float *dialed, const SpotRoute *routes,
                          uint8_t routeCount, float clock, float before) {
   float amount = 0.0f;
   for (uint8_t i = 0; i < routeCount; i++) {
     if (routes[i].cc == cc) amount += routes[i].amount * spotWave(routes[i], clock, before);
   }
-  return controlValue(cc, landedByte(cc, dialed[cc], amount));
+  return controlValue(cc, landedControl(cc, dialed[cc], amount));
 }
 
-void placeScatter(const Scatter &scatter, const uint8_t *dialed, const SpotRoute *routes,
+void placeScatter(const Scatter &scatter, const float *dialed, const SpotRoute *routes,
                   uint8_t routeCount, uint8_t stripIndex, const ScatterClock &now,
                   const ScatterClock &before, float *drifts, float elapsedCycles,
                   ScatterSpots &out) {
@@ -219,10 +219,7 @@ static Hsv tinted(Hsv base, float hue, float white, float dark) {
   if (white > 1.0f) white = 1.0f;
   if (dark > 1.0f) dark = 1.0f;
 
-  const float saturation = (float)base.s * (1.0f - white);
-  const float value = (float)base.v * valueLeftAfterDark(dark);
-
-  return { (uint8_t)(base.h + lroundf(hue)), (uint8_t)saturation, (uint8_t)value };
+  return { base.h + hue, base.s * (1.0f - white), base.v * valueLeftAfterDark(dark) };
 }
 
 
