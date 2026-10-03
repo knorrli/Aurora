@@ -100,7 +100,6 @@
 - Touchpad rocker 1 picks one of three modes:
   - Per patch: X and Y are route sources, like the LFO. A route's Source picks the LFO, Pad X or Pad Y; a pad route follows the finger, ignores its ratio, wave and phase, and shares the patch's eight routes with the LFO.
   - Morph: four fixed looks in the corners, the same on every patch. The center of the pad is the patch itself; moving out blends toward the corners in that direction, the edges blend only the corners, and landing near a corner cuts to it. A press more than halfway out toward a corner lands that corner's switches, which return on release.
-  - Morph's X runs from still (left) to moving (right), Y from color (bottom) to white (top). The corners: a calm color wash, a fast color chase on the beat, a full white wash, a fast white chase. The color corners take the patch's palette.
   - A corner that marks a control fades out the patch's routes on that control, fully off in that corner.
   - Effects: five columns across X, left to right: focus, freeze, double time, stutter, strobe. Y sets how hard, from nothing at the bottom edge to full at the top. Corner looks are designed in the editor and kept in the library, like the kit. Effects are fixed behavior in the brain.
   - An effect plays on top of the patch.

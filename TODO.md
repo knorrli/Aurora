@@ -82,7 +82,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-- Dial Morph's four corner looks in the editor's Corners block (`docs/design.md` § Touchpad and rockers).
 - Give the hook a note number, and read it on the brain: dark at once, back on release.
 
 ## Once Aurora v2 works
