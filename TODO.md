@@ -44,6 +44,9 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Controller
 
+- Flash the rebuilt controller and walk every control: keys and hook, rotary banks, faders and Cue, pad and its four rockers, pedal switches, TAP, TRIG and the mic, the twelve pixels.
+- Re-measure the touchpad's raw X and Y range at 3.3 V; the controller still uses the Nano's.
+- Set the box pixels' brightness: lit 25 %, dim 5 %, under the finger full.
 - Press two keys at once on the old box and watch the wall: does 2+3 black it out?
 - On the rebuilt controller's keypad: is tap versus hold, judged 200 ms after the later of the press and its beat, the right length?
 - The acceptance test: play a full DJ set to Justice, "Women Worldwide", on the rebuilt controller.
@@ -64,6 +67,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Socket both Teensys rather than soldering them down.
 - Rebuild the controller on the second Teensy (`docs/hardware.md` § Controller — Teensy 4.0).
 - Replace the peak-follower board with an input stage that brings the handset mic to one analog pin at 3.3 V.
+- Once the mic's input stage exists, set the mic trigger by ear (`controller/src/mic.cpp`): how fast the level falls, the 5 ms peak window, the 80 ms rest, and how the level scales to velocity.
 - Relabel the rotary's twelve positions A to L.
 - Cap the faders Color red, Motion green, Extent blue.
 - Fit a 3-way rocker as touchpad rocker 2 (Width).
@@ -72,14 +76,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Controller
 
-- Write the firmware for the second Teensy: keypad as a static code, two-key rejection, the hook as Oneshot 2, faders, pad, rockers, rotary, foot pedal, tap tempo, fresh clock, indicator pixels, DIN out, mic trigger with its level as velocity.
-- Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
-- Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
 - Find out whether the touchpad reads pressure usefully.
-
-### Songs in the editor
-
-- Push the gig's songs to the controller together with the patches to the brain.
+- How does the performer pick a song with the controller alone? Today only a Program Change 109–127 arriving on DIN loads one.
 
 ## Once Aurora v2 works
 

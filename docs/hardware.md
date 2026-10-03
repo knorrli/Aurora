@@ -118,6 +118,10 @@ A 5 V WS2812 needs about 3.5 V for a high. Unshifted 3.3 V data gives random spe
 
 - Edge pins: 0–12 down the left side, 13–23 up the right, USB at the top. Every edge pin is used.
 - Everything is powered from 3.3 V: faders, pots, touchpad, ladders and the pedal's pull-ups. No pin is 5 V tolerant.
+- Keypad lines, digital rockers, TAP, TRIG and the mic toggle use the Teensy's internal pull-ups; closed to GND is pressed or on.
+- Faders read inverted, as on the Nano: fully down is the top of the ADC range.
+- Touchpad rocker 2 is wired as the same ladder as touchpad rocker 1. On both, the lowest level is the first position: Per patch, and strip 3.
+- USB names: the brain shows as `Aurora Brain`, the controller as `Aurora Controller`. The editor tells them apart by name.
 
 ## Controller box — as it physically exists
 
@@ -197,11 +201,13 @@ TRS cable: tip and ring each carry one line, sleeve is ground. Pull-up `R_top` a
 - Levels are not in binary order (SW3+SW4 sits above SW2). Decode by nearest match against a calibrated table.
 - Require several agreeing samples before accepting a change; discard readings that match nothing.
 - Ratios, so the table holds at 3.3 V if pull-up and ADC reference share the supply.
+- Tip, R1 to R4: Next, Prev, Tap, Oneshot 1. Ring, R1 to R4: Color, Motion, Extent, Oneshot 2.
 
 ### Rotary ladder (to build)
 
 - Twelve 1 kΩ in series from 3.3 V to GND, one tap per position; wiper to the analog pin with 100 kΩ to GND.
 - Taps are 0.275 V apart. The pull-down gives a floating wiper between detents a level no position produces — discard it.
+- Bank A is the tap one resistor above GND, bank L the tap at 3.3 V.
 - Require 2–3 agreeing samples.
 
 ## MIDI hardware to build
