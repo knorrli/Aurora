@@ -112,12 +112,12 @@ async function readText(path) {
 }
 
 async function readCommit() {
-  const head = await readText('git/HEAD');
+  const head = await readText('../.git/HEAD');
   if (!head.startsWith('ref: ')) return head;
   const ref = head.slice('ref: '.length);
-  const loose = await readText(`git/${ref}`);
+  const loose = await readText(`../.git/${ref}`);
   if (loose) return loose;
-  const line = (await readText('git/packed-refs')).split('\n').find(entry => entry.endsWith(` ${ref}`));
+  const line = (await readText('../.git/packed-refs')).split('\n').find(entry => entry.endsWith(` ${ref}`));
   return line ? line.split(' ')[0] : '';
 }
 

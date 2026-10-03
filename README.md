@@ -22,7 +22,7 @@ Channel 1 only. Program Changes 1â€“108 recall patches, 0 is the blackout, 109â€
 cd brain && pio run -t upload        # flash the brain
 node tools/build-render.mjs          # after changing shared/render/ or shared/playback/
 node tools/gen-cc.mjs                # after changing shared/aurora_protocol.h
-cd tools && python3 -m http.server   # then open http://localhost:8000/editor.html in Chrome
+python3 -m http.server   # from the repo root, then open http://localhost:8000/tools/editor.html in Chrome
 ```
 
 ## Docs
