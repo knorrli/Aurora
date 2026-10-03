@@ -90,9 +90,38 @@ A 5 V WS2812 needs about 3.5 V for a high. Unshifted 3.3 V data gives random spe
 - The strips light in proportion to the byte, so the preview draws them through the screen's curve. Without it a channel at 2 to 5 vanished on screen (hue 1 reads orange and hue 127 pinkish on the strips), and dim and pale looks drew too dark and too saturated.
 - A phase computed as elapsed × rate jumps when the rate changes; carry an offset across rate changes.
 
+## Controller — Teensy 4.0 (to build)
+
+| Pin | Role | Read as |
+|-----|------|---------|
+| 0 | `Serial1` RX — DIN MIDI in | serial |
+| 1 | `Serial1` TX — DIN MIDI out | serial |
+| 2 | Box pixels data, through a 74AHCT125 | output |
+| 3–6 | Keypad and hook, Nano D9 to D12 in order | digital |
+| 7, 8 | Touchpad XP, YM | 4-wire resistive |
+| 9 | Mic on/off toggle | digital |
+| 10 | TRIG button | digital |
+| 11 | TRIG LED | output |
+| 12 | Tap button | digital |
+| 13 | Tap LED (also the onboard LED) | output |
+| 14, 15 (A0, A1) | Touchpad YP, XM | 4-wire resistive |
+| 16–18 (A2–A4) | Faders Color, Motion, Extent | analog |
+| 19 (A5) | Rotary ladder | analog |
+| 20, 21 (A6, A7) | Foot pedal, tip and ring | analog |
+| 22 (A8) | Mic, from the input stage | analog |
+| 23 (A9) | Mic threshold pot | analog |
+| 24 (A10), underside | Touchpad rocker 1 (pad mode, 3-way ladder) | analog |
+| 25 (A11), underside | Touchpad rocker 2 (Width, 3-way ladder) | analog |
+| 26, underside | Main touchpad rocker (Hold) | digital |
+| 27, underside | Touchpad rocker 3 (Gaps) | digital |
+| 28, underside | Fader rocker (Cue) | digital |
+
+- Edge pins: 0–12 down the left side, 13–23 up the right, USB at the top. Every edge pin is used.
+- Everything is powered from 3.3 V: faders, pots, touchpad, ladders and the pedal's pull-ups. No pin is 5 V tolerant.
+
 ## Controller box — as it physically exists
 
-Wired to an Arduino Nano (5 V). Its firmware is at git tag `aurora-nano-final` (`brain/src/`, single-box build). The box is to be rebuilt on a Teensy 4.0; no Teensy pin map exists yet.
+Wired to an Arduino Nano (5 V). Its firmware is at git tag `aurora-nano-final` (`brain/src/`, single-box build). The box is to be rebuilt on a Teensy 4.0.
 
 | Nano pin | Control | Read as |
 |----------|---------|---------|

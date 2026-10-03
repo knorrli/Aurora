@@ -62,16 +62,17 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Build DIN MIDI in on the brain: 6N138 on `Serial1`.
 - Cut the brain's enclosure around the finished perfboard.
 - Socket both Teensys rather than soldering them down.
-- Rebuild the controller on the second Teensy and draw its pin map (`docs/hardware.md`). Give the peak follower's on/off toggle a pin if one is free.
+- Rebuild the controller on the second Teensy (`docs/hardware.md` § Controller — Teensy 4.0).
+- Replace the peak-follower board with an input stage that brings the handset mic to one analog pin at 3.3 V.
 - Relabel the rotary's twelve positions A to L.
 - Cap the faders Color red, Motion green, Extent blue.
 - Fit a 3-way rocker as touchpad rocker 2 (Width).
 - Build the eight-switch foot pedal on a TRS cable (`docs/design.md` § Foot pedal).
-- When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`.
+- When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`. The controller's pin map reads the keypad on four lines and leaves D8 unread; if D8 is needed, a panel switch moves to the underside.
 
 ### Controller
 
-- Write the firmware for the second Teensy: keypad as a static code, two-key rejection, hook note, faders, pad, rockers, rotary, foot pedal, tap tempo, fresh clock, indicator pixels, DIN out.
+- Write the firmware for the second Teensy: keypad as a static code, two-key rejection, the hook as Oneshot 2, faders, pad, rockers, rotary, foot pedal, tap tempo, fresh clock, indicator pixels, DIN out, mic trigger with its level as velocity.
 - Store songs on the controller, received from the editor over USB, and step through their sections on the pedal (`docs/design.md` § Songs).
 - Send a key as note 57 on, the Program Change of its bank and key, then note 57 off on release (`docs/design.md` § Recalling a patch).
 - Find out whether the touchpad reads pressure usefully.
@@ -82,7 +83,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-- Give the hook a note number, and read it on the brain: dark at once, back on release.
+- Read a oneshot's velocity as its strength. What does strength scale in a oneshot?
 
 ## Once Aurora v2 works
 

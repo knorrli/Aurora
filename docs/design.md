@@ -60,7 +60,8 @@
 
 - If presses are ever snapped to the beat, the controller snaps oneshot presses before sending.
 - The pedal's Oneshot 1 and 2 send the song's pick for that switch as its kit note; with no song or no pick, they send note 58 or 59. The controller holds no patch data.
-- The mic trigger fires whatever Oneshot 1 fires.
+- The mic trigger fires whatever Oneshot 1 fires. The mic's level at the hit is the oneshot's strength, sent as the note's velocity. TRIG and the pedal fire at full strength.
+- The phone's hook switch fires whatever Oneshot 2 fires, at full strength. It is pressed by a finger; the handset almost never rests on it.
 
 ## Routes
 
@@ -88,9 +89,6 @@
 ## Blackout
 
 - Key 0 sends Program Change 0, the blackout, in every bank.
-- The phone's hook switch is the master kill. It works on any patch and is pressed by a finger; the handset almost never rests on it.
-- The hook is a mute, not a latch: the wall goes dark the moment it is pressed, not on a beat, and is back on the playing patch the moment it is released.
-- The hook sends its own note: note-on while held, note-off on release. It is never a Program Change or a CC.
 
 ## Touchpad and rockers
 
@@ -102,6 +100,7 @@
 ## The controller
 
 - A second Teensy 4.0: pure input to MIDI. Keypad, three faders, touchpad, rockers, foot pedal, tap tempo, mic trigger. Every control is in `docs/hardware.md`.
+- The mic is read on one analog pin. The controller follows its level, compares it with the threshold pot and fires the trigger. TRIG, its LED and the mic's on/off toggle are wired to the controller.
 - It drives its own 12 indicator pixels from what it sends. Nothing is streamed back from the brain.
 - The left indicator mixes the faders as light: Color is red, Motion green, Extent blue, matching the fader caps; all three up is white. While Cue is on, it alternates between the mix the wall plays and where the faders stand, or with dim white when the two match.
 - The right indicator shows the pad mode's color, and blinks while the pad is latching.
