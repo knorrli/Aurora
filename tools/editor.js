@@ -104,20 +104,27 @@ function paintHead() {
 
 const unstored = { cache: 'no-store' };
 
+const COMMIT = /^[0-9a-f]{40}$/;
+
+async function readText(path) {
+  const response = await fetch(path, unstored);
+  return response.ok ? (await response.text()).trim() : '';
+}
+
 async function readCommit() {
-  const head = (await (await fetch('../.git/HEAD', unstored)).text()).trim();
+  const head = await readText('git/HEAD');
   if (!head.startsWith('ref: ')) return head;
   const ref = head.slice('ref: '.length);
-  const loose = await fetch(`../.git/${ref}`, unstored);
-  if (loose.ok) return (await loose.text()).trim();
-  const packed = await (await fetch('../.git/packed-refs', unstored)).text();
-  const line = packed.split('\n').find(entry => entry.endsWith(` ${ref}`));
+  const loose = await readText(`git/${ref}`);
+  if (loose) return loose;
+  const line = (await readText('git/packed-refs')).split('\n').find(entry => entry.endsWith(` ${ref}`));
   return line ? line.split(' ')[0] : '';
 }
 
 async function showVersion() {
   try {
-    byId('version').textContent = (await readCommit()).slice(0, 7);
+    const commit = await readCommit();
+    byId('version').textContent = COMMIT.test(commit) ? commit.slice(0, 7) : '';
   } catch {
     byId('version').textContent = '';
   }
