@@ -66,6 +66,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Cut the brain's enclosure around the finished perfboard.
 - Socket both Teensys rather than soldering them down.
 - Rebuild the controller on the second Teensy (`docs/hardware.md` § Controller — Teensy 4.0).
+- Find out whether the touchpad reads pressure usefully.
 - Replace the peak-follower board with an input stage that brings the handset mic to one analog pin at 3.3 V.
 - Once the mic's input stage exists, set the mic trigger by ear (`controller/src/mic.cpp`): how fast the level falls, the 5 ms peak window, the 80 ms rest, and how the level scales to velocity.
 - Relabel the rotary's twelve positions A to L.
@@ -73,11 +74,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Fit a 3-way rocker as touchpad rocker 2 (Width).
 - Build the eight-switch foot pedal on a TRS cable (`docs/design.md` § Foot pedal).
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`. The controller's pin map reads the keypad on four lines and leaves D8 unread; if D8 is needed, a panel switch moves to the underside.
-
-### Controller
-
-- Find out whether the touchpad reads pressure usefully.
-- How does the performer pick a song with the controller alone? Today only a Program Change 109–127 arriving on DIN loads one.
 
 ## Once Aurora v2 works
 
