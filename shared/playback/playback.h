@@ -103,6 +103,7 @@ class Playback {
   float padSpeed() const;
   void playEffect(float beats);
   void loadCorners();
+  float padReach() const;
   const float *morphCorners(const float *composed);
 
   Library &library;

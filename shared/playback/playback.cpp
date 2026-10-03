@@ -13,6 +13,8 @@ static const float HOLD_JUDGED_AFTER_MICROS = 200000.0f;
 static const float STUTTER_OPEN_SHARE = 0.5f;
 static const float STROBE_LIT_SHARE = 0.25f;
 static const float CORNER_CUT_SHARE = 0.15f;
+static const float PATCH_HOLD_REACH = 0.1f;
+static const float CORNER_SWITCH_REACH = 0.5f;
 
 float Ramp::at(float beats) const {
   if (beats >= endBeat) return end;
@@ -174,20 +176,31 @@ void Playback::loadCorners() {
   }
   const uint8_t right = pad.x >= 64 ? 1 : 0;
   const uint8_t top = pad.y >= 64 ? 2 : 0;
-  switchCorner = (int8_t)(top + right);
+  switchCorner = padReach() >= CORNER_SWITCH_REACH ? (int8_t)(top + right) : -1;
   cornersLoaded = true;
 }
 
-static float cornerAxis(uint8_t value) {
-  return render::clampUnit(((float)value / 127.0f - CORNER_CUT_SHARE) / (1.0f - 2.0f * CORNER_CUT_SHARE));
+static float fromCenter(uint8_t value) { return (float)value / 127.0f * 2.0f - 1.0f; }
+
+float Playback::padReach() const {
+  return fmaxf(fabsf(fromCenter(pad.x)), fabsf(fromCenter(pad.y)));
+}
+
+static float alongEdge(float direction) {
+  const float along = (direction + 1.0f) * 0.5f;
+  return render::clampUnit((along - CORNER_CUT_SHARE) / (1.0f - 2.0f * CORNER_CUT_SHARE));
 }
 
 const float *Playback::morphCorners(const float *composed) {
   if (!cornersLoaded) return nullptr;
-  const float right = cornerAxis(pad.x);
-  const float top = cornerAxis(pad.y);
+  const float reach = padReach();
+  const float fullReach = 1.0f - 2.0f * CORNER_CUT_SHARE;
+  const float outward = render::clampUnit((reach - PATCH_HOLD_REACH) / (fullReach - PATCH_HOLD_REACH));
+  const float right = reach > 0.0f ? alongEdge(fromCenter(pad.x) / reach) : 0.5f;
+  const float top = reach > 0.0f ? alongEdge(fromCenter(pad.y) / reach) : 0.5f;
   const float weights[AURORA_CORNERS] = {
-      (1.0f - right) * (1.0f - top), right * (1.0f - top), (1.0f - right) * top, right * top,
+      outward * (1.0f - right) * (1.0f - top), outward * right * (1.0f - top),
+      outward * (1.0f - right) * top, outward * right * top,
   };
   const uint8_t *controls[AURORA_CORNERS];
   const uint8_t *marks[AURORA_CORNERS];
