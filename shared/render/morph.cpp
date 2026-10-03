@@ -62,26 +62,6 @@ void controlsOf(const uint8_t *bytes, float *out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) out[i] = (float)bytes[i];
 }
 
-void composeOneshot(const float *live, const uint8_t *oneshot, const uint8_t *marks, float *out) {
-  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
-    const uint8_t cc = (uint8_t)i;
-    const bool overridden = oneshot && marks[cc] && !performed(cc) && !routeByteOfPatch(cc);
-    out[cc] = overridden ? (float)oneshot[cc] : live[cc];
-  }
-  for (uint8_t route = 0; oneshot && route < AURORA_ROUTES; route++) {
-    const uint8_t destination = aurora_route_cc(route, ROUTE_DESTINATION);
-    const uint8_t target = aurora_route_target(roundedControl(out[destination]));
-    if (target && marks[target]) out[destination] = AURORA_ROUTE_DEFAULTS[ROUTE_DESTINATION];
-  }
-  for (uint8_t route = AURORA_ROUTES; route < RENDER_ROUTES; route++) {
-    for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
-      out[routeByte(route, field)] = oneshot
-          ? oneshot[aurora_route_cc((uint8_t)(route - AURORA_ROUTES), field)]
-          : AURORA_ROUTE_DEFAULTS[field];
-    }
-  }
-}
-
 static bool switchLike(uint8_t cc) { return switched(cc) || routeDestination(cc); }
 
 static float distance(uint8_t cc, float from, float to) {
@@ -102,6 +82,36 @@ static void holdRoutesChangingDestination(const float *switches, const float *to
     for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
       const uint8_t cc = aurora_route_cc(route, field);
       out[cc] = switches[cc];
+    }
+  }
+}
+
+static float towardAmount(float amount, float share) { return ROUTE_SILENT + (amount - ROUTE_SILENT) * share; }
+
+void composeOneshot(const float *live, const uint8_t *oneshot, const uint8_t *marks, float strength,
+                    float *out) {
+  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) {
+    const uint8_t cc = (uint8_t)i;
+    out[cc] = live[cc];
+    if (!oneshot || !marks[cc] || performed(cc) || routeByteOfPatch(cc)) continue;
+    out[cc] = switched(cc) ? (float)oneshot[cc]
+                           : settle(cc, live[cc] + distance(cc, live[cc], oneshot[cc]) * strength);
+  }
+  for (uint8_t route = 0; oneshot && route < AURORA_ROUTES; route++) {
+    const uint8_t target = aurora_route_target(roundedControl(live[aurora_route_cc(route, ROUTE_DESTINATION)]));
+    if (!target || !marks[target]) continue;
+    const uint8_t amount = aurora_route_cc(route, ROUTE_AMOUNT);
+    out[amount] = towardAmount(live[amount], 1.0f - strength);
+  }
+  for (uint8_t route = AURORA_ROUTES; route < RENDER_ROUTES; route++) {
+    for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
+      out[routeByte(route, field)] = oneshot
+          ? oneshot[aurora_route_cc((uint8_t)(route - AURORA_ROUTES), field)]
+          : AURORA_ROUTE_DEFAULTS[field];
+    }
+    if (oneshot) {
+      const uint8_t amount = routeByte(route, ROUTE_AMOUNT);
+      out[amount] = towardAmount(out[amount], strength);
     }
   }
 }
@@ -172,7 +182,7 @@ void morphCorners(const float *live, const uint8_t *const *controls, const uint8
       if (controls[corner] && marks[corner][target]) covered += weights[corner];
     }
     const uint8_t amount = aurora_route_cc(route, ROUTE_AMOUNT);
-    out[amount] = ROUTE_SILENT + (live[amount] - ROUTE_SILENT) * (1.0f - fminf(covered, 1.0f));
+    out[amount] = towardAmount(live[amount], 1.0f - fminf(covered, 1.0f));
   }
 }
 

@@ -81,10 +81,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 - Push the gig's songs to the controller together with the patches to the brain.
 
-### Patches on the brain
-
-- Read a oneshot's velocity as its strength (`docs/design.md` § Oneshots).
-
 ## Once Aurora v2 works
 
 - Compile in a default set (`docs/design.md` § Patch storage).

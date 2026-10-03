@@ -129,7 +129,7 @@ EMSCRIPTEN_KEEPALIVE void aurora_playback_message(int status, int first, int sec
     case 0xC0: player->programChange((uint8_t)first, micros); return;
     case 0xB0: player->controlChange((uint8_t)first, (uint8_t)second); return;
     case 0x90:
-      if (second) player->noteOn((uint8_t)first, micros);
+      if (second) player->noteOn((uint8_t)first, (uint8_t)second, micros);
       else player->noteOff((uint8_t)first, micros);
       return;
     case 0x80: player->noteOff((uint8_t)first, micros); return;

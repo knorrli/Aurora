@@ -218,7 +218,9 @@ void Playback::moveFader(uint8_t layer, uint8_t value) {
   pinned = false;
 }
 
-void Playback::noteOn(uint8_t note, uint32_t micros) {
+static float strengthOf(uint8_t velocity) { return (float)velocity / 127.0f; }
+
+void Playback::noteOn(uint8_t note, uint8_t velocity, uint32_t micros) {
   const float beats = tempo.beatsAt(micros);
   advance(beats);
   pinned = false;
@@ -227,9 +229,9 @@ void Playback::noteOn(uint8_t note, uint32_t micros) {
   } else if (note == NOTE_PATCH_ONESHOT_FIRST || note == NOTE_PATCH_ONESHOT_SECOND) {
     const uint8_t place = note - NOTE_PATCH_ONESHOT_FIRST;
     const uint8_t pick = playing.oneshots[place];
-    fire(pick != AURORA_NO_ONESHOT ? pick : library.defaultOneshot(place), beats);
+    fire(pick != AURORA_NO_ONESHOT ? pick : library.defaultOneshot(place), strengthOf(velocity), beats);
   } else if (note >= NOTE_ONESHOT_FIRST && note < NOTE_ONESHOT_FIRST + AURORA_ONESHOTS) {
-    fire(note - NOTE_ONESHOT_FIRST, beats);
+    fire(note - NOTE_ONESHOT_FIRST, strengthOf(velocity), beats);
   }
 }
 
@@ -241,11 +243,12 @@ void Playback::noteOff(uint8_t note, uint32_t micros) {
   if (press.held) release(beats);
 }
 
-void Playback::fire(uint8_t index, float beats) {
+void Playback::fire(uint8_t index, float strength, float beats) {
   if (index >= AURORA_ONESHOTS || !library.oneshot(index, oneshot)) return;
   firing = true;
   firedIndex = index;
   firedAtBeats = beats;
+  firedStrength = strength;
 }
 
 void Playback::release(float beats) {
@@ -399,7 +402,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
   render::OneshotClock clock = { 0.0f, 1.0f, false };
   uint8_t level = 255;
   if (pinned) {
-    render::composeOneshot(pinnedControls, nullptr, nullptr, composed);
+    render::composeOneshot(pinnedControls, nullptr, nullptr, 1.0f, composed);
   } else {
     float mixed[AURORA_PATCH_CC_COUNT];
     render::mixLayers(live, playing.layers, faders, mixed);
@@ -408,7 +411,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
       lastOneshotProgress = (beats - firedAtBeats) / lengthBeats;
       if (lastOneshotProgress < 0.0f || lastOneshotProgress >= 1.0f) firing = false;
     }
-    render::composeOneshot(mixed, firing ? oneshot.controls : nullptr, oneshot.marks, composed);
+    render::composeOneshot(mixed, firing ? oneshot.controls : nullptr, oneshot.marks, firedStrength, composed);
     if (firing) clock = { lastOneshotProgress, lengthBeats, oneshot.marks[CC_FAN_LFO] != 0 };
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }

@@ -24,7 +24,7 @@ static void handleControlChange(uint8_t channel, uint8_t control, uint8_t value)
 static void handleNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
     if (!ours(channel)) return;
     if (velocity == 0) player::get().noteOff(note, micros());
-    else player::get().noteOn(note, micros());
+    else player::get().noteOn(note, velocity, micros());
 }
 
 static void handleNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {

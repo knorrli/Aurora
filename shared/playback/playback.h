@@ -70,7 +70,7 @@ class Playback {
 
   void programChange(uint8_t program, uint32_t micros);
   void controlChange(uint8_t cc, uint8_t value);
-  void noteOn(uint8_t note, uint32_t micros);
+  void noteOn(uint8_t note, uint8_t velocity, uint32_t micros);
   void noteOff(uint8_t note, uint32_t micros);
 
   void cutTo(const Patch &patch, uint8_t slot);
@@ -95,7 +95,7 @@ class Playback {
   void computeLive(float beats, float *out) const;
   float brightnessAt(float beats) const;
   float nextBeat(float beats) const;
-  void fire(uint8_t index, float beats);
+  void fire(uint8_t index, float strength, float beats);
   void moveFader(uint8_t layer, uint8_t value);
   bool movePad(uint8_t cc, uint8_t value);
   void markedStrips(bool *out) const;
@@ -140,6 +140,7 @@ class Playback {
   Oneshot oneshot;
   uint8_t firedIndex = AURORA_NO_ONESHOT;
   float firedAtBeats = 0.0f;
+  float firedStrength = 1.0f;
   float lastOneshotProgress = 0.0f;
 
   bool pinned = false;
