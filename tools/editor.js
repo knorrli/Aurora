@@ -102,6 +102,27 @@ function paintHead() {
   byId('accentTime').closest('.field').classList.toggle('inert', accentReachesNothing);
 }
 
+const unstored = { cache: 'no-store' };
+
+async function readCommit() {
+  const head = (await (await fetch('../.git/HEAD', unstored)).text()).trim();
+  if (!head.startsWith('ref: ')) return head;
+  const ref = head.slice('ref: '.length);
+  const loose = await fetch(`../.git/${ref}`, unstored);
+  if (loose.ok) return (await loose.text()).trim();
+  const packed = await (await fetch('../.git/packed-refs', unstored)).text();
+  const line = packed.split('\n').find(entry => entry.endsWith(` ${ref}`));
+  return line ? line.split(' ')[0] : '';
+}
+
+async function showVersion() {
+  try {
+    byId('version').textContent = (await readCommit()).slice(0, 7);
+  } catch {
+    byId('version').textContent = '';
+  }
+}
+
 function paint() {
   document.body.classList.toggle('oneshot-mode', session.editingOneshot());
   document.body.classList.toggle('corner-mode', session.editingCorner());
@@ -195,6 +216,7 @@ byId('sendPatch').addEventListener('click', sendPatchToWall);
 wireMidiToggle();
 measureTopbar();
 
+showVersion();
 Playback.start();
 Wall.start();
 Transition.rebuild();
