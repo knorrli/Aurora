@@ -151,7 +151,7 @@ function paintSaving() {
   byId('subjectKind').classList.toggle('unsaved', !!(oneshot ? session.oneshotDraft : session.draft));
   byId('patchSave').disabled = oneshot ? !session.oneshotDraft : !session.draft || session.slot === null;
   byId('patchDiscard').disabled = oneshot ? !session.oneshotDraft : !session.draft;
-  byId('patchDelete').disabled = !isSaved();
+  byId('patchDelete').disabled = oneshot || !isSaved();
   const slot = saveTarget();
   const saveHere = byId('saveHere');
   saveHere.disabled = slot === null;

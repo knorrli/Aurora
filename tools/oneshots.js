@@ -197,7 +197,9 @@ function paintKit() {
   byId('cornerGrid').replaceChildren(...CORNERS_AS_ON_THE_PAD.map(corner => cell(Protocol.ONESHOTS + corner)));
   byId('kitCount').textContent = `${Library.filledKit(session.library).length} / ${Protocol.ONESHOTS}`;
   paintPickSelects(DEFAULT_FIELDS, session.library.defaultOneshots, () => '—');
-  byId('oneshotDelete').disabled = !session.editingOneshot() || !session.library.kit[session.oneshotIndex];
+  const saved = session.editingOneshot() && !!session.library.kit[session.oneshotIndex];
+  byId('oneshotDelete').disabled = !saved || session.editingCorner();
+  byId('cornerDelete').disabled = !saved || !session.editingCorner();
 }
 
 let firingText = null;
@@ -292,6 +294,7 @@ function wire() {
   byId('editOver').addEventListener('click', editOver);
   FIRE_BUTTONS.forEach((id, place) => byId(id).addEventListener('click', () => firePick(place)));
   byId('oneshotDelete').addEventListener('click', remove);
+  byId('cornerDelete').addEventListener('click', remove);
 }
 
 export { wire, open, paintKit, paintPicks, paintHead, paintFiring, keepRepeating, save, discard, startNew, leaveOneshotDraft };
