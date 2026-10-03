@@ -86,11 +86,8 @@ void Playback::controlChange(uint8_t cc, uint8_t value) {
 }
 
 void Playback::markedStrips(bool *out) const {
-  const uint8_t middle = render::STRIPS / 2;
-  const uint8_t reach = pad.width == PAD_WIDTH_CENTER ? 0 : pad.width == PAD_WIDTH_MIDDLE ? 1 : middle;
   for (uint8_t strip = 0; strip < render::STRIPS; strip++) {
-    const bool within = strip + reach >= middle && strip <= middle + reach;
-    out[strip] = within && (!pad.gaps || (strip + reach - middle) % 2 == 0);
+    out[strip] = aurora_pad_marks(pad.width, pad.gaps, strip, render::STRIPS);
   }
 }
 

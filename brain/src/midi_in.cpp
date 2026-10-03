@@ -1,10 +1,13 @@
 #include "midi_in.h"
 
 #include <Arduino.h>
+#include <MIDI.h>
 
 #include "aurora_protocol.h"
 #include "patch_sync.h"
 #include "player.h"
+
+MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, din);
 
 static bool ours(uint8_t channel) { return channel == AURORA_MIDI_CHANNEL; }
 
@@ -43,10 +46,22 @@ void begin() {
     usbMIDI.setHandleNoteOn(handleNoteOn);
     usbMIDI.setHandleNoteOff(handleNoteOff);
     usbMIDI.setHandleSysEx(patch_sync::onSysEx);
+
+    din.begin(MIDI_CHANNEL_OMNI);
+    din.turnThruOff();
+    din.setHandleClock(handleClock);
+    din.setHandleStart(handleStart);
+    din.setHandleContinue(handleContinue);
+    din.setHandleStop(handleStop);
+    din.setHandleProgramChange(handleProgramChange);
+    din.setHandleControlChange(handleControlChange);
+    din.setHandleNoteOn(handleNoteOn);
+    din.setHandleNoteOff(handleNoteOff);
 }
 
 void read() {
     while (usbMIDI.read()) { }
+    while (din.read()) { }
 }
 
 }

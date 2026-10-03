@@ -377,6 +377,13 @@ enum AuroraPadWidth : uint8_t {
     PAD_WIDTH_ALL    = 2,
 };
 
+static inline bool aurora_pad_marks(uint8_t width, bool gaps, uint8_t strip, uint8_t strips) {
+    const uint8_t middle = strips / 2;
+    const uint8_t reach = width == PAD_WIDTH_CENTER ? 0 : width == PAD_WIDTH_MIDDLE ? 1 : middle;
+    const bool within = strip + reach >= middle && strip <= middle + reach;
+    return within && (!gaps || (strip + reach - middle) % 2 == 0);
+}
+
 enum AuroraCorner : uint8_t {
     CORNER_BOTTOM_LEFT  = 0,
     CORNER_BOTTOM_RIGHT = 1,
@@ -423,6 +430,9 @@ enum AuroraSysEx : uint8_t {
     SYSEX_ONESHOT        = 0x08,
     SYSEX_QUERY_ONESHOT  = 0x09,
     SYSEX_PIN            = 0x0A,
+    SYSEX_SONGS_BEGIN    = 0x0B,
+    SYSEX_SONG           = 0x0C,
+    SYSEX_SONGS_COMMIT   = 0x0D,
 
     SYSEX_ACK            = 0x40,
     SYSEX_LIBRARY_INFO   = 0x41,
@@ -479,6 +489,9 @@ static const uint8_t AURORA_PATCH_HEAD_LENGTH = 4 + AURORA_PATCH_NAME_LENGTH;
 
 static const uint16_t AURORA_PATCH_LENGTH =
     AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT;
+
+static const uint8_t AURORA_SONG_SECTIONS = 32;
+static const uint8_t AURORA_SONG_HEAD_LENGTH = 4;
 
 static const uint16_t AURORA_ONESHOT_LENGTH =
     1 + AURORA_PATCH_NAME_LENGTH + AURORA_MARK_MAP_LENGTH + AURORA_PATCH_CC_COUNT;
