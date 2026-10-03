@@ -26,6 +26,7 @@ const placeText = index =>
   (index < Protocol.ONESHOTS ? `note ${noteOf(index)}` : `${CORNER_NAMES[index - Protocol.ONESHOTS]} corner`);
 const kitOneshot = session.kitOneshot;
 let repeat = true;
+let dragged = null;
 
 const leaveOneshotDraft = () =>
   !session.oneshotDraft || confirm(`Discard your changes to the oneshot "${session.oneshotDraft.name}"?`);
@@ -131,7 +132,64 @@ function cell(index) {
   head.append(element('span', 'slot cc midi-number', placeText(index)));
   button.append(head, element('span', 'name', oneshot ? oneshot.name || '(unnamed)' : ''));
   button.addEventListener('click', () => open(index));
+  wireDrag(button, index, !!oneshot);
   return button;
+}
+
+function wireDrag(button, index, filled) {
+  button.draggable = filled;
+  button.addEventListener('dragstart', event => {
+    dragged = index;
+    event.dataTransfer.effectAllowed = 'copyMove';
+    button.classList.add('dragging');
+  });
+  button.addEventListener('dragend', () => {
+    dragged = null;
+    button.classList.remove('dragging');
+  });
+  button.addEventListener('dragover', event => {
+    if (dragged === null || dragged === index) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = event.altKey ? 'copy' : 'move';
+    button.classList.add('drop');
+  });
+  button.addEventListener('dragleave', () => button.classList.remove('drop'));
+  button.addEventListener('drop', event => {
+    event.preventDefault();
+    button.classList.remove('drop');
+    if (dragged === null || dragged === index) return;
+    if (event.altKey) copyPlace(dragged, index);
+    else swapPlaces(dragged, index);
+  });
+}
+
+const pickable = index => (index < Protocol.ONESHOTS ? index : null);
+
+function swapPlaces(from, to) {
+  if (!leaveOneshotDraft()) return;
+  session.oneshotDraft = null;
+  const { kit } = session.library;
+  [kit[from], kit[to]] = [kit[to], kit[from]];
+  const swapped = index => (index === from ? to : index === to ? from : index);
+  const follow = pick => (pick === null ? null : pickable(swapped(pick)));
+  Library.remapPicks(session.library, follow);
+  if (session.draft) session.draft.oneshots = session.draft.oneshots.map(follow);
+  if (session.oneshotIndex !== null) session.oneshotIndex = swapped(session.oneshotIndex);
+  session.saveLibrary();
+  Editor.paint();
+  Rail.paintList();
+  say(kit[from] ? `swapped the ${placeText(from)} and the ${placeText(to)}` : `moved "${kit[to].name}" to the ${placeText(to)}`);
+}
+
+function copyPlace(from, to) {
+  const { kit } = session.library;
+  if (kit[to] && !confirm(`Replace "${kit[to].name}" on the ${placeText(to)} with a copy of "${kit[from].name}"?`)) return;
+  if (session.editingOneshot() && session.oneshotIndex === to) session.oneshotDraft = null;
+  kit[to] = Library.cloneOneshot(kit[from]);
+  session.saveLibrary();
+  Editor.paint();
+  Rail.paintList();
+  say(`copied "${kit[from].name}" to the ${placeText(to)}`);
 }
 
 function paintKit() {
@@ -196,12 +254,9 @@ function remove() {
   if (!confirm(`Empty the ${placeText(index)}, "${oneshot.name}"?`)) return;
   session.library.kit[index] = null;
   session.oneshotDraft = null;
-  for (const patch of session.library.slots) {
-    if (patch) patch.oneshots = patch.oneshots.map(pick => (pick === index ? null : pick));
-  }
-  if (session.draft) session.draft.oneshots = session.draft.oneshots.map(pick => (pick === index ? null : pick));
-  session.library.defaultOneshots = session.library.defaultOneshots.map(pick => (pick === index ? null : pick));
-  Library.forgetSongOneshot(session.library, index);
+  const forget = pick => (pick === index ? null : pick);
+  Library.remapPicks(session.library, forget);
+  if (session.draft) session.draft.oneshots = session.draft.oneshots.map(forget);
   session.saveLibrary();
   backToPatch();
 }

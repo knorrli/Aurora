@@ -88,7 +88,7 @@ function wireDrag(button, slot, filled) {
   button.draggable = filled;
   button.addEventListener('dragstart', event => {
     dragged = slot;
-    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.effectAllowed = 'copyMove';
     button.classList.add('dragging');
   });
   button.addEventListener('dragend', () => {
@@ -98,13 +98,30 @@ function wireDrag(button, slot, filled) {
   button.addEventListener('dragover', event => {
     if (dragged === null || dragged === slot) return;
     event.preventDefault();
+    event.dataTransfer.dropEffect = event.altKey ? 'copy' : 'move';
     button.classList.add('drop');
   });
   button.addEventListener('dragleave', () => button.classList.remove('drop'));
   button.addEventListener('drop', event => {
     event.preventDefault();
-    if (dragged !== null && dragged !== slot) swapSlots(dragged, slot);
+    button.classList.remove('drop');
+    if (dragged === null || dragged === slot) return;
+    if (event.altKey) copySlot(dragged, slot);
+    else swapSlots(dragged, slot);
   });
+}
+
+function copySlot(from, to) {
+  const { slots } = session.library;
+  if (slots[to] && !confirm(`Replace "${slots[to].name}" in slot ${to} with a copy of "${slots[from].name}"?`)) return;
+  slots[to] = Library.clonePatch(slots[from]);
+  session.saveLibrary();
+  if (session.slot === to) {
+    Editor.open(to);
+    return;
+  }
+  paintList();
+  say(`copied "${slots[from].name}" to slot ${to}`);
 }
 
 function swapSlots(from, to) {

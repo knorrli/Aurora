@@ -282,8 +282,10 @@ const swapSongSlots = (library, one, other) =>
 
 const forgetSongSlot = (library, gone) => remapSongSlots(library, slot => (slot === gone ? null : slot));
 
-function forgetSongOneshot(library, index) {
-  for (const song of library.songs) song.oneshots = song.oneshots.map(pick => (pick === index ? null : pick));
+function remapPicks(library, remap) {
+  for (const patch of library.slots) if (patch) patch.oneshots = patch.oneshots.map(remap);
+  library.defaultOneshots = library.defaultOneshots.map(remap);
+  for (const song of library.songs) song.oneshots = song.oneshots.map(remap);
 }
 
 function removeSong(library, index) {
@@ -329,5 +331,5 @@ export {
   patchToFile, patchFromFile, validatePatch, validateFile,
   filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, lengthBeats, libraryToFile, libraryFromFile, newLibrary,
   newSong, sectionSlot, addSection, relabelSection, removeSection, moveSection,
-  swapSongSlots, forgetSongSlot, forgetSongOneshot, removeSong,
+  swapSongSlots, forgetSongSlot, remapPicks, removeSong,
 };
