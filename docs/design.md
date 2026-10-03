@@ -94,25 +94,9 @@
 
 ## Touchpad and rockers
 
-- The pad sends X, Y and touch as raw values. CC 17 is kept for pressure.
-- The pad has no off switch: not touching it means no effect.
-- The main touchpad rocker picks momentary or latching. Momentary: lifting the finger returns the wall to what the patch was doing. Latching: the last position stays after the finger lifts.
-- Touchpad rocker 1 picks one of three modes:
-  - Per patch: X and Y are route sources, like the LFO. A route's Source picks the LFO, Pad X or Pad Y; a pad route follows the finger, ignores its ratio, wave and phase, and shares the patch's eight routes with the LFO.
-  - Morph: four fixed looks in the corners, the same on every patch. The center of the pad is the patch itself; moving out blends toward the corners in that direction, the edges blend only the corners, and landing near a corner cuts to it. A press more than halfway out toward a corner lands that corner's switches, which return on release.
-  - A corner that marks a control fades out the patch's routes on that control, fully off in that corner.
-  - Effects: five columns across X, left to right: focus, freeze, double time, stutter, strobe. Y sets how hard, from nothing at the bottom edge to full at the top. Corner looks are designed in the editor and kept in the library, like the kit. Effects are fixed behavior in the brain.
-  - An effect plays on top of the patch.
-  - Double time runs the whole wall faster on the beat, PARs included, ignoring Width and Gaps: ×2 in the lower half of Y, ×4 in the upper half. After letting go, the patch glides back onto the beat.
-  - Freeze holds the picture while the patch keeps running underneath on the beat; Y blends from live to fully frozen. Letting go shows the patch where it is now.
-  - Stutter gates the strips on and off on the beat; Y sets how fast.
-  - Strobe flashes the full strips white on the beat, dark in between; Y sets the rate.
-  - Focus darkens the strips outside Width and Gaps; Y sets how dark. The PARs stay as the patch has them.
-  - The PARs follow freeze, stutter and strobe.
-- The touchpad rockers report where they stand. The fader rocker sends nothing of its own.
-- Touchpad rockers 2 and 3 choose which strips the pad acts on, in every mode. Width (rocker 2): strip 3, strips 2–4, or all five. Gaps (rocker 3): solid, or every other strip counted in from the outer edge of the width. Together: 3; 2+3+4; 2+4; all; 1+3+5.
-- The PARs ignore Width and Gaps.
-- Whatever the pad plays changes only the controls it marks, PAR controls included; everything unmarked stays as the patch has it.
+- The pad sends X, Y and touch as raw values: touch on at the press, off at the lift, also when latching. On a press, X and Y go out before touch. CC 17 is kept for pressure.
+- The main touchpad rocker is Hold (momentary or latching), touchpad rocker 1 the pad mode (per patch, morph, effects), rocker 2 Width (strip 3, strips 2–4, all), rocker 3 Gaps (solid or every other). Each reports where it stands.
+- The fader rocker sends nothing of its own.
 - Nothing depends on pressure until it has been measured on this pad.
 
 ## The controller
