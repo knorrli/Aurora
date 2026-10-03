@@ -105,7 +105,7 @@
   import * as LibraryFile from './library-file.js';
   import { Link, statusText } from './link.js';
 
-  const link = new Link();
+  const link = Link.brain();
   const byId = id => document.getElementById(id);
   const BUTTONS = ['query', 'push', 'abort', 'read', 'verify', 'save', 'restore'];
 

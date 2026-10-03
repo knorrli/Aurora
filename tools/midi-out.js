@@ -7,7 +7,8 @@ const { byId } = dom;
 
 const DEFAULT_BPM = 120;
 
-const link = new Link();
+const link = Link.brain();
+const controllerLink = Link.controller();
 let clockSending = false;
 
 const bpm = () => +byId('bpm').value || DEFAULT_BPM;
@@ -57,6 +58,9 @@ async function open() {
   };
   link.keepOrPrefer();
   connected();
+  await controllerLink.open();
+  controllerLink.onports = () => controllerLink.keepOrPrefer();
+  controllerLink.keepOrPrefer();
 }
 
 function wire() {
@@ -74,4 +78,4 @@ function wire() {
   });
 }
 
-export { link, bpm, open, wire };
+export { link, controllerLink, bpm, open, wire };

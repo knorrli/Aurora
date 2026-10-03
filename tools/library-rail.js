@@ -222,11 +222,21 @@ function wireBrain() {
     const fault = Library.validateFile(file);
     if (fault) { say(fault, 'bad'); return; }
     if (!file.patches.length) { say('the library is empty; there is nothing to push', 'bad'); return; }
-    say(`pushing ${file.patches.length} patches${notTheDraft()}`);
+    const songs = LibraryFile.gigSongs(file);
+    const tooLong = songs.find(song => song.slots.length > Protocol.SONG_SECTIONS);
+    if (tooLong) { say(`"${tooLong.name}" has more than ${Protocol.SONG_SECTIONS} sections`, 'bad'); return; }
+    const controller = Midi.controllerLink;
+    if (!controller.output || !controller.input) {
+      say('the controller is not connected; the patches and the songs are pushed together', 'bad');
+      return;
+    }
+    say(`pushing ${file.patches.length} patches and ${songs.length} songs${notTheDraft()}`);
     const startedAt = performance.now();
     const result = await link.push(file);
-    if (result.ok) say(`stored ${result.count} patches in ${Math.round(performance.now() - startedAt)} ms`, 'ok');
-    else say(`${result.where}: ${statusText(result.status)}`, 'bad');
+    if (!result.ok) { say(`${result.where}: ${statusText(result.status)}`, 'bad'); return; }
+    const sent = await controller.exclusively(() => controller.pushSongs(songs));
+    if (!sent.ok) { say(`the controller, ${sent.where}: ${statusText(sent.status)}`, 'bad'); return; }
+    say(`stored ${result.count} patches and ${sent.count} songs in ${Math.round(performance.now() - startedAt)} ms`, 'ok');
   });
 
   brainButton('brainPull', async () => {

@@ -7,7 +7,6 @@ const STATUS = Protocol.SYSEX_STATUS;
 const SYSEX_START = 0xF0, SYSEX_END = 0xF7;
 const CONTROL_CHANGE = 0xB0, PROGRAM_CHANGE = 0xC0;
 const CHANNEL = Protocol.MIDI_CHANNEL - 1;
-const PREFERRED_PORT = /teensy|aurora/i;
 const ANSWER_MILLISECONDS = 4000;
 
 const STATUS_TEXT = {
@@ -32,7 +31,11 @@ const libraryStateText = state =>
   textFor(Protocol.LIBRARY_STATE, LIBRARY_STATE_TEXT, state, 'unknown state');
 
 class Link {
-  constructor() {
+  constructor(name, { prefers, avoids = null, fallsBack = false }) {
+    this.name = name;
+    this.prefers = prefers;
+    this.avoids = avoids;
+    this.fallsBack = fallsBack;
     this.access = null;
     this.output = null;
     this.input = null;
@@ -49,23 +52,24 @@ class Link {
 
   outputs() {
     return this.access
-      ? [...this.access.outputs.values()].filter(port => port.state !== 'disconnected') : [];
+      ? [...this.access.outputs.values()]
+        .filter(port => port.state !== 'disconnected' && !(this.avoids && this.avoids.test(port.name))) : [];
   }
 
   preferred() {
     const outputs = this.outputs();
-    return outputs.find(port => PREFERRED_PORT.test(port.name)) || outputs[0] || null;
+    return outputs.find(port => this.prefers.test(port.name)) || (this.fallsBack && outputs[0]) || null;
   }
 
   choose(id) {
     const inputs = this.access ? [...this.access.inputs.values()] : [];
-    for (const port of inputs) port.onmidimessage = null;
+    if (this.input) this.input.onmidimessage = null;
     this.output = this.outputs().find(port => port.id === id) || null;
     this.input = null;
     if (this.output) {
       const live = inputs.filter(port => port.state !== 'disconnected');
       this.input = live.find(port => port.name === this.output.name)
-        || live.find(port => PREFERRED_PORT.test(port.name)) || null;
+        || live.find(port => this.prefers.test(port.name)) || null;
       if (this.input) this.input.onmidimessage = event => this.receive(event.data);
     }
     return { output: this.output, input: this.input };
@@ -121,10 +125,16 @@ class Link {
         const at = this.waiters.indexOf(waiter);
         if (at < 0) return;
         this.waiters.splice(at, 1);
-        reject(new Error('the brain did not answer'));
+        reject(new Error(`${this.name} did not answer`));
       }, ANSWER_MILLISECONDS);
     });
   }
+
+  static brain() {
+    return new Link('the brain', { prefers: /aurora brain|teensy/i, avoids: /aurora controller/i, fallsBack: true });
+  }
+
+  static controller() { return new Link('the controller', { prefers: /aurora controller/i }); }
 
   static isAckFor(type, message) {
     return message.type === TYPE.ack && message.payload[0] === type;
@@ -137,7 +147,7 @@ class Link {
   }
 
   async exclusively(work) {
-    if (this.busy) throw new Error('the brain is still answering the last request');
+    if (this.busy) throw new Error(`${this.name} is still answering the last request`);
     this.busy = true;
     try {
       return await work();
@@ -188,6 +198,14 @@ class Link {
       this.abort();
       throw error;
     }
+  }
+
+  async pushSongs(songs) {
+    const begun = await this.request(TYPE.songsBegin);
+    if (begun !== STATUS.ok) return { ok: false, where: 'songs begin', status: begun };
+    songs.forEach(song => this.sendSysEx(TYPE.song, LibraryFile.songBytes(song)));
+    const committed = await this.request(TYPE.songsCommit);
+    return { ok: committed === STATUS.ok, where: 'songs commit', status: committed, count: songs.length };
   }
 
   async queryLibrary() {

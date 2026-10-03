@@ -229,6 +229,20 @@ const oneshotBytes = oneshot => [
   ...oneshot.bytes,
 ];
 
+const NO_PATCH = 0;
+
+function gigSongs(file) {
+  const filled = new Set(file.patches.map(patch => patch.slot));
+  return (file.gig || []).flatMap((index, place) => {
+    if (index === null) return [];
+    const song = file.songs[index];
+    const slots = song.sections.map(label => (filled.has(song.patches[label]) ? song.patches[label] : NO_PATCH));
+    return [{ place, name: song.name, picks: song.oneshots.map(pickByte), slots }];
+  });
+}
+
+const songBytes = song => [song.place, ...song.picks, song.slots.length, ...song.slots];
+
 function oneshotFromBytes(index, bytes) {
   const marksAt = 1 + Protocol.PATCH_NAME_LENGTH, controlsAt = marksAt + Protocol.MARK_MAP_LENGTH;
   return {
@@ -243,4 +257,5 @@ function oneshotFromBytes(index, bytes) {
 export {
   printableName, serialize, validate, validatePatch, validateOneshot, isPatchSlot, LAST_PATCH_SLOT,
   headBytes, patchFromHead, libraryHeadBytes, libraryFromHeadBytes, oneshotBytes, oneshotFromBytes,
+  gigSongs, songBytes,
 };
