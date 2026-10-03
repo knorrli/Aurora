@@ -9,6 +9,7 @@
 namespace render {
 
 static const float TURN = 128.0f;
+static const float ROUTE_SILENT = (float)AURORA_ROUTE_DEFAULTS[ROUTE_AMOUNT];
 
 static bool performed(uint8_t cc) {
   switch (cc) {
@@ -163,6 +164,15 @@ void morphCorners(const float *live, const uint8_t *const *controls, const uint8
       value += weights[corner] * distance(cc, live[cc], controls[corner][cc]);
     }
     out[cc] = settle(cc, value);
+  }
+  for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
+    const uint8_t target = aurora_route_target(roundedControl(live[aurora_route_cc(route, ROUTE_DESTINATION)]));
+    float covered = 0.0f;
+    for (uint8_t corner = 0; target && corner < AURORA_CORNERS; corner++) {
+      if (controls[corner] && marks[corner][target]) covered += weights[corner];
+    }
+    const uint8_t amount = aurora_route_cc(route, ROUTE_AMOUNT);
+    out[amount] = ROUTE_SILENT + (live[amount] - ROUTE_SILENT) * (1.0f - fminf(covered, 1.0f));
   }
 }
 
