@@ -61,6 +61,7 @@
 - If presses are ever snapped to the beat, the controller snaps oneshot presses before sending.
 - The pedal's Oneshot 1 and 2 send the song's pick for that switch as its kit note; with no song or no pick, they send note 58 or 59. The controller holds no patch data.
 - The mic trigger fires whatever Oneshot 1 fires. The mic's level at the hit is the oneshot's strength, sent as the note's velocity. TRIG and the pedal fire at full strength.
+- Strength is how far a oneshot takes over: each control it marks moves that share of the way from the patch toward the oneshot. Its switches always land.
 - The phone's hook switch fires whatever Oneshot 2 fires, at full strength. It is pressed by a finger; the handset almost never rests on it.
 
 ## Routes

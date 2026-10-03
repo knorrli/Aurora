@@ -83,7 +83,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Patches on the brain
 
-- Read a oneshot's velocity as its strength. What does strength scale in a oneshot?
+- Read a oneshot's velocity as its strength (`docs/design.md` § Oneshots).
 
 ## Once Aurora v2 works
 
