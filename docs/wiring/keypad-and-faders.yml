@@ -1,0 +1,81 @@
+metadata:
+  title: Controller — keypad, faders and Cue
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [3, 4, 5, 6, 16, 17, 18, 28, 3V3, GND]
+    pinlabels: [Keypad line 1, Keypad line 2, Keypad line 3, Keypad line 4, Fader Color, Fader Motion, Fader Extent, Cue rocker (underside), 3.3 V out, Ground]
+
+  Keypad:
+    type: Phone keypad and hook
+    pins: [D8, D9, D10, D11, D12]
+    pinlabels: [Common (unread), Line 1, Line 2, Line 3, Line 4]
+    notes: Named by the old Nano pins. Which wire goes to ground is open; meter the lines first.
+
+  Fader Color: &fader
+    type: Slide pot
+    pins: [DOWN, WIPER, UP]
+    pinlabels: [End reached fully down, Wiper, End reached fully up]
+  Fader Motion: *fader
+  Fader Extent: *fader
+
+  Cue rocker:
+    type: 2-position rocker
+    pins: [COM, CLOSED]
+    pinlabels: [Common, Closed]
+
+cables:
+  Keypad wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [BN, RD, OG, YE]
+  Fader Color wires: &fader_wires
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [OG, WH, BK]
+  Fader Motion wires: *fader_wires
+  Fader Extent wires: *fader_wires
+  Cue rocker wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 2
+    colors: [WH, BK]
+
+connections:
+  - - Keypad: [D9, D10, D11, D12]
+    - Keypad wires: [1-4]
+    - Teensy: [3, 4, 5, 6]
+  - - Fader Color: [DOWN, WIPER, UP]
+    - Fader Color wires: [1-3]
+    - Teensy: [3V3, 16, GND]
+  - - Fader Motion: [DOWN, WIPER, UP]
+    - Fader Motion wires: [1-3]
+    - Teensy: [3V3, 17, GND]
+  - - Fader Extent: [DOWN, WIPER, UP]
+    - Fader Extent wires: [1-3]
+    - Teensy: [3V3, 18, GND]
+  - - Cue rocker: [CLOSED, COM]
+    - Cue rocker wires: [1-2]
+    - Teensy: [28, GND]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    Keypad wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    Fader Color wires: *hidden
+    Fader Motion wires: *hidden
+    Fader Extent wires: *hidden
+    Cue rocker wires: *hidden

@@ -1,0 +1,73 @@
+metadata:
+  title: Controller — rotary and TAP
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [12, 13, 19, 3V3, GND]
+    pinlabels: [TAP button, TAP LED, Rotary, 3.3 V out, Ground]
+
+  Rotary switch:
+    type: 12-position rotary
+    pins: [A, B, C, D, E, F, G, H, I, J, K, L, COM]
+    pinlabels: [Bank A, Bank B, Bank C, Bank D, Bank E, Bank F, Bank G, Bank H, Bank I, Bank J, Bank K, Bank L, Common]
+
+  Rotary ladder:
+    type: Board
+    subtype: twelve 1 kΩ in series
+    pins: [3V3, GND, A, B, C, D, E, F, G, H, I, J, K, L, WIPER, OUT]
+    pinlabels: [3.3 V, Ground, Tap A, Tap B, Tap C, Tap D, Tap E, Tap F, Tap G, Tap H, Tap I, Tap J, Tap K, Tap L, From common, To Teensy]
+    notes: >-
+      Twelve 1 kΩ from 3.3 V to ground. Tap A is one resistor above ground, tap L is 3.3 V.
+      From common joins To Teensy, with 100 kΩ to ground.
+
+  TAP button:
+    type: Lit pushbutton
+    pins: [SW1, SW2, LED+, LED-]
+    pinlabels: [Switch, Switch, LED + (through a resistor), LED −]
+    notes: LED resistor value open, unless one is built into the button.
+
+cables:
+  Rotary switch wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 13
+    colors: [BN, RD, OG, YE, GN, BU, VT, GY, WH, PK, TQ, BK, YE]
+  Rotary ladder wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [OG, BK, WH]
+  TAP button wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [WH, BK, YE, BK]
+
+connections:
+  - - Rotary switch: [A, B, C, D, E, F, G, H, I, J, K, L, COM]
+    - Rotary switch wires: [1-13]
+    - Rotary ladder: [A, B, C, D, E, F, G, H, I, J, K, L, WIPER]
+  - - Rotary ladder: [3V3, GND, OUT]
+    - Rotary ladder wires: [1-3]
+    - Teensy: [3V3, GND, 19]
+  - - TAP button: [SW1, SW2, LED+, LED-]
+    - TAP button wires: [1-4]
+    - Teensy: [12, GND, 13, GND]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    Rotary switch wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    Rotary ladder wires: *hidden
+    TAP button wires: *hidden

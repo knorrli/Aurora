@@ -1,0 +1,56 @@
+metadata:
+  title: Controller — box pixels
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [2, VIN, GND]
+    pinlabels: [Box pixels, 5 V from USB, Ground]
+
+  Pixel buffer:
+    type: 74AHCT125
+    subtype: 3.3 V → 5 V
+    pins: [1A, 1OE, 1Y, VCC, GND]
+    pinlabels: [Data in, Enable (to ground), Data out, 5 V, Ground]
+    notes: Unused inputs and their enables to ground, as on the brain.
+
+  Box pixels:
+    type: WS2812 chain, 12 pixels
+    pins: [5V, DIN, GND]
+    pinlabels: [5 V, Data in, Ground]
+    notes: 0 right indicator, 1–10 touchpad grid (5 × 2), 11 left indicator.
+
+cables:
+  Pixel buffer wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [RD, WH, BK, BK]
+  Box pixels wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [RD, WH, BK]
+
+connections:
+  - - Teensy: [VIN, 2, GND, GND]
+    - Pixel buffer wires: [1-4]
+    - Pixel buffer: [VCC, 1A, GND, 1OE]
+  - - Pixel buffer: [VCC, 1Y, GND]
+    - Box pixels wires: [1-3]
+    - Box pixels: [5V, DIN, GND]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    Pixel buffer wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    Box pixels wires: *hidden

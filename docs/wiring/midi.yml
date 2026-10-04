@@ -1,0 +1,73 @@
+metadata:
+  title: Controller — MIDI in and out
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [0, 1, 3V3, VIN, GND]
+    pinlabels: [MIDI in (RX), MIDI out (TX), 3.3 V out, 5 V from USB, Ground]
+
+  MIDI in jack:
+    type: 5-pin DIN socket
+    pins: [2, 4, 5]
+    pinlabels: [Shield, Current in, Current out]
+
+  MIDI in circuit:
+    type: Board
+    subtype: 6N138, as on the brain
+    pins: [DIN4, DIN5, OUT, 3V3, 5V, GND]
+    pinlabels: [From DIN 4, From DIN 5, To Teensy, 3.3 V, 5 V, Ground]
+    notes: >-
+      DIN 4 → 220 Ω → opto pin 2. DIN 5 → opto pin 3. 1N4148 reversed across opto pins 2–3.
+      Opto pin 8 → 5 V, pin 5 → GND, pin 7 → 4.7 kΩ → GND.
+      Opto pin 6 → OUT, with a 270 Ω–1 kΩ pull-up to 3.3 V.
+
+  MIDI out jack:
+    type: 5-pin DIN socket
+    pins: [2, 4, 5]
+    pinlabels: [Shield, Current out (through 33 Ω), Current in (through 10 Ω)]
+
+cables:
+  MIDI in jack wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [YE, GN, BK]
+  MIDI in circuit wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [WH, OG, RD, BK]
+  MIDI out jack wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [OG, YE, BK]
+
+connections:
+  - - MIDI in jack: [4, 5, 2]
+    - MIDI in jack wires: [1-3]
+    - MIDI in circuit: [DIN4, DIN5, GND]
+  - - MIDI in circuit: [OUT, 3V3, 5V, GND]
+    - MIDI in circuit wires: [1-4]
+    - Teensy: [0, 3V3, VIN, GND]
+  - - MIDI out jack: [4, 5, 2]
+    - MIDI out jack wires: [1-3]
+    - Teensy: [3V3, 1, GND]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    MIDI in jack wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    MIDI in circuit wires: *hidden
+    MIDI out jack wires: *hidden

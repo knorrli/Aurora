@@ -1,0 +1,100 @@
+metadata:
+  title: Controller — mic and TRIG
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [9, 10, 11, 22, 23, 3V3, GND]
+    pinlabels: [Mic on/off, TRIG button, TRIG LED, Mic, Mic threshold, 3.3 V out, Ground]
+
+  Audio jack:
+    type: Audio-in jack, handset mic
+    pins: [T, S]
+    pinlabels: [Signal, Ground]
+
+  Mic input stage:
+    type: Board
+    subtype: not designed yet
+    pins: [IN, GND_IN, 3V3, GND, OUT]
+    pinlabels: [Signal in, Signal ground, 3.3 V, Ground, To Teensy]
+
+  Mic on/off:
+    type: 2-position toggle
+    pins: [COM, CLOSED]
+    pinlabels: [Common, Closed]
+
+  Mic threshold pot:
+    type: Pot, about 10 kΩ linear
+    pins: [END1, WIPER, END2]
+    pinlabels: [End, Wiper, End]
+
+  TRIG button:
+    type: Lit pushbutton
+    pins: [SW1, SW2, LED+, LED-]
+    pinlabels: [Switch, Switch, LED + (through a resistor), LED −]
+    notes: LED resistor value open, unless one is built into the button.
+
+cables:
+  Audio jack wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 2
+    colors: [YE, GN]
+  Mic input stage wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [WH, OG, BK]
+  Mic on/off wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 2
+    colors: [WH, BK]
+  Mic threshold pot wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [OG, WH, BK]
+  TRIG button wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [WH, BK, YE, BK]
+
+connections:
+  - - Audio jack: [T, S]
+    - Audio jack wires: [1-2]
+    - Mic input stage: [IN, GND_IN]
+  - - Mic input stage: [OUT, 3V3, GND]
+    - Mic input stage wires: [1-3]
+    - Teensy: [22, 3V3, GND]
+  - - Mic on/off: [CLOSED, COM]
+    - Mic on/off wires: [1-2]
+    - Teensy: [9, GND]
+  - - Mic threshold pot: [END1, WIPER, END2]
+    - Mic threshold pot wires: [1-3]
+    - Teensy: [3V3, 23, GND]
+  - - TRIG button: [SW1, SW2, LED+, LED-]
+    - TRIG button wires: [1-4]
+    - Teensy: [10, GND, 11, GND]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    Audio jack wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    Mic input stage wires: *hidden
+    Mic on/off wires: *hidden
+    Mic threshold pot wires: *hidden
+    TRIG button wires: *hidden

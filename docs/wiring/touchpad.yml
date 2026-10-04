@@ -1,0 +1,98 @@
+metadata:
+  title: Controller — touchpad and its rockers
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [7, 8, 14, 15, 24, 25, 26, 27, 3V3, GND]
+    pinlabels: [Touchpad XP, Touchpad YM, Touchpad YP, Touchpad XM, Pad mode rocker (underside), Width rocker (underside), Hold rocker (underside), Gaps rocker (underside), 3.3 V out, Ground]
+
+  Touchpad:
+    type: 4-wire resistive
+    pins: [XP, YM, YP, XM]
+
+  Pad mode rocker: &three_way
+    type: 3-position rocker
+    pins: [A, COM, B]
+    pinlabels: [End A, Common, End B]
+  Width rocker: *three_way
+
+  Three-way dividers:
+    type: Board
+    subtype: proposed, not decided
+    pins: [3V3, GND, MODE, WIDTH]
+    pinlabels: [3.3 V, Ground, Pad mode line, Width line]
+    notes: >-
+      Each line: 10 kΩ to 3.3 V and 10 kΩ to ground, so the open center reads the middle level.
+      End A shorts the line to ground (first position), end B to 3.3 V.
+
+  Hold rocker: &two_way
+    type: 2-position rocker
+    pins: [COM, CLOSED]
+    pinlabels: [Common, Closed]
+  Gaps rocker: *two_way
+
+cables:
+  Touchpad wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [BU, GN, VT, GY]
+  Pad mode rocker wires: &three_way_wires
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [BK, WH, OG]
+  Width rocker wires: *three_way_wires
+  Three-way dividers wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 4
+    colors: [OG, BK, WH, YE]
+  Hold rocker wires: &two_way_wires
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 2
+    colors: [WH, BK]
+  Gaps rocker wires: *two_way_wires
+
+connections:
+  - - Touchpad: [XP, YM, YP, XM]
+    - Touchpad wires: [1-4]
+    - Teensy: [7, 8, 14, 15]
+  - - Pad mode rocker: [A, COM, B]
+    - Pad mode rocker wires: [1-3]
+    - Teensy: [GND, 24, 3V3]
+  - - Width rocker: [A, COM, B]
+    - Width rocker wires: [1-3]
+    - Teensy: [GND, 25, 3V3]
+  - - Three-way dividers: [3V3, GND, MODE, WIDTH]
+    - Three-way dividers wires: [1-4]
+    - Teensy: [3V3, GND, 24, 25]
+  - - Hold rocker: [CLOSED, COM]
+    - Hold rocker wires: [1-2]
+    - Teensy: [26, GND]
+  - - Gaps rocker: [CLOSED, COM]
+    - Gaps rocker wires: [1-2]
+    - Teensy: [27, GND]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    Touchpad wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    Pad mode rocker wires: *hidden
+    Width rocker wires: *hidden
+    Three-way dividers wires: *hidden
+    Hold rocker wires: *hidden
+    Gaps rocker wires: *hidden

@@ -1,0 +1,65 @@
+metadata:
+  title: Controller — foot pedal
+
+options:
+  fontname: Helvetica
+
+connectors:
+  Teensy:
+    type: Teensy 4.0
+    pins: [20, 21, 3V3, GND]
+    pinlabels: [Pedal tip, Pedal ring, 3.3 V out, Ground]
+
+  Pedal jack:
+    type: 6.35 mm TRS socket
+    pins: [T, R, S]
+    pinlabels: [Tip, Ring, Sleeve]
+
+  Pedal pull-ups:
+    type: Board
+    subtype: two 1 kΩ
+    pins: [3V3, TIP, RING, TIP_OUT, RING_OUT]
+    pinlabels: [3.3 V, From tip, From ring, Tip to Teensy, Ring to Teensy]
+    notes: 1 kΩ from 3.3 V to each line. The switches and their resistors are in the pedal.
+
+cables:
+  Pedal jack wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 2
+    colors: [WH, YE]
+  Pedal jack ground:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 1
+    colors: [BK]
+  Pedal pull-ups wires:
+    category: bundle
+    show_name: false
+    show_wirecount: false
+    wirecount: 3
+    colors: [OG, WH, YE]
+
+connections:
+  - - Pedal jack: [T, R]
+    - Pedal jack wires: [1-2]
+    - Pedal pull-ups: [TIP, RING]
+  - - Pedal jack: [S]
+    - Pedal jack ground: [1]
+    - Teensy: [GND]
+  - - Pedal pull-ups: [3V3, TIP_OUT, RING_OUT]
+    - Pedal pull-ups wires: [1-3]
+    - Teensy: [3V3, 20, 21]
+
+tweak:
+  override:
+    graph:
+      ranksep: "0.5"
+    Pedal jack wires: &hidden
+      shape: none
+      fontsize: "12"
+      fontcolor: white
+    Pedal jack ground: *hidden
+    Pedal pull-ups wires: *hidden
