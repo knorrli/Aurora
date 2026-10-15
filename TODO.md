@@ -56,6 +56,9 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Calibrate the fixtures: RGB trims and the brightness curve, stepping evenly spaced values.
 - Set each fixture's master scale by eye at soundcheck.
 - Aim each PAR at the wall between two strips, addressed `A001` to `A025` in stage order.
+- Read what the drum triggers send: note on with velocity, and which note is the kick.
+- Record the band and check its kicks against a sixteenth grid: how tight the double hits are, and whether any section moves to a pulse that is not sixteenths.
+- Tune tempo following (`docs/design.md` § Tempo following): how close to a sixteenth a kick must land to count, and how much of the error each counted kick corrects.
 
 ## Away from the wall
 
@@ -74,6 +77,11 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Fit a 3-way rocker as touchpad rocker 2 (Width).
 - Build the eight-switch foot pedal on a TRS cable (`docs/design.md` § Foot pedal).
 - When the keypad is off the box: meter the lines before rewiring (D8 common, contacts passive), and confirm the idle code and what produces `0b00111111` and `0b00111101`. The controller's pin map reads the keypad on four lines and leaves D8 unread; if D8 is needed, a panel switch moves to the underside.
+
+### Controller
+
+- Where is the rig's kick note set: in the editor, or on the box?
+- Does TRIG fire the oneshot the mic switch picks, or always Oneshot 1?
 
 ## Once Aurora v2 works
 

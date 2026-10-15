@@ -34,6 +34,19 @@
 
 - CC 17 is kept for pressure. Nothing depends on pressure until it has been measured on this pad.
 
+## Tempo following
+
+- The drum triggers' MIDI goes into the controller's DIN in.
+- Tap sets the tempo. While kick notes arrive, the clock follows them; when they stop, it holds the last tempo. There is no switch for it.
+- Which notes count as the kick is one setting for the rig.
+- The grid is sixteenths, one setting for the rig.
+- A kick counts only when it lands close to a sixteenth of the running clock; any other kick is ignored. Each counted kick corrects part of the clock's error.
+- Half-time, double-time and triplet feel are never detected: the pedal's Next moves to the section's patch, whose division sets the feel.
+
+## Mic
+
+- The mic switch picks the oneshot the mic fires: Oneshot 1 or Oneshot 2. The mic has no off; nothing plugged in is off.
+
 ## Out of scope
 
 - Wireless between the boxes, DMX in, MIDI out to other gear, and anything that needs haze.
