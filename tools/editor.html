@@ -292,6 +292,22 @@
   .card-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
   .card-body.single { grid-template-columns: 1fr; }
 
+  .envelope-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 14px; }
+  .envelope-card.no-effect .envelope-stages, .envelope-card.no-effect .envelope-graph { opacity: .38; }
+  .envelope-graph { display: block; width: 100%; height: 64px; margin-bottom: 10px; color: var(--lfo); }
+  .envelope-stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .row.upright {
+    grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 5px;
+    margin: 0; padding: 3px 0 0; border-left: 0; border-top: 2px solid transparent; text-align: center;
+  }
+  .row.upright + .row.upright { margin-top: 0; }
+  .row.upright.changed { border-top-color: var(--select); }
+  .row.upright > output { text-align: center; font-size: 10px; white-space: normal; }
+  .upright-track { position: relative; width: 20px; height: 112px; }
+  .upright-track .track {
+    position: absolute; left: 50%; top: 50%; width: 112px; transform: translate(-50%, -50%) rotate(-90deg);
+  }
+
   .route-panel {
     position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--lfo);
     border-radius: 6px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.55);

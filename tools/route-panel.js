@@ -2,6 +2,7 @@ import { Protocol } from './cc.js';
 import * as Rows from './control-rows.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
+import * as EnvelopeGraph from './envelope-graph.js';
 import * as LayerDrop from './layer-drop.js';
 import * as Pad from './pad.js';
 import * as Patch from './patch.js';
@@ -58,22 +59,9 @@ function padDeparture(route, level, live) {
   return Protocol.signedOf(live[route.amount]) * (bipolar ? level - 0.5 : level);
 }
 
-const ENVELOPE_SHOWN_LIVES = 2;
-
-function envelopeBeatsShown(route, live) {
-  const envelope = Patch.ENVELOPES[envelopeOf(route, live)];
-  const beats = name => Preview.convert(Patch.CC[name], live[name]);
-  const gate = beats('cellGate');
-  const end = Protocol.threeWayPosition(live.cellEnd);
-  if (end === Protocol.CELL_END.startOver) return gate * ENVELOPE_SHOWN_LIVES;
-  if (end === Protocol.CELL_END.gone) return gate + beats(envelope.release);
-  return Math.max(beats(envelope.attack) + beats(envelope.hold) + beats(envelope.decay), gate);
-}
-
 function envelopeDeparture(route, along, live) {
-  const age = along * envelopeBeatsShown(route, live);
-  const level = Preview.envelopeLevel(Patch.envelopeStages(live, envelopeOf(route, live)), live.cellGate, live.cellEnd, age);
-  return Protocol.signedOf(live[route.amount]) * level;
+  const envelope = envelopeOf(route, live);
+  return Protocol.signedOf(live[route.amount]) * EnvelopeGraph.levelAt(live, envelope, along * EnvelopeGraph.beatsShown(live, envelope));
 }
 
 function drawWave(canvas, route, live) {

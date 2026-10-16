@@ -363,12 +363,13 @@ const curveIsFlat = live => Math.abs(real('cellCurve', live.cellCurve)) < 0.005 
 const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route =>
   Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`]);
 
-const envelopeGroup = envelope => ({
-  title: `Envelope ${envelope + 1}`, tone: 'lfo',
-  names: Object.entries(ENVELOPES[envelope]).map(([stage, name]) => control(name, ENVELOPE_STAGE_LABELS[stage], {
-    inertWhen: live => envelopeUnused(live, envelope) || (stage === 'release' && !endsAs(live, 'gone')),
+const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
+  name: `Envelope ${envelope + 1}`, tone: 'lfo', envelope,
+  names: Object.entries(stages).map(([stage, name]) => control(name, ENVELOPE_STAGE_LABELS[stage], {
+    inertWhen: live => stage === 'release' && !endsAs(live, 'gone'),
   })),
-});
+  unused: live => envelopeUnused(live, envelope),
+}));
 
 const CELLS = {
   name: 'Cells',
@@ -420,7 +421,6 @@ const CELLS = {
           { inertWhen: live => nothingTravels(live) || Math.abs(real('cellBend', live.cellBend)) < 0.005 }),
       ],
     },
-    ...Array.from({ length: Protocol.ENVELOPES }, (_, envelope) => envelopeGroup(envelope)),
     {
       title: 'Fan', tone: 'fan',
       names: [
@@ -602,6 +602,9 @@ for (const group of CELLS.groups) {
 for (const card of [LFO, ...ENGINES]) {
   for (const name of cardNames(card)) PLACES[name] = card.name;
 }
+for (const card of ENVELOPE_CARDS) {
+  for (const name of card.names) PLACES[name] = card.name;
+}
 for (const output of OUTPUTS) {
   for (const name of outputNames(output)) PLACES[name] = output.title;
 }
@@ -612,6 +615,9 @@ for (const group of CELLS.groups) {
 }
 for (const card of [LFO, ...ENGINES]) {
   for (const name of cardNames(card)) TONES[name] = card.tone;
+}
+for (const card of ENVELOPE_CARDS) {
+  for (const name of card.names) TONES[name] = card.tone;
 }
 for (const output of OUTPUTS) {
   for (const name of outputNames(output)) TONES[name] = 'out';
@@ -678,6 +684,6 @@ export {
   CC, NAMES, CONTINUOUS, isSwitch, controls, CONTROLS, READOUTS, DEFAULT,
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
-  CELLS, ENVELOPES, envelopeStages, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
+  CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
   fromLfo, holdable, routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };
