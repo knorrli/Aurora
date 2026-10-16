@@ -65,17 +65,18 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 `docs/design.md` § Cells and § Brightness; the reasons in `docs/cells-reasoning.md`, deleted once cells are built and tested on the wall.
 
+- Build cells in the editor's preview first: on this branch the controls list grows past 128, and the brain waits for the CC numbers.
+- CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - The player: an arpeggiator (rate, order of birthplaces, how alike) or a step sequencer? Does an arpeggiator cover the looks? How does it set each cell's accent?
+- How the envelope stages sit in a cell's life: does release start at the end of the life, or finish there?
+- Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - How alike cells are, per property: birthplace, starting shape, its envelopes, life length. Is a random value held from each birth a route source?
-- How many envelopes does a cell have?
 - Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?
-- CC numbers: none are left, and cells need many.
-- Do Shape and Scatter become one engine of cells? Raindrops: born at random places, falling with a trail.
+- Two groups of cells, one painting over the other, with Scatter becoming the second? Raindrops: born at random places, falling with a trail.
 - Can the per-strip settings scale a route's amount per strip, not only its timing? The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half.
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
-- How the editor draws an envelope.
-- Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three.
+- Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.
 
 ### Hardware
 

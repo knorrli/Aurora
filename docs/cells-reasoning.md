@@ -31,7 +31,7 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 
 - On a synth, something outside the note decides when it starts and ends. For cells that is the player, and it plays on the clock, like a sequencer or arpeggiator.
 - Turning the band's MIDI or the mic into cells would make Aurora a visualizer of MIDI events, not a band backdrop. Live triggers stay oneshots.
-- The user's dream was keyframes: draw a few moments, let the in-between fill itself, from smooth to stepped. Filling in between pictures fades a bar out at one place and in at another; it never moves it. Filling in between a cell's settings moves it. So the dream became: draw one cell's life as envelopes, and let the player repeat and offset it.
+- The user's dream was keyframes: draw a few moments, let the in-between fill itself, from smooth to stepped. Filling in between pictures fades a bar out at one place and in at another; it never moves it. Filling in between a cell's settings moves it. So the dream became: set one cell's life with envelopes, and let the player repeat and offset it.
 - Arpeggiator over step sequencer is leaning, not decided: everything else in Aurora is dialed, not programmed, and drawing every step is tedious.
 
 ## Why envelopes are route sources
@@ -39,7 +39,27 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - On 2026-09-30 the user had Scatter's built-in timing controls (Gate, time-Edge, Slide) replaced by routes, because they worked differently from every other control. A graph wired to one property would be the same mistake.
 - On a synth, envelopes are sources in the modulation matrix, aimed at destinations with an amount. One envelope can drive several targets, like a cell that grows and brightens together.
 - Scatter's routes already run on each spot's own clock, so routes running per cell extend something that exists.
-- The cost: the user draws an envelope, then aims it, instead of drawing straight onto a property.
+- The cost: the user sets an envelope, then aims it, instead of setting a property's change directly.
+
+## Why envelopes are ADSR knobs, not drawn
+
+- Everything else in Aurora is dialed, not programmed. Knobs fit that; a drawing tool would be the one place that is programmed.
+- Freely drawn envelopes cost a time, a value and a curve per point, 30 to 45 values for three envelopes. Knobs cost 4 or 5 each.
+- They cover most of the looks: bars moving up are one long attack, the cross is attack and decay with the life starting over, the stepped trail is hold then decay. Hold is why there are five stages, not four.
+- What is lost: curves and steps inside a stage. Drawing comes back only if a look on the wall turns out to need it.
+- Three envelopes is the minimum the user wants.
+- The user never pictures moving an envelope live, but every value staying reachable by routes and layers is a core idea, which ruled out storing envelopes outside the controls.
+
+## Why Scatter stays
+
+- Scatter paints over the strip with its own color and mix. One cell engine has one player and one kind of cell at a time, so merging the two would lose looks like a faint bar pattern with white spots flashing over it.
+- Merging would only have freed CCs by giving that up. Two groups of cells, one over the other, would cost more CCs, not fewer.
+
+## Why the preview comes first
+
+- Only 2, 8, 9, 19, 34 and 64 are free. 0, 32 and 120 to 127 are reserved by MIDI; 1, 7, 10 and 11 are written unasked by a DAW or keyboard on Aurora's channel.
+- The ways past 128 are NRPN or a second MIDI channel. The user dislikes the second channel because it makes DAW control harder, and has not looked at NRPN.
+- The preview runs the same render code as the brain on a plain list of values, so cells can be tested there with a longer list. No patches exist yet, so nothing has to be kept compatible. The CC decision waits until cells have proven themselves.
 
 ## Why brightness moves into the shape
 
