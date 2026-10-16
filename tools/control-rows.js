@@ -17,9 +17,9 @@ const cards = [];
 
 const controlLabel = name => dom.ccLabeled('label', Patch.CONTROLS[name].label, Patch.CC[name]);
 
-function faderRow(host, name, upright) {
+function faderRow(host, name) {
   const control = Patch.CONTROLS[name];
-  const root = element('div', upright ? 'row upright' : 'row');
+  const root = element('div', 'row');
   root.dataset.name = name;
 
   const label = controlLabel(name);
@@ -52,9 +52,7 @@ function faderRow(host, name, upright) {
   const routes = Patch.routable(name) ? element('button', 'routes-button', '~') : null;
   if (routes) routes.addEventListener('click', () => Routes.toggle(name));
 
-  const holder = upright ? element('div', 'upright-track') : track;
-  if (upright) holder.appendChild(track);
-  root.append(label, holder, readout, routes || element('span'));
+  root.append(label, track, readout, routes || element('span'));
   host.appendChild(root);
   rows[name] = {
     kind: 'fader', control, root, label, slider, ghost, now, routes, swatch,
@@ -113,9 +111,9 @@ function pickRow(host, name) {
   rows[name] = { kind: control.kind, control, root, select, buttons, from, lit };
 }
 
-function buildRows(host, names, upright = false) {
+function buildRows(host, names) {
   for (const name of names) {
-    if (Patch.CONTROLS[name].kind === 'fader') faderRow(host, name, upright);
+    if (Patch.CONTROLS[name].kind === 'fader') faderRow(host, name);
     else pickRow(host, name);
   }
 }
@@ -196,10 +194,14 @@ function buildEnvelopeCard(card) {
   const state = element('span', 'card-state');
   head.append(element('span', 'card-name', card.name), state, resetButton(card.names));
   movable(head, card.name, card.names);
-  const graph = element('canvas', 'envelope-graph');
-  const stages = element('div', 'envelope-stages');
-  buildRows(stages, card.names, true);
-  root.append(head, graph, stages);
+  const stages = element('div');
+  buildRows(stages, card.names);
+  const graphBox = element('div', 'envelope-graph');
+  const graph = element('canvas');
+  graphBox.appendChild(graph);
+  const body = element('div', 'card-body');
+  body.append(stages, graphBox);
+  root.append(head, body);
   envelopeCards.push({ card, root, state, graph, drawn: null });
   return root;
 }
@@ -209,7 +211,8 @@ function paintEnvelopeCards(live) {
     const unused = shown.card.unused(live);
     shown.root.classList.toggle('no-effect', unused);
     shown.state.textContent = unused ? 'no effect' : '';
-    const key = [...shown.card.names, 'cellGate', 'cellEnd'].map(name => live[name]).join(',') + shown.graph.clientWidth;
+    const key = [...shown.card.names, 'cellGate', 'cellEnd'].map(name => live[name]).join(',')
+      + `@${shown.graph.clientWidth}x${shown.graph.clientHeight}`;
     if (key === shown.drawn) continue;
     shown.drawn = key;
     EnvelopeGraph.draw(shown.graph, live, shown.card.envelope);
@@ -218,9 +221,7 @@ function paintEnvelopeCards(live) {
 
 function build() {
   byId('outputs').replaceChildren(...Patch.OUTPUTS.map(output => buildGroup(output.title, output.sections)));
-  const envelopes = element('div', 'envelope-cards');
-  envelopes.append(...Patch.ENVELOPE_CARDS.map(buildEnvelopeCard));
-  byId('lfo').replaceChildren(buildCard(Patch.LFO), envelopes);
+  byId('lfo').replaceChildren(buildCard(Patch.LFO), ...Patch.ENVELOPE_CARDS.map(buildEnvelopeCard));
   const groups = element('div', 'groups');
   groups.append(...Patch.CELLS.groups.map(group => {
     const box = buildGroup(group.title, [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`);
