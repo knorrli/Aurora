@@ -138,7 +138,6 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_CELL_POSITION,           64 },
     { CC_CELL_BEND,               64 },
     { CC_CELL_BEND_AT,            64 },
-    { CC_CELL_RATE,              127 },
     { CC_CELL_SPREAD,            127 },
     { CC_CELL_GATE,               64 },
     { CC_CELL_CURVE,              64 },

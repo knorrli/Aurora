@@ -42,6 +42,12 @@ static float envelopeBeatsOf(float value) { return steppedOf(value, ENVELOPE_BEA
 
 static float gateBeatsOf(float value) { return aurora_lfo_period((uint8_t)(127 - roundedControl(value))); }
 
+static float cellRateBeatsOf(float value) {
+  const uint8_t last = AURORA_LFO_PERIOD_COUNT;
+  const uint8_t step = (uint8_t)(((uint16_t)roundedControl(value) * last + 63) / 127);
+  return step == 0 ? 0.0f : AURORA_LFO_PERIODS[(step > last ? last : step) - 1];
+}
+
 static float chordOf(float value) {
   return (float)(1 + ((uint16_t)roundedControl(value) * (MAX_CHORD - 1) + 63) / 127);
 }
@@ -110,7 +116,7 @@ float controlValue(uint8_t cc, float value) {
     case CC_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
     case CC_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
     case CC_CELL_SPEED: return lapsPerBeatOf(value) * (float)PIXELS;
-    case CC_CELL_RATE: return aurora_transition_beats(roundedControl(value));
+    case CC_CELL_RATE: return cellRateBeatsOf(value);
     case CC_CELL_GATE: return gateBeatsOf(value);
     case CC_CELL_CHORD: return chordOf(value);
     case CC_FAN_SPREAD:

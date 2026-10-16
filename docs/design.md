@@ -27,7 +27,7 @@
 - One setting decides what happens when the gate ends. Gone: the envelopes release, and the cell disappears once the last one has finished. Start over: the envelopes start again from attack, and release never plays. Stay: the gate never ends, and the envelopes hold at sustain.
 - Going dark never ends a cell. Routes change cells and never end them.
 - The player starts cells on the clock and never ends one. It has three knobs: Rate, Chord and Spread.
-- Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its last step is born once.
+- Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its first step is born once.
 - Chord is how many cells each birth starts. Spread is how far apart they are: full spreads them evenly over the strip, zero puts them in one place.
 - Cells are born at the dialed Position.
 - A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.

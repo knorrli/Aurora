@@ -67,7 +67,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 - Dial cells in the preview. On this branch the controls list is 176 long and routes sit at 128 and up; the brain builds but its patch sync and storage wait for the CC numbers.
 - Confirm or change what the first build settled on its own:
-  - Rate's last step, born once, is born when the patch starts, so its attack plays then.
+  - Rate's first step, born once, is born when the patch starts, so its attack plays then.
   - Gate grows toward the top of the fader, unlike LFO Rate.
   - Width runs 0–45 px and Edge adds 0–11 px of glow on each side; Position's middle is the strip's center.
   - Speed is a strip crossing on the LFO's steps, so a cell crosses the strip in exactly that many beats.
