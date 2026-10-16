@@ -7,7 +7,7 @@
 namespace render {
 
 enum Engine : uint8_t {
-  ENGINE_SHAPE = 1,
+  ENGINE_CELLS = 1,
   ENGINE_FIELD = 2,
   ENGINE_FLOW = 4,
   ENGINE_SCATTER = 8,
@@ -51,7 +51,7 @@ void placeScatter(const Scatter &scatter, const float *dialed, const SpotRoute *
                   ScatterSpots &out);
 ScatterSample scatterAt(const Scatter &scatter, const ScatterSpots &spots, float alongPixels);
 
-Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,
-           float shape, bool flowOn, float flowTime);
+Hsv tintAt(const Reading &reading, Hsv base, uint8_t stripIndex, uint8_t pixelIndex, float field,
+           float body, bool flowOn, float flowTime);
 
 }

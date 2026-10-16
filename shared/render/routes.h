@@ -33,6 +33,18 @@ struct SpotRoute {
   RouteTiming timing;
 };
 
+struct CellRoute {
+  uint8_t cc;
+  uint8_t route;
+  uint8_t source;
+  uint8_t wave;
+  bool bipolar;
+  float amount;
+  float mean;
+  float shift;
+  RouteTiming timing;
+};
+
 void setOneshotClock(const OneshotClock &clock);
 
 RouteTiming routeTiming(const float *dialed, uint8_t route);
@@ -51,6 +63,27 @@ float landedControl(uint8_t cc, float base, float amount);
 
 void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
                   const PadLevels *pad, Modulation &out);
+
+void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
+                        const PadLevels *pad, float beatsAgo, Modulation &out);
+
+bool cellControl(uint8_t cc);
+
+float swingShiftAt(const float *dialed, uint8_t cc, float beatsPerCycle, float lfo, float fanShift,
+                   float beatsAgo);
+
+uint8_t gatherCellRoutes(const float *dialed, float fanShift, CellRoute *out);
+
+float envelopeLevel(uint8_t source, const float *envelopes);
+
+float heldLevel(const CellRoute &route, float lfo, float beatsPerCycle, float beatsAgo);
+
+uint8_t envelopesUsed(const float *dialed);
+
+float cellRouted(uint8_t cc, float dialed, float amount, float bipolar, const CellRoute *routes,
+                 uint8_t count, const float *levels);
+
+float cellSwingReach(const CellRoute &route);
 
 void carryPadShift(float elapsedBeats, float *carried, Modulation &modulation);
 

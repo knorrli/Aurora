@@ -9,7 +9,7 @@
     --bg: #14151a; --panel: #1c1e26; --sunk: #101118; --line: #2c2f3a; --rail: #3a3e4d;
     --text: #e6e7ec; --dim: #8b8fa3; --faint: #5f6475;
     --select: #d4d7e0; --warn: #d9b03f; --ok: #4a9e6a; --bad: #cf5c5c;
-    --shape: #e6c454; --travel: #e08a3c; --fan: #e0544a; --color: #6fa8dc; --lfo: #d466d6; --scatter: #7bc4a4;
+    --cells: #e6c454; --travel: #e08a3c; --fan: #e0544a; --color: #6fa8dc; --lfo: #d466d6; --scatter: #7bc4a4;
     --out: #8f7fd4;
     --topbar: 56px;
   }
@@ -141,14 +141,14 @@
   .overlay-buttons { display: grid; gap: 3px; margin-top: 9px; }
   .overlay-buttons > div { display: flex; gap: 3px; }
   .overlay-buttons .tiny { padding: 2px 5px; }
-  .overlay-buttons button:not(.on)[data-tone=shape] { color: var(--shape); }
+  .overlay-buttons button:not(.on)[data-tone=cells] { color: var(--cells); }
   .overlay-buttons button:not(.on)[data-tone=travel] { color: var(--travel); }
   .overlay-buttons button:not(.on)[data-tone=fan] { color: var(--fan); }
   .overlay-buttons button:not(.on)[data-tone=lfo] { color: var(--lfo); }
   .overlay-buttons button:not(.on)[data-tone=scatter] { color: var(--scatter); }
   .overlay-buttons button:not(.on)[data-tone=color] { color: var(--color); }
   .overlay-buttons button:not(.on)[data-tone=out] { color: var(--out); }
-  .overlay-buttons button.on[data-tone=shape] { background: var(--shape); border-color: var(--shape); }
+  .overlay-buttons button.on[data-tone=cells] { background: var(--cells); border-color: var(--cells); }
   .overlay-buttons button.on[data-tone=travel] { background: var(--travel); border-color: var(--travel); }
   .overlay-buttons button.on[data-tone=fan] { background: var(--fan); border-color: var(--fan); }
   .overlay-buttons button.on[data-tone=lfo] { background: var(--lfo); border-color: var(--lfo); }
@@ -156,16 +156,18 @@
   .overlay-buttons button.on[data-tone=color] { background: var(--color); border-color: var(--color); }
   .overlay-buttons button.on[data-tone=out] { background: var(--out); border-color: var(--out); }
 
-  .shape { border-left: 3px solid var(--shape); }
-  .shape .groups { row-gap: 0; }
-  .shape .groups > div { margin-left: -16px; padding: 0 0 16px 13px; border-left: 3px solid var(--shape); }
-  .shape .groups > div:last-child { margin-bottom: -13px; padding-bottom: 13px; }
-  .shape .tone-form h3 { color: var(--shape); }
-  .shape .groups > .tone-travel { border-left-color: var(--travel); }
-  .shape .tone-travel h3 { color: var(--travel); }
-  .shape .groups > .tone-fan { border-left-color: var(--fan); }
-  .shape .tone-fan h3 { color: var(--fan); }
-  .shape-name { font-size: 12px; letter-spacing: .18em; color: var(--shape); margin-bottom: 12px; }
+  .cells { border-left: 3px solid var(--cells); }
+  .cells .groups { row-gap: 0; }
+  .cells .groups > div { margin-left: -16px; padding: 0 0 16px 13px; border-left: 3px solid var(--cells); }
+  .cells .groups > div:last-child { margin-bottom: -13px; padding-bottom: 13px; }
+  .cells .tone-cells h3 { color: var(--cells); }
+  .cells .groups > .tone-travel { border-left-color: var(--travel); }
+  .cells .tone-travel h3 { color: var(--travel); }
+  .cells .groups > .tone-fan { border-left-color: var(--fan); }
+  .cells .tone-fan h3 { color: var(--fan); }
+  .cells .groups > .tone-lfo { border-left-color: var(--lfo); }
+  .cells .tone-lfo h3 { color: var(--lfo); }
+  .cells-name { font-size: 12px; letter-spacing: .18em; color: var(--cells); margin-bottom: 12px; }
   .push-right { margin-left: auto; }
 
   .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px 22px; }
@@ -492,7 +494,7 @@
 
       <div class="cards" id="lfo"></div>
 
-      <section class="panel shape" id="shape"></section>
+      <section class="panel cells" id="cells"></section>
 
       <div class="cards" id="engines"></div>
 
@@ -517,7 +519,7 @@
               <button class="tiny" data-overlay="arp" data-tone="lfo">arpeggiator</button>
             </div>
             <div>
-              <button class="tiny" data-overlay="centers" data-tone="shape">centers</button>
+              <button class="tiny" data-overlay="cells" data-tone="cells">cells</button>
               <button class="tiny" data-overlay="bend" data-tone="travel">bend</button>
               <button class="tiny" data-overlay="fan" data-tone="fan">fan</button>
             </div>

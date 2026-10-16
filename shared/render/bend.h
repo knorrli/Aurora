@@ -10,12 +10,10 @@ const BendTable *bendFor(float amount, float at);
 
 float bendSpeedRatio(float amount);
 
-float cellsAtStart(float count);
+float unbentAlong(const BendTable *bend, float along);
 
-float bentCells(const BendTable *bend, bool perCell, float pixel, float cellLength, float count);
+float bentAlong(const BendTable *bend, float along);
 
-float pixelOfCells(const BendTable *bend, bool perCell, float cells, float cellLength, float count);
-
-void readBend(const BendTable *bend, bool perCell, float cellLength, float count, float *out);
+void readBend(const BendTable *bend, float *out);
 
 }

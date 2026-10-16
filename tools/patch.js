@@ -31,7 +31,7 @@ const routeOf = name => ROUTES.find(route => route.fields.includes(name));
 
 const NAMES = Protocol.tagged('patch').concat(Protocol.tagged('switch'), ROUTE_FIELD_NAMES)
   .sort((a, b) => CC[a] - CC[b]);
-const SWITCHES = new Set(Protocol.tagged('switch').concat(ROUTES.map(route => route.destination)));
+const SWITCHES = new Set(Protocol.tagged('switch').concat(ROUTES.flatMap(route => [route.destination, route.hold])));
 const isSwitch = name => SWITCHES.has(name);
 const CONTINUOUS = NAMES.filter(name => !isSwitch(name));
 
@@ -69,6 +69,7 @@ const beatsText = beats => {
 };
 
 const PERIOD_NAMES = {
+  0.0625: '1⁄16 beat', 0.125: '⅛ beat',
   16: '16 beats', 12: '12 beats', 8: '8 beats',
   6: '6 beats', 4: '4 beats', 3: '3 beats', 2: '2 beats',
   1.5: '1½ beats', 1: '1 beat', 0.75: '¾ beat', 0.5: '½ beat', 0.375: '⅜ beat', 0.25: '¼ beat',
@@ -137,9 +138,6 @@ const ROUTE_READOUTS = {
   wave: () => waveText,
 };
 
-const cellPixels = live => Preview.PIXELS / real('shapeCount', live.shapeCount);
-const shapeGap = live => 1 - real('shapeWidth', live.shapeWidth);
-
 const BARS = '▁▂▃▄▅▆▇█';
 const FAN_LANDMARKS = { 0: 'alike', 0.125: 'slope', 0.25: 'peak', 0.5: 'alternate' };
 const fanPicture = live => Preview.WALL_STRIP_ORDER.map(strip => {
@@ -148,10 +146,9 @@ const fanPicture = live => Preview.WALL_STRIP_ORDER.map(strip => {
 }).join('');
 
 const fanShift = (live, reach) => {
-  const laps = Math.abs(real('shapeSpeed', live.shapeSpeed));
-  if (laps > 0) return '±' + beatsText(reach / laps);
-  const room = Protocol.isOn(live.shapeBounce) ? shapeGap(live) : 1;
-  return '±' + pixels(reach * room * cellPixels(live));
+  const speed = Math.abs(real('cellSpeed', live.cellSpeed));
+  const shift = reach * Preview.PIXELS;
+  return '±' + (speed > 0 ? beatsText(shift / speed) : pixels(shift));
 };
 
 const isGradient = live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient;
@@ -169,28 +166,59 @@ const fieldSize = (fraction, live) => {
 
 const upTheStrip = at =>
   (at < 0.005 ? 'at the bottom' : at > 0.995 ? 'at the top' : Math.round(at * 100) + '% up');
+const backTheCell = at =>
+  (at < 0.005 ? 'at the front' : at > 0.995 ? 'at the back' : Math.round(at * 100) + '% back');
+const acrossTheWall = at => Math.round(at * 100) + '% across';
+const beatsOrNone = (beats, none) => (beats === 0 ? none : PERIOD_NAMES[beats]);
+const acrossOf = live => Protocol.fourWayPosition((live || DEFAULT).cellAcross);
+
+const ENVELOPE_STAGE_LABELS = { attack: 'Attack', hold: 'Hold', decay: 'Decay', sustain: 'Sustain', release: 'Release' };
+const envelopeName = (envelope, stage) => `envelope${envelope + 1}${capitalized(stage)}`;
+const ENVELOPES = Array.from({ length: Protocol.ENVELOPES }, (_, envelope) => Object.fromEntries(
+  Object.keys(Protocol.ENVELOPE_STAGE).map(stage => [stage, envelopeName(envelope, stage)])));
+const envelopeStages = (live, envelope) => Object.fromEntries(
+  Object.entries(ENVELOPES[envelope]).map(([stage, name]) => [stage, live[name]]));
 
 const READOUTS = {
-  shapeWidth: (value, live) => pixels(real('shapeWidth', value) * cellPixels(live)),
-  shapeEdge: (value, live) => pixels(real('shapeEdge', value) * shapeGap(live) * 0.5 * cellPixels(live)) + ' glow',
-  shapeTail: value => {
-    const beats = real('shapeTail', value);
-    return beats === 0 ? 'none' : PERIOD_NAMES[beats];
+  cellRate: value => {
+    const beats = real('cellRate', value);
+    return beats === 0 ? 'once' : 'every ' + PERIOD_NAMES[beats];
   },
-  shapeCount: value => counted(real('shapeCount', value), 'shape', 'shapes'),
-  shapePosition: value => upTheStrip(real('shapePosition', value)),
-  shapeSpeed: (value, live) => {
-    const laps = real('shapeSpeed', value);
-    if (laps === 0) return 'still';
-    const arrow = Protocol.isOn(live.shapeBounce) ? '↕' : laps > 0 ? '↑' : '↓';
-    return arrow + ' ' + lapName(laps);
+  cellChord: value => counted(real('cellChord', value), 'cell', 'cells'),
+  cellSpread: (value, live) => {
+    const chord = real('cellChord', (live || DEFAULT).cellChord);
+    const spread = real('cellSpread', value);
+    return chord > 1 ? pixels(spread * Preview.PIXELS / chord) + ' apart' : percent(spread);
   },
-  shapeBend: value => {
+  cellGate: value => PERIOD_NAMES[real('cellGate', value)],
+  cellWidth: value => pixels(real('cellWidth', value)),
+  cellEdge: value => pixels(real('cellEdge', value)) + ' glow',
+  cellTail: value => beatsOrNone(real('cellTail', value), 'none'),
+  cellPosition: value => upTheStrip(real('cellPosition', value) / Preview.PIXELS),
+  cellSpeed: value => {
+    const speed = real('cellSpeed', value);
+    if (speed === 0) return 'still';
+    return (speed > 0 ? '↑' : '↓') + ' ' + lapName(speed / Preview.PIXELS);
+  },
+  cellBend: value => {
     const ratio = Preview.bendSpeedRatio(value);
     if (ratio < 1.01) return 'even';
-    return ratio.toFixed(ratio < 10 ? 1 : 0) + '× ' + (real('shapeBend', value) > 0 ? 'faster' : 'slower');
+    return ratio.toFixed(ratio < 10 ? 1 : 0) + '× ' + (real('cellBend', value) > 0 ? 'faster' : 'slower');
   },
-  shapeBendAt: value => upTheStrip(real('shapeBendAt', value)),
+  cellBendAt: value => upTheStrip(real('cellBendAt', value)),
+  cellBrightness: value => percent(real('cellBrightness', value)),
+  cellCurve: value => {
+    const curve = real('cellCurve', value);
+    if (Math.abs(curve) < 0.005) return 'flat';
+    return curve > 0 ? percent(curve) + ' dimmer away' : percent(-curve) + ' dimmer at it';
+  },
+  cellCurveAt: (value, live) => {
+    const at = real('cellCurveAt', value);
+    const across = acrossOf(live);
+    if (across === Protocol.CELL_ACROSS.wall) return acrossTheWall(at);
+    if (across === Protocol.CELL_ACROSS.cellBody) return backTheCell(at);
+    return upTheStrip(at);
+  },
   fanSpread: (value, live) => fanShift(live, Math.abs(real('fanSpread', value))),
   fanLfo: value => '±' + Math.round(Math.abs(real('fanLfo', value)) * 360) + '°',
   fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
@@ -290,6 +318,14 @@ for (const route of ROUTES) {
   }
 }
 
+for (const stages of ENVELOPES) {
+  for (const [stage, name] of Object.entries(stages)) {
+    READOUTS[name] = stage === 'sustain'
+      ? value => percent(real(name, value))
+      : value => beatsOrNone(real(name, value), stage === 'attack' ? 'instant' : 'none');
+  }
+}
+
 for (const [name, readout] of Object.entries(READOUTS)) {
   READOUTS[name] = (value, live, oneshotBeats) => inPulses(readout(value, live, oneshotBeats), live);
 }
@@ -317,36 +353,74 @@ const routedTo = (live, names) =>
 const atZero = (live, names) => names.every(name => real(name, live[name]) === 0);
 
 const nothingTravels = live =>
-  atZero(live, ['shapeSpeed', 'fanSpeed']) && !routedTo(live, ['shapeSpeed', 'shapePosition', 'fanSpread', 'fanSpeed']);
+  atZero(live, ['cellSpeed', 'fanSpeed']) && !routedTo(live, ['cellSpeed', 'cellPosition', 'fanSpread', 'fanSpeed']);
 const FAN_AMOUNTS = ['fanSpread', 'fanSpeed', 'fanLfo'];
 const fanIsFlat = live => atZero(live, FAN_AMOUNTS) && !routedTo(live, FAN_AMOUNTS);
 const inertWhileStill = { inertWhen: nothingTravels };
 const inertWhileFlat = { inertWhen: fanIsFlat };
+const endsAs = (live, end) => Protocol.threeWayPosition(live.cellEnd) === Protocol.CELL_END[end];
+const curveIsFlat = live => Math.abs(real('cellCurve', live.cellCurve)) < 0.005 && !routedTo(live, ['cellCurve']);
+const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route =>
+  Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`]);
 
-const SHAPE = {
-  name: 'Shape',
+const envelopeGroup = envelope => ({
+  title: `Envelope ${envelope + 1}`, tone: 'lfo',
+  names: Object.entries(ENVELOPES[envelope]).map(([stage, name]) => control(name, ENVELOPE_STAGE_LABELS[stage], {
+    inertWhen: live => envelopeUnused(live, envelope) || (stage === 'release' && !endsAs(live, 'gone')),
+  })),
+});
+
+const CELLS = {
+  name: 'Cells',
   groups: [
     {
-      title: 'Form', tone: 'shape',
+      title: 'Player', tone: 'cells',
       names: [
-        control('shapeCount', 'Count'),
-        control('shapeWidth', 'Width'),
-        control('shapeEdge', 'Edge'),
-        control('shapeTail', 'Tail', inertWhileStill),
+        control('cellRate', 'Rate'),
+        control('cellChord', 'Chord'),
+        control('cellSpread', 'Spread', { inertWhen: live => real('cellChord', live.cellChord) === 1 }),
+      ],
+    },
+    {
+      title: 'Life', tone: 'cells',
+      names: [
+        control('cellEnd', 'End',
+          { kind: 'three', options: threeWayOptions(Protocol.CELL_END,
+            { gone: 'gone', startOver: 'start over', stay: 'stay' }) }),
+        control('cellGate', 'Gate', { inertWhen: live => endsAs(live, 'stay') }),
+      ],
+    },
+    {
+      title: 'Form', tone: 'cells',
+      names: [
+        control('cellWidth', 'Width'),
+        control('cellEdge', 'Edge'),
+        control('cellTail', 'Tail', inertWhileStill),
+      ],
+    },
+    {
+      title: 'Brightness', tone: 'cells',
+      names: [
+        control('cellAcross', 'Across',
+          { kind: 'four', options: Object.entries(Protocol.CELL_ACROSS).map(([key, position]) =>
+            [Protocol.fourWayValue(position), { strip: 'strip', wall: 'wall', cellBody: 'cell body', cellPlace: 'cell place' }[key]]),
+            inertWhen: curveIsFlat }),
+        control('cellBrightness', 'Brightness'),
+        control('cellCurve', 'Curve'),
+        control('cellCurveAt', 'Curve at', { inertWhen: curveIsFlat }),
       ],
     },
     {
       title: 'Travel', tone: 'travel',
       names: [
-        control('shapeBounce', 'Bounce',
-          { kind: 'two', options: [[OFF, 'wrap'], [ON, 'bounce']] }),
-        control('shapeSpeed', 'Speed'),
-        control('shapePosition', 'Position'),
-        control('shapeBend', 'Bend', inertWhileStill),
-        control('shapeBendAt', 'Bend at',
-          { inertWhen: live => nothingTravels(live) || Math.abs(real('shapeBend', live.shapeBend)) < 0.005 }),
+        control('cellSpeed', 'Speed'),
+        control('cellPosition', 'Position'),
+        control('cellBend', 'Bend', inertWhileStill),
+        control('cellBendAt', 'Bend at',
+          { inertWhen: live => nothingTravels(live) || Math.abs(real('cellBend', live.cellBend)) < 0.005 }),
       ],
     },
+    ...Array.from({ length: Protocol.ENVELOPES }, (_, envelope) => envelopeGroup(envelope)),
     {
       title: 'Fan', tone: 'fan',
       names: [
@@ -361,22 +435,26 @@ const SHAPE = {
   ],
 };
 
-const fromPad = (live, route) => Protocol.routeSource(live[route.ratio]) !== Protocol.ROUTE_SOURCE.lfo;
+const fromLfo = (live, route) => Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE.lfo;
+const holdable = (live, route) => fromLfo(live, route)
+  && Preview.cellControl(Protocol.routeTarget(live[route.destination]));
 
 for (const route of ROUTES) {
-  const followsPad = { inertWhen: live => fromPad(live, route) };
+  const offLfo = { inertWhen: live => !fromLfo(live, route) };
   control(route.amount, 'Amount');
   control(route.ratio, 'Ratio', {
-    ...followsPad,
+    ...offLfo,
     positions: {
       count: Protocol.ROUTE_MAX_RATIO,
       positionOf: value => Protocol.routeRatio(value) - 1,
-      valueAt: (position, live) => (fromPad(live, route) ? live[route.ratio]
-        : Protocol.routeRatioValue(position + 1, Protocol.routeOnce(live[route.ratio]))),
+      valueAt: (position, live) => (fromLfo(live, route)
+        ? Protocol.routeRatioValue(position + 1, Protocol.routeOnce(live[route.ratio])) : live[route.ratio]),
     },
   });
-  control(route.wave, 'Wave', followsPad);
-  control(route.phase, 'Phase', followsPad);
+  control(route.wave, 'Wave', offLfo);
+  control(route.phase, 'Phase', offLfo);
+  control(route.hold, 'Hold',
+    { kind: 'two', options: [[OFF, 'live'], [ON, 'held']], inertWhen: live => !holdable(live, route) });
 }
 
 const gradientInert = { inertWhen: isGradient };
@@ -485,7 +563,6 @@ const STRIPS = {
   title: '5 strips',
   sections: [[null, [
     control('saturation', 'Saturation'),
-    control('value', 'Value'),
   ]]],
 };
 
@@ -519,8 +596,8 @@ const outputNames = output => output.sections.flatMap(([, names]) => names);
 const cardNames = card => [...card.source, ...card.amounts, ...(card.arpeggiator || [])];
 
 const PLACES = {};
-for (const group of SHAPE.groups) {
-  for (const name of group.names) PLACES[name] = `${SHAPE.name} · ${group.title}`;
+for (const group of CELLS.groups) {
+  for (const name of group.names) PLACES[name] = `${CELLS.name} · ${group.title}`;
 }
 for (const card of [LFO, ...ENGINES]) {
   for (const name of cardNames(card)) PLACES[name] = card.name;
@@ -530,7 +607,7 @@ for (const output of OUTPUTS) {
 }
 
 const TONES = {};
-for (const group of SHAPE.groups) {
+for (const group of CELLS.groups) {
   for (const name of group.names) TONES[name] = group.tone;
 }
 for (const card of [LFO, ...ENGINES]) {
@@ -574,6 +651,12 @@ function wholeCounts(valueOf) {
   return points;
 }
 
+const STEPPED = new Set([
+  'lfoRate', 'flowRate', 'scatterRate', 'fanFrequency', 'fieldSpeed',
+  'cellRate', 'cellChord', 'cellGate', 'cellTail', 'cellSpeed',
+  ...ENVELOPES.flatMap(stages => [stages.attack, stages.hold, stages.decay, stages.release]),
+]);
+
 function pointsFor(name) {
   const route = routeOf(name);
   if (route) {
@@ -583,9 +666,9 @@ function pointsFor(name) {
     return [64];
   }
   const at = value => real(name, value);
-  if (name === 'shapeBendAt' || name === 'shapePosition') return [64];
-  if (name === 'shapeCount' || name === 'fieldCount') return wholeCounts(at);
-  if (name === 'lfoRate' || name === 'shapeTail' || name === 'flowRate' || name === 'scatterRate' || name === 'fanFrequency' || name === 'shapeSpeed' || name === 'fieldSpeed') return steps(at);
+  if (name === 'cellBendAt' || name === 'cellPosition' || name === 'cellCurveAt') return [64];
+  if (name === 'fieldCount') return wholeCounts(at);
+  if (STEPPED.has(name)) return steps(at);
   if (!Protocol.hasTag(name, 'patch')) return [];
   return at(56) < 0 && at(64) === 0 && at(72) > 0 ? [64] : [];
 }
@@ -595,6 +678,6 @@ export {
   CC, NAMES, CONTINUOUS, isSwitch, controls, CONTROLS, READOUTS, DEFAULT,
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
-  SHAPE, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
-  fromPad, routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
+  CELLS, ENVELOPES, envelopeStages, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
+  fromLfo, holdable, routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

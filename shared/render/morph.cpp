@@ -35,7 +35,8 @@ static bool switched(uint8_t cc) {
     case CC_PAR_HUE_LAYOUT:
     case CC_TEMPO_DIVISION:
     case CC_ARP_MODE:
-    case CC_SHAPE_BOUNCE:
+    case CC_CELL_END:
+    case CC_CELL_ACROSS:
     case CC_FIELD_FORM:
     case CC_FIELD_DIRECTION:
       return true;
@@ -44,9 +45,9 @@ static bool switched(uint8_t cc) {
   }
 }
 
-static bool routeDestination(uint8_t cc) {
+static bool routeSwitch(uint8_t cc) {
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    if (cc == aurora_route_cc(route, ROUTE_DESTINATION)) return true;
+    if (cc == aurora_route_cc(route, ROUTE_DESTINATION) || cc == aurora_route_cc(route, ROUTE_HOLD)) return true;
   }
   return false;
 }
@@ -62,7 +63,7 @@ void controlsOf(const uint8_t *bytes, float *out) {
   for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) out[i] = (float)bytes[i];
 }
 
-static bool switchLike(uint8_t cc) { return switched(cc) || routeDestination(cc); }
+static bool switchLike(uint8_t cc) { return switched(cc) || routeSwitch(cc); }
 
 static float distance(uint8_t cc, float from, float to) {
   const float apart = to - from;

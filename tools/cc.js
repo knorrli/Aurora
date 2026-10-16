@@ -12,7 +12,7 @@ const CC = {
   palette:           20,
   hue:               21,
   saturation:        22,
-  value:             23,
+  cellBrightness:    23,
   parHueOffset:      24,
   parSaturation:     25,
   parValue:          26,
@@ -22,15 +22,15 @@ const CC = {
   lfoRate:           30,
   arpMode:           31,
   arpSpread:         33,
-  shapeCount:        35,
-  shapeWidth:        36,
-  shapeEdge:         37,
-  shapeTail:         38,
-  shapeBounce:       39,
-  shapeSpeed:        40,
-  shapePosition:     41,
-  shapeBend:         42,
-  shapeBendAt:       43,
+  cellEnd:           35,
+  cellWidth:         36,
+  cellEdge:          37,
+  cellTail:          38,
+  cellAcross:        39,
+  cellSpeed:         40,
+  cellPosition:      41,
+  cellBend:          42,
+  cellBendAt:        43,
   fanSpread:         44,
   fanSpeed:          45,
   fanLfo:            46,
@@ -66,10 +66,31 @@ const CC = {
   coreHue:           77,
   coreWhite:         78,
   coreDark:          79,
+  cellRate:          80,
+  cellChord:         81,
+  cellSpread:        82,
+  cellGate:          83,
+  cellCurve:         84,
+  cellCurveAt:       85,
+  envelope1Attack:   86,
+  envelope1Hold:     87,
+  envelope1Decay:    88,
+  envelope1Sustain:  89,
+  envelope1Release:  90,
+  envelope2Attack:   91,
+  envelope2Hold:     92,
+  envelope2Decay:    93,
+  envelope2Sustain:  94,
+  envelope2Release:  95,
+  envelope3Attack:   96,
+  envelope3Hold:     97,
+  envelope3Decay:    98,
+  envelope3Sustain:  99,
+  envelope3Release:  100,
 };
 
-const TAGS = {"padHold":["ambient"],"padMode":["ambient"],"padWidth":["ambient"],"padGaps":["ambient"],"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"padX":["ambient"],"padY":["ambient"],"padTouch":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"value":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"shapeCount":["patch","unstaggered"],"shapeWidth":["patch"],"shapeEdge":["patch"],"shapeTail":["patch"],"shapeBounce":["switch"],"shapeSpeed":["patch","rate"],"shapePosition":["patch"],"shapeBend":["patch","unstaggered"],"shapeBendAt":["patch","unstaggered"],"fanSpread":["patch","unstaggered"],"fanSpeed":["patch","rate","unstaggered"],"fanLfo":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"]};
-const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"value":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"shapeWidth":64,"shapeSpeed":64,"shapePosition":64,"shapeBend":64,"shapeBendAt":64,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldDirection":64,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
+const TAGS = {"padHold":["ambient"],"padMode":["ambient"],"padWidth":["ambient"],"padGaps":["ambient"],"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"padX":["ambient"],"padY":["ambient"],"padTouch":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"cellBrightness":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"cellEnd":["switch"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellAcross":["switch"],"cellSpeed":["patch","rate"],"cellPosition":["patch"],"cellBend":["patch","unstaggered"],"cellBendAt":["patch","unstaggered"],"fanSpread":["patch","unstaggered"],"fanSpeed":["patch","rate","unstaggered"],"fanLfo":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"cellRate":["patch"],"cellChord":["patch"],"cellSpread":["patch"],"cellGate":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"]};
+const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellSpeed":64,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellRate":127,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"fanSpread":64,"fanSpeed":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldDirection":64,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
 
 const MIDI_CHANNEL = 1;
 const PROGRAM_BLACKOUT = 0;
@@ -82,6 +103,10 @@ const NOTE_ONESHOT_FIRST = 60;
 const ONESHOTS = 20;
 const TICKS_PER_BEAT = 24;
 const TEMPO_DIVISION = {"quarter":0,"bar":1,"half":2,"eighth":3,"eighthTriplet":4,"sixteenth":5};
+const CELL_END = {"gone":0,"startOver":1,"stay":2};
+const CELL_ACROSS = {"strip":0,"wall":1,"cellBody":2,"cellPlace":3};
+const ENVELOPES = 3;
+const ENVELOPE_STAGE = {"attack":0,"hold":1,"decay":2,"sustain":3,"release":4};
 const FIELD_FORM = {"gradient":0,"region":1,"allButRegion":2};
 const FIELD_DIRECTION = {"horizontal":0,"vertical":1,"shape":2};
 const ARP = {"unison":0,"steps":1,"ripple":2};
@@ -90,21 +115,21 @@ const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
 const PAD_MODE = {"perPatch":0,"morph":1,"effects":2};
 const CORNER = {"bottomLeft":0,"bottomRight":1,"topLeft":2,"topRight":3};
 const KIT_PLACES = 24;
-const ROUTE_SOURCE = {"lfo":0,"padX":1,"padY":2};
+const ROUTE_SOURCE = {"lfo":0,"padX":1,"padY":2,"envelope1":3,"envelope2":4,"envelope3":5};
 const PAD_WIDTH = {"center":0,"middle":1,"all":2};
 const WAVE_SWELL = 32;
 const WAVE_FALL = 64;
 const WAVE_SQUARE = 96;
 const LFO_PERIODS = [16,12,8,6,4,3,2,1.5,1,0.75,0.5,0.375,0.25];
 const ROUTES = 8;
-const ROUTE_BASE = [80,85,90,95,100,105,110,115];
-const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4};
-const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0};
+const ROUTE_BASE = [128,134,140,146,152,158,164,170];
+const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4,"hold":5};
+const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0,"hold":0};
 const ROUTE_MAX_RATIO = 8;
 const ROUTE_PHASE_STEPS = 16;
-const PATCH_FORMAT = 6;
+const PATCH_FORMAT = 7;
 const LAST_PATCH_SLOT = 108;
-const PATCH_CC_COUNT = 128;
+const PATCH_CC_COUNT = 176;
 const PATCH_NAME_LENGTH = 16;
 const PATCH_HEAD_LENGTH = 20;
 const PATCH_LAYER_BASE = 0;
@@ -117,7 +142,7 @@ const KEYPAD_KEYS = 9;
 const BANKS = 12;
 const SLOT_MAP_LENGTH = 16;
 const KIT_MAP_LENGTH = 4;
-const MARK_MAP_LENGTH = 19;
+const MARK_MAP_LENGTH = 26;
 const NO_ONESHOT = 127;
 const SONG_SECTIONS = 32;
 const SONG_HEAD_LENGTH = 4;
@@ -151,6 +176,10 @@ export const Protocol = {
   ONESHOTS,
   TICKS_PER_BEAT,
   TEMPO_DIVISION,
+  CELL_END,
+  CELL_ACROSS,
+  ENVELOPES,
+  ENVELOPE_STAGE,
   FIELD_FORM,
   FIELD_DIRECTION,
   ARP,

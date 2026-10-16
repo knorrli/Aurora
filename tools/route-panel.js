@@ -40,8 +40,15 @@ function departureAt(route, phase, live) {
   return Protocol.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
 }
 
-const SOURCE_NAMES = [['LFO', Protocol.ROUTE_SOURCE.lfo], ['pad X', Protocol.ROUTE_SOURCE.padX], ['pad Y', Protocol.ROUTE_SOURCE.padY]];
+const SOURCE_NAMES = [
+  ['LFO', Protocol.ROUTE_SOURCE.lfo], ['pad X', Protocol.ROUTE_SOURCE.padX], ['pad Y', Protocol.ROUTE_SOURCE.padY],
+  ...Array.from({ length: Protocol.ENVELOPES }, (_, envelope) =>
+    [`env ${envelope + 1}`, Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`]]),
+];
 const sourceOf = (route, live) => Protocol.routeSource(live[route.ratio]);
+const envelopeOf = (route, live) => sourceOf(route, live) - Protocol.ROUTE_SOURCE.envelope1;
+const fromEnvelope = (route, live) => envelopeOf(route, live) >= 0;
+const heldText = (route, live) => (Patch.holdable(live, route) && Protocol.routeHeld(live[route.hold]) ? ['held'] : []);
 const clockedPerSpot = (route, live) =>
   Patch.perSpot(live[route.destination]) && sourceOf(route, live) === Protocol.ROUTE_SOURCE.lfo;
 const sourceName = source => SOURCE_NAMES.find(([, value]) => value === source)[0];
@@ -49,6 +56,24 @@ const sourceName = source => SOURCE_NAMES.find(([, value]) => value === source)[
 function padDeparture(route, level, live) {
   const bipolar = Protocol.routeBipolar(live[route.destination]);
   return Protocol.signedOf(live[route.amount]) * (bipolar ? level - 0.5 : level);
+}
+
+const ENVELOPE_SHOWN_LIVES = 2;
+
+function envelopeBeatsShown(route, live) {
+  const envelope = Patch.ENVELOPES[envelopeOf(route, live)];
+  const beats = name => Preview.convert(Patch.CC[name], live[name]);
+  const gate = beats('cellGate');
+  const end = Protocol.threeWayPosition(live.cellEnd);
+  if (end === Protocol.CELL_END.startOver) return gate * ENVELOPE_SHOWN_LIVES;
+  if (end === Protocol.CELL_END.gone) return gate + beats(envelope.release);
+  return Math.max(beats(envelope.attack) + beats(envelope.hold) + beats(envelope.decay), gate);
+}
+
+function envelopeDeparture(route, along, live) {
+  const age = along * envelopeBeatsShown(route, live);
+  const level = Preview.envelopeLevel(Patch.envelopeStages(live, envelopeOf(route, live)), live.cellGate, live.cellEnd, age);
+  return Protocol.signedOf(live[route.amount]) * level;
 }
 
 function drawWave(canvas, route, live) {
@@ -76,6 +101,7 @@ function drawWave(canvas, route, live) {
   rail(-1, 'rgba(255,255,255,.06)');
   rail(0, 'rgba(255,255,255,.22)', true);
   const padSource = sourceOf(route, live) !== Protocol.ROUTE_SOURCE.lfo;
+  const envelopeSource = fromEnvelope(route, live);
   context.strokeStyle = 'rgba(255,255,255,.22)';
   context.lineWidth = 1;
   for (const phase of padSource ? [] : [0, cycles()]) {
@@ -91,7 +117,8 @@ function drawWave(canvas, route, live) {
   context.lineJoin = 'round';
   context.beginPath();
   for (let x = 0; x <= width; x++) {
-    const value = padSource ? padDeparture(route, x / width, live) : departureAt(route, phaseOfX(x, width), live);
+    const value = envelopeSource ? envelopeDeparture(route, x / width, live)
+      : padSource ? padDeparture(route, x / width, live) : departureAt(route, phaseOfX(x, width), live);
     if (x === 0) context.moveTo(x, y(value));
     else context.lineTo(x, y(value));
   }
@@ -102,7 +129,7 @@ function drawWave(canvas, route, live) {
 const spotClockText = live => 'per spot, ' + Patch.READOUTS.scatterRate(live.scatterRate, live);
 
 function drawPlayhead(canvas, route, lfo, live) {
-  if (!canvas.wave || canvas.wave.width !== canvas.width || clockedPerSpot(route, live)) return;
+  if (!canvas.wave || canvas.wave.width !== canvas.width || clockedPerSpot(route, live) || fromEnvelope(route, live)) return;
   const width = canvas.clientWidth, height = canvas.clientHeight;
   const context = canvas.getContext('2d');
   context.putImageData(canvas.wave, 0, 0);
@@ -203,7 +230,7 @@ function paintArpRow(row, route, live) {
 
 function paintCycleRow(row, route, live) {
   paintDestinationRow(row, true, Protocol.routeOnce(live[route.ratio]));
-  row.root.classList.toggle('inert', Patch.fromPad(live, route));
+  row.root.classList.toggle('inert', !Patch.fromLfo(live, route));
 }
 
 function paintPolarityRow(row, route, live) {
@@ -311,9 +338,10 @@ function paintList(live) {
     target.textContent = destinationText(destination);
     line.style.setProperty('--tone', `var(--${Patch.TONES[Protocol.NAME_BY_CC[Protocol.routeTarget(destination)]]})`);
     const source = sourceOf(route, live);
-    const shownControls = source === Protocol.ROUTE_SOURCE.lfo ? route.controls : [route.amount];
+    const shownControls = source === Protocol.ROUTE_SOURCE.lfo ? route.controls.filter(name => name !== route.hold) : [route.amount];
     const readouts = shownControls.map(name => Patch.READOUTS[name](live[name], live, session.oneshotBeats()));
     if (source !== Protocol.ROUTE_SOURCE.lfo) readouts.push(sourceName(source));
+    readouts.push(...heldText(route, live));
     values.textContent = [...(clockedPerSpot(route, live) ? [spotClockText(live)] : []), ...readouts].join(' · ');
     line.classList.toggle('bypassed', paintButtons(buttons, route));
     if (list.root.open) drawWave(canvas, route, live);

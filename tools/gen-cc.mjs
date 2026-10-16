@@ -115,6 +115,11 @@ const generated = {
   ONESHOTS: constant('AURORA_ONESHOTS'),
   TICKS_PER_BEAT: constant('AURORA_TICKS_PER_BEAT'),
   TEMPO_DIVISION: enumByPrefix('AuroraTempoDivision', 'TEMPO_DIVISION_'),
+  CELL_END: enumByPrefix('AuroraCellEnd', 'CELL_END_'),
+  CELL_ACROSS: enumByPrefix('AuroraCellAcross', 'CELL_ACROSS_'),
+  ENVELOPES: constant('AURORA_ENVELOPES'),
+  ENVELOPE_STAGE: Object.fromEntries(Object.entries(enumByPrefix('AuroraEnvelopeStage', 'ENVELOPE_'))
+    .filter(([key]) => key !== 'stages')),
   FIELD_FORM: enumByPrefix('AuroraFieldForm', 'FIELD_FORM_'),
   FIELD_DIRECTION: enumByPrefix('AuroraFieldDirection', 'FIELD_DIRECTION_'),
   ARP: enumByPrefix('AuroraArp', 'ARP_'),

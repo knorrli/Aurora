@@ -65,7 +65,19 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 `docs/design.md` § Cells and § Brightness; the reasons in `docs/cells-reasoning.md`, deleted once cells are built and tested on the wall.
 
-- Build cells in the editor's preview first: on this branch the controls list grows past 128, and the brain waits for the CC numbers.
+- Dial cells in the preview. On this branch the controls list is 176 long and routes sit at 128 and up; the brain builds but its patch sync and storage wait for the CC numbers.
+- Confirm or change what the first build settled on its own:
+  - Rate's last step, born once, is born when the patch starts, so its attack plays then.
+  - Gate grows toward the top of the fader, unlike LFO Rate.
+  - Width runs 0–45 px and Edge adds 0–11 px of glow on each side; Position's middle is the strip's center.
+  - Speed is a strip crossing on the LFO's steps, so a cell crosses the strip in exactly that many beats.
+  - Chord runs 1–16.
+  - Only Position, Width, Edge, Brightness, Speed, Hue and Saturation take a value per cell. An envelope aimed elsewhere does nothing; Held aimed elsewhere plays live; a held pad route plays live.
+  - Envelope stages are straight lines, with times from 1⁄16 to 16 beats.
+  - An envelope aimed at Speed moves the cell by everything the envelope has run so far.
+  - A strip draws at most 64 cells, the newest; a fast Rate with a long life drops the oldest.
+  - Cells overlapping take the brighter one, color included.
+  - A gone cell's tail fades out after it.
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.

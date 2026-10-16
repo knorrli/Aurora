@@ -17,20 +17,38 @@ static const float CORE_MAX_HUE = 64.0f;
 static const float FLOW_BEATS_PER_CYCLE[] = { 0.0f, 16.0f, 12.0f, 8.0f, 6.0f, 4.0f, 3.0f, 2.0f };
 static const uint8_t FLOW_RATE_STEPS = sizeof(FLOW_BEATS_PER_CYCLE) / sizeof(FLOW_BEATS_PER_CYCLE[0]);
 
+static const float ENVELOPE_BEATS[] = {
+  0.0f, 0.0625f, 0.125f, 0.25f, 0.375f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, 8.0f, 12.0f, 16.0f,
+};
+static const uint8_t ENVELOPE_BEAT_STEPS = sizeof(ENVELOPE_BEATS) / sizeof(ENVELOPE_BEATS[0]);
+
 static const float TAIL_BEATS[] = { 0.0f, 0.25f, 0.375f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, (float)TAIL_MAX_BEATS };
 static const uint8_t TAIL_BEAT_STEPS = sizeof(TAIL_BEATS) / sizeof(TAIL_BEATS[0]);
 
-static float flowCyclesPerBeatOf(float value) {
-  const uint8_t last = FLOW_RATE_STEPS - 1;
+static float steppedOf(float value, const float *steps, uint8_t count) {
+  const uint8_t last = count - 1;
   const uint8_t step = (uint8_t)(((uint16_t)roundedControl(value) * last + 63) / 127);
-  const float beats = FLOW_BEATS_PER_CYCLE[step > last ? last : step];
+  return steps[step > last ? last : step];
+}
+
+static float flowCyclesPerBeatOf(float value) {
+  const float beats = steppedOf(value, FLOW_BEATS_PER_CYCLE, FLOW_RATE_STEPS);
   return beats > 0.0f ? 1.0f / beats : 0.0f;
 }
 
-static float tailBeatsOf(float value) {
-  const uint8_t last = TAIL_BEAT_STEPS - 1;
-  const uint8_t step = (uint8_t)(((uint16_t)roundedControl(value) * last + 63) / 127);
-  return TAIL_BEATS[step > last ? last : step];
+static float tailBeatsOf(float value) { return steppedOf(value, TAIL_BEATS, TAIL_BEAT_STEPS); }
+
+static float envelopeBeatsOf(float value) { return steppedOf(value, ENVELOPE_BEATS, ENVELOPE_BEAT_STEPS); }
+
+static float gateBeatsOf(float value) { return aurora_lfo_period((uint8_t)(127 - roundedControl(value))); }
+
+static float chordOf(float value) {
+  return (float)(1 + ((uint16_t)roundedControl(value) * (MAX_CHORD - 1) + 63) / 127);
+}
+
+static bool envelopeTime(uint8_t cc) {
+  if (cc < CC_ENVELOPE_1_ATTACK || cc > CC_ENVELOPE_3_RELEASE) return false;
+  return (cc - CC_ENVELOPE_1_ATTACK) % ENVELOPE_STAGES != ENVELOPE_SUSTAIN;
 }
 
 static inline float unitOf(float value) { return value / 127.0f; }
@@ -40,7 +58,9 @@ float signedOf(float value) {
                        : (value - 64.0f) / 63.0f;
 }
 
-static inline float levelOf(float value) { return value * 255.0f / 127.0f; }
+static const float FULL_LEVEL = 255.0f;
+
+static inline float levelOf(float value) { return value * FULL_LEVEL / 127.0f; }
 
 static inline float hueOf(float value) { return value * 256.0f / 127.0f; }
 
@@ -63,37 +83,38 @@ static float lapsPerBeatOf(float value) {
   return (step < 0 ? -1.0f : 1.0f) / AURORA_LFO_PERIODS[(step < 0 ? -step : step) - 1];
 }
 
-float lapPixels(const Shape &shape) {
-  const float cellLength = (float)PIXELS / shape.count;
-  return shape.bounce ? 2.0f * (1.0f - shape.width) * cellLength : cellLength;
-}
-
 static float fanFrequencyOf(float value) {
   const long step = lroundf(value * FAN_FREQUENCY_STEPS / 127.0f);
   return (float)step * (FAN_MAX_CYCLES_PER_STRIP / FAN_FREQUENCY_STEPS);
 }
 
 float controlValue(uint8_t cc, float value) {
+  if (envelopeTime(cc)) return envelopeBeatsOf(value);
   switch (cc) {
     case CC_HUE: return hueOf(value);
     case CC_SATURATION:
-    case CC_VALUE:
     case CC_PAR_VALUE:
     case CC_PAR_HUE_OFFSET:
     case CC_PAR_SATURATION: return levelOf(value);
     case CC_PAR_HUE_RANGE: return signedOf(value) * 128.0f;
 
-    case CC_SHAPE_COUNT:
     case CC_SCATTER_COUNT: return smoothCountOf(value);
     case CC_FIELD_COUNT: return fieldCountOf(value);
 
-    case CC_SHAPE_BEND:
+    case CC_CELL_BEND:
+    case CC_CELL_CURVE:
     case CC_ARP_SPREAD: return signedOf(value);
-    case CC_SHAPE_BEND_AT:
-    case CC_SHAPE_POSITION: return 0.5f + 0.5f * signedOf(value);
+    case CC_CELL_BEND_AT:
+    case CC_CELL_CURVE_AT: return 0.5f + 0.5f * signedOf(value);
+    case CC_CELL_POSITION: return (0.5f + 0.5f * signedOf(value)) * (float)PIXELS;
+    case CC_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
+    case CC_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
+    case CC_CELL_SPEED: return lapsPerBeatOf(value) * (float)PIXELS;
+    case CC_CELL_RATE: return aurora_transition_beats(roundedControl(value));
+    case CC_CELL_GATE: return gateBeatsOf(value);
+    case CC_CELL_CHORD: return chordOf(value);
     case CC_FAN_SPREAD:
     case CC_FAN_LFO: return signedOf(value) * 0.5f;
-    case CC_SHAPE_SPEED: return lapsPerBeatOf(value);
     case CC_SCATTER_SPEED:
     case CC_FAN_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
     case CC_FAN_FREQUENCY: return fanFrequencyOf(value);
@@ -112,10 +133,13 @@ float controlValue(uint8_t cc, float value) {
 
     case CC_SCATTER_POSITION: return signedOf(value);
 
-    case CC_SHAPE_TAIL: return tailBeatsOf(value);
+    case CC_CELL_TAIL: return tailBeatsOf(value);
 
-    case CC_SHAPE_WIDTH:
-    case CC_SHAPE_EDGE:
+    case CC_CELL_BRIGHTNESS:
+    case CC_CELL_SPREAD:
+    case CC_ENVELOPE_1_SUSTAIN:
+    case CC_ENVELOPE_2_SUSTAIN:
+    case CC_ENVELOPE_3_SUSTAIN:
     case CC_FAN_RANDOMIZE:
     case CC_FIELD_WIDTH:
     case CC_FIELD_EDGE:
@@ -139,16 +163,31 @@ float controlValue(uint8_t cc, float value) {
 void readControls(const float *dialed, const Modulation *modulation, Reading &out) {
   auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, modulation, cc)); };
 
-  Shape &shape = out.shape;
-  shape.width = at(CC_SHAPE_WIDTH);
-  shape.edge = at(CC_SHAPE_EDGE);
-  shape.tailBeats = at(CC_SHAPE_TAIL);
-  shape.count = at(CC_SHAPE_COUNT);
-  shape.position = at(CC_SHAPE_POSITION);
-  shape.lapsPerBeat = at(CC_SHAPE_SPEED);
-  shape.bend = at(CC_SHAPE_BEND);
-  shape.bendAt = at(CC_SHAPE_BEND_AT);
-  shape.bounce = aurora_switch_is_on(roundedControl(dialed[CC_SHAPE_BOUNCE]));
+  Cells &cells = out.cells;
+  cells.rateBeats = at(CC_CELL_RATE);
+  cells.chord = (uint8_t)at(CC_CELL_CHORD);
+  cells.spread = at(CC_CELL_SPREAD);
+  cells.gateBeats = at(CC_CELL_GATE);
+  cells.end = aurora_three_way_position(roundedControl(dialed[CC_CELL_END]));
+  cells.width = at(CC_CELL_WIDTH);
+  cells.edge = at(CC_CELL_EDGE);
+  cells.tailBeats = at(CC_CELL_TAIL);
+  cells.position = at(CC_CELL_POSITION);
+  cells.speed = at(CC_CELL_SPEED);
+  cells.bend = at(CC_CELL_BEND);
+  cells.bendAt = at(CC_CELL_BEND_AT);
+  cells.brightness = at(CC_CELL_BRIGHTNESS);
+  cells.curve = at(CC_CELL_CURVE);
+  cells.curveAt = at(CC_CELL_CURVE_AT);
+  cells.across = aurora_four_way_position(roundedControl(dialed[CC_CELL_ACROSS]));
+  for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
+    Envelope &stages = cells.envelopes[envelope];
+    stages.attack = at(aurora_envelope_cc(envelope, ENVELOPE_ATTACK));
+    stages.hold = at(aurora_envelope_cc(envelope, ENVELOPE_HOLD));
+    stages.decay = at(aurora_envelope_cc(envelope, ENVELOPE_DECAY));
+    stages.sustain = at(aurora_envelope_cc(envelope, ENVELOPE_SUSTAIN));
+    stages.release = at(aurora_envelope_cc(envelope, ENVELOPE_RELEASE));
+  }
 
   Fan &fan = out.fan;
   fan.spread = at(CC_FAN_SPREAD);
@@ -198,13 +237,11 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
 
 Hsv routedColor(const float *dialed, const Modulation *modulation) {
   auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, modulation, cc)); };
-  return { at(CC_HUE), at(CC_SATURATION), at(CC_VALUE) };
+  return { at(CC_HUE), at(CC_SATURATION), FULL_LEVEL };
 }
 
 void hurry(Reading &reading, float speed) {
   reading.lfoBeats /= speed;
-  reading.shape.lapsPerBeat *= speed;
-  reading.shape.tailBeats /= speed;
   reading.fan.speedPixels *= speed;
   reading.field.cellsPerBeat *= speed;
   reading.flow.cyclesPerBeat *= speed;

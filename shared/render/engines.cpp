@@ -14,8 +14,9 @@ static bool pushesColor(float hue, float white, float dark) {
 }
 
 uint8_t engineOf(uint8_t cc) {
-  if (cc >= CC_SHAPE_COUNT && cc <= CC_SHAPE_BEND_AT) return ENGINE_SHAPE;
-  if (cc >= CC_CORE_HUE && cc <= CC_CORE_DARK) return ENGINE_SHAPE;
+  if (cc >= CC_CELL_END && cc <= CC_CELL_BEND_AT) return ENGINE_CELLS;
+  if (cc >= CC_CELL_RATE && cc <= CC_ENVELOPE_3_RELEASE) return ENGINE_CELLS;
+  if (cc >= CC_CORE_HUE && cc <= CC_CORE_DARK) return ENGINE_CELLS;
   if (cc >= CC_SCATTER_COUNT && cc <= CC_SCATTER_VALUE) return ENGINE_SCATTER;
   if (cc == CC_SCATTER_MIX) return ENGINE_SCATTER;
   if (cc >= CC_FIELD_FORM && cc <= CC_FIELD_DARK) return ENGINE_FIELD;
@@ -25,8 +26,8 @@ uint8_t engineOf(uint8_t cc) {
 
 bool showsEngine(uint8_t cc) {
   switch (cc) {
-    case CC_SHAPE_WIDTH:
-    case CC_SHAPE_EDGE:
+    case CC_CELL_WIDTH:
+    case CC_CELL_EDGE:
     case CC_SCATTER_MIX:
     case CC_FIELD_HUE:
     case CC_FIELD_WHITE:
@@ -44,7 +45,7 @@ uint8_t hiddenEngines(const float *dialed) {
   Reading reading;
   readControls(dialed, nullptr, reading);
   uint8_t hidden = 0;
-  if (reading.shape.width <= 0.0001f && reading.shape.edge <= 0.0001f) hidden |= ENGINE_SHAPE;
+  if (reading.cells.width <= 0.0001f && reading.cells.edge <= 0.0001f) hidden |= ENGINE_CELLS;
   if (!fieldActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_FIELD;
   if (!flowActive(reading)) hidden |= ENGINE_FLOW;
   if (!scatterActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_SCATTER;
@@ -223,20 +224,20 @@ static Hsv tinted(Hsv base, float hue, float white, float dark) {
 }
 
 
-Hsv tintAt(const Reading &reading, uint8_t stripIndex, uint8_t pixelIndex, float field,
-           float shape, bool flowOn, float flowTime) {
+Hsv tintAt(const Reading &reading, Hsv base, uint8_t stripIndex, uint8_t pixelIndex, float field,
+           float body, bool flowOn, float flowTime) {
   const float along = (float)pixelIndex / (float)(PIXELS - 1);
   const float flow = flowOn ? flowAt(reading.flow, stripIndex, along, flowTime) : 0.0f;
 
   const float fieldAway = fabsf(field);
   const float flowAway = (flow > 0.0f) ? flow : 0.0f;
-  return tinted(reading.color,
+  return tinted(base,
       field * reading.field.hue + flow * reading.flow.hue
-          + shape * reading.core.hue,
+          + body * reading.core.hue,
       fieldAway * reading.field.white + flowAway * reading.flow.white
-          + shape * reading.core.white,
+          + body * reading.core.white,
       fieldAway * reading.field.dark + flowAway * reading.flow.dark
-          + shape * reading.core.dark);
+          + body * reading.core.dark);
 }
 
 }

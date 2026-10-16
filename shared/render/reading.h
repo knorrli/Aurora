@@ -8,17 +8,35 @@
 namespace render {
 
 static const float MAX_SPEED_PIXELS_PER_BEAT = 60.0f;
+static const uint8_t MAX_CHORD = 16;
+static const float EDGE_REACH_PIXELS = PIXELS * 0.25f;
 
-struct Shape {
+struct Envelope {
+  float attack;
+  float hold;
+  float decay;
+  float sustain;
+  float release;
+};
+
+struct Cells {
+  float rateBeats;
+  uint8_t chord;
+  float spread;
+  float gateBeats;
+  uint8_t end;
   float width;
-  float count;
   float edge;
   float tailBeats;
   float position;
-  float lapsPerBeat;
+  float speed;
   float bend;
   float bendAt;
-  bool bounce;
+  float brightness;
+  float curve;
+  float curveAt;
+  uint8_t across;
+  Envelope envelopes[AURORA_ENVELOPES];
 };
 
 struct Fan {
@@ -68,7 +86,7 @@ struct Scatter {
 };
 
 struct Reading {
-  Shape shape;
+  Cells cells;
   Fan fan;
   Field field;
   Flow flow;
@@ -81,8 +99,6 @@ struct Reading {
 float signedOf(float value);
 
 float controlValue(uint8_t cc, float value);
-
-float lapPixels(const Shape &shape);
 
 void readControls(const float *dialed, const Modulation *modulation, Reading &out);
 

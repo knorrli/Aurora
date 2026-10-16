@@ -11,6 +11,9 @@ static const uint8_t STRIPS = 5;
 static const uint8_t PARS = 4;
 static const uint8_t PIXELS = 45;
 static const uint8_t MAX_COUNT = 20;
+static const uint8_t MAX_CELLS = 64;
+static const uint8_t SAMPLES_PER_PIXEL = 8;
+static const uint16_t STRIP_SAMPLES = PIXELS * SAMPLES_PER_PIXEL;
 static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
 static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
 static const uint8_t BEND_POINTS = PIXELS + 1;
@@ -35,8 +38,6 @@ struct OneshotClock {
 };
 
 static const uint8_t TAIL_MAX_BEATS = 8;
-static const uint8_t TAIL_STEPS_PER_BEAT = 64;
-static const uint16_t TAIL_STEPS = TAIL_MAX_BEATS * TAIL_STEPS_PER_BEAT;
 
 struct Hsv {
   float h, s, v;
@@ -63,8 +64,8 @@ struct PadFinger {
 };
 
 struct Motion {
-  Clock travel[STRIPS] = {};
-  Clock swing[STRIPS] = {};
+  Clock cells = {};
+  float lastCellBeats = 0.0f;
   Clock lfo = {};
   Clock flow = {};
   Clock field = {};
@@ -75,26 +76,6 @@ struct Motion {
   float lastLfoBeats = 0.0f;
   float lastFieldBeats = 0.0f;
   float padShift[STRIPS][SWINGING_CONTROLS] = {};
-};
-
-struct TailHistory {
-  float centers[TAIL_STEPS];
-  float lastCenter;
-  int32_t firstStep;
-  float unwrapCells;
-  float lastPlacement;
-};
-
-struct Tails {
-  TailHistory strips[STRIPS];
-  int32_t lastStep;
-  bool empty = true;
-};
-
-struct Anchor {
-  float lastCenter = 0.5f;
-  float travelCells = 0.0f;
-  float swingCycles = 0.0f;
 };
 
 struct Par {
@@ -110,15 +91,13 @@ struct ParHold {
 };
 
 struct Wall {
-  Tails tails;
   ParHold parHolds[PARS];
-  Anchor anchors[STRIPS];
-  bool lastBouncing = false;
+  bool restarting = false;
+  float cellsStart = 0.0f;
   float lastBeats = 0.0f;
-  float lastQuarterNotes = 0.0f;
 };
 
-void clearTails(Wall &wall);
+void restartCells(Wall &wall);
 
 struct FanReading {
   float values[STRIPS];
@@ -131,15 +110,15 @@ struct FanReading {
   float randomize;
 };
 
-struct SpotMark {
+struct Mark {
   float center;
   float width;
   float life;
 };
 
-struct StripSpots {
+struct StripMarks {
   uint8_t count;
-  SpotMark marks[MAX_COUNT];
+  Mark marks[MAX_CELLS];
 };
 
 struct Frame {
@@ -152,8 +131,8 @@ struct Frame {
   float bend[BEND_POINTS];
   float lfo;
   float stripFanShift[STRIPS];
-  float centers[STRIPS];
-  StripSpots spots[STRIPS];
+  StripMarks cells[STRIPS];
+  StripMarks spots[STRIPS];
   float fieldLevels[STRIPS * PIXELS];
   float fieldAcross[FIELD_ACROSS_POINTS];
 };

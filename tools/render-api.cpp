@@ -4,6 +4,7 @@
 #include <emscripten/emscripten.h>
 #include <arp.h>
 #include <bend.h>
+#include <cells.h>
 #include <fan.h>
 #include <engines.h>
 #include <morph.h>
@@ -76,15 +77,15 @@ EMSCRIPTEN_KEEPALIVE float *aurora_par_hue_places() { return frame.parHuePlaces;
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_par_hues() { return frame.parHues; }
 EMSCRIPTEN_KEEPALIVE int aurora_strips_hue() { return frame.stripsHue; }
 EMSCRIPTEN_KEEPALIVE float aurora_lfo() { return frame.lfo; }
-EMSCRIPTEN_KEEPALIVE render::StripSpots *aurora_spots() { return frame.spots; }
+EMSCRIPTEN_KEEPALIVE render::StripMarks *aurora_spots() { return frame.spots; }
+EMSCRIPTEN_KEEPALIVE render::StripMarks *aurora_cells() { return frame.cells; }
 EMSCRIPTEN_KEEPALIVE float *aurora_field_levels() { return frame.fieldLevels; }
 EMSCRIPTEN_KEEPALIVE float *aurora_field_across() { return frame.fieldAcross; }
 EMSCRIPTEN_KEEPALIVE int aurora_field_across_points() { return render::FIELD_ACROSS_POINTS; }
-EMSCRIPTEN_KEEPALIVE int aurora_strip_spots_size() { return sizeof(render::StripSpots); }
+EMSCRIPTEN_KEEPALIVE int aurora_strip_marks_size() { return sizeof(render::StripMarks); }
 EMSCRIPTEN_KEEPALIVE int aurora_spot_destination(int cc) { return render::spotDestination((uint8_t)cc); }
 EMSCRIPTEN_KEEPALIVE render::FanReading *aurora_fan() { return &frame.fan; }
 EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
-EMSCRIPTEN_KEEPALIVE float *aurora_centers() { return frame.centers; }
 
 EMSCRIPTEN_KEEPALIVE int aurora_strip_count() { return render::STRIPS; }
 EMSCRIPTEN_KEEPALIVE int aurora_par_count() { return render::PARS; }
@@ -191,6 +192,7 @@ EMSCRIPTEN_KEEPALIVE int aurora_arp_mode_of(int value) { return aurora_arp_mode(
 EMSCRIPTEN_KEEPALIVE int aurora_hue_layout_of(int value) { return aurora_hue_layout((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_switch_on(int value) { return aurora_switch_is_on((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_three_way(int value) { return aurora_three_way_position((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_four_way(int value) { return aurora_four_way_position((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_destination_arp(int destination) { return aurora_route_arp((uint8_t)destination); }
 EMSCRIPTEN_KEEPALIVE int aurora_destination_bipolar(int destination) { return aurora_route_bipolar((uint8_t)destination); }
 EMSCRIPTEN_KEEPALIVE int aurora_destination_target(int destination) { return aurora_route_target((uint8_t)destination); }
@@ -220,7 +222,7 @@ EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int phase, float clock)
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_bend_speed_ratio(int bend) {
-  return render::bendSpeedRatio(render::controlValue(CC_SHAPE_BEND, (float)bend));
+  return render::bendSpeedRatio(render::controlValue(CC_CELL_BEND, (float)bend));
 }
 
 static const render::PadLevels *padReaching(int strip, render::PadLevels &levels) {
@@ -263,6 +265,19 @@ EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave) {
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE int aurora_cell_control(int cc) { return render::cellControl((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE int aurora_route_held(int value) { return aurora_route_held((uint8_t)value); }
+
+EMSCRIPTEN_KEEPALIVE float aurora_envelope_level(int attack, int hold, int decay, int sustain, int release,
+                                                 int gate, int end, float age) {
+  const render::Envelope envelope = {
+    render::controlValue(CC_ENVELOPE_1_ATTACK, (float)attack), render::controlValue(CC_ENVELOPE_1_HOLD, (float)hold),
+    render::controlValue(CC_ENVELOPE_1_DECAY, (float)decay), render::controlValue(CC_ENVELOPE_1_SUSTAIN, (float)sustain),
+    render::controlValue(CC_ENVELOPE_1_RELEASE, (float)release),
+  };
+  return render::envelopeLevelAt(envelope, render::controlValue(CC_CELL_GATE, (float)gate),
+                                 aurora_three_way_position((uint8_t)end), age);
+}
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_from() { return morphFrom; }
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_to() { return morphTo; }

@@ -15,16 +15,16 @@ const inputs = [...inShared, 'shared/aurora_protocol.h', 'tools/render-api.cpp']
 const sources = inputs.filter(f => f.endsWith('.cpp')).map(f => join(ROOT, f));
 
 const EXPORTS = [
-  'aurora_controls', 'aurora_drawn_controls', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_field_levels', 'aurora_field_across', 'aurora_field_across_points', 'aurora_strip_spots_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_centers',
+  'aurora_controls', 'aurora_drawn_controls', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_field_levels', 'aurora_field_across', 'aurora_field_across_points', 'aurora_strip_marks_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_cells',
   'aurora_bend_points',
   'aurora_strip_count', 'aurora_par_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
   'aurora_palette_count', 'aurora_palette_name', 'aurora_palette_color', 'aurora_lfo_wave',
   'aurora_convert', 'aurora_lfo_period_beats', 'aurora_transition_length', 'aurora_signed',
   'aurora_ratio_step', 'aurora_ratio', 'aurora_once', 'aurora_source', 'aurora_phase_step', 'aurora_arp_mode_of', 'aurora_hue_layout_of',
-  'aurora_switch_on', 'aurora_three_way', 'aurora_destination_arp', 'aurora_destination_bipolar',
+  'aurora_switch_on', 'aurora_three_way', 'aurora_four_way', 'aurora_destination_arp', 'aurora_destination_bipolar',
   'aurora_destination_target', 'aurora_destination', 'aurora_fan_wave_at', 'aurora_arp_pass_length',
   'aurora_arp_turns_per_pass', 'aurora_arp_reversed', 'aurora_route_turns', 'aurora_bend_speed_ratio',
-  'aurora_control_at_strip', 'aurora_control_at_par', 'aurora_route_reach', 'aurora_route_refused',
+  'aurora_control_at_strip', 'aurora_control_at_par', 'aurora_route_reach', 'aurora_route_refused', 'aurora_cell_control', 'aurora_route_held', 'aurora_envelope_level',
   'aurora_wave_mean', 'aurora_arp_pass', 'aurora_arp_pass_marks',
   'aurora_morph_from', 'aurora_morph_to', 'aurora_morph_switches',
   'aurora_blend',

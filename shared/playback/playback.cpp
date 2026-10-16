@@ -323,7 +323,7 @@ void Playback::begin(float beats) {
   accentWaiting = press.held && !press.tapped;
   risingFromBlack = blackened;
   brightness = Ramp::steady(1.0f);
-  render::clearTails(wall);
+  render::restartCells(wall);
 }
 
 void Playback::advance(float beats) {
@@ -370,7 +370,7 @@ void Playback::cutTo(const Patch &patch, uint8_t slot) {
   risingFromBlack = false;
   press = {};
   firing = false;
-  render::clearTails(wall);
+  render::restartCells(wall);
 }
 
 void Playback::patchChanged(uint8_t slot) {

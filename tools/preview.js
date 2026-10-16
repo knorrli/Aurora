@@ -34,8 +34,6 @@ function connect(renderer) {
   const fan = renderer.HEAPF32.subarray(fanAt, fanAt + STRIPS + CURVE_POINTS + 6);
   const bendAt = renderer._aurora_bend() >> 2;
   const bend = renderer.HEAPF32.subarray(bendAt, bendAt + renderer._aurora_bend_points());
-  const centersAt = renderer._aurora_centers() >> 2;
-  const centers = renderer.HEAPF32.subarray(centersAt, centersAt + STRIPS);
 
   function seenPars() {
     return Array.from({ length: PARS }, (_, par) => {
@@ -45,21 +43,20 @@ function connect(renderer) {
   }
 
   const PASS_MARKS = renderer._aurora_arp_pass_marks();
-  const STRIP_SPOTS_SIZE = renderer._aurora_strip_spots_size();
+  const STRIP_MARKS_SIZE = renderer._aurora_strip_marks_size();
   const fieldLevelsAt = renderer._aurora_field_levels() >> 2;
   const fieldLevels = renderer.HEAPF32.subarray(fieldLevelsAt, fieldLevelsAt + STRIPS * PIXELS);
   const fieldAcrossAt = renderer._aurora_field_across() >> 2;
   const fieldAcross = renderer.HEAPF32.subarray(fieldAcrossAt, fieldAcrossAt + renderer._aurora_field_across_points());
-  const SPOT_MARK_FLOATS = 3;
+  const MARK_FLOATS = 3;
 
-  function readSpots() {
-    const at = renderer._aurora_spots();
+  function readMarks(at) {
     return Array.from({ length: STRIPS }, (_, strip) => {
-      const base = at + strip * STRIP_SPOTS_SIZE;
+      const base = at + strip * STRIP_MARKS_SIZE;
       const count = renderer.HEAPU8[base];
-      const floats = renderer.HEAPF32.subarray((base + 4) >> 2, ((base + 4) >> 2) + count * SPOT_MARK_FLOATS);
+      const floats = renderer.HEAPF32.subarray((base + 4) >> 2, ((base + 4) >> 2) + count * MARK_FLOATS);
       return Array.from({ length: count }, (_, i) => ({
-        center: floats[i * SPOT_MARK_FLOATS], width: floats[i * SPOT_MARK_FLOATS + 1], life: floats[i * SPOT_MARK_FLOATS + 2],
+        center: floats[i * MARK_FLOATS], width: floats[i * MARK_FLOATS + 1], life: floats[i * MARK_FLOATS + 2],
       }));
     });
   }
@@ -108,6 +105,7 @@ function connect(renderer) {
     arpMode: stepsOf(value => renderer._aurora_arp_mode_of(value)),
     hueLayout: stepsOf(value => renderer._aurora_hue_layout_of(value)),
     threeWay: stepsOf(value => renderer._aurora_three_way(value)),
+    fourWay: stepsOf(value => renderer._aurora_four_way(value)),
   };
 
   Object.assign(Protocol, {
@@ -126,8 +124,11 @@ function connect(renderer) {
     hueLayout: value => renderer._aurora_hue_layout_of(value),
     hueLayoutValue: layout => steps.hueLayout.valueOf(layout),
     isOn: value => !!renderer._aurora_switch_on(value),
+    routeHeld: value => !!renderer._aurora_route_held(value),
     threeWayPosition: value => renderer._aurora_three_way(value),
     threeWayValue: position => steps.threeWay.valueOf(position),
+    fourWayPosition: value => renderer._aurora_four_way(value),
+    fourWayValue: position => steps.fourWay.valueOf(position),
     routeArp: destination => renderer._aurora_destination_arp(destination),
     routeBipolar: destination => !!renderer._aurora_destination_bipolar(destination),
     routeTarget: destination => renderer._aurora_destination_target(destination),
@@ -149,14 +150,14 @@ function connect(renderer) {
   function readFrame() {
     const drawn = renderer.HEAPU8.subarray(drawnAt, drawnAt + Protocol.PATCH_CC_COUNT);
     return {
-      pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(), spots: readSpots(),
+      pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(),
+      spots: readMarks(renderer._aurora_spots()), cells: readMarks(renderer._aurora_cells()),
       field: {
         horizontal: Protocol.threeWayPosition(drawn[Protocol.CC.fieldDirection])
           === Protocol.FIELD_DIRECTION.horizontal,
         levels: Array.from(fieldLevels),
         across: Array.from(fieldAcross),
       },
-      centers: Array.from(centers),
       hues: {
         palette: drawn[Protocol.CC.palette],
         strips: renderer._aurora_strips_hue(),
@@ -190,6 +191,9 @@ function connect(renderer) {
     parHuePlaces: () => Array.from(huePlaces),
     controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
     routeRefused: cc => !!renderer._aurora_route_refused(cc),
+    cellControl: cc => !!renderer._aurora_cell_control(cc),
+    envelopeLevel: (stages, gate, end, age) =>
+      renderer._aurora_envelope_level(stages.attack, stages.hold, stages.decay, stages.sustain, stages.release, gate, end, age),
     spotDestination: cc => !!renderer._aurora_spot_destination(cc),
     blend(fromBytes, toBytes, position, switchBytes, switchesFromStart) {
       renderer.HEAPU8.set(fromBytes, renderer._aurora_morph_from());
@@ -311,13 +315,12 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
     if (frame.field.horizontal) drawFieldAcross(context, frame.field, order, columnWidth, WALL_TOP, WALL_HEIGHT);
     else drawField(context, frame.field.levels, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
-  if (overlays.spots && frame.spots) drawSpots(context, frame.spots, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
-  if (overlays.centers) drawCenters(context, frame.centers, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+  if (overlays.spots && frame.spots) drawMarks(context, frame.spots, SPOT_MARK, 1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+  if (overlays.cells && frame.cells) drawMarks(context, frame.cells, FORM_MARK, -1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
 }
 
 const PALETTE_MARK = 'rgba(176,162,236,0.95)';
 const FORM_MARK = 'rgba(240,206,100,0.95)';
-const FORM_MARK_SOFT = 'rgba(240,206,100,0.6)';
 const TRAVEL_MARK = 'rgba(240,150,80,0.95)';
 const FAN_MARK = 'rgba(236,96,84,0.95)';
 const FAN_MARK_SOFT = 'rgba(236,96,84,0.6)';
@@ -437,7 +440,7 @@ function drawFieldAcross(context, field, order, columnWidth, WALL_TOP, WALL_HEIG
   context.restore();
 }
 
-function drawSpots(context, spots, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+function drawMarks(context, marks, style, side, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
   const { PIXELS } = api;
   const yAt = pixel => WALL_TOP + (PIXELS - pixel) * WALL_HEIGHT / PIXELS;
   context.save();
@@ -446,24 +449,24 @@ function drawSpots(context, spots, order, columnWidth, stripWidth, WALL_TOP, WAL
   context.clip();
   order.forEach((strip, column) => {
     const x = columnWidth * (column + 1);
-    const bracketX = x + stripWidth / 2 + 3;
-    for (const { center, width, life } of spots[strip]) {
+    const bracketX = x + side * (stripWidth / 2 + 3);
+    for (const { center, width, life } of marks[strip]) {
       const left = 1 - life;
       const top = yAt(center + width / 2), bottom = yAt(center - width / 2);
       context.globalAlpha = 0.35 + 0.6 * left;
-      context.strokeStyle = SPOT_MARK;
+      context.strokeStyle = style;
       context.lineWidth = 1.5;
       context.beginPath();
-      context.moveTo(bracketX - 3, top);
+      context.moveTo(bracketX - side * 3, top);
       context.lineTo(bracketX, top);
       context.lineTo(bracketX, bottom);
-      context.lineTo(bracketX - 3, bottom);
+      context.lineTo(bracketX - side * 3, bottom);
       context.stroke();
       const y = yAt(center);
       context.beginPath();
       context.moveTo(x - stripWidth / 2 * left, y);
       context.lineTo(x + stripWidth / 2 * left, y);
-      strokeOutlined(context, SPOT_MARK, 1.5);
+      strokeOutlined(context, style, 1.5);
     }
   });
   context.restore();
@@ -506,56 +509,6 @@ function drawArpPass(context, pass, pars, width, top, bandHeight) {
   context.lineTo(cursor, first + rowHeight * pars + 3);
   context.stroke();
 
-  context.restore();
-}
-
-function drawCenters(context, centers, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
-  const { PIXELS } = api;
-  const SEAM_PIXELS = 0.5;
-  const xAt = column => columnWidth * (column + 1);
-  const yAt = pixel => WALL_TOP + (PIXELS - pixel) * WALL_HEIGHT / PIXELS;
-  const nearest = (pixels, to) =>
-    pixels.reduce((best, pixel) => (Math.abs(pixel - to) < Math.abs(best - to) ? pixel : best));
-
-  const onWall = pixel => pixel >= -SEAM_PIXELS && pixel <= PIXELS + SEAM_PIXELS;
-  const chainFrom = first => order.reduce((chain, strip, column) => {
-    const center = centers[strip];
-    const pixel = column === 0 ? first : nearest([center - PIXELS, center, center + PIXELS], chain[column - 1].pixel);
-    return [...chain, { x: xAt(column), pixel }];
-  }, []);
-  const firstCenter = centers[order[0]];
-  const points = [firstCenter, firstCenter + PIXELS, firstCenter - PIXELS]
-    .map(chainFrom)
-    .reduce((best, chain) =>
-      (chain.filter(point => onWall(point.pixel)).length > best.filter(point => onWall(point.pixel)).length ? chain : best));
-
-  context.save();
-  context.beginPath();
-  context.rect(0, WALL_TOP, xAt(order.length), WALL_HEIGHT);
-  context.clip();
-  context.beginPath();
-  points.forEach(({ x, pixel }, column) => {
-    if (column === 0) context.moveTo(x, yAt(pixel)); else context.lineTo(x, yAt(pixel));
-  });
-  strokeOutlined(context, FORM_MARK_SOFT, 1.5);
-  context.restore();
-
-  context.save();
-  for (const { x, pixel } of points) {
-    for (const seen of [pixel - PIXELS, pixel, pixel + PIXELS]) {
-      if (!onWall(seen)) continue;
-      const y = yAt(Math.min(PIXELS, Math.max(0, seen)));
-      context.strokeStyle = 'rgba(10,11,14,0.9)';
-      context.lineWidth = 4;
-      context.beginPath();
-      context.moveTo(x - stripWidth * 0.75, y);
-      context.lineTo(x + stripWidth * 0.75, y);
-      context.stroke();
-      context.strokeStyle = FORM_MARK;
-      context.lineWidth = 2;
-      context.stroke();
-    }
-  }
   context.restore();
 }
 

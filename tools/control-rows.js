@@ -104,6 +104,7 @@ function pickRow(host, name) {
   host.appendChild(root);
 
   const positionOf = control.kind === 'three' ? Protocol.threeWayPosition
+    : control.kind === 'four' ? Protocol.fourWayPosition
     : control.kind === 'steps' ? control.step : Protocol.isOn;
   const lit = (value, live) => positionOf(live) === positionOf(value);
   rows[name] = { kind: control.kind, control, root, select, buttons, from, lit };
@@ -186,13 +187,13 @@ function buildCard(card) {
 function build() {
   byId('outputs').replaceChildren(...Patch.OUTPUTS.map(output => buildGroup(output.title, output.sections)));
   byId('lfo').replaceChildren(buildCard(Patch.LFO));
-  const shape = element('div', 'groups');
-  shape.append(...Patch.SHAPE.groups.map(group => {
-    const box = buildGroup(group.title, [[null, group.names]], `${Patch.SHAPE.name} · ${group.title}`);
-    box.classList.add(`tone-${group.title.toLowerCase()}`);
+  const groups = element('div', 'groups');
+  groups.append(...Patch.CELLS.groups.map(group => {
+    const box = buildGroup(group.title, [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`);
+    box.classList.add(`tone-${group.tone}`);
     return box;
   }));
-  byId('shape').replaceChildren(element('h2', 'shape-name', Patch.SHAPE.name), shape);
+  byId('cells').replaceChildren(element('h2', 'cells-name', Patch.CELLS.name), groups);
   byId('engines').replaceChildren(...Patch.ENGINES.map(buildCard));
 }
 
