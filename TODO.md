@@ -81,6 +81,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
 - Move the envelopes into the modulation section beside the LFO, each drawn as a graph, with vertical sliders for its stages. Settle the layout before building it.
 - An overlay for the brightness curve. Strip and Wall can draw like Bend and Field; what do Cell body and Cell place show?
+- The number of moving bars follows Speed times Rate, which feels unusual. Should Speed be dialed as bars on the strip while Rate repeats, with the speed worked out from Rate?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.
