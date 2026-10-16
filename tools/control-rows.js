@@ -207,9 +207,16 @@ function paintFaderValue(row, live) {
   dom.fillLabeled(row.now, String(value), readout ? readout(value, live, session.oneshotBeats()) : '');
 }
 
-function paintFaderValues(live) {
+function paintPickValue(row, live) {
+  const value = live[row.control.name];
+  for (const [option, button] of row.buttons) button.classList.toggle('on', row.lit(option, value));
+  if (row.select && +row.select.value !== value) row.select.value = value;
+}
+
+function paintValues(live) {
   for (const row of Object.values(rows)) {
     if (row.kind === 'fader') paintFaderValue(row, live);
+    else paintPickValue(row, live);
   }
 }
 
@@ -227,13 +234,9 @@ function paintFader(row, live, base, overrides) {
 }
 
 function paintPick(row, live) {
-  const value = live[row.control.name];
   const held = session.heldAt();
-  for (const [option, button] of row.buttons) button.classList.toggle('on', row.lit(option, value));
-  if (row.select) {
-    if (+row.select.value !== value) row.select.value = value;
-    row.select.disabled = !!held;
-  }
+  paintPickValue(row, live);
+  if (row.select) row.select.disabled = !!held;
   row.root.classList.toggle('locked', !!held);
   row.from.textContent = !session.isAboveBase() ? '' : held ? `held at "${held.name}"` : 'from the patch';
   row.root.classList.toggle('inert', !!(row.control.inertWhen && row.control.inertWhen(live)));
@@ -263,4 +266,4 @@ function paint(live) {
   paintCards(live);
 }
 
-export { rows, buildRows, build, paint, paintFaderValues };
+export { rows, buildRows, build, paint, paintValues };

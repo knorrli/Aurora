@@ -84,7 +84,7 @@ function paintShownValues() {
   const text = shown.bytes.join(',');
   if (text === drawnText) return;
   drawnText = text;
-  Rows.paintFaderValues(shown);
+  Rows.paintValues(shown);
 }
 
 function frame() {
