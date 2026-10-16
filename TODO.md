@@ -31,7 +31,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Afterglow: tail stays behind through a swing, shrinks as it slows, gone at rest; brain frame time; no streak across a patch change.
 - LFO routes: PARs swelling under still strips, a white flash on the PARs between strip strobes, shapes breathing on width.
 - Anchor against a click track: should the peak or the leading edge land on the beat?
-- The scatter on the strips. Do spots need a lifetime so they can travel past their cell (raindrops)? It costs eight to ten CCs.
 - Play a set to find where the color layer's controls should stop.
 - Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
 - Dial the starting looks by eye and save them as library patches; nothing about the morph is worth judging before. The old shape, fan, swing and color looks are in `git show 21a435c:tools/patch.js`.
@@ -61,6 +60,20 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Tune tempo following (`docs/design.md` § Tempo following): how close to a sixteenth a kick must land to count, and how much of the error each counted kick corrects.
 
 ## Away from the wall
+
+### Cells
+
+`docs/design.md` § Cells.
+
+- The player: an arpeggiator (rate, order of birthplaces, how alike) or a step sequencer? Does an arpeggiator cover the looks? Does it also set how strong a cell is at birth?
+- How alike cells are, per property: birthplace, starting shape, its graphs, life length. Is a random value held from each birth a route source?
+- Is a cell's life a clock routes can run on, sweeping once per life for each cell, the way scatter routes run on each spot's clock?
+- Do Shape and Scatter become one engine of cells? Raindrops: born at random places, falling with a trail.
+- Can the per-strip settings scale a graph's amount per strip, not only its timing? The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half.
+- Can a oneshot play one cell?
+- Brightness: does dimming belong to the cell, or to the color engines' Dark?
+- How the editor draws a graph.
+- Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three.
 
 ### Hardware
 
