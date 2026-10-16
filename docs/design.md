@@ -33,7 +33,11 @@
 - A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
 - One cell's life is set per patch; the player and the per-strip settings make the wall from it.
-- The plainest cell has no envelope routed. Still, everlasting bars and bars traveling end to end unchanged are dialed with size, count and speed.
+- Width is a cell's size on the strip, independent of Chord. The editor shows it in pixels.
+- Edge, Tail, Speed, Bend and Bend at work on cells as they do on Shape today. There is no Count and no Bounce: Chord and Spread place cells, and a looping envelope on Position swings a cell around its birthplace.
+- Nothing wraps. A cell traveling off the strip is out of view until its gate ends.
+- Births come from the beat timeline: when a patch starts, the cells born on earlier beats are already in flight. Held and random values come from the birth's number.
+- The plainest cell has no envelope routed. Still bars are a chord born once that stays. Moving bars are cells born at one end at Rate, drifting at Speed; their spacing is how far a cell travels between births.
 
 ## Brightness
 

@@ -64,6 +64,14 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - The user thinks in synths: the life is how long the key is held, and release is the tail after letting go. A cell lingers past its life by its release, the way a note's release runs past the beat.
 - It makes the end setting a clean choice about the moment the gate ends. Fitting release inside the life instead would have left start over and stay explaining what release means in a life that never ends.
 
+## Why Width is absolute and nothing wraps
+
+- Shape's Width is a share of the spacing between bars, so changing Count resized every bar. Cells have no fixed spacing, and the user describes starting shapes in pixels.
+- Bounce swung each bar inside its own slot. A looping envelope on Position does that per cell; bouncing off the strip's ends is a different look nobody asked for.
+- Wrapping is conceptually a cell leaving at one end and a new one being born at the other, so there is no wrap rule.
+- Without wrapping, a patch whose cells come from births would start empty and fill up, which mid-song reads as a fault. Working births out from the beat timeline keeps the wall the same whenever a patch starts, the way every phase in Aurora is already anchored to the clock; scatter already draws its random values from each life's number.
+- The cost the user accepted: the number of moving bars is no longer dialed directly. Spacing is Speed times Rate, and changing Speed changes the spacing. A born-once chord with Speed drifts off the strip and does not come back.
+
 ## Why Scatter stays
 
 - Scatter paints over the strip with its own color and mix. One cell engine has one player and one kind of cell at a time, so merging the two would lose looks like a faint bar pattern with white spots flashing over it.
