@@ -32,7 +32,16 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - On a synth, something outside the note decides when it starts and ends. For cells that is the player, and it plays on the clock, like a sequencer or arpeggiator.
 - Turning the band's MIDI or the mic into cells would make Aurora a visualizer of MIDI events, not a band backdrop. Live triggers stay oneshots.
 - The user's dream was keyframes: draw a few moments, let the in-between fill itself, from smooth to stepped. Filling in between pictures fades a bar out at one place and in at another; it never moves it. Filling in between a cell's settings moves it. So the dream became: set one cell's life with envelopes, and let the player repeat and offset it.
-- Arpeggiator over step sequencer is leaning, not decided: everything else in Aurora is dialed, not programmed, and drawing every step is tedious.
+- An arpeggiator over a step sequencer: everything else in Aurora is dialed, not programmed, and drawing every step is tedious.
+
+## Why the player is only Rate, Chord and Spread
+
+- Rate uses the LFO's steps because every rate in Aurora does; triplets come from the patch's Tempo Division. Born once is the held cell of a static or color-led patch.
+- Chord exists because five still bars are five cells born at the same moment, which one birth at a time cannot make.
+- Birthplace and accent were knobs first. What set them apart was not position or brightness but being read once at birth and kept. Making that a setting on every route removed both knobs and gives every control a per-cell value: random-width raindrops, each drop its own hue.
+- The three cases, for brightness: a live LFO makes every cell pulse together; an envelope makes every cell fade the same way; a held route makes cells differ from each other but stay as born.
+- A synth's equivalent is a sample-and-hold that latches at note-on. Live Position is pitch bend for every note; held Position is each note's pitch.
+- All cells of one chord are born at the same moment, so a held route gives them all the same value. Varying across a chord, like cells bending opposite ways, is the same open question as scaling a route across the strips.
 
 ## Why envelopes are route sources
 

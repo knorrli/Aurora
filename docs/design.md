@@ -26,14 +26,18 @@
 - A route on position moves a cell away from its birthplace.
 - At the end of its life a cell is gone, starts its life over, or stays as it ended. This is one setting on the cell's life.
 - Going dark never ends a cell. Routes change cells and never end them.
-- The player starts cells on the clock: when and where each one is born. It never ends a cell.
+- The player starts cells on the clock and never ends one. It has three knobs: Rate, Chord and Spread.
+- Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its last step is born once.
+- Chord is how many cells each birth starts. Spread is how far apart they are: full spreads them evenly over the strip, zero puts them in one place.
+- Cells are born at the dialed Position.
+- A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
 - One cell's life is set per patch; the player and the per-strip settings make the wall from it.
 - The plainest cell has no envelope routed. Still, everlasting bars and bars traveling end to end unchanged are dialed with size, count and speed.
 
 ## Brightness
 
-- Brightness is set in the shape: a cell's dialed brightness, envelopes and LFO routed to it, its accent at birth from the player, and the brightness curve.
+- Brightness is set in the shape: a cell's dialed brightness, routes to it, live or held, and the brightness curve.
 - The brightness curve works like Bend: an amount, positive or negative, and where along the strip it peaks. A switch picks what it follows: each pixel, each strip, the inside of each cell, or each cell's position.
 - Dark in Field, Flow and Core stays, as shading toward black with the color pattern.
 - Shape brightness and color Dark multiply.
