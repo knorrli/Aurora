@@ -78,7 +78,7 @@ Seen only in the preview so far. One look each, driven from the editor.
   - A strip draws at most 64 cells, the newest; a fast Rate with a long life drops the oldest.
   - Cells overlapping take the brighter one, color included.
   - A gone cell's tail fades out after it.
-- Envelope sources: every route offers env 1–3, but they act only on the per-cell controls and do nothing elsewhere. Hide them for other targets, or give envelopes a meaning outside a cell?
+- Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
 - Move the envelopes into the modulation section beside the LFO, each drawn as a graph, with vertical sliders for its stages. Settle the layout before building it.
 - An overlay for the brightness curve. Strip and Wall can draw like Bend and Field; what do Cell body and Cell place show?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
