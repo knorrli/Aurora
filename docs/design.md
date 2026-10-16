@@ -30,6 +30,13 @@
 - One cell's life is drawn per patch; the player and the per-strip settings make the wall from it.
 - The plainest cell has no envelope routed. Still, everlasting bars and bars traveling end to end unchanged are dialed with size, count and speed.
 
+## Brightness
+
+- Brightness is set in the shape: a cell's dialed brightness, envelopes and LFO routed to it, its accent at birth from the player, and the brightness curve.
+- The brightness curve works like Bend: an amount, positive or negative, and where along the strip it peaks. A switch picks what it follows: each pixel, each strip, the inside of each cell, or each cell's position.
+- Dark in Field, Flow and Core stays, as shading toward black with the color pattern.
+- Shape brightness and color Dark multiply.
+
 ## Oneshots
 
 - If presses are ever snapped to the beat, the controller snaps oneshot presses before sending.

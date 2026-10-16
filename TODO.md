@@ -63,9 +63,9 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Cells
 
-`docs/design.md` § Cells.
+`docs/design.md` § Cells and § Brightness.
 
-- The player: an arpeggiator (rate, order of birthplaces, how alike) or a step sequencer? Does an arpeggiator cover the looks? Does it also set how strong a cell is at birth?
+- The player: an arpeggiator (rate, order of birthplaces, how alike) or a step sequencer? Does an arpeggiator cover the looks? How does it set each cell's accent?
 - How alike cells are, per property: birthplace, starting shape, its envelopes, life length. Is a random value held from each birth a route source?
 - How many envelopes does a cell have?
 - Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?
@@ -73,7 +73,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Do Shape and Scatter become one engine of cells? Raindrops: born at random places, falling with a trail.
 - Can the per-strip settings scale a route's amount per strip, not only its timing? The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half.
 - Can a oneshot play one cell?
-- Brightness: does dimming belong to the cell, or to the color engines' Dark?
+- Does Field's Dark overlap too much with the brightness curve?
 - How the editor draws an envelope.
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three.
 
