@@ -66,13 +66,15 @@ Seen only in the preview so far. One look each, driven from the editor.
 `docs/design.md` § Cells.
 
 - The player: an arpeggiator (rate, order of birthplaces, how alike) or a step sequencer? Does an arpeggiator cover the looks? Does it also set how strong a cell is at birth?
-- How alike cells are, per property: birthplace, starting shape, its graphs, life length. Is a random value held from each birth a route source?
-- Is a cell's life a clock routes can run on, sweeping once per life for each cell, the way scatter routes run on each spot's clock?
+- How alike cells are, per property: birthplace, starting shape, its envelopes, life length. Is a random value held from each birth a route source?
+- How many envelopes does a cell have?
+- Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?
+- CC numbers: none are left, and cells need many.
 - Do Shape and Scatter become one engine of cells? Raindrops: born at random places, falling with a trail.
-- Can the per-strip settings scale a graph's amount per strip, not only its timing? The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half.
+- Can the per-strip settings scale a route's amount per strip, not only its timing? The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half.
 - Can a oneshot play one cell?
 - Brightness: does dimming belong to the cell, or to the color engines' Dark?
-- How the editor draws a graph.
+- How the editor draws an envelope.
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three.
 
 ### Hardware

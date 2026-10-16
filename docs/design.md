@@ -19,15 +19,16 @@
 
 - Shapes are built from cells. A cell is one lit thing with a life: it is born, lives, and ends. One cell is one note.
 - A cell is the thing, not the lit region it draws: it can be dark for a moment, overlap another cell, or look merged with one.
-- A cell's life has one length in beats. All its graphs share that time axis, from birth at zero to the end of the life.
-- Each property a cell changes over its life, such as position, width or brightness, has a graph of value against time since birth. Points are joined by straight, curved or stepped lines. A property without a graph stays as dialed.
-- Position on a graph is distance from the birthplace.
+- A cell's life has one length in beats.
+- A cell has envelopes. An envelope is a graph of value against the cell's age, from birth at zero to the end of the life, drawn as points joined by straight, curved or stepped lines. Each cell runs its own.
+- Envelopes are route sources, like the LFO: a route aims one at position, width, brightness or another control, with an amount. One envelope can drive several controls. A control no route aims at stays as dialed.
+- A route on position moves a cell away from its birthplace.
 - At the end of its life a cell is gone, starts its life over, or stays as it ended. This is one setting on the cell's life.
 - Going dark never ends a cell. Routes change cells and never end them.
 - The player starts cells on the clock: when and where each one is born. It never ends a cell.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
 - One cell's life is drawn per patch; the player and the per-strip settings make the wall from it.
-- The plainest cell has nothing drawn. Still, everlasting bars and bars traveling end to end unchanged are dialed with size, count and speed.
+- The plainest cell has no envelope routed. Still, everlasting bars and bars traveling end to end unchanged are dialed with size, count and speed.
 
 ## Oneshots
 
