@@ -63,7 +63,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 ### Cells
 
-`docs/design.md` § Cells and § Brightness.
+`docs/design.md` § Cells and § Brightness; the reasons in `docs/cells-reasoning.md`, deleted once cells are built and tested on the wall.
 
 - The player: an arpeggiator (rate, order of birthplaces, how alike) or a step sequencer? Does an arpeggiator cover the looks? How does it set each cell's accent?
 - How alike cells are, per property: birthplace, starting shape, its envelopes, life length. Is a random value held from each birth a route source?
