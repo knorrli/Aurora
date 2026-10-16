@@ -366,7 +366,7 @@ void drawCells(const CellsFrame &frame, const CellsStrip &strip, DrawnCells &out
     if (birth.age < 0.0f) continue;
     if (birth.age > life.life.lastBeats + tailBeats) break;
     for (uint8_t i = 0; i < life.routeCount; i++) {
-      birth.held[i] = heldLevel(life.routes[i], frame.lfo, frame.lfoBeats, birth.age);
+      birth.held[i] = heldLevel(life.routes[i], frame.beats / frame.lfoBeats, frame.lfoBeats, birth.age);
     }
     birth.speedShift = speedShiftBefore(life, CC_CELL_SPEED, birth.age);
     birth.fanSpeedShift = speedShiftBefore(life, CC_FAN_SPEED, birth.age);
