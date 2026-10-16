@@ -41,7 +41,7 @@
 
 ## Brightness
 
-- Brightness is set in the shape: a cell's dialed brightness, routes to it, live or held, and the brightness curve.
+- Brightness is set with the cells: the cell's Brightness, routes to it, live or held, and the brightness curve. Brightness is today's Value, moved out of the color settings and renamed; the code follows the name. Hue and Saturation stay in the color settings.
 - The brightness curve works like Bend: an amount, positive or negative, and where along the strip it peaks. A switch picks what it follows: each pixel, each strip, the inside of each cell, or each cell's position.
 - Dark in Field, Flow and Core stays, as shading toward black with the color pattern.
 - Shape brightness and color Dark multiply.
