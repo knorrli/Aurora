@@ -211,6 +211,12 @@ function paintEnvelopeCards(live) {
     const unused = shown.card.unused(live);
     shown.root.classList.toggle('no-effect', unused);
     shown.state.textContent = unused ? 'no effect' : '';
+  }
+  paintEnvelopeGraphs(live);
+}
+
+function paintEnvelopeGraphs(live) {
+  for (const shown of envelopeCards) {
     const key = [...shown.card.names, 'cellGate', 'cellEnd'].map(name => live[name]).join(',')
       + `@${shown.graph.clientWidth}x${shown.graph.clientHeight}`;
     if (key === shown.drawn) continue;
@@ -253,6 +259,7 @@ function paintValues(live) {
     if (row.kind === 'fader') paintFaderValue(row, live);
     else paintPickValue(row, live);
   }
+  paintEnvelopeGraphs(live);
 }
 
 function paintFader(row, live, base, overrides) {
