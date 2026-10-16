@@ -92,4 +92,4 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - A synth has the same pair: velocity and a closing filter both make a note quieter, but come from different places for different reasons. So both stay and multiply.
 - A gradient across space is presence: the user decides it in the shape stage.
 - The brightness curve copies Bend instead of a plus/minus amount: amount and where it peaks cover brighter at the top, at the bottom, at the center, or dimmer at the center, with a pair of controls the user already knows. Routing the LFO to where it peaks sweeps a bright zone over a still pattern.
-- The follow switch mirrors Field's Direction (Vertical, Horizontal, Shape) and adds each cell's position, which is key tracking: one brightness per cell from where it is.
+- Across mirrors Field's Direction (Vertical, Horizontal, Shape) and adds Cell place, which is key tracking: one brightness per cell from where it is. It is not called Direction because it picks the ruler the curve is laid along, not a direction; the option names avoid a subtle cell/cells pair.
