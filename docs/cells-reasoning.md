@@ -59,6 +59,11 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - Three envelopes is the minimum the user wants.
 - The user never pictures moving an envelope live, but every value staying reachable by routes and layers is a core idea, which ruled out storing envelopes outside the controls.
 
+## Why the life is the gate
+
+- The user thinks in synths: the life is how long the key is held, and release is the tail after letting go. A cell lingers past its life by its release, the way a note's release runs past the beat.
+- It makes the end setting a clean choice about the moment the gate ends. Fitting release inside the life instead would have left start over and stay explaining what release means in a life that never ends.
+
 ## Why Scatter stays
 
 - Scatter paints over the strip with its own color and mix. One cell engine has one player and one kind of cell at a time, so merging the two would lose looks like a faint bar pattern with white spots flashing over it.

@@ -67,7 +67,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 - Build cells in the editor's preview first: on this branch the controls list grows past 128, and the brain waits for the CC numbers.
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
-- How the envelope stages sit in a cell's life: does release start at the end of the life, or finish there?
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.
 - Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?

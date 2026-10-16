@@ -19,12 +19,12 @@
 
 - Shapes are built from cells. A cell is one lit thing with a life: it is born, lives, and ends. One cell is one note.
 - A cell is the thing, not the lit region it draws: it can be dark for a moment, overlap another cell, or look merged with one.
-- A cell's life has one length in beats.
+- A cell's life is its gate: a length on the LFO's steps. Its envelopes run attack, hold and decay, sit at sustain until the gate ends, then release.
 - Cells replace Shape. Scatter stays, painting over the cells with its own color.
 - A cell has three envelopes, set with knobs: attack, hold, decay, sustain and release. They run on the cell's age from birth, and each cell runs its own.
 - Envelopes are route sources, like the LFO: a route aims one at position, width, brightness or another control, with an amount. One envelope can drive several controls. A control no route aims at stays as dialed.
 - A route on position moves a cell away from its birthplace.
-- At the end of its life a cell is gone, starts its life over, or stays as it ended. This is one setting on the cell's life.
+- One setting decides what happens when the gate ends. Gone: the envelopes release, and the cell disappears once the last one has finished. Start over: the envelopes start again from attack, and release never plays. Stay: the gate never ends, and the envelopes hold at sustain.
 - Going dark never ends a cell. Routes change cells and never end them.
 - The player starts cells on the clock and never ends one. It has three knobs: Rate, Chord and Spread.
 - Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its last step is born once.
