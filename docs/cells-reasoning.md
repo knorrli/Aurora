@@ -99,6 +99,14 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - It replaces Fan and frees its five CCs. A spread fader on every route would have cost 8 to 16 CCs and allowed only a slope; a bigger Fan would have kept one group and one scaling per patch.
 - The cost the user accepted: a scaled journey takes two routes, and a route set by another route is more abstract than anything else in the editor.
 
+## Why Delay moves the whole life, and is a control
+
+- Moving bars already ripple from a Strip route on Position: born further back looks like born later. A cell that stays put and grows, divides or fades needs a shift in time.
+- Shifting only the envelopes, by a Strip route on an envelope route's phase, cut late strips short when the gate ended on every strip at once, and showed a cell with nothing routed to its brightness before its envelopes began. Shifting the whole life means a strip plays the patch later, and every strip shows the full look.
+- A per-strip ripple setting would have been Fan again. As a control, the same knob gives the strum (Note) and swing (Birth) for nothing.
+- Measured in Rate steps for the reason Position routes are measured between neighbors: a full Strip route on Delay rolls births across the wall as one unbroken stream at any Rate.
+- The cost the user accepted: the knob alone only moves the wall off the beat, so it mostly works through routes; a fixed sixteenth per strip changes when Rate does.
+
 ## Why Scatter stays
 
 - Scatter paints over the strip with its own color and mix. One cell engine has one player and one kind of cell at a time, so merging the two would lose looks like a faint bar pattern with white spots flashing over it.

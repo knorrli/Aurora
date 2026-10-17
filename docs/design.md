@@ -28,6 +28,7 @@
 - Going dark never ends a cell. Routes change cells and never end them.
 - The clock starts cells and never ends one. Rate, Chord and Spread decide the births.
 - Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its first step is born once.
+- Delay is how late each birth lands, as a share of one Rate step; born once, of one LFO cycle. The whole life moves with it: birth, gate, release and end. Live LFO routes do not. Routes aim at Delay like any control: a Strip route ripples births across the wall, a Note route strums a chord's cells, a Birth route on Evens / odds swings. Knob and routes together reach two steps at most.
 - Chord is how many cells each birth starts. Spread is how far apart they are: full spreads them evenly over the travel, zero puts them in one place.
 - Cells are born at the dialed Position.
 - Ends sets what Position's extremes mean, for the whole patch. Inside: at either extreme the cell's edge sits flush with the strip's end, the whole cell in view. Outside: at either extreme the cell sits just past the end, out of view. That span is the cell's travel; Spread and routes on Position are measured along it.
