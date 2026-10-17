@@ -84,6 +84,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - An overlay for the brightness curve. Strip and Wall can draw like Bend and Field; what do Cell body and Cell place show?
 - The number of moving bars follows Speed times Rate, which feels unusual. Should Speed be dialed as bars on the strip while Rate repeats, with the speed worked out from Rate?
 - A straight wave: at least one Wave setting that rises and falls in straight lines, a clean triangle. Every wave today is a smooth curve, so a held route on Position steps unevenly.
+- Position puts a cell's center on the strip's end, so a cell at the top or bottom shows only half. Should Position keep the whole cell on the strip?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.
