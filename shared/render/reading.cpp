@@ -193,6 +193,7 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
     stages.decay = at(aurora_envelope_cc(envelope, ENVELOPE_DECAY));
     stages.sustain = at(aurora_envelope_cc(envelope, ENVELOPE_SUSTAIN));
     stages.release = at(aurora_envelope_cc(envelope, ENVELOPE_RELEASE));
+    stages.stepped = aurora_switch_is_on(roundedControl(dialed[aurora_envelope_moves_cc(envelope)]));
   }
 
   Fan &fan = out.fan;

@@ -172,10 +172,10 @@ const acrossTheWall = at => Math.round(at * 100) + '% across';
 const beatsOrNone = (beats, none) => (beats === 0 ? none : PERIOD_NAMES[beats]);
 const acrossOf = live => Protocol.fourWayPosition((live || DEFAULT).cellAcross);
 
-const ENVELOPE_STAGE_LABELS = { attack: 'Attack', hold: 'Hold', decay: 'Decay', sustain: 'Sustain', release: 'Release' };
-const envelopeName = (envelope, stage) => `envelope${envelope + 1}${capitalized(stage)}`;
+const ENVELOPE_LABELS = { moves: 'Moves', attack: 'Attack', hold: 'Hold', decay: 'Decay', sustain: 'Sustain', release: 'Release' };
+const envelopeName = (envelope, field) => `envelope${envelope + 1}${capitalized(field)}`;
 const ENVELOPES = Array.from({ length: Protocol.ENVELOPES }, (_, envelope) => Object.fromEntries(
-  Object.keys(Protocol.ENVELOPE_STAGE).map(stage => [stage, envelopeName(envelope, stage)])));
+  ['moves', ...Object.keys(Protocol.ENVELOPE_STAGE)].map(field => [field, envelopeName(envelope, field)])));
 const envelopeStages = (live, envelope) => Object.fromEntries(
   Object.entries(ENVELOPES[envelope]).map(([stage, name]) => [stage, live[name]]));
 
@@ -320,6 +320,7 @@ for (const route of ROUTES) {
 
 for (const stages of ENVELOPES) {
   for (const [stage, name] of Object.entries(stages)) {
+    if (stage === 'moves') continue;
     READOUTS[name] = stage === 'sustain'
       ? value => percent(real(name, value))
       : value => beatsOrNone(real(name, value), stage === 'attack' ? 'instant' : 'none');
@@ -365,9 +366,9 @@ const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route =>
 
 const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
   name: `Envelope ${envelope + 1}`, tone: 'lfo', envelope,
-  names: Object.entries(stages).map(([stage, name]) => control(name, ENVELOPE_STAGE_LABELS[stage], {
-    inertWhen: live => stage === 'release' && !endsAs(live, 'gone'),
-  })),
+  names: Object.entries(stages).map(([field, name]) => control(name, ENVELOPE_LABELS[field], field === 'moves'
+    ? { kind: 'two', options: [[OFF, 'glide'], [ON, 'step']], inertWhen: live => real('cellRate', live.cellRate) === 0 }
+    : { inertWhen: live => field === 'release' && !endsAs(live, 'gone') })),
   unused: live => envelopeUnused(live, envelope),
 }));
 

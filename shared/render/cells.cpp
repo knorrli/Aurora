@@ -30,6 +30,7 @@ struct Life {
   float gateBeats;
   uint8_t end;
   float lastBeats;
+  float stepBeats;
 };
 
 struct StripLife {
@@ -98,7 +99,16 @@ static float envelopeAt(const Envelope &envelope, const Life &life, float age) {
   return stagesAt(envelope, life.gateBeats) * fmaxf(0.0f, 1.0f - (age - life.gateBeats) / envelope.release);
 }
 
-static float envelopeArea(const Envelope &envelope, const Life &life, float age) {
+static const uint16_t MAX_STEPS_SUMMED = 512;
+
+static bool steps(const Envelope &envelope, const Life &life) { return envelope.stepped && life.stepBeats > 0.0f; }
+
+static float steppedAt(const Envelope &envelope, const Life &life, float age) {
+  if (!steps(envelope, life)) return envelopeAt(envelope, life, age);
+  return envelopeAt(envelope, life, floorf(age / life.stepBeats) * life.stepBeats);
+}
+
+static float glidingArea(const Envelope &envelope, const Life &life, float age) {
   if (life.end == CELL_END_STAY) return stagesArea(envelope, age);
   const float lives = floorf(age / life.gateBeats);
   if (life.end == CELL_END_START_OVER) {
@@ -110,8 +120,18 @@ static float envelopeArea(const Envelope &envelope, const Life &life, float age)
   return stagesArea(envelope, life.gateBeats) + stagesAt(envelope, life.gateBeats) * tail;
 }
 
-float envelopeLevelAt(const Envelope &envelope, float gateBeats, uint8_t end, float age) {
-  return envelopeAt(envelope, { gateBeats, end, FOREVER }, age);
+static float envelopeArea(const Envelope &envelope, const Life &life, float age) {
+  if (!steps(envelope, life)) return glidingArea(envelope, life, age);
+  const float whole = floorf(age / life.stepBeats);
+  const uint16_t summed = whole < (float)MAX_STEPS_SUMMED ? (uint16_t)whole : MAX_STEPS_SUMMED;
+  float area = 0.0f;
+  for (uint16_t step = 0; step < summed; step++) area += envelopeAt(envelope, life, (float)step * life.stepBeats);
+  area *= life.stepBeats;
+  return area + envelopeAt(envelope, life, whole * life.stepBeats) * (age - whole * life.stepBeats);
+}
+
+float envelopeLevelAt(const Envelope &envelope, float gateBeats, uint8_t end, float stepBeats, float age) {
+  return steppedAt(envelope, { gateBeats, end, FOREVER, stepBeats }, age);
 }
 
 static float lastLife(const Cells &cells, const float *dialed) {
@@ -165,7 +185,7 @@ static CellState evaluate(const StripLife &life, const Birth &birth, float beats
   float envelopes[AURORA_ENVELOPES];
   float areas[AURORA_ENVELOPES];
   for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
-    envelopes[envelope] = envelopeAt(life.cells->envelopes[envelope], life.life, age);
+    envelopes[envelope] = steppedAt(life.cells->envelopes[envelope], life.life, age);
     areas[envelope] = envelopeArea(life.cells->envelopes[envelope], life.life, age);
   }
   float levels[RENDER_ROUTES];
@@ -346,7 +366,7 @@ void drawCells(const CellsFrame &frame, const CellsStrip &strip, DrawnCells &out
   life.strip = &strip;
   life.cells = &cells;
   life.routeCount = gatherCellRoutes(strip.dialed, strip.fanShift, life.routes);
-  life.life = { cells.gateBeats, cells.end, lastLife(cells, strip.dialed) };
+  life.life = { cells.gateBeats, cells.end, lastLife(cells, strip.dialed), cells.rateBeats };
   life.baseSpeed = controlValue(CC_CELL_SPEED, strip.dialed[CC_CELL_SPEED])
                  + controlValue(CC_FAN_SPEED, strip.dialed[CC_FAN_SPEED]) * strip.fanWave;
   life.fanOffset = strip.reading->fan.spread * strip.fanWave * (float)PIXELS;

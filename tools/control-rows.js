@@ -217,7 +217,7 @@ function paintEnvelopeCards(live) {
 
 function paintEnvelopeGraphs(live) {
   for (const shown of envelopeCards) {
-    const key = [...shown.card.names, 'cellGate', 'cellEnd'].map(name => live[name]).join(',')
+    const key = [...shown.card.names, 'cellGate', 'cellEnd', 'cellRate'].map(name => live[name]).join(',')
       + `@${shown.graph.clientWidth}x${shown.graph.clientHeight}`;
     if (key === shown.drawn) continue;
     shown.drawn = key;

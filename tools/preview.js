@@ -192,8 +192,9 @@ function connect(renderer) {
     controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
     routeRefused: cc => !!renderer._aurora_route_refused(cc),
     cellControl: cc => !!renderer._aurora_cell_control(cc),
-    envelopeLevel: (stages, gate, end, age) =>
-      renderer._aurora_envelope_level(stages.attack, stages.hold, stages.decay, stages.sustain, stages.release, gate, end, age),
+    envelopeLevel: (stages, gate, end, rate, age) =>
+      renderer._aurora_envelope_level(stages.attack, stages.hold, stages.decay, stages.sustain, stages.release,
+                                      stages.moves, gate, end, rate, age),
     spotDestination: cc => !!renderer._aurora_spot_destination(cc),
     blend(fromBytes, toBytes, position, switchBytes, switchesFromStart) {
       renderer.HEAPU8.set(fromBytes, renderer._aurora_morph_from());

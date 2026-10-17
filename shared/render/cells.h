@@ -42,7 +42,7 @@ struct DrawnCells {
   StripMarks marks;
 };
 
-float envelopeLevelAt(const Envelope &envelope, float gateBeats, uint8_t end, float age);
+float envelopeLevelAt(const Envelope &envelope, float gateBeats, uint8_t end, float stepBeats, float age);
 
 void startCells(float beats, float start, float lfo, float lfoBeats, const Cells &cells, CellsFrame &out);
 

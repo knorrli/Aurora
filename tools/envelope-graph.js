@@ -20,7 +20,7 @@ function beatsShown(live, envelope) {
 }
 
 const levelAt = (live, envelope, age) =>
-  Preview.envelopeLevel(Patch.envelopeStages(live, envelope), live.cellGate, live.cellEnd, age);
+  Preview.envelopeLevel(Patch.envelopeStages(live, envelope), live.cellGate, live.cellEnd, live.cellRate, age);
 
 function draw(canvas, live, envelope) {
   const width = canvas.clientWidth, height = canvas.clientHeight;

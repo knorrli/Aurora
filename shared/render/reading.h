@@ -17,6 +17,7 @@ struct Envelope {
   float decay;
   float sustain;
   float release;
+  bool stepped;
 };
 
 struct Cells {

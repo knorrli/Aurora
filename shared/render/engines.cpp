@@ -15,7 +15,7 @@ static bool pushesColor(float hue, float white, float dark) {
 
 uint8_t engineOf(uint8_t cc) {
   if (cc >= CC_CELL_END && cc <= CC_CELL_BEND_AT) return ENGINE_CELLS;
-  if (cc >= CC_CELL_RATE && cc <= CC_ENVELOPE_3_RELEASE) return ENGINE_CELLS;
+  if (cc >= CC_CELL_RATE && cc <= CC_ENVELOPE_3_MOVES) return ENGINE_CELLS;
   if (cc >= CC_CORE_HUE && cc <= CC_CORE_DARK) return ENGINE_CELLS;
   if (cc >= CC_SCATTER_COUNT && cc <= CC_SCATTER_VALUE) return ENGINE_SCATTER;
   if (cc == CC_SCATTER_MIX) return ENGINE_SCATTER;

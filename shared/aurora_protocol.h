@@ -116,6 +116,9 @@ enum AuroraCC : uint8_t {
     CC_ENVELOPE_3_DECAY      = 98, // [patch]
     CC_ENVELOPE_3_SUSTAIN    = 99, // [patch]
     CC_ENVELOPE_3_RELEASE    = 100, // [patch]
+    CC_ENVELOPE_1_MOVES      = 101, // [switch]
+    CC_ENVELOPE_2_MOVES      = 102, // [switch]
+    CC_ENVELOPE_3_MOVES      = 103, // [switch]
 };
 
 struct AuroraControlDefault {
@@ -261,6 +264,10 @@ enum AuroraEnvelopeStage : uint8_t {
 
 static inline uint8_t aurora_envelope_cc(uint8_t envelope, uint8_t stage) {
     return (uint8_t)(CC_ENVELOPE_1_ATTACK + envelope * ENVELOPE_STAGES + stage);
+}
+
+static inline uint8_t aurora_envelope_moves_cc(uint8_t envelope) {
+    return (uint8_t)(CC_ENVELOPE_1_MOVES + envelope);
 }
 
 static inline bool aurora_source_is_envelope(uint8_t source) {
