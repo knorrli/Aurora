@@ -40,9 +40,57 @@ const centered = (route, live) => aiming(route, live) || Patch.swings(targetOf(r
 
 const dialedCurve = (route, live) => ({ amount: Protocol.signedOf(live[route.amount]), shift: 0 });
 
+const BIRTHS_SHOWN = 8;
+const STRAIGHT_THROUGH = [Protocol.GROUP_PATTERN.evensOdds, Protocol.GROUP_PATTERN.random];
+
+function birthsInCycle(live) {
+  const rate = Preview.convert(Protocol.CC.cellRate, live.cellRate);
+  return rate > 0 ? Math.floor(Preview.convert(Protocol.CC.lfoRate, live.lfoRate) / rate + 0.001) : 1;
+}
+
+function membersOf(route, live) {
+  const source = sourceOf(route, live);
+  if (source === Protocol.ROUTE_SOURCE.strip) return Preview.WALL_STRIP_ORDER.map(strip => strip - 1);
+  const count = source === Protocol.ROUTE_SOURCE.note ? Preview.convert(Protocol.CC.cellChord, live.cellChord)
+    : STRAIGHT_THROUGH.includes(Protocol.groupPattern(live[route.wave])) ? BIRTHS_SHOWN : birthsInCycle(live);
+  return Array.from({ length: Math.max(1, count) }, (_, member) => member);
+}
+
+function memberLevel(route, member, live) {
+  const pattern = Protocol.groupPattern(live[route.wave]);
+  const source = sourceOf(route, live);
+  if (source === Protocol.ROUTE_SOURCE.birth && pattern === Protocol.GROUP_PATTERN.evensOdds) return member % 2;
+  const count = source === Protocol.ROUTE_SOURCE.strip ? Preview.STRIPS : membersOf(route, live).length;
+  return Preview.groupLevel(pattern, member, count, Patch.ROUTES.indexOf(route));
+}
+
+function groupCurves(route, aims, grouping, live) {
+  const source = sourceOf(grouping, live);
+  return membersOf(grouping, live).map(member => {
+    const curve = dialedCurve(route, live);
+    for (const [aim, phase] of aims) {
+      if (!fromGroup(aim, live) || sourceOf(aim, live) !== source) continue;
+      let amount = Protocol.signedOf(live[aim.amount]);
+      let level = memberLevel(aim, member, live);
+      if (amount < 0) {
+        amount = -amount;
+        level = 1 - level;
+      }
+      if (phase) curve.shift += amount * (level - 0.5);
+      else curve.amount += amount * (level - 0.5) * 2;
+    }
+    curve.amount = Math.max(-1, Math.min(1, curve.amount));
+    return curve;
+  });
+}
+
 function curvesOf(route, live) {
-  const aimed = Patch.aimsAt(live, route, false).length || Patch.aimsAt(live, route, true).length;
-  if (!aimed) return [dialedCurve(route, live)];
+  const aims = [...Patch.aimsAt(live, route, false).map(aim => [aim, false]),
+                ...Patch.aimsAt(live, route, true).map(aim => [aim, true])];
+  if (!aims.length) return [dialedCurve(route, live)];
+  const grouping = aims.map(([aim]) => aim).find(aim => fromGroup(aim, live)
+    && sourceOf(aim, live) !== Protocol.ROUTE_SOURCE.strip);
+  if (grouping) return groupCurves(route, aims, grouping, live);
   const index = Patch.ROUTES.indexOf(route);
   const amounts = Preview.routeAmountAtStrips(index);
   const shifts = Preview.routeShiftAtStrips(index);
@@ -82,24 +130,11 @@ function padDeparture(route, level, live, curve) {
   return curve.amount * (centered(route, live) ? level - 0.5 : level);
 }
 
-function birthsInCycle(live) {
-  const rate = Preview.convert(Protocol.CC.cellRate, live.cellRate);
-  return rate > 0 ? Math.floor(Preview.convert(Protocol.CC.lfoRate, live.lfoRate) / rate + 0.001) : 1;
-}
-
-const SHOWN_MEMBERS = {
-  [Protocol.ROUTE_SOURCE.strip]: () => Preview.STRIPS,
-  [Protocol.ROUTE_SOURCE.note]: live => Preview.convert(Protocol.CC.cellChord, live.cellChord),
-  [Protocol.ROUTE_SOURCE.birth]: birthsInCycle,
-};
-
 function groupDeparture(route, along, live, curve) {
-  const source = sourceOf(route, live);
-  const count = Math.max(1, SHOWN_MEMBERS[source](live));
-  const column = Math.min(count - 1, Math.floor(along * count));
-  const member = source === Protocol.ROUTE_SOURCE.strip ? Preview.WALL_STRIP_ORDER[column] - 1 : column;
+  const members = membersOf(route, live);
+  const member = members[Math.min(members.length - 1, Math.floor(along * members.length))];
   let amount = curve.amount;
-  let level = Preview.groupLevel(Protocol.groupPattern(live[route.wave]), member, count, Patch.ROUTES.indexOf(route));
+  let level = memberLevel(route, member, live);
   if (amount < 0) {
     amount = -amount;
     level = 1 - level;

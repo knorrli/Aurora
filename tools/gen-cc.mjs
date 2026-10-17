@@ -123,6 +123,7 @@ const generated = {
   FIELD_FORM: enumByPrefix('AuroraFieldForm', 'FIELD_FORM_'),
   ARP: enumByPrefix('AuroraArp', 'ARP_'),
   ARP_MODE: enumByPrefix('AuroraArpMode', 'ARP_MODE_'),
+  GROUP_PATTERN: enumByPrefix('AuroraGroupPattern', 'GROUP_'),
   HUE_LAYOUT: enumByPrefix('AuroraHueLayout', 'HUE_LAYOUT_'),
   PAD_MODE: enumByPrefix('AuroraPadMode', 'PAD_MODE_'),
   CORNER: enumByPrefix('AuroraCorner', 'CORNER_'),

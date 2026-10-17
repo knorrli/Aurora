@@ -111,6 +111,7 @@ const ENVELOPE_STAGE = {"delay":0,"attack":1,"hold":2,"decay":3,"sustain":4,"rel
 const FIELD_FORM = {"gradient":0,"region":1,"allButRegion":2};
 const ARP = {"unison":0,"steps":1,"ripple":2};
 const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
+const GROUP_PATTERN = {"sequence":0,"mirror":1,"evensOdds":2,"pairs":3,"random":4,"patterns":5};
 const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
 const PAD_MODE = {"perPatch":0,"morph":1,"effects":2};
 const CORNER = {"bottomLeft":0,"bottomRight":1,"topLeft":2,"topRight":3};
@@ -183,6 +184,7 @@ export const Protocol = {
   FIELD_FORM,
   ARP,
   ARP_MODE,
+  GROUP_PATTERN,
   HUE_LAYOUT,
   PAD_MODE,
   CORNER,
