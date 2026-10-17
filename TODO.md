@@ -96,6 +96,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Build advanced patches together in the preview: cells dividing together and taking turns, five bars alternating bright and faint, the stepped trail.
 - Should Strip's and Note's Random draw a new order on each birth, and on each start over, instead of one fixed shuffle?
 - "Keep as… Motion" on the wall seemed to overwrite the base layer while dialing the alternating diagonals. Reproduce, then discuss how saving a wall look into a layer should work.
+- Editing the base while a layer fader is up in the Mix bar: rows show the played value, so a control that layer overrides snaps back while dragged. What should its slider show and move?
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.

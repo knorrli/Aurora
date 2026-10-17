@@ -153,7 +153,7 @@ function drawWave(canvas, route, live) {
   const scale = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = Math.round(width * scale);
   canvas.height = Math.round(height * scale);
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
   context.setTransform(scale, 0, 0, scale, 0, 0);
   context.clearRect(0, 0, width, height);
 
@@ -209,7 +209,7 @@ function drawPlayhead(canvas, route, lfo, live) {
   if (!canvas.wave || canvas.wave.width !== canvas.width || clockedPerSpot(route, live) || fromEnvelope(route, live)
     || fromGroup(route, live)) return;
   const width = canvas.clientWidth, height = canvas.clientHeight;
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
   context.putImageData(canvas.wave, 0, 0);
   const source = sourceOf(route, live);
   let x, valueOf;
