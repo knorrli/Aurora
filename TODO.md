@@ -65,7 +65,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 `docs/design.md` § Cells and § Brightness; the reasons in `docs/cells-reasoning.md`, deleted once cells are built and tested on the wall.
 
-- Dial cells in the preview. On this branch the controls list is 176 long and routes sit at 128 and up; the brain builds but its patch sync and storage wait for the CC numbers.
+- Dial cells in the preview. On this branch the controls list is 184 long and routes sit at 128 and up; the brain builds but its patch sync and storage wait for the CC numbers.
 - Confirm or change what the first build settled on its own:
   - Rate's first step, born once, is born when the patch starts, so its attack plays then.
   - Gate grows toward the top of the fader, unlike LFO Rate.
@@ -80,10 +80,8 @@ Seen only in the preview so far. One look each, driven from the editor.
   - A gone cell's tail fades out after it.
   - An envelope set to step moves only on Rate's grid; with Rate on once it glides.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
-- Move the envelopes into the modulation section beside the LFO, each drawn as a graph, with vertical sliders for its stages. Settle the layout before building it.
-- An overlay for the brightness curve. Strip and Wall can draw like Bend and Field; what do Cell body and Cell place show?
+- The brightness curve overlay draws Strip and Wall; what do Cell body and Cell place show?
 - The number of moving bars follows Speed times Rate, which feels unusual. Should Speed be dialed as bars on the strip while Rate repeats, with the speed worked out from Rate?
-- A straight wave: at least one Wave setting that rises and falls in straight lines, a clean triangle. Every wave today is a smooth curve, so a held route on Position steps unevenly.
 - Position puts a cell's center on the strip's end, so a cell at the top or bottom shows only half. Should Position keep the whole cell on the strip?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
@@ -91,6 +89,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?
 - Two groups of cells, one painting over the other, with Scatter becoming the second? Raindrops: born at random places, falling with a trail.
 - Vary a route's amount across a group: across the strips, across a chord's cells, or across successive births. The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half. Cells dividing at the center: a chord of 2 whose cells bend opposite ways, or births taking turns. Five still bars born as one chord, alternating bright and faint.
+- Should Fan reach births and envelopes? Today a cell is born on every strip at the same moment and its envelope runs in step; Fan moves only where it sits, how fast it goes and when its LFO hits. Fanned births would ripple across the wall.
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.
