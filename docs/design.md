@@ -33,7 +33,7 @@
 - Ends sets what Position's extremes mean, for the whole patch. Inside: at either extreme the cell's edge sits flush with the strip's end, the whole cell in view. Outside: at either extreme the cell sits just past the end, out of view. That span is the cell's travel; Spread and routes on Position are measured along it.
 - A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.
 - A route's source is the LFO, the pad, an envelope, or a group: Strip, Note or Birth. A group source gives each member a number from 0 to 1 by one of the PAR arp's patterns, stretched to fit any number of members: Strip across the strips, Note across a chord's cells, Birth across successive births. Sequence is a slope, Mirror sets the center apart from the outsides, Evens / odds alternates, Pairs steps by two, Random shuffles. A negative amount reverses it.
-- A route can aim at another route's amount or phase, setting it per strip, per cell or per birth.
+- A route can aim at another route's amount or phase, setting it per strip, per cell or per birth. A route aimed at a route cannot itself be aimed at.
 - There is no Fan. Its Position is a Strip route on Position; its LFO offset is a Strip route on another route's phase.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
 - One cell's life is set per patch; the births and the per-strip settings make the wall from it.
