@@ -87,7 +87,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.
 - Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?
-- Two groups of cells, one painting over the other, with Scatter becoming the second? Raindrops: born at random places, falling with a trail.
+- Two groups of cells, one painting over the other? Raindrops: born at random places, falling with a trail.
+- Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Vary a route's amount across a group: across the strips, across a chord's cells, or across successive births. The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half. Cells dividing at the center: a chord of 2 whose cells bend opposite ways, or births taking turns. Five still bars born as one chord, alternating bright and faint.
 - Should Fan reach births and envelopes? Today a cell is born on every strip at the same moment and its envelope runs in step; Fan moves only where it sits, how fast it goes and when its LFO hits. Fanned births would ripple across the wall.
 - Can a oneshot play one cell?
