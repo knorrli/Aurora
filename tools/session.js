@@ -244,16 +244,17 @@ function sounding(live) {
   const out = live.copy();
   for (const route of session.bypassedRoutes) out[route.destination] = 0;
   for (const card of session.bypassedCards) {
-    if (card === Patch.LFO) for (const route of Patch.ROUTES) out[route.destination] = 0;
+    if (card === Patch.ROUTES_CARD) for (const route of Patch.ROUTES) out[route.destination] = 0;
     for (const name of card.amounts) out[name] = Patch.DEFAULT[name];
   }
   return out;
 }
 
 function hasNoEffect(card, live) {
-  if (card === Patch.LFO) {
+  if (card === Patch.LFO || card === Patch.ROUTES_CARD) {
     return !Patch.ROUTES.some(route =>
-      live[route.destination] !== 0 && live[route.amount] !== Patch.DEFAULT[route.amount]);
+      live[route.destination] !== 0 && live[route.amount] !== Patch.DEFAULT[route.amount]
+      && (card === Patch.ROUTES_CARD || Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE.lfo));
   }
   return (card.shownBy || card.amounts).every(name => live[name] === Patch.DEFAULT[name]
     && !routesOn(name, live).some(route => live[route.amount] !== Patch.DEFAULT[route.amount]));

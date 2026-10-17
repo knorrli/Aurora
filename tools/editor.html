@@ -293,6 +293,8 @@
   .card-body.single { grid-template-columns: 1fr; }
 
   .envelope-card.no-effect .card-body { opacity: .38; }
+  .envelope-card .card-body[hidden] { display: none; }
+  .envelope-tab.unused:not(.on) { opacity: .45; }
   .envelope-graph { position: relative; min-height: 64px; color: var(--lfo); }
   .envelope-graph canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
@@ -308,10 +310,6 @@
   .route-block.bypassed > :not(.route-head) { opacity: .38; }
   .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; color: var(--tone, var(--lfo)); }
   .route-foot { display: flex; justify-content: space-between; align-items: center; }
-  .route-list { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
-  .route-list summary {
-    cursor: pointer; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint);
-  }
   .card.bypassed .route-list .route-line, .card.no-effect .route-list .route-line { opacity: .38; }
   .route-line {
     display: grid; grid-template-columns: auto minmax(0, 1fr) 150px auto; gap: 2px 14px;

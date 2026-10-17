@@ -148,7 +148,7 @@ function drawPlayhead(canvas, route, lfo, live) {
 }
 
 function paintPlayheads(lfo, live) {
-  if (list.root && list.root.open) {
+  if (list.root) {
     for (const { route, line, canvas } of list.lines) {
       if (!line.hidden) drawPlayhead(canvas, route, lfo, live);
     }
@@ -274,13 +274,8 @@ function buildPanel() {
 }
 
 function buildList() {
-  const root = element('details', 'route-list');
-  root.open = true;
+  const root = element('div', 'route-list');
   const count = element('span', 'cc');
-  const summary = element('summary', null, 'Routes ');
-  summary.appendChild(count);
-  root.appendChild(summary);
-  root.addEventListener('toggle', () => Editor.paint());
 
   for (const route of Patch.ROUTES) {
     const line = element('div', 'route-line');
@@ -304,7 +299,7 @@ function buildList() {
     list.lines.push({ route, line, target, values, canvas, buttons });
   }
   Object.assign(list, { root, count });
-  return root;
+  return { root, count };
 }
 
 function destinationText(destination) {
@@ -332,17 +327,17 @@ function paintList(live) {
     readouts.push(...heldText(route, live));
     values.textContent = [...(clockedPerSpot(route, live) ? [spotClockText(live)] : []), ...readouts].join(' · ');
     line.classList.toggle('bypassed', paintButtons(buttons, route));
-    if (list.root.open) drawWave(canvas, route, live);
+    drawWave(canvas, route, live);
   }
   list.count.textContent = aimed ? `${aimed} of ${Patch.ROUTES.length}` : 'none';
 }
 
 function paintMarkers(live) {
-  const lfoBypassed = session.cardBypassed(Patch.LFO);
+  const routesBypassed = session.cardBypassed(Patch.ROUTES_CARD);
   for (const row of Object.values(Rows.rows)) {
     if (!row.routes) continue;
     const here = session.routesOn(row.control.name, live);
-    const sounding = !lfoBypassed && here.some(route => !session.routeBypassed(route));
+    const sounding = !routesBypassed && here.some(route => !session.routeBypassed(route));
     row.routes.classList.toggle('aimed', here.length > 0);
     row.routes.classList.toggle('sounding', sounding);
     row.routes.classList.toggle('open', row.control.name === panel.target);

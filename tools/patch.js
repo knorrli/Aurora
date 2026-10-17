@@ -471,6 +471,8 @@ const LFO = {
   ],
 };
 
+const ROUTES_CARD = { name: 'Routes', tone: 'lfo', source: [], amounts: [] };
+
 const ENGINES = [
   {
     name: 'Scatter', tone: 'scatter',
@@ -672,6 +674,6 @@ export {
   CC, NAMES, CONTINUOUS, isSwitch, controls, CONTROLS, READOUTS, DEFAULT,
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
-  CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
+  CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
   fromLfo, holdable, routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

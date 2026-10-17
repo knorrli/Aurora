@@ -153,18 +153,24 @@ function buildGroup(title, sections, label = title) {
   return box;
 }
 
+function bypassButton(card) {
+  const bypass = element('button', 'tiny', 'bypass');
+  bypass.addEventListener('click', () => {
+    session.toggleCardBypass(card);
+    Editor.refresh();
+  });
+  return bypass;
+}
+
 function buildCard(card) {
   const root = element('article', 'card');
   root.dataset.tone = card.tone;
 
   const head = element('div', 'card-head');
   const state = element('span', 'card-state');
-  const bypass = element('button', 'tiny', 'bypass');
-  bypass.addEventListener('click', () => {
-    session.toggleCardBypass(card);
-    Editor.refresh();
-  });
-  head.append(element('span', 'card-name', card.name), state, bypass, resetButton(Patch.cardNames(card)));
+  const bypass = card === Patch.LFO ? null : bypassButton(card);
+  head.append(element('span', 'card-name', card.name), state, ...(bypass ? [bypass] : []),
+              resetButton(Patch.cardNames(card)));
   movable(head, card.name, Patch.cardNames(card));
   root.appendChild(head);
 
@@ -180,20 +186,27 @@ function buildCard(card) {
   }
   if (body.children.length < 2) body.classList.add('single');
   root.appendChild(body);
-  if (card === Patch.LFO) root.appendChild(Routes.buildList());
   cards.push({ card, root, state, bypass });
   return root;
 }
 
-const envelopeCards = [];
-
-function buildEnvelopeCard(card) {
-  const root = element('article', 'card envelope-card');
+function buildRoutesCard() {
+  const card = Patch.ROUTES_CARD;
+  const root = element('article', 'card');
   root.dataset.tone = card.tone;
   const head = element('div', 'card-head');
   const state = element('span', 'card-state');
-  head.append(element('span', 'card-name', card.name), state, resetButton(card.names));
-  movable(head, card.name, card.names);
+  const bypass = bypassButton(card);
+  const list = Routes.buildList();
+  head.append(element('span', 'card-name', card.name), list.count, state, bypass);
+  root.append(head, list.root);
+  cards.push({ card, root, state, bypass });
+  return root;
+}
+
+const envelopes = { root: null, state: null, tabs: [], shown: [], selected: 0 };
+
+function buildEnvelopeBody(card) {
   const stages = element('div');
   buildRows(stages, card.names);
   const graphBox = element('div', 'envelope-graph');
@@ -201,33 +214,61 @@ function buildEnvelopeCard(card) {
   graphBox.appendChild(graph);
   const body = element('div', 'card-body');
   body.append(stages, graphBox);
-  root.append(head, body);
-  envelopeCards.push({ card, root, state, graph, drawn: null });
+  return { card, body, graph, drawn: null };
+}
+
+function buildEnvelopesCard() {
+  const root = element('article', 'card envelope-card');
+  root.dataset.tone = 'lfo';
+  const head = element('div', 'card-head');
+  const state = element('span', 'card-state');
+  const tabs = Patch.ENVELOPE_CARDS.map((card, envelope) => {
+    const tab = element('button', 'tiny envelope-tab', String(envelope + 1));
+    tab.addEventListener('click', () => {
+      envelopes.selected = envelope;
+      Editor.paint();
+    });
+    return tab;
+  });
+  const reset = element('button', 'tiny', 'reset');
+  reset.addEventListener('click', () => session.resetNames(Patch.ENVELOPE_CARDS[envelopes.selected].names));
+  head.append(element('span', 'card-name', 'Envelopes'), ...tabs, state, reset);
+  LayerDrop.source(head, () => {
+    const card = Patch.ENVELOPE_CARDS[envelopes.selected];
+    return { label: card.name, names: withRouteAmounts(card.names) };
+  });
+  const shown = Patch.ENVELOPE_CARDS.map(buildEnvelopeBody);
+  root.append(head, ...shown.map(({ body }) => body));
+  Object.assign(envelopes, { root, state, tabs, shown });
   return root;
 }
 
-function paintEnvelopeCards(live) {
-  for (const shown of envelopeCards) {
-    const unused = shown.card.unused(live);
-    shown.root.classList.toggle('no-effect', unused);
-    shown.state.textContent = unused ? 'no effect' : '';
-  }
+function paintEnvelopesCard(live) {
+  envelopes.shown.forEach(({ card, body }, envelope) => {
+    const selected = envelope === envelopes.selected;
+    body.hidden = !selected;
+    envelopes.tabs[envelope].classList.toggle('on', selected);
+    envelopes.tabs[envelope].classList.toggle('unused', card.unused(live));
+  });
+  const unused = Patch.ENVELOPE_CARDS[envelopes.selected].unused(live);
+  envelopes.root.classList.toggle('no-effect', unused);
+  envelopes.state.textContent = unused ? 'no effect' : '';
   paintEnvelopeGraphs(live);
 }
 
 function paintEnvelopeGraphs(live) {
-  for (const shown of envelopeCards) {
-    const key = [...shown.card.names, 'cellGate', 'cellEnd', 'cellRate'].map(name => live[name]).join(',')
-      + `@${shown.graph.clientWidth}x${shown.graph.clientHeight}`;
-    if (key === shown.drawn) continue;
-    shown.drawn = key;
-    EnvelopeGraph.draw(shown.graph, live, shown.card.envelope);
-  }
+  const shown = envelopes.shown[envelopes.selected];
+  if (!shown) return;
+  const key = [...shown.card.names, 'cellGate', 'cellEnd', 'cellRate'].map(name => live[name]).join(',')
+    + `@${shown.graph.clientWidth}x${shown.graph.clientHeight}`;
+  if (key === shown.drawn) return;
+  shown.drawn = key;
+  EnvelopeGraph.draw(shown.graph, live, shown.card.envelope);
 }
 
 function build() {
   byId('outputs').replaceChildren(...Patch.OUTPUTS.map(output => buildGroup(output.title, output.sections)));
-  byId('lfo').replaceChildren(buildCard(Patch.LFO), ...Patch.ENVELOPE_CARDS.map(buildEnvelopeCard));
+  byId('lfo').replaceChildren(buildCard(Patch.LFO), buildEnvelopesCard(), buildRoutesCard());
   const groups = element('div', 'groups');
   groups.append(...Patch.CELLS.groups.map(group => {
     const box = buildGroup(group.title, [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`);
@@ -290,7 +331,7 @@ function paintCards(live) {
     const noEffect = session.hasNoEffect(card, live);
     root.classList.toggle('bypassed', bypassed);
     root.classList.toggle('no-effect', noEffect && !bypassed);
-    bypass.classList.toggle('on', bypassed);
+    if (bypass) bypass.classList.toggle('on', bypassed);
     state.textContent = bypassed ? 'bypassed' : noEffect ? 'no effect' : '';
   }
 }
@@ -306,7 +347,7 @@ function paint(live) {
     row.root.classList.toggle('unmarked', oneshot && Library.isMarkable(name) && !session.marked(name));
   }
   paintCards(live);
-  paintEnvelopeCards(live);
+  paintEnvelopesCard(live);
 }
 
 export { rows, buildRows, build, paint, paintValues };
