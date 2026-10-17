@@ -198,7 +198,7 @@ enum AuroraRouteField : uint8_t {
 };
 
 static const uint8_t AURORA_ROUTE_DEFAULTS[ROUTE_FIELDS] = {
-    0, 64, 0, WAVE_SWELL, 0, 0, 127, 0,
+    0, 64, 0, WAVE_SWELL, 0, 0, 0, 0,
 };
 
 static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
