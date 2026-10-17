@@ -218,8 +218,8 @@ const READOUTS = {
     if (direction === Protocol.DIRECTION.cell) return backTheCell(at);
     return upTheStrip(at);
   },
-  fanSpread: value => fanShift(Math.abs(real('fanSpread', value))),
-  fanLfo: value => '±' + Math.round(Math.abs(real('fanLfo', value)) * 360) + '°',
+  fanPosition: value => fanShift(Math.abs(real('fanPosition', value))),
+  fanLfoOffset: value => '±' + Math.round(Math.abs(real('fanLfoOffset', value)) * 360) + '°',
   fanFrequency: (value, live) => {
     const turned = live.copy();
     turned.fanFrequency = value;
@@ -351,8 +351,8 @@ const routedTo = (live, names) =>
   soundingRoutes(live).some(route => names.some(name => Protocol.routeTarget(live[route.destination]) === CC[name]));
 const atZero = (live, names) => names.every(name => real(name, live[name]) === 0);
 
-const nothingTravels = live => !routedTo(live, ['cellPosition', 'fanSpread']);
-const FAN_AMOUNTS = ['fanSpread', 'fanLfo'];
+const nothingTravels = live => !routedTo(live, ['cellPosition', 'fanPosition']);
+const FAN_AMOUNTS = ['fanPosition', 'fanLfoOffset'];
 const fanIsFlat = live => atZero(live, FAN_AMOUNTS) && !routedTo(live, FAN_AMOUNTS);
 const inertWhileStill = { inertWhen: nothingTravels };
 const bendIsFlat = live => Math.abs(real('cellBend', live.cellBend)) < 0.005 && !routedTo(live, ['cellBend']);
@@ -369,6 +369,18 @@ const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
     : { inertWhen: live => field === 'release' && !endsAs(live, 'gone') })),
   unused: live => envelopeUnused(live, envelope),
 }));
+
+const FAN_SECTIONS = [
+  ['Amounts', [
+    control('fanPosition', 'Position'),
+    control('fanLfoOffset', 'LFO offset', { inertWhen: live => !soundingRoutes(live).length }),
+  ]],
+  ['Shape', [
+    control('fanFrequency', 'Frequency', inertWhileFlat),
+    control('fanPhase', 'Phase', inertWhileFlat),
+    control('fanRandomize', 'Randomize', inertWhileFlat),
+  ]],
+];
 
 const CELLS = {
   name: 'Cells',
@@ -412,13 +424,8 @@ const CELLS = {
     },
     {
       title: 'Fan', tone: 'fan',
-      names: [
-        control('fanSpread', 'Spread'),
-        control('fanLfo', 'LFO', { inertWhen: live => !soundingRoutes(live).length }),
-        control('fanFrequency', 'Frequency', inertWhileFlat),
-        control('fanPhase', 'Phase', inertWhileFlat),
-        control('fanRandomize', 'Randomize', inertWhileFlat),
-      ],
+      sections: FAN_SECTIONS,
+      names: FAN_SECTIONS.flatMap(([, names]) => names),
     },
   ],
 };

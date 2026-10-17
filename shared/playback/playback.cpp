@@ -409,7 +409,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
       if (lastOneshotProgress < 0.0f || lastOneshotProgress >= 1.0f) firing = false;
     }
     render::composeOneshot(mixed, firing ? oneshot.controls : nullptr, oneshot.marks, firedStrength, composed);
-    if (firing) clock = { lastOneshotProgress, lengthBeats, oneshot.marks[CC_FAN_LFO] != 0 };
+    if (firing) clock = { lastOneshotProgress, lengthBeats, oneshot.marks[CC_FAN_LFO_OFFSET] != 0 };
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }
 

@@ -61,8 +61,8 @@ enum AuroraCC : uint8_t {
     CC_CELL_CURVE            = 47, // [patch]
     CC_CELL_CURVE_AT         = 48, // [patch]
 
-    CC_FAN_SPREAD            = 49, // [patch][unstaggered]
-    CC_FAN_LFO               = 50, // [patch][unstaggered]
+    CC_FAN_POSITION          = 49, // [patch][unstaggered]
+    CC_FAN_LFO_OFFSET        = 50, // [patch][unstaggered]
     CC_FAN_FREQUENCY         = 51, // [patch][unstaggered]
     CC_FAN_PHASE             = 52, // [patch][circular][unstaggered]
     CC_FAN_RANDOMIZE         = 53, // [patch][unstaggered]
@@ -146,8 +146,8 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_ENVELOPE_1_SUSTAIN,     127 },
     { CC_ENVELOPE_2_SUSTAIN,     127 },
     { CC_ENVELOPE_3_SUSTAIN,     127 },
-    { CC_FAN_SPREAD,              64 },
-    { CC_FAN_LFO,                 64 },
+    { CC_FAN_POSITION,            64 },
+    { CC_FAN_LFO_OFFSET,          64 },
     { CC_FAN_FREQUENCY,           32 },
     { CC_SCATTER_COUNT,           80 },
     { CC_SCATTER_WIDTH,           34 },
@@ -295,7 +295,7 @@ static const uint8_t AURORA_BIPOLAR_DESTINATION_BASE = 106;
 static const uint8_t AURORA_BIPOLAR_CONTROLS[] = {
     CC_HUE, CC_PAR_HUE_OFFSET, CC_PAR_HUE_RANGE, CC_ARP_SPREAD,
     CC_CELL_POSITION, CC_CELL_BEND, CC_CELL_BEND_AT, CC_CELL_CURVE, CC_CELL_CURVE_AT,
-    CC_FAN_SPREAD, CC_FAN_LFO, CC_FAN_PHASE,
+    CC_FAN_POSITION, CC_FAN_LFO_OFFSET, CC_FAN_PHASE,
     CC_FIELD_POSITION, CC_FIELD_HUE, CC_FLOW_HUE, CC_CORE_HUE,
 };
 static const uint8_t AURORA_BIPOLAR_CONTROL_COUNT =

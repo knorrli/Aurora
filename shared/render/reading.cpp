@@ -123,8 +123,8 @@ float controlValue(uint8_t cc, float value) {
     case CC_CELL_RATE: return cellRateBeatsOf(value);
     case CC_CELL_GATE: return gateBeatsOf(value);
     case CC_CELL_CHORD: return chordOf(value);
-    case CC_FAN_SPREAD:
-    case CC_FAN_LFO: return signedOf(value) * 0.5f;
+    case CC_FAN_POSITION:
+    case CC_FAN_LFO_OFFSET: return signedOf(value) * 0.5f;
     case CC_SCATTER_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
     case CC_FAN_FREQUENCY: return fanFrequencyOf(value);
     case CC_FAN_PHASE: return value / 128.0f;
@@ -199,8 +199,8 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   }
 
   Fan &fan = out.fan;
-  fan.spread = at(CC_FAN_SPREAD);
-  fan.lfo = at(CC_FAN_LFO);
+  fan.position = at(CC_FAN_POSITION);
+  fan.lfoOffset = at(CC_FAN_LFO_OFFSET);
   fan.frequency = at(CC_FAN_FREQUENCY);
   fan.phase = at(CC_FAN_PHASE);
   fan.randomize = at(CC_FAN_RANDOMIZE);

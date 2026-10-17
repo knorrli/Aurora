@@ -159,11 +159,11 @@ static bool unstaggered(uint8_t cc) {
     case CC_ARP_SPREAD:
     case CC_CELL_BEND:
     case CC_CELL_BEND_AT:
-    case CC_FAN_SPREAD:
+    case CC_FAN_POSITION:
     case CC_FAN_FREQUENCY:
     case CC_FAN_PHASE:
     case CC_FAN_RANDOMIZE:
-    case CC_FAN_LFO:
+    case CC_FAN_LFO_OFFSET:
       return true;
     default:
       return false;

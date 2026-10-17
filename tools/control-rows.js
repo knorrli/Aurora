@@ -271,7 +271,7 @@ function build() {
   byId('lfo').replaceChildren(buildCard(Patch.LFO), buildEnvelopesCard(), buildRoutesCard());
   const groups = element('div', 'groups');
   groups.append(...Patch.CELLS.groups.map(group => {
-    const box = buildGroup(group.title, [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`);
+    const box = buildGroup(group.title, group.sections || [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`);
     box.classList.add(`tone-${group.tone}`);
     return box;
   }));

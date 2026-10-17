@@ -40,8 +40,8 @@ struct Cells {
 };
 
 struct Fan {
-  float spread;
-  float lfo;
+  float position;
+  float lfoOffset;
   float frequency;
   float phase;
   float randomize;

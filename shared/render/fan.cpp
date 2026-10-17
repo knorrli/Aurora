@@ -27,8 +27,8 @@ void readFan(const Reading &reading, FanReading &out) {
     out.curve[i] = fanTriangle(fract(fan.phase + fan.frequency * at));
   }
   out.turns = fan.frequency * (float)(STRIPS - 1);
-  out.spread = fan.spread * 2.0f;
-  out.lfo = fan.lfo * 2.0f;
+  out.position = fan.position * 2.0f;
+  out.lfoOffset = fan.lfoOffset * 2.0f;
   out.randomize = fan.randomize;
 }
 

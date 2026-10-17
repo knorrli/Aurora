@@ -103,8 +103,8 @@ struct FanReading {
   float values[STRIPS];
   float curve[FAN_CURVE_POINTS];
   float turns;
-  float spread;
-  float lfo;
+  float position;
+  float lfoOffset;
   float randomize;
 };
 

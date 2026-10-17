@@ -71,7 +71,7 @@ static void readStrip(const FrameContext &context, uint8_t index, float *padShif
   const Fan &fan = context.wallReading.fan;
   strip.index = index;
   strip.fanWave = fanWave(fan, index);
-  strip.fanShift = fan.lfo * strip.fanWave;
+  strip.fanShift = fan.lfoOffset * strip.fanWave;
   out.stripFanShift[index] = strip.fanShift;
 
   const float *dialed = context.stripDialed[index];

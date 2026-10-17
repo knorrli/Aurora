@@ -325,7 +325,7 @@ void drawCells(const CellsFrame &frame, const CellsStrip &strip, DrawnCells &out
   life.routeCount = gatherCellRoutes(strip.dialed, strip.fanShift, life.routes);
   life.life = { cells.gateBeats, cells.end, lastLife(cells, strip.dialed), cells.rateBeats };
   life.wraps = bornOnce(cells);
-  life.fanOffset = strip.reading->fan.spread * strip.fanWave * (float)PIXELS;
+  life.fanOffset = strip.reading->fan.position * strip.fanWave * (float)PIXELS;
   readPast(life);
 
   const float tailBeats = cells.tailBeats;
