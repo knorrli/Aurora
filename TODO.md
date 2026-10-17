@@ -86,7 +86,6 @@ Seen only in the preview so far. One look each, driven from the editor.
   - Born once with Inside, a cell leaving the travel jumps to the other end; only Outside draws it across.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
 - The brightness curve overlay draws Vertical and Horizontal; what do Cell and Cell position show?
-- CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.
 - Do LFO routes also run per cell, on each cell's age, the way scatter routes run on each spot's clock?

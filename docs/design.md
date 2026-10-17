@@ -10,6 +10,12 @@
 - The defaults are never written to storage: an empty library is how the editor recognizes a fresh flash.
 - Booting on the defaults leaves the brain on a patch, never on blackout.
 
+## Controls and MIDI
+
+- Playing and patch design are separate. The box and a DAW play Aurora with the same messages: program changes for patches, songs and blackout, notes for oneshots and the held key, CCs for the three layer faders and the pad, and MIDI clock. These CC numbers are fixed.
+- Patch controls are numbered by their place in the patch, not by CC, and are unlimited in count. The editor dials them on the brain with a SysEx message that sets a control to a value. No CC reaches inside a patch.
+- Every patch control holds one thing. A setting is its own control, never folded into a value's range.
+
 ## The faders
 
 - A layer is the patch's look pushed further. What further means is up to the patch.
