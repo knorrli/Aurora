@@ -93,8 +93,9 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Two groups of cells, one painting over the other? Raindrops: born at random places, falling with a trail.
 - Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
-- Once group routes are built, build advanced patches together in the preview: alternating diagonals (base patch first; its Motion layer later grows each strip's bar to fill the strip, then shrinks it from the other end, strip 3 always at the center), cells dividing together and taking turns, five bars alternating bright and faint.
+- Build advanced patches together in the preview: cells dividing together and taking turns, five bars alternating bright and faint, the stepped trail.
 - Should Strip's and Note's Random draw a new order on each birth, and on each start over, instead of one fixed shuffle?
+- "Keep as… Motion" on the wall seemed to overwrite the base layer while dialing the alternating diagonals. Reproduce, then discuss how saving a wall look into a layer should work.
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.
