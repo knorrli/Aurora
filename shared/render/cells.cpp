@@ -257,6 +257,8 @@ static uint16_t firstSampleFrom(const float *logical, float from) {
   return low;
 }
 
+static float seen(float presence) { return presence * presence; }
+
 static float directionOf(float velocity) { return velocity >= 0.0f ? 1.0f : -1.0f; }
 
 static void keep(CellSample &sample, float level, float body, float across, uint8_t cell) {
@@ -280,7 +282,7 @@ static void stampBody(const StripLife &life, const CellState &state, uint8_t cel
       body = k * k * (3.0f - 2.0f * k);
     }
     const float across = reach > 0.0001f ? 0.5f - 0.5f * direction * offset / reach : 0.5f;
-    const float level = body * state.brightness * curveAtSample(life, i, across, state.center);
+    const float level = body * seen(state.brightness * curveAtSample(life, i, across, state.center));
     keep(out.samples[i], level, body, across, cell);
   }
 }
@@ -308,8 +310,8 @@ static void stampTrail(const StripLife &life, const CellState *states, uint8_t c
     const CellState &newer = states[j];
     const CellState &older = states[j + 1];
     if (!older.exists) break;
-    const float newerLevel = newer.brightness * faded(step * (float)j, tailBeats);
-    const float olderLevel = older.brightness * faded(step * (float)(j + 1), tailBeats);
+    const float newerLevel = seen(newer.brightness) * faded(step * (float)j, tailBeats);
+    const float olderLevel = seen(older.brightness) * faded(step * (float)(j + 1), tailBeats);
     const float walked = older.center - newer.center;
     const float low = fminf(newer.center, older.center) - newer.halfWidth;
     const float high = fmaxf(newer.center, older.center) + newer.halfWidth;
@@ -318,7 +320,7 @@ static void stampTrail(const StripLife &life, const CellState *states, uint8_t c
       const float trail = newerLevel + (olderLevel - newerLevel) * t;
       const float behind = -direction * (logical[i] - head.center);
       const float across = 0.5f + 0.5f * clampUnit(behind / length);
-      const float level = trail * curveAtSample(life, i, across, newer.center);
+      const float level = trail * seen(curveAtSample(life, i, across, newer.center));
       keep(out.samples[i], level, level, across, cell);
     }
   }
