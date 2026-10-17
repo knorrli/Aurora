@@ -253,11 +253,11 @@ function sounding(live) {
 function hasNoEffect(card, live) {
   if (card === Patch.LFO || card === Patch.ROUTES_CARD) {
     return !Patch.ROUTES.some(route =>
-      live[route.destination] !== 0 && live[route.amount] !== Patch.DEFAULT[route.amount]
+      Patch.sounding(live, route)
       && (card === Patch.ROUTES_CARD || Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE.lfo));
   }
   return (card.shownBy || card.amounts).every(name => live[name] === Patch.DEFAULT[name]
-    && !routesOn(name, live).some(route => live[route.amount] !== Patch.DEFAULT[route.amount]));
+    && !routesOn(name, live).some(route => Patch.sounding(live, route)));
 }
 
 function routesOn(name, live) {

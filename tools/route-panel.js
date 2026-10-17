@@ -38,10 +38,21 @@ const aiming = (route, live) => Patch.aimsRoute(live[route.destination]);
 const centered = (route, live) => aiming(route, live) || Patch.swings(targetOf(route, live))
   || (Patch.bipolarCapable(targetOf(route, live)) && Protocol.routeBipolar(live[route.polarity]));
 
-function departureAt(route, phase, live) {
+const dialedCurve = (route, live) => ({ amount: Protocol.signedOf(live[route.amount]), shift: 0 });
+
+function curvesOf(route, live) {
+  const aimed = Patch.aimsAt(live, route, false).length || Patch.aimsAt(live, route, true).length;
+  if (!aimed) return [dialedCurve(route, live)];
+  const index = Patch.ROUTES.indexOf(route);
+  const amounts = Preview.routeAmountAtStrips(index);
+  const shifts = Preview.routeShiftAtStrips(index);
+  return Preview.WALL_STRIP_ORDER.map(strip => ({ amount: amounts[strip - 1], shift: shifts[strip - 1] }));
+}
+
+function departureAt(route, phase, live, curve) {
   const wave = live[route.wave], smooth = live[route.smooth];
-  const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live), wave, smooth);
-  return Protocol.signedOf(live[route.amount]) * (centered(route, live) ? at - Preview.waveMean(wave, smooth) : at);
+  const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live) + curve.shift, wave, smooth);
+  return curve.amount * (centered(route, live) ? at - Preview.waveMean(wave, smooth) : at);
 }
 
 const SOURCE_NAMES = [
@@ -61,8 +72,8 @@ const clockedPerSpot = (route, live) =>
   Patch.perSpot(live[route.destination]) && sourceOf(route, live) === Protocol.ROUTE_SOURCE.lfo;
 const sourceName = source => SOURCE_NAMES.find(([, value]) => value === source)[0];
 
-function padDeparture(route, level, live) {
-  return Protocol.signedOf(live[route.amount]) * (centered(route, live) ? level - 0.5 : level);
+function padDeparture(route, level, live, curve) {
+  return curve.amount * (centered(route, live) ? level - 0.5 : level);
 }
 
 function birthsInCycle(live) {
@@ -76,11 +87,12 @@ const SHOWN_MEMBERS = {
   [Protocol.ROUTE_SOURCE.birth]: birthsInCycle,
 };
 
-function groupDeparture(route, along, live) {
+function groupDeparture(route, along, live, curve) {
   const source = sourceOf(route, live);
   const count = Math.max(1, SHOWN_MEMBERS[source](live));
-  const member = Math.min(count - 1, Math.floor(along * count));
-  let amount = Protocol.signedOf(live[route.amount]);
+  const column = Math.min(count - 1, Math.floor(along * count));
+  const member = source === Protocol.ROUTE_SOURCE.strip ? Preview.WALL_STRIP_ORDER[column] - 1 : column;
+  let amount = curve.amount;
   let level = Preview.groupLevel(Protocol.groupPattern(live[route.wave]), member, count, Patch.ROUTES.indexOf(route));
   if (amount < 0) {
     amount = -amount;
@@ -89,9 +101,9 @@ function groupDeparture(route, along, live) {
   return amount * (centered(route, live) ? level - 0.5 : level);
 }
 
-function envelopeDeparture(route, along, live) {
+function envelopeDeparture(route, along, live, curve) {
   const envelope = envelopeOf(route, live);
-  return Protocol.signedOf(live[route.amount]) * EnvelopeGraph.levelAt(live, envelope, along * EnvelopeGraph.beatsShown(live, envelope));
+  return curve.amount * EnvelopeGraph.levelAt(live, envelope, along * EnvelopeGraph.beatsShown(live, envelope));
 }
 
 function drawWave(canvas, route, live) {
@@ -131,18 +143,21 @@ function drawWave(canvas, route, live) {
     context.stroke();
   }
 
+  const curves = curvesOf(route, live);
   context.strokeStyle = getComputedStyle(canvas).color;
-  context.lineWidth = 2;
+  context.lineWidth = curves.length > 1 ? 1.5 : 2;
   context.lineJoin = 'round';
-  context.beginPath();
-  for (let x = 0; x <= width; x++) {
-    const value = envelopeSource ? envelopeDeparture(route, x / width, live)
-      : groupSource ? groupDeparture(route, x / width, live)
-      : padSource ? padDeparture(route, x / width, live) : departureAt(route, phaseOfX(x, width), live);
-    if (x === 0) context.moveTo(x, y(value));
-    else context.lineTo(x, y(value));
+  for (const curve of curves) {
+    context.beginPath();
+    for (let x = 0; x <= width; x++) {
+      const value = envelopeSource ? envelopeDeparture(route, x / width, live, curve)
+        : groupSource ? groupDeparture(route, x / width, live, curve)
+        : padSource ? padDeparture(route, x / width, live, curve) : departureAt(route, phaseOfX(x, width), live, curve);
+      if (x === 0) context.moveTo(x, y(value));
+      else context.lineTo(x, y(value));
+    }
+    context.stroke();
   }
-  context.stroke();
   canvas.wave = context.getImageData(0, 0, canvas.width, canvas.height);
 }
 
@@ -155,19 +170,18 @@ function drawPlayhead(canvas, route, lfo, live) {
   const context = canvas.getContext('2d');
   context.putImageData(canvas.wave, 0, 0);
   const source = sourceOf(route, live);
-  let x, value;
+  let x, valueOf;
   if (source !== Protocol.ROUTE_SOURCE.lfo) {
     const level = Pad.fingerLevel(source);
     if (level === null) return;
     x = level * width;
-    value = padDeparture(route, level, live);
+    valueOf = curve => padDeparture(route, level, live, curve);
   } else {
     if (lfo === null) return;
     const along = wrapped(lfo / cycles());
     x = xOfPhase(along * cycles(), width);
-    value = departureAt(route, along * cycles(), live);
+    valueOf = curve => departureAt(route, along * cycles(), live, curve);
   }
-  const y = (height / 2) - value * (height / 2 - WAVE_PADDING);
   context.strokeStyle = 'rgba(255,255,255,.35)';
   context.lineWidth = 1;
   context.beginPath();
@@ -175,9 +189,12 @@ function drawPlayhead(canvas, route, lfo, live) {
   context.lineTo(x, height);
   context.stroke();
   context.fillStyle = '#fff';
-  context.beginPath();
-  context.arc(x, y, 3, 0, Math.PI * 2);
-  context.fill();
+  for (const curve of curvesOf(route, live)) {
+    const y = (height / 2) - valueOf(curve) * (height / 2 - WAVE_PADDING);
+    context.beginPath();
+    context.arc(x, y, 3, 0, Math.PI * 2);
+    context.fill();
+  }
 }
 
 function paintPlayheads(lfo, live) {
@@ -361,6 +378,12 @@ function destinationText(destination) {
   return `${Patch.PLACES[name]} · ${control.label}${form}`;
 }
 
+function amountRangeText(route, live) {
+  const amounts = curvesOf(route, live).map(curve => Math.round(curve.amount * 100));
+  const sign = value => (value < 0 ? '−' : '+') + Math.abs(value) + '%';
+  return `${sign(Math.min(...amounts))} … ${sign(Math.max(...amounts))}`;
+}
+
 function paintList(live) {
   let aimed = 0;
   for (const { route, line, target, values, canvas, buttons } of list.lines) {
@@ -373,7 +396,8 @@ function paintList(live) {
     line.style.setProperty('--tone', `var(--${Patch.TONES[targetOf(route, live)]})`);
     const source = sourceOf(route, live);
     const shownControls = source === Protocol.ROUTE_SOURCE.lfo ? route.controls.filter(name => name !== route.hold) : [route.amount];
-    const readouts = shownControls.map(name => Patch.READOUTS[name](live[name], live, session.oneshotBeats()));
+    const readouts = shownControls.map(name => (name === route.amount && Patch.aimsAt(live, route, false).length
+      ? amountRangeText(route, live) : Patch.READOUTS[name](live[name], live, session.oneshotBeats())));
     if (source !== Protocol.ROUTE_SOURCE.lfo) readouts.push(sourceName(source));
     if (fromGroup(route, live)) readouts.push(patternName(route, live));
     readouts.push(...heldText(route, live));

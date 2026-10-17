@@ -253,6 +253,16 @@ static float stretched(uint8_t group, uint8_t groups) {
   return groups > 1 ? (float)group / (float)(groups - 1) : 0.5f;
 }
 
+static float pairsLevel(uint8_t index, uint8_t count) {
+  if (count % 2 == 0) return stretched((uint8_t)(index / 2), (uint8_t)(count / 2));
+  const uint8_t middle = (uint8_t)(count / 2);
+  const uint8_t sideGroups = (uint8_t)((middle + 1) / 2);
+  const uint8_t groups = (uint8_t)(2 * sideGroups + 1);
+  if (index == middle) return stretched(sideGroups, groups);
+  if (index < middle) return stretched((uint8_t)(index / 2), groups);
+  return stretched((uint8_t)(groups - 1 - (count - 1 - index) / 2), groups);
+}
+
 static uint8_t shuffledRank(uint8_t index, uint8_t count, uint8_t salt) {
   if (count > MAX_CHORD) return index;
   uint8_t order[MAX_CHORD];
@@ -278,7 +288,7 @@ float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt) {
       return stretched((uint8_t)((fromCenter < 0 ? -fromCenter : fromCenter) / 2), groups);
     }
     case GROUP_EVENS_ODDS: return (float)(index % 2);
-    case GROUP_PAIRS: return stretched((uint8_t)(index / 2), groups);
+    case GROUP_PAIRS: return pairsLevel(index, count);
     case GROUP_RANDOM: return stretched(shuffledRank(index, count, salt), count);
     default: return stretched(index, count);
   }
@@ -392,6 +402,16 @@ static float aimedAt(const Routes &routes, uint8_t target, bool phase, const Rou
     sum += amount * (level - aim.mean) * (phase ? 1.0f : AMOUNT_AIM_REACH);
   }
   return sum;
+}
+
+static float amountOf(const Routes &routes, uint8_t route, const RouteContext &context);
+
+float routeShiftAt(const Routes &routes, uint8_t route, const RouteContext &context) {
+  return aimedAt(routes, route, true, context);
+}
+
+float routeAmountAt(const Routes &routes, uint8_t route, const RouteContext &context) {
+  return amountOf(routes, route, context);
 }
 
 static float amountOf(const Routes &routes, uint8_t route, const RouteContext &context) {

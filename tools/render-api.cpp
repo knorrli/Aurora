@@ -250,6 +250,18 @@ EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
   return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)cc, (uint8_t)par);
 }
 
+static float routeAtStrip(int route, int strip, bool shift) {
+  static render::Routes routes;
+  render::readRoutes(controls, routes);
+  render::PadLevels levels;
+  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const render::RouteContext context = { frame.lfo, beatsPerCycle, 0.0f, padReaching(strip, levels), (int8_t)strip, nullptr };
+  return shift ? render::routeShiftAt(routes, (uint8_t)route, context) : render::routeAmountAt(routes, (uint8_t)route, context);
+}
+
+EMSCRIPTEN_KEEPALIVE float aurora_route_amount_at_strip(int route, int strip) { return routeAtStrip(route, strip, false); }
+EMSCRIPTEN_KEEPALIVE float aurora_route_shift_at_strip(int route, int strip) { return routeAtStrip(route, strip, true); }
+
 EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
   render::Modulation modulation;
   render::PadLevels levels;

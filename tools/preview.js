@@ -191,6 +191,8 @@ function connect(renderer) {
     bendSpeedRatio: bend => renderer._aurora_bend_speed_ratio(bend),
 
     controlAtStrips: cc => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_control_at_strip(cc, i)),
+    routeAmountAtStrips: route => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_route_amount_at_strip(route, i)),
+    routeShiftAtStrips: route => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_route_shift_at_strip(route, i)),
     parHuePlaces: () => Array.from(huePlaces),
     controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
     routeRefused: cc => !!renderer._aurora_route_refused(cc),

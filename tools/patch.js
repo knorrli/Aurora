@@ -329,8 +329,12 @@ const OFF = 0, ON = 127;
 const threeWayOptions = (positions, labels) =>
   Object.entries(positions).map(([key, position]) => [Protocol.threeWayValue(position), labels[key]]);
 
-const soundingRoutes = live => ROUTES.filter(route =>
-  live[route.destination] !== 0 && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
+const aimsAt = (live, aimed, phase) => ROUTES.filter(route =>
+  live[route.destination] === Protocol.aimDestination(ROUTES.indexOf(aimed), phase)
+  && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
+const sounding = (live, route) => live[route.destination] !== 0
+  && (live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount || aimsAt(live, route, false).length > 0);
+const soundingRoutes = live => ROUTES.filter(route => sounding(live, route));
 const routedTo = (live, names) =>
   soundingRoutes(live).some(route => names.some(name => Protocol.routeTarget(live[route.destination]) === CC[name]));
 
@@ -664,6 +668,6 @@ export {
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
   CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
-  fromLfo, fromGroup, holdable, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
+  fromLfo, fromGroup, holdable, sounding, aimsAt, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
   arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

@@ -112,6 +112,10 @@ Push cellPush(const Routes &routes, uint8_t cc, const RouteContext &context);
 
 float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt);
 
+float routeAmountAt(const Routes &routes, uint8_t route, const RouteContext &context);
+
+float routeShiftAt(const Routes &routes, uint8_t route, const RouteContext &context);
+
 uint8_t envelopesUsed(const float *dialed);
 
 float cellRouted(uint8_t cc, float dialed, float amount, float bipolar, float chord);

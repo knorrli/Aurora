@@ -1,3 +1,4 @@
+import { Protocol } from './cc.js';
 import * as Rows from './control-rows.js';
 import * as Patch from './patch.js';
 import { Preview } from './preview.js';
@@ -55,7 +56,48 @@ function hueBandOf(input) {
   };
 }
 
+const PHASE_VALUES_PER_TURN = 127 * Protocol.ROUTE_PHASE_STEPS / (Protocol.ROUTE_PHASE_STEPS - 1);
+const amountValue = signed => (signed < 0 ? 64 + Math.max(signed, -1) * 64 : 64 + Math.min(signed, 1) * 63);
+
+function aimMean(live, aim) {
+  const source = Protocol.routeSource(live[aim.ratio]);
+  if (source === Protocol.ROUTE_SOURCE.lfo) return Preview.waveMean(live[aim.wave], live[aim.smooth]);
+  const envelope = source - Protocol.ROUTE_SOURCE.envelope1;
+  return envelope >= 0 && envelope < Protocol.ENVELOPES ? 0 : 0.5;
+}
+
+function aimSwing(name) {
+  const route = Patch.routeOf(name);
+  if (!route || (name !== route.amount && name !== route.phase)) return null;
+  const live = session.liveControls();
+  const phase = name === route.phase;
+  const aims = Patch.aimsAt(live, route, phase);
+  if (!aims.length) return null;
+  let low = 0, high = 0;
+  for (const aim of aims) {
+    const amount = Protocol.signedOf(live[aim.amount]) * (phase ? 1 : 2);
+    const mean = aimMean(live, aim);
+    low += Math.min(-amount * mean, amount * (1 - mean));
+    high += Math.max(-amount * mean, amount * (1 - mean));
+  }
+  const index = Patch.ROUTES.indexOf(route);
+  if (phase) {
+    const dialed = live[name];
+    return {
+      spans: wrappedSpans(dialed - high * PHASE_VALUES_PER_TURN, dialed - low * PHASE_VALUES_PER_TURN),
+      marks: Preview.routeShiftAtStrips(index).map(shift => (((dialed - shift * PHASE_VALUES_PER_TURN) % 128) + 128) % 128),
+    };
+  }
+  const dialed = Protocol.signedOf(live[name]);
+  return {
+    spans: [[amountValue(dialed + low), amountValue(dialed + high)]],
+    marks: Preview.routeAmountAtStrips(index).map(amountValue),
+  };
+}
+
 function swingOf(name) {
+  const aimed = aimSwing(name);
+  if (aimed) return aimed;
   const cc = Patch.CC[name];
   const reach = Preview.routeReach(cc);
   if (!reach) return null;

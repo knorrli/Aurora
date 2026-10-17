@@ -54,7 +54,7 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 
 - Everything else in Aurora is dialed, not programmed. Knobs fit that; a drawing tool would be the one place that is programmed.
 - Freely drawn envelopes cost a time, a value and a curve per point, 30 to 45 values for three envelopes. Knobs cost 4 or 5 each.
-- They cover most of the looks: bars moving up are one long attack, the cross is attack and decay with the life starting over, the stepped trail is hold then decay. Hold is why there are five stages, not four.
+- They cover most of the looks: bars moving up are one long attack, the alternating diagonals are attack and decay with the life starting over, the stepped trail is hold then decay. Hold is why there are five stages, not four.
 - What is lost: curves and steps inside a stage. Drawing comes back only if a look on the wall turns out to need it.
 - Three envelopes is the minimum the user wants.
 - The user never pictures moving an envelope live, but every value staying reachable by routes and layers is a core idea, which ruled out storing envelopes outside the controls.
@@ -92,8 +92,8 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 
 ## Why groups are route sources
 
-- Fan was already a wave read across the strips instead of over time, wired to two fixed places. The test looks need that per-member value across strips, a chord's cells and births, and on a route's amount: the cross scales one envelope's journey from +1 to −1 across the strips.
-- The arp's patterns are the shapes the looks need across a group: Sequence the cross, Mirror the chevron, Evens / odds the bright and faint bars and births taking turns. Stretched to the group, they stay right when Chord changes; laying a wave along the group needed one setting for slopes and another for alternation, and a different Ratio per Chord. The user already knows the patterns from the PARs.
+- Fan was already a wave read across the strips instead of over time, wired to two fixed places. The test looks need that per-member value across strips, a chord's cells and births, and on a route's amount: the alternating diagonals scale one envelope's journey from +1 to −1 across the strips.
+- The arp's patterns are the shapes the looks need across a group: Sequence the alternating diagonals, Mirror the chevron, Evens / odds the bright and faint bars and births taking turns. Stretched to the group, they stay right when Chord changes; laying a wave along the group needed one setting for slopes and another for alternation, and a different Ratio per Chord. The user already knows the patterns from the PARs.
 - Births never end, so Birth's stretched patterns count within one LFO cycle, the arp's pass. A held LFO wave steps births too, but starts over before reaching its end, so eight births on a fall wave stop one place short of the bottom.
 - Aiming a route at another route's amount is a modulation matrix's via slot.
 - It replaces Fan and frees its five CCs. A spread fader on every route would have cost 8 to 16 CCs and allowed only a slope; a bigger Fan would have kept one group and one scaling per patch.

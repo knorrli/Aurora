@@ -23,7 +23,7 @@ const EXPORTS = [
   'aurora_ratio_step', 'aurora_ratio', 'aurora_once', 'aurora_source', 'aurora_phase_step', 'aurora_arp_mode_of', 'aurora_hue_layout_of',
   'aurora_switch_on', 'aurora_three_way', 'aurora_four_way', 'aurora_destination_arp', 'aurora_bipolar',
   'aurora_bipolar_capable_of', 'aurora_group_pattern_of', 'aurora_aimed_route_of', 'aurora_aims_phase_of', 'aurora_aim_destination_of',
-  'aurora_group_level',
+  'aurora_group_level', 'aurora_route_amount_at_strip', 'aurora_route_shift_at_strip',
   'aurora_destination_target', 'aurora_destination', 'aurora_arp_pass_length',
   'aurora_arp_turns_per_pass', 'aurora_arp_reversed', 'aurora_route_turns', 'aurora_bend_speed_ratio',
   'aurora_control_at_strip', 'aurora_control_at_par', 'aurora_route_reach', 'aurora_route_refused', 'aurora_cell_control', 'aurora_route_held', 'aurora_envelope_level',
