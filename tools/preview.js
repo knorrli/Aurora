@@ -86,8 +86,7 @@ function connect(renderer) {
     return {
       values: Array.from(fan.subarray(0, STRIPS)),
       curve: Array.from(fan.subarray(STRIPS, after), (value, i) => [i / stepsPerStrip, value]),
-      stillAt: Math.abs(fan[after + 1]) <= 1 ? fan[after + 1] : null,
-      used: [fan[after + 2], fan[after + 3], fan[after + 4]].some(amount => Math.abs(amount) > 0.005),
+      used: [fan[after + 1], fan[after + 2]].some(amount => Math.abs(amount) > 0.005),
     };
   }
 
@@ -582,17 +581,6 @@ function drawFan(context, fan, order, columnWidth, WALL_TOP, WALL_HEIGHT) {
   context.lineTo(xAt(STRIPS - 0.6), middle);
   context.stroke();
 
-  if (fan.stillAt !== null) {
-    const y = middle - fan.stillAt * reach;
-    context.strokeStyle = FAN_MARK_SOFT;
-    context.beginPath();
-    context.moveTo(xAt(-0.4), y);
-    context.lineTo(xAt(STRIPS - 0.6), y);
-    context.stroke();
-    context.fillStyle = FAN_MARK;
-    context.font = '9px ui-monospace, monospace';
-    context.fillText('still', xAt(-0.4) + 2, y - 3);
-  }
   context.setLineDash([]);
 
   if (runs) {

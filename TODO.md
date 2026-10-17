@@ -22,9 +22,8 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
 - Bipolar routes: Bend at wobbling the bend point, the PARs' hue offset swinging either side of the strips, a square on a hue at full amount as a flip to the opposite color.
-- The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, strips at different rates (alive or coming apart?), Randomize. Does a fan whose strips drift apart want a per-patch drift reset, and does its random draw want a seed?
+- The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, Randomize. Does its random draw want a seed?
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
-- Swing a rate: a sine on the fan's rate spread; the hypno look on speed and rate spread together.
 - Morph between patches of different tempo divisions: does the jump read as a glitch? Should it carry position across instead?
 - Snap a press to the nearest beat with a click track: does a press just after the beat read as on it?
 - Morph between real looks: does the morph need per-parameter timing rather than every parameter in lockstep? Should a patch choose to land its visible switches on the press rather than the release?
@@ -70,18 +69,17 @@ Seen only in the preview so far. One look each, driven from the editor.
   - Rate's first step, born once, is born when the patch starts, so its attack plays then.
   - Gate grows toward the top of the fader, unlike LFO Rate.
   - Width runs 0–45 px and Edge adds 0–11 px of glow on each side; Position's middle is the strip's center.
-  - Speed is a strip crossing on the LFO's steps, so a cell crosses the strip in exactly that many beats.
   - Chord runs 1–16.
-  - Only Position, Width, Edge, Brightness, Speed, Hue and Saturation take a value per cell. An envelope aimed elsewhere does nothing; Held aimed elsewhere plays live; a held pad route plays live.
+  - Only Position, Width, Edge, Brightness, Hue and Saturation take a value per cell. An envelope aimed elsewhere does nothing; Held aimed elsewhere plays live; a held pad route plays live.
   - Envelope stages are straight lines, with times from 1⁄16 to 16 beats.
-  - An envelope aimed at Speed moves the cell by everything the envelope has run so far.
   - A strip draws at most 64 cells, the newest; a fast Rate with a long life drops the oldest.
   - Cells overlapping take the brighter one, color included.
   - A gone cell's tail fades out after it.
   - An envelope set to step moves only on Rate's grid; with Rate on once it glides.
+  - A route on Position moves a cell by its amount times the strip's length from where it is dialed, instead of landing at the strip's end as other controls do.
+  - A cell's front, for the curve's Cell body, is the way it is moving, so it flips when a route swings it back.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
 - The brightness curve overlay draws Strip and Wall; what do Cell body and Cell place show?
-- The number of moving bars follows Speed times Rate, which feels unusual. Should Speed be dialed as bars on the strip while Rate repeats, with the speed worked out from Rate?
 - Position puts a cell's center on the strip's end, so a cell at the top or bottom shows only half. Should Position keep the whole cell on the strip?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
@@ -91,7 +89,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
 - Vary a route's amount across a group: across the strips, across a chord's cells, or across successive births. The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half. Cells dividing at the center: a chord of 2 whose cells bend opposite ways, or births taking turns. Five still bars born as one chord, alternating bright and faint.
-- Should Fan reach births and envelopes? Today a cell is born on every strip at the same moment and its envelope runs in step; Fan moves only where it sits, how fast it goes and when its LFO hits. Fanned births would ripple across the wall.
+- Should Fan reach births and envelopes? Today a cell is born on every strip at the same moment and its envelope runs in step; Fan moves only where it sits and when its LFO hits. Fanned births would ripple across the wall.
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.

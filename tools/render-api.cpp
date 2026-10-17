@@ -65,7 +65,7 @@ static_assert(offsetof(render::ArpPass, starts) == sizeof(float) * 4, "");
 static_assert(offsetof(render::ArpPass, pars)
                   == sizeof(float) * (4 + render::PASS_MARKS), "");
 static_assert(sizeof(render::FanReading)
-                  == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS + 6), "");
+                  == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS + 4), "");
 
 extern "C" {
 

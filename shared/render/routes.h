@@ -74,9 +74,6 @@ void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, flo
 
 bool cellControl(uint8_t cc);
 
-float swingShiftAt(const float *dialed, uint8_t cc, float beatsPerCycle, float lfo, float fanShift,
-                   float beatsAgo);
-
 uint8_t gatherCellRoutes(const float *dialed, float fanShift, CellRoute *out);
 
 float envelopeLevel(uint8_t source, const float *envelopes);
@@ -87,8 +84,6 @@ uint8_t envelopesUsed(const float *dialed);
 
 float cellRouted(uint8_t cc, float dialed, float amount, float bipolar, const CellRoute *routes,
                  uint8_t count, const float *levels);
-
-float cellSwingReach(const CellRoute &route);
 
 void carryPadShift(float elapsedBeats, float *carried, Modulation &modulation);
 

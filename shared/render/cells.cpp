@@ -10,6 +10,7 @@ static const uint8_t TRAIL_STEPS = 24;
 static const uint16_t MAX_BIRTHS_SCANNED = 256;
 static const float FOREVER = 1.0e9f;
 static const float FULL_LEVEL = 255.0f;
+static const float VELOCITY_BEATS = 1.0f / 64.0f;
 
 static const uint8_t PER_CELL[] = {
   CC_CELL_POSITION, CC_CELL_WIDTH, CC_CELL_EDGE, CC_CELL_BRIGHTNESS, CC_HUE, CC_SATURATION,
@@ -21,9 +22,6 @@ enum PerCell : uint8_t { POSITION, WIDTH, EDGE, BRIGHTNESS, HUE, SATURATION };
 struct Live {
   float amount[PER_CELL_COUNT];
   float bipolar[PER_CELL_COUNT];
-  float speedShift;
-  float fanSpeedShift;
-  float speedSwing;
 };
 
 struct Life {
@@ -40,18 +38,15 @@ struct StripLife {
   CellRoute routes[RENDER_ROUTES];
   uint8_t routeCount;
   Life life;
-  float baseSpeed;
+  bool wraps;
   float fanOffset;
-  float padSpeedShift;
-  float padFanSpeedShift;
+  Live recent;
   Live past[TRAIL_STEPS + 1];
 };
 
 struct Birth {
   float age;
   float held[RENDER_ROUTES];
-  float speedShift;
-  float fanSpeedShift;
   float chordOffset;
 };
 
@@ -75,22 +70,6 @@ static float stagesAt(const Envelope &envelope, float time) {
   return envelope.sustain;
 }
 
-static float stagesArea(const Envelope &envelope, float time) {
-  const float attack = fminf(time, envelope.attack);
-  float area = envelope.attack > 0.0f ? attack * attack / (2.0f * envelope.attack) : 0.0f;
-  time -= envelope.attack;
-  if (time <= 0.0f) return area;
-  const float hold = fminf(time, envelope.hold);
-  area += hold;
-  time -= envelope.hold;
-  if (time <= 0.0f) return area;
-  const float decay = fminf(time, envelope.decay);
-  if (decay > 0.0f) area += decay * (2.0f + (envelope.sustain - 1.0f) * decay / envelope.decay) * 0.5f;
-  time -= envelope.decay;
-  if (time <= 0.0f) return area;
-  return area + time * envelope.sustain;
-}
-
 static float envelopeAt(const Envelope &envelope, const Life &life, float age) {
   if (life.end == CELL_END_STAY) return stagesAt(envelope, age);
   if (life.end == CELL_END_START_OVER) return stagesAt(envelope, age - life.gateBeats * floorf(age / life.gateBeats));
@@ -99,8 +78,6 @@ static float envelopeAt(const Envelope &envelope, const Life &life, float age) {
   return stagesAt(envelope, life.gateBeats) * fmaxf(0.0f, 1.0f - (age - life.gateBeats) / envelope.release);
 }
 
-static const uint16_t MAX_STEPS_SUMMED = 512;
-
 static bool steps(const Envelope &envelope, const Life &life) { return envelope.stepped && life.stepBeats > 0.0f; }
 
 static float steppedAt(const Envelope &envelope, const Life &life, float age) {
@@ -108,31 +85,11 @@ static float steppedAt(const Envelope &envelope, const Life &life, float age) {
   return envelopeAt(envelope, life, floorf(age / life.stepBeats) * life.stepBeats);
 }
 
-static float glidingArea(const Envelope &envelope, const Life &life, float age) {
-  if (life.end == CELL_END_STAY) return stagesArea(envelope, age);
-  const float lives = floorf(age / life.gateBeats);
-  if (life.end == CELL_END_START_OVER) {
-    return lives * stagesArea(envelope, life.gateBeats) + stagesArea(envelope, age - lives * life.gateBeats);
-  }
-  if (age < life.gateBeats) return stagesArea(envelope, age);
-  const float released = fminf(age - life.gateBeats, envelope.release);
-  const float tail = envelope.release > 0.0f ? released - released * released / (2.0f * envelope.release) : 0.0f;
-  return stagesArea(envelope, life.gateBeats) + stagesAt(envelope, life.gateBeats) * tail;
-}
-
-static float envelopeArea(const Envelope &envelope, const Life &life, float age) {
-  if (!steps(envelope, life)) return glidingArea(envelope, life, age);
-  const float whole = floorf(age / life.stepBeats);
-  const uint16_t summed = whole < (float)MAX_STEPS_SUMMED ? (uint16_t)whole : MAX_STEPS_SUMMED;
-  float area = 0.0f;
-  for (uint16_t step = 0; step < summed; step++) area += envelopeAt(envelope, life, (float)step * life.stepBeats);
-  area *= life.stepBeats;
-  return area + envelopeAt(envelope, life, whole * life.stepBeats) * (age - whole * life.stepBeats);
-}
-
 float envelopeLevelAt(const Envelope &envelope, float gateBeats, uint8_t end, float stepBeats, float age) {
   return steppedAt(envelope, { gateBeats, end, FOREVER, stepBeats }, age);
 }
+
+static bool bornOnce(const Cells &cells) { return cells.rateBeats <= 0.0f; }
 
 static float lastLife(const Cells &cells, const float *dialed) {
   if (cells.end != CELL_END_GONE) return FOREVER;
@@ -144,36 +101,26 @@ static float lastLife(const Cells &cells, const float *dialed) {
   return cells.gateBeats + release;
 }
 
-static void liveOf(const Modulation &modulation, float fanWave, Live &out) {
+static void liveOf(const Modulation &modulation, Live &out) {
   for (uint8_t i = 0; i < PER_CELL_COUNT; i++) {
     out.amount[i] = modulation.amount[PER_CELL[i]];
     out.bipolar[i] = modulation.bipolar[PER_CELL[i]];
   }
-  out.speedShift = modulation.shift[CC_CELL_SPEED];
-  out.fanSpeedShift = modulation.shift[CC_FAN_SPEED];
-  out.speedSwing = modulation.swing[CC_CELL_SPEED] + modulation.swing[CC_FAN_SPEED] * fanWave;
 }
 
-static float speedShiftBefore(const StripLife &life, uint8_t cc, float beatsAgo) {
+static void liveBefore(const StripLife &life, float beatsAgo, Live &out) {
+  static Modulation before;
   const CellsStrip &strip = *life.strip;
-  return swingShiftAt(strip.dialed, cc, life.frame->lfoBeats, life.frame->lfo, strip.fanShift, beatsAgo);
+  gatherRoutesBefore(strip.dialed, life.frame->lfoBeats, life.frame->lfo, strip.fanShift, strip.pad, beatsAgo, before);
+  liveOf(before, out);
 }
 
 static void readPast(StripLife &life) {
-  const CellsStrip &strip = *life.strip;
-  liveOf(*strip.live, strip.fanWave, life.past[0]);
-  life.padSpeedShift = strip.live->shift[CC_CELL_SPEED] - speedShiftBefore(life, CC_CELL_SPEED, 0.0f);
-  life.padFanSpeedShift = strip.live->shift[CC_FAN_SPEED] - speedShiftBefore(life, CC_FAN_SPEED, 0.0f);
+  liveOf(*life.strip->live, life.past[0]);
+  liveBefore(life, VELOCITY_BEATS, life.recent);
   if (life.cells->tailBeats <= 0.0f) return;
-  static Modulation before;
   const float step = life.cells->tailBeats / (float)TRAIL_STEPS;
-  for (uint8_t i = 1; i <= TRAIL_STEPS; i++) {
-    gatherRoutesBefore(strip.dialed, life.frame->lfoBeats, life.frame->lfo, strip.fanShift, strip.pad,
-                       step * (float)i, before);
-    liveOf(before, strip.fanWave, life.past[i]);
-    life.past[i].speedShift += life.padSpeedShift;
-    life.past[i].fanSpeedShift += life.padFanSpeedShift;
-  }
+  for (uint8_t i = 1; i <= TRAIL_STEPS; i++) liveBefore(life, step * (float)i, life.past[i]);
 }
 
 static CellState evaluate(const StripLife &life, const Birth &birth, float beatsAgo, const Live &live) {
@@ -183,10 +130,8 @@ static CellState evaluate(const StripLife &life, const Birth &birth, float beats
   state.exists = true;
 
   float envelopes[AURORA_ENVELOPES];
-  float areas[AURORA_ENVELOPES];
   for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
     envelopes[envelope] = steppedAt(life.cells->envelopes[envelope], life.life, age);
-    areas[envelope] = envelopeArea(life.cells->envelopes[envelope], life.life, age);
   }
   float levels[RENDER_ROUTES];
   for (uint8_t i = 0; i < life.routeCount; i++) {
@@ -201,23 +146,7 @@ static CellState evaluate(const StripLife &life, const Birth &birth, float beats
                                        life.routes, life.routeCount, levels));
   };
 
-  float travel = life.baseSpeed * age + (live.speedShift - birth.speedShift)
-               + (live.fanSpeedShift - birth.fanSpeedShift) * life.strip->fanWave;
-  state.velocity = life.baseSpeed + live.speedSwing;
-  for (uint8_t i = 0; i < life.routeCount; i++) {
-    const CellRoute &route = life.routes[i];
-    if (route.cc != CC_CELL_SPEED) continue;
-    const float reach = cellSwingReach(route);
-    if (aurora_source_is_envelope(route.source)) {
-      travel += reach * areas[route.source - ROUTE_SOURCE_ENVELOPE_1];
-      state.velocity += reach * levels[i];
-    } else {
-      travel += reach * (levels[i] - route.mean) * age;
-      state.velocity += reach * (levels[i] - route.mean);
-    }
-  }
-
-  state.center = value(POSITION) + birth.chordOffset + life.fanOffset + travel;
+  state.center = value(POSITION) + birth.chordOffset + life.fanOffset;
   state.halfWidth = value(WIDTH) * 0.5f;
   state.edge = value(EDGE);
   state.brightness = value(BRIGHTNESS);
@@ -241,7 +170,7 @@ static float curveAtSample(const StripLife &life, uint16_t sample, float across,
     case CELL_ACROSS_STRIP: along = ((float)sample + 0.5f) / (float)STRIP_SAMPLES; break;
     case CELL_ACROSS_WALL: along = (float)life.strip->index / (float)(STRIPS - 1); break;
     case CELL_ACROSS_CELL_BODY: along = across; break;
-    default: along = bentAlong(life.frame->bend, center / (float)PIXELS); break;
+    default: along = bentAlong(life.frame->bend, life.wraps ? fract(center / (float)PIXELS) : center / (float)PIXELS); break;
   }
   return curveOf(along, cells.curve, cells.curveAt);
 }
@@ -299,7 +228,9 @@ static void stampTrail(const StripLife &life, const CellState *states, uint8_t c
   while (newest <= TRAIL_STEPS && !states[newest].exists) newest++;
   if (newest > TRAIL_STEPS) return;
   const CellState &head = states[newest];
-  const float direction = directionOf(head.velocity);
+  const bool followed = newest < TRAIL_STEPS && states[newest + 1].exists
+                     && fabsf(head.center - states[newest + 1].center) > 0.0001f;
+  const float direction = directionOf(followed ? head.center - states[newest + 1].center : head.velocity);
   float length = head.halfWidth;
   for (uint8_t j = newest; j < TRAIL_STEPS && states[j + 1].exists; j++) {
     length += fabsf(states[j + 1].center - states[j].center);
@@ -346,6 +277,15 @@ static void markCell(const StripLife &life, const CellState &state, float age, D
   marks.marks[marks.count++] = { center, state.halfWidth * 2.0f, lifeShare(life.life, age) };
 }
 
+static void stamp(const StripLife &life, const CellState *states, uint8_t cell, bool trailed, DrawnCells &out) {
+  if (states[0].exists) stampBody(life, states[0], cell, out);
+  if (trailed) stampTrail(life, states, cell, out);
+}
+
+static void move(CellState *states, float by) {
+  for (uint8_t j = 0; j <= TRAIL_STEPS; j++) states[j].center += by;
+}
+
 float curveLevel(const Cells &cells, float along) { return curveOf(along, cells.curve, cells.curveAt); }
 
 void readCurve(const Cells &cells, uint8_t strip, float *out) {
@@ -378,13 +318,12 @@ void drawCells(const CellsFrame &frame, const CellsStrip &strip, DrawnCells &out
   life.cells = &cells;
   life.routeCount = gatherCellRoutes(strip.dialed, strip.fanShift, life.routes);
   life.life = { cells.gateBeats, cells.end, lastLife(cells, strip.dialed), cells.rateBeats };
-  life.baseSpeed = controlValue(CC_CELL_SPEED, strip.dialed[CC_CELL_SPEED])
-                 + controlValue(CC_FAN_SPEED, strip.dialed[CC_FAN_SPEED]) * strip.fanWave;
+  life.wraps = bornOnce(cells);
   life.fanOffset = strip.reading->fan.spread * strip.fanWave * (float)PIXELS;
   readPast(life);
 
   const float tailBeats = cells.tailBeats;
-  const bool once = cells.rateBeats <= 0.0f;
+  const bool once = bornOnce(cells);
   const float latest = once ? 0.0f : floorf(frame.beats / cells.rateBeats);
   const float spacing = cells.spread * (float)PIXELS / (float)cells.chord;
   uint8_t drawn = 0;
@@ -399,31 +338,39 @@ void drawCells(const CellsFrame &frame, const CellsStrip &strip, DrawnCells &out
     for (uint8_t i = 0; i < life.routeCount; i++) {
       birth.held[i] = heldLevel(life.routes[i], frame.beats / frame.lfoBeats, frame.lfoBeats, birth.age);
     }
-    birth.speedShift = speedShiftBefore(life, CC_CELL_SPEED, birth.age);
-    birth.fanSpeedShift = speedShiftBefore(life, CC_FAN_SPEED, birth.age);
 
     for (uint8_t note = 0; note < cells.chord && drawn < MAX_CELLS; note++) {
       birth.chordOffset = ((float)note - (float)(cells.chord - 1) * 0.5f) * spacing;
       CellState states[TRAIL_STEPS + 1];
       states[0] = evaluate(life, birth, 0.0f, life.past[0]);
-      if (states[0].exists && !reachesStrip(states[0], tailBeats)) continue;
+      if (states[0].exists) {
+        const CellState earlier = evaluate(life, birth, VELOCITY_BEATS, life.recent);
+        if (earlier.exists) states[0].velocity = (states[0].center - earlier.center) / VELOCITY_BEATS;
+        if (!life.wraps && !reachesStrip(states[0], tailBeats)) continue;
+      }
+      const bool trailed = tailBeats > 0.0f;
+      if (trailed) {
+        const float step = tailBeats / (float)TRAIL_STEPS;
+        for (uint8_t j = 1; j <= TRAIL_STEPS; j++) states[j] = evaluate(life, birth, step * (float)j, life.past[j]);
+      }
+      uint8_t first = 0;
+      while (first <= (trailed ? TRAIL_STEPS : 0) && !states[first].exists) first++;
+      if (first > (trailed ? TRAIL_STEPS : 0)) continue;
 
       const uint8_t cell = drawn++;
-      if (states[0].exists) {
-        out.colors[cell] = { states[0].hue, states[0].saturation, FULL_LEVEL };
-        stampBody(life, states[0], cell, out);
-        markCell(life, states[0], birth.age, out);
+      out.colors[cell] = { states[first].hue, states[first].saturation, FULL_LEVEL };
+      if (!life.wraps) {
+        stamp(life, states, cell, trailed, out);
+        if (states[0].exists) markCell(life, states[0], birth.age, out);
+        continue;
       }
-      if (tailBeats <= 0.0f) continue;
-      const float step = tailBeats / (float)TRAIL_STEPS;
-      for (uint8_t j = 1; j <= TRAIL_STEPS; j++) states[j] = evaluate(life, birth, step * (float)j, life.past[j]);
-      if (!states[0].exists) {
-        uint8_t first = 1;
-        while (first <= TRAIL_STEPS && !states[first].exists) first++;
-        if (first > TRAIL_STEPS) continue;
-        out.colors[cell] = { states[first].hue, states[first].saturation, FULL_LEVEL };
+      move(states, -floorf(states[first].center / (float)PIXELS) * (float)PIXELS);
+      if (states[0].exists) markCell(life, states[0], birth.age, out);
+      move(states, -(float)PIXELS);
+      for (uint8_t lap = 0; lap < 3; lap++) {
+        stamp(life, states, cell, trailed, out);
+        move(states, (float)PIXELS);
       }
-      stampTrail(life, states, cell, out);
     }
   }
 }

@@ -30,7 +30,6 @@ struct Cells {
   float edge;
   float tailBeats;
   float position;
-  float speed;
   float bend;
   float bendAt;
   float brightness;
@@ -43,7 +42,6 @@ struct Cells {
 struct Fan {
   float spread;
   float lfo;
-  float speedPixels;
   float frequency;
   float phase;
   float randomize;

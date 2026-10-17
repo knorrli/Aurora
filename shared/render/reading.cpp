@@ -94,6 +94,11 @@ static float fanFrequencyOf(float value) {
   return (float)step * (FAN_MAX_CYCLES_PER_STRIP / FAN_FREQUENCY_STEPS);
 }
 
+static float positionOf(float value) {
+  const float laps = floorf(value / 127.0f);
+  return (laps + 0.5f + 0.5f * signedOf(value - 127.0f * laps)) * (float)PIXELS;
+}
+
 float controlValue(uint8_t cc, float value) {
   if (envelopeTime(cc)) return envelopeBeatsOf(value);
   switch (cc) {
@@ -112,17 +117,15 @@ float controlValue(uint8_t cc, float value) {
     case CC_ARP_SPREAD: return signedOf(value);
     case CC_CELL_BEND_AT:
     case CC_CELL_CURVE_AT: return 0.5f + 0.5f * signedOf(value);
-    case CC_CELL_POSITION: return (0.5f + 0.5f * signedOf(value)) * (float)PIXELS;
+    case CC_CELL_POSITION: return positionOf(value);
     case CC_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
     case CC_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
-    case CC_CELL_SPEED: return lapsPerBeatOf(value) * (float)PIXELS;
     case CC_CELL_RATE: return cellRateBeatsOf(value);
     case CC_CELL_GATE: return gateBeatsOf(value);
     case CC_CELL_CHORD: return chordOf(value);
     case CC_FAN_SPREAD:
     case CC_FAN_LFO: return signedOf(value) * 0.5f;
-    case CC_SCATTER_SPEED:
-    case CC_FAN_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
+    case CC_SCATTER_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
     case CC_FAN_FREQUENCY: return fanFrequencyOf(value);
     case CC_FAN_PHASE: return value / 128.0f;
     case CC_LFO_RATE: return aurora_lfo_period(roundedControl(value));
@@ -179,7 +182,6 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   cells.edge = at(CC_CELL_EDGE);
   cells.tailBeats = at(CC_CELL_TAIL);
   cells.position = at(CC_CELL_POSITION);
-  cells.speed = at(CC_CELL_SPEED);
   cells.bend = at(CC_CELL_BEND);
   cells.bendAt = at(CC_CELL_BEND_AT);
   cells.brightness = at(CC_CELL_BRIGHTNESS);
@@ -199,7 +201,6 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   Fan &fan = out.fan;
   fan.spread = at(CC_FAN_SPREAD);
   fan.lfo = at(CC_FAN_LFO);
-  fan.speedPixels = at(CC_FAN_SPEED);
   fan.frequency = at(CC_FAN_FREQUENCY);
   fan.phase = at(CC_FAN_PHASE);
   fan.randomize = at(CC_FAN_RANDOMIZE);
@@ -249,7 +250,6 @@ Hsv routedColor(const float *dialed, const Modulation *modulation) {
 
 void hurry(Reading &reading, float speed) {
   reading.lfoBeats /= speed;
-  reading.fan.speedPixels *= speed;
   reading.field.cellsPerBeat *= speed;
   reading.flow.cyclesPerBeat *= speed;
   reading.scatter.rate *= speed;

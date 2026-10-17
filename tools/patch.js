@@ -147,11 +147,7 @@ const fanPicture = live => Preview.WALL_STRIP_ORDER.map(strip => {
   return BARS[Math.round((wave + 1) / 2 * (BARS.length - 1))];
 }).join('');
 
-const fanShift = (live, reach) => {
-  const speed = Math.abs(real('cellSpeed', live.cellSpeed));
-  const shift = reach * Preview.PIXELS;
-  return '±' + (speed > 0 ? beatsText(shift / speed) : pixels(shift));
-};
+const fanShift = reach => '±' + pixels(reach * Preview.PIXELS);
 
 const isGradient = live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient;
 
@@ -197,11 +193,6 @@ const READOUTS = {
   cellEdge: value => pixels(real('cellEdge', value)) + ' glow',
   cellTail: value => beatsOrNone(real('cellTail', value), 'none'),
   cellPosition: value => upTheStrip(real('cellPosition', value) / Preview.PIXELS),
-  cellSpeed: value => {
-    const speed = real('cellSpeed', value);
-    if (speed === 0) return 'still';
-    return (speed > 0 ? '↑' : '↓') + ' ' + lapName(speed / Preview.PIXELS);
-  },
   cellBend: value => {
     const ratio = Preview.bendSpeedRatio(value);
     if (ratio < 1.01) return 'even';
@@ -221,9 +212,8 @@ const READOUTS = {
     if (across === Protocol.CELL_ACROSS.cellBody) return backTheCell(at);
     return upTheStrip(at);
   },
-  fanSpread: (value, live) => fanShift(live, Math.abs(real('fanSpread', value))),
+  fanSpread: value => fanShift(Math.abs(real('fanSpread', value))),
   fanLfo: value => '±' + Math.round(Math.abs(real('fanLfo', value)) * 360) + '°',
-  fanSpeed: value => '±' + Math.abs(real('fanSpeed', value)).toFixed(1) + ' px/beat',
   fanFrequency: (value, live) => {
     const turned = live.copy();
     turned.fanFrequency = value;
@@ -355,9 +345,8 @@ const routedTo = (live, names) =>
   soundingRoutes(live).some(route => names.some(name => Protocol.routeTarget(live[route.destination]) === CC[name]));
 const atZero = (live, names) => names.every(name => real(name, live[name]) === 0);
 
-const nothingTravels = live =>
-  atZero(live, ['cellSpeed', 'fanSpeed']) && !routedTo(live, ['cellSpeed', 'cellPosition', 'fanSpread', 'fanSpeed']);
-const FAN_AMOUNTS = ['fanSpread', 'fanSpeed', 'fanLfo'];
+const nothingTravels = live => !routedTo(live, ['cellPosition', 'fanSpread']);
+const FAN_AMOUNTS = ['fanSpread', 'fanLfo'];
 const fanIsFlat = live => atZero(live, FAN_AMOUNTS) && !routedTo(live, FAN_AMOUNTS);
 const inertWhileStill = { inertWhen: nothingTravels };
 const inertWhileFlat = { inertWhen: fanIsFlat };
@@ -417,7 +406,6 @@ const CELLS = {
     {
       title: 'Travel', tone: 'travel',
       names: [
-        control('cellSpeed', 'Speed'),
         control('cellPosition', 'Position'),
         control('cellBend', 'Bend', inertWhileStill),
         control('cellBendAt', 'Bend at',
@@ -428,7 +416,6 @@ const CELLS = {
       title: 'Fan', tone: 'fan',
       names: [
         control('fanSpread', 'Spread'),
-        control('fanSpeed', 'Speed'),
         control('fanLfo', 'LFO', { inertWhen: live => !soundingRoutes(live).length }),
         control('fanFrequency', 'Frequency', inertWhileFlat),
         control('fanPhase', 'Phase', inertWhileFlat),
@@ -663,7 +650,7 @@ function wholeCounts(valueOf) {
 
 const STEPPED = new Set([
   'lfoRate', 'flowRate', 'scatterRate', 'fanFrequency', 'fieldSpeed',
-  'cellRate', 'cellChord', 'cellGate', 'cellTail', 'cellSpeed',
+  'cellRate', 'cellChord', 'cellGate', 'cellTail',
   ...ENVELOPES.flatMap(stages => [stages.attack, stages.hold, stages.decay, stages.release]),
 ]);
 

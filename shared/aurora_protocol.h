@@ -49,13 +49,11 @@ enum AuroraCC : uint8_t {
     CC_CELL_TAIL             = 38, // [patch]
 
     CC_CELL_ACROSS           = 39, // [switch]
-    CC_CELL_SPEED            = 40, // [patch][rate]
     CC_CELL_POSITION         = 41, // [patch]
     CC_CELL_BEND             = 42, // [patch][unstaggered]
     CC_CELL_BEND_AT          = 43, // [patch][unstaggered]
 
     CC_FAN_SPREAD            = 44, // [patch][unstaggered]
-    CC_FAN_SPEED             = 45, // [patch][rate][unstaggered]
     CC_FAN_LFO               = 46, // [patch][unstaggered]
     CC_FAN_FREQUENCY         = 47, // [patch][unstaggered]
     CC_FAN_PHASE             = 48, // [patch][circular][unstaggered]
@@ -137,7 +135,6 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_LFO_RATE,                64 },
     { CC_CELL_END,               127 },
     { CC_CELL_WIDTH,              20 },
-    { CC_CELL_SPEED,              64 },
     { CC_CELL_POSITION,           64 },
     { CC_CELL_BEND,               64 },
     { CC_CELL_BEND_AT,            64 },
@@ -149,7 +146,6 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_ENVELOPE_2_SUSTAIN,     127 },
     { CC_ENVELOPE_3_SUSTAIN,     127 },
     { CC_FAN_SPREAD,              64 },
-    { CC_FAN_SPEED,               64 },
     { CC_FAN_LFO,                 64 },
     { CC_FAN_FREQUENCY,           32 },
     { CC_SCATTER_COUNT,           80 },

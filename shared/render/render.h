@@ -53,7 +53,7 @@ struct ScatterClock {
   float randomize;
 };
 
-static const uint8_t SWINGING_CONTROLS = 5;
+static const uint8_t SWINGING_CONTROLS = 3;
 
 struct PadFinger {
   bool playing = false;
@@ -103,9 +103,7 @@ struct FanReading {
   float values[STRIPS];
   float curve[FAN_CURVE_POINTS];
   float turns;
-  float stillAt;
   float spread;
-  float speed;
   float lfo;
   float randomize;
 };
