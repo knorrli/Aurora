@@ -15,6 +15,9 @@
 - Playing and patch design are separate. The box and a DAW play Aurora with the same messages: program changes for patches, songs and blackout, notes for oneshots and the held key, CCs for the three layer faders and the pad, and MIDI clock. These CC numbers are fixed.
 - Patch controls are numbered by their place in the patch, not by CC, and are unlimited in count. The editor dials them on the brain with a SysEx message that sets a control to a value. No CC reaches inside a patch.
 - Every patch control holds one thing. A setting is its own control, never folded into a value's range.
+- A route's Source, Cycle and Ratio are three settings.
+- A layer flips settings halfway up its fader, and back at the same point.
+- When a layer changes any of a route's settings, the route plays twice: the base's version at its Amount × (1 − fader), the layer's version at its Amount × fader.
 
 ## The faders
 

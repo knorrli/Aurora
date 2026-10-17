@@ -20,6 +20,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Arp modes on steps, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
+- Layer faders flip settings halfway: does halfway read right, or should it be earlier or at the top?
 - Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
 - Bipolar routes: Bend at wobbling the bend point, the PARs' hue offset swinging either side of the strips, a square on a hue at full amount as a flip to the opposite color.
 - Strip routes: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, a random draw across the strips. Does the random draw want a seed?
