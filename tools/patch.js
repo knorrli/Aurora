@@ -355,6 +355,7 @@ const nothingTravels = live => !routedTo(live, ['cellPosition', 'fanSpread']);
 const FAN_AMOUNTS = ['fanSpread', 'fanLfo'];
 const fanIsFlat = live => atZero(live, FAN_AMOUNTS) && !routedTo(live, FAN_AMOUNTS);
 const inertWhileStill = { inertWhen: nothingTravels };
+const bendIsFlat = live => Math.abs(real('cellBend', live.cellBend)) < 0.005 && !routedTo(live, ['cellBend']);
 const inertWhileFlat = { inertWhen: fanIsFlat };
 const endsAs = (live, end) => Protocol.threeWayPosition(live.cellEnd) === Protocol.CELL_END[end];
 const curveIsFlat = live => Math.abs(real('cellCurve', live.cellCurve)) < 0.005 && !routedTo(live, ['cellCurve']);
@@ -378,9 +379,8 @@ const CELLS = {
         control('cellChord', 'Chord'),
         control('cellSpread', 'Spread', { inertWhen: live => real('cellChord', live.cellChord) === 1 }),
         control('cellPosition', 'Position'),
-        control('cellBend', 'Bend', inertWhileStill),
-        control('cellBendAt', 'Bend at',
-          { inertWhen: live => nothingTravels(live) || Math.abs(real('cellBend', live.cellBend)) < 0.005 }),
+        control('cellBend', 'Bend'),
+        control('cellBendAt', 'Bend at', { inertWhen: bendIsFlat }),
       ],
     },
     {

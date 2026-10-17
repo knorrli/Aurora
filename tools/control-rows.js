@@ -295,12 +295,17 @@ function paintPickValue(row, live) {
   if (row.select && +row.select.value !== value) row.select.value = value;
 }
 
+const paintInert = (row, live) =>
+  row.root.classList.toggle('inert', !!(row.control.inertWhen && row.control.inertWhen(live)));
+
 function paintValues(live) {
   for (const row of Object.values(rows)) {
     if (row.kind === 'fader') paintFaderValue(row, live);
     else paintPickValue(row, live);
+    paintInert(row, live);
   }
-  paintEnvelopeGraphs(live);
+  paintCards(live);
+  paintEnvelopesCard(live);
 }
 
 function paintFader(row, live, base, overrides) {
@@ -312,8 +317,7 @@ function paintFader(row, live, base, overrides) {
     row.ghost.style.left = `calc(${Tracks.along(row.slider, sliderPosition(row.control, base[name]))} - 1px)`;
   }
   if (row.swatch) row.swatch.style.background = `rgb(${row.control.swatch(live).join(',')})`;
-  const inert = !!(row.control.inertWhen && row.control.inertWhen(live));
-  row.root.classList.toggle('inert', inert);
+  paintInert(row, live);
 }
 
 function paintPick(row, live) {
@@ -322,7 +326,7 @@ function paintPick(row, live) {
   if (row.select) row.select.disabled = !!held;
   row.root.classList.toggle('locked', !!held);
   row.from.textContent = !session.isAboveBase() ? '' : held ? `held at "${held.name}"` : 'from the patch';
-  row.root.classList.toggle('inert', !!(row.control.inertWhen && row.control.inertWhen(live)));
+  paintInert(row, live);
 }
 
 function paintCards(live) {
