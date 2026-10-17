@@ -78,6 +78,12 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - An envelope on Position is one cell's journey; the LFO on Position moves every cell at once; with born-once cells wrapping, a falling wave at full amount is an endless glide.
 - The cost: the plainest moving look takes an envelope and a route instead of one knob, and Fan no longer spreads how fast cells go.
 
+## Why Ends is a switch
+
+- Measured at a cell's center, Position's extremes put half the cell past the end: a bar born at an end could neither slide in from outside nor sit fully in view, and wrapping split a bar across both ends.
+- Outside makes falling bars and gliding chords dial with no tuning: born just out of view, carried across at full amount, wrapping out of view. Inside makes still bars and swings dial at the extremes, where the faders live.
+- Either alone breaks the other's looks: Outside leaves nothing drawn at the extremes, Inside never lets a bar slide in. A switch costs one control and no tuning.
+
 ## Why Scatter stays
 
 - Scatter paints over the strip with its own color and mix. One cell engine has one player and one kind of cell at a time, so merging the two would lose looks like a faint bar pattern with white spots flashing over it.

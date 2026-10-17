@@ -28,15 +28,16 @@
 - Going dark never ends a cell. Routes change cells and never end them.
 - The clock starts cells and never ends one. Rate, Chord and Spread decide the births.
 - Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its first step is born once.
-- Chord is how many cells each birth starts. Spread is how far apart they are: full spreads them evenly over the strip, zero puts them in one place.
+- Chord is how many cells each birth starts. Spread is how far apart they are: full spreads them evenly over the travel, zero puts them in one place.
 - Cells are born at the dialed Position.
+- Ends sets what Position's extremes mean, for the whole patch. Inside: at either extreme the cell's edge sits flush with the strip's end, the whole cell in view. Outside: at either extreme the cell sits just past the end, out of view. That span is the cell's travel; Spread and routes on Position are measured along it.
 - A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
 - One cell's life is set per patch; the births and the per-strip settings make the wall from it.
 - Width is a cell's size on the strip, independent of Chord. The editor shows it in pixels.
 - Edge, Tail, Bend and Bend at work on cells as they do on Shape today. There is no Count and no Bounce: Chord and Spread place cells, and a looping envelope on Position swings a cell around its birthplace.
-- There is no Speed. A cell moves by routes on Position: an envelope for its own journey, the LFO for every cell at once. A route on Position moves a cell by its amount times the strip's length, and can carry it off the strip.
-- Cells born at a Rate never wrap: a cell traveling off the strip is out of view until its gate ends. Cells born once wrap: leaving one end, they come back at the other.
+- There is no Speed. A cell moves by routes on Position: an envelope for its own journey, the LFO for every cell at once. A route on Position moves a cell by its amount times the travel, and can carry it off the strip.
+- Cells born at a Rate never wrap: a cell traveling off the strip is out of view until its gate ends. Cells born once wrap: leaving one end of the travel, they come back at the other. Outside, a cell is fully out of view when it wraps.
 - Births come from the beat timeline: when a patch starts, the cells born on earlier beats are already in flight. Held and random values come from the birth's number.
 - The plainest cell has no envelope routed. Still bars are a chord born once that stays. Moving bars are cells born at one end at Rate, carried across by an envelope on Position; the bars on the strip at once are how long each stays in view divided by Rate. Gliding bars are a chord born once, moved by the LFO's falling wave on Position at full amount.
 
