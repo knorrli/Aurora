@@ -64,6 +64,8 @@ struct CellState {
 };
 
 static float stagesAt(const Envelope &envelope, float time) {
+  time -= envelope.delay;
+  if (time < 0.0f) return 0.0f;
   if (time < envelope.attack) return time / envelope.attack;
   time -= envelope.attack;
   if (time < envelope.hold) return 1.0f;

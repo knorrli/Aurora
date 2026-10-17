@@ -13,6 +13,7 @@ static const float MAX_DELAY_STEPS = 2.0f;
 static const float EDGE_REACH_PIXELS = PIXELS * 0.25f;
 
 struct Envelope {
+  float delay;
   float attack;
   float hold;
   float decay;

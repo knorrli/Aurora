@@ -50,8 +50,9 @@ static float chordOf(float value) {
 }
 
 static bool envelopeTime(uint8_t cc) {
-  if (cc < CC_ENVELOPE_1_ATTACK || cc > CC_ENVELOPE_3_RELEASE) return false;
-  return (cc - CC_ENVELOPE_1_ATTACK) % ENVELOPE_STAGES != ENVELOPE_SUSTAIN;
+  if (cc < CC_ENVELOPE_1_DELAY || cc > CC_ENVELOPE_3_RELEASE) return false;
+  const uint8_t stage = (uint8_t)((cc - CC_ENVELOPE_1_DELAY) % (ENVELOPE_STAGES + 1));
+  return stage != ENVELOPE_SUSTAIN && stage != ENVELOPE_STAGES;
 }
 
 static inline float unitOf(float value) { return value / 127.0f; }
@@ -185,6 +186,7 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   cells.direction = aurora_four_way_position(roundedControl(dialed[CC_CELL_DIRECTION]));
   for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
     Envelope &stages = cells.envelopes[envelope];
+    stages.delay = at(aurora_envelope_cc(envelope, ENVELOPE_DELAY));
     stages.attack = at(aurora_envelope_cc(envelope, ENVELOPE_ATTACK));
     stages.hold = at(aurora_envelope_cc(envelope, ENVELOPE_HOLD));
     stages.decay = at(aurora_envelope_cc(envelope, ENVELOPE_DECAY));

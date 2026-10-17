@@ -168,7 +168,7 @@ const directionSwitch = {
   options: Object.entries(Protocol.DIRECTION).map(([key, position]) => [Protocol.fourWayValue(position), DIRECTION_NAMES[key]]),
 };
 
-const ENVELOPE_LABELS = { moves: 'Moves', attack: 'Attack', hold: 'Hold', decay: 'Decay', sustain: 'Sustain', release: 'Release' };
+const ENVELOPE_LABELS = { moves: 'Moves', delay: 'Delay', attack: 'Attack', hold: 'Hold', decay: 'Decay', sustain: 'Sustain', release: 'Release' };
 const envelopeName = (envelope, field) => `envelope${envelope + 1}${capitalized(field)}`;
 const ENVELOPES = Array.from({ length: Protocol.ENVELOPES }, (_, envelope) => Object.fromEntries(
   ['moves', ...Object.keys(Protocol.ENVELOPE_STAGE)].map(field => [field, envelopeName(envelope, field)])));
@@ -642,7 +642,7 @@ function wholeCounts(valueOf) {
 const STEPPED = new Set([
   'lfoRate', 'flowRate', 'scatterRate', 'fieldSpeed',
   'cellRate', 'cellChord', 'cellGate', 'cellTail',
-  ...ENVELOPES.flatMap(stages => [stages.attack, stages.hold, stages.decay, stages.release]),
+  ...ENVELOPES.flatMap(stages => [stages.delay, stages.attack, stages.hold, stages.decay, stages.release]),
 ]);
 
 function pointsFor(name) {

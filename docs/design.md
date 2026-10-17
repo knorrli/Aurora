@@ -19,9 +19,9 @@
 
 - Shapes are built from cells. A cell is one lit thing with a life: it is born, lives, and ends. One cell is one note.
 - A cell is the thing, not the lit region it draws: it can be dark for a moment, overlap another cell, or look merged with one.
-- A cell's life is its gate: a length on the LFO's steps. Its envelopes run attack, hold and decay, sit at sustain until the gate ends, then release.
+- A cell's life is its gate: a length on the LFO's steps. Its envelopes wait out their delay, run attack, hold and decay, sit at sustain until the gate ends, then release.
 - Cells replace Shape. Scatter stays, painting over the cells with its own color.
-- A cell has three envelopes, set with knobs: attack, hold, decay, sustain and release. They run on the cell's age from birth, and each cell runs its own.
+- A cell has three envelopes, set with knobs: delay, attack, hold, decay, sustain and release. Delay holds the envelope at zero after birth; on start over it waits again each time. They run on the cell's age from birth, and each cell runs its own.
 - Envelopes are route sources, like the LFO: a route aims one at position, width, brightness or another control, with an amount. One envelope can drive several controls. A control no route aims at stays as dialed.
 - A route on position moves a cell away from its birthplace.
 - One setting decides what happens when the gate ends. Gone: the envelopes release, and the cell disappears once the last one has finished. Start over: the envelopes start again from attack, and release never plays. Stay: the gate never ends, and the envelopes hold at sustain.

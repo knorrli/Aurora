@@ -280,10 +280,10 @@ EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefu
 EMSCRIPTEN_KEEPALIVE int aurora_cell_control(int cc) { return render::cellControl((uint8_t)cc); }
 EMSCRIPTEN_KEEPALIVE int aurora_route_held(int value) { return aurora_route_held((uint8_t)value); }
 
-EMSCRIPTEN_KEEPALIVE float aurora_envelope_level(int attack, int hold, int decay, int sustain, int release,
+EMSCRIPTEN_KEEPALIVE float aurora_envelope_level(int delay, int attack, int hold, int decay, int sustain, int release,
                                                  int moves, int gate, int end, int rate, float age) {
   const render::Envelope envelope = {
-    render::controlValue(CC_ENVELOPE_1_ATTACK, (float)attack), render::controlValue(CC_ENVELOPE_1_HOLD, (float)hold),
+    render::controlValue(CC_ENVELOPE_1_DELAY, (float)delay), render::controlValue(CC_ENVELOPE_1_ATTACK, (float)attack), render::controlValue(CC_ENVELOPE_1_HOLD, (float)hold),
     render::controlValue(CC_ENVELOPE_1_DECAY, (float)decay), render::controlValue(CC_ENVELOPE_1_SUSTAIN, (float)sustain),
     render::controlValue(CC_ENVELOPE_1_RELEASE, (float)release), aurora_switch_is_on((uint8_t)moves),
   };

@@ -54,7 +54,8 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 
 - Everything else in Aurora is dialed, not programmed. Knobs fit that; a drawing tool would be the one place that is programmed.
 - Freely drawn envelopes cost a time, a value and a curve per point, 30 to 45 values for three envelopes. Knobs cost 4 or 5 each.
-- They cover most of the looks: bars moving up are one long attack, the alternating diagonals are attack and decay with the life starting over, the stepped trail is hold then decay. Hold is why there are five stages, not four.
+- They cover most of the looks: bars moving up are one long attack, the alternating diagonals are attack and decay with the life starting over, the stepped trail is hold then decay. Hold is why there are more stages than ADSR's four.
+- Delay was added for a cell that grows at the center before it divides and moves: the move has to wait for the growth, counted from each cell's birth. Life's Delay cannot do it, since it moves the growth too; an LFO cycled once can, but only while every birth lands at the start of an LFO cycle. Inverting an envelope route would have used Hold as the wait, but read upside down. Delay is the synth name, and on an envelope card it cannot be confused with Life's Delay.
 - What is lost: curves and steps inside a stage. Drawing comes back only if a look on the wall turns out to need it.
 - Three envelopes is the minimum the user wants.
 - The user never pictures moving an envelope live, but every value staying reachable by routes and layers is a core idea, which ruled out storing envelopes outside the controls.

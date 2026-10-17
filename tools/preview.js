@@ -198,7 +198,7 @@ function connect(renderer) {
     routeRefused: cc => !!renderer._aurora_route_refused(cc),
     cellControl: cc => !!renderer._aurora_cell_control(cc),
     envelopeLevel: (stages, gate, end, rate, age) =>
-      renderer._aurora_envelope_level(stages.attack, stages.hold, stages.decay, stages.sustain, stages.release,
+      renderer._aurora_envelope_level(stages.delay, stages.attack, stages.hold, stages.decay, stages.sustain, stages.release,
                                       stages.moves, gate, end, rate, age),
     spotDestination: cc => !!renderer._aurora_spot_destination(cc),
     blend(fromBytes, toBytes, position, switchBytes, switchesFromStart) {

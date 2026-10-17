@@ -63,57 +63,62 @@ enum AuroraCC : uint8_t {
     CC_CELL_CURVE            = 49, // [patch]
     CC_CELL_CURVE_AT         = 50, // [patch]
 
-    CC_SCATTER_COUNT         = 54, // [patch]
-    CC_SCATTER_WIDTH         = 55, // [patch]
-    CC_SCATTER_EDGE          = 56, // [patch]
-    CC_SCATTER_RATE          = 57, // [patch][rate]
-    CC_SCATTER_SPEED         = 58, // [patch]
-    CC_SCATTER_RANDOMIZE     = 59, // [patch]
-    CC_SCATTER_POSITION      = 60, // [patch]
-    CC_SCATTER_MIX           = 61, // [patch]
-    CC_SCATTER_HUE           = 62, // [patch]
-    CC_SCATTER_SATURATION    = 63, // [patch]
-    CC_SCATTER_VALUE         = 65, // [patch]
+    CC_SCATTER_COUNT         = 51, // [patch]
+    CC_SCATTER_WIDTH         = 52, // [patch]
+    CC_SCATTER_EDGE          = 53, // [patch]
+    CC_SCATTER_RATE          = 54, // [patch][rate]
+    CC_SCATTER_SPEED         = 55, // [patch]
+    CC_SCATTER_RANDOMIZE     = 56, // [patch]
+    CC_SCATTER_POSITION      = 57, // [patch]
+    CC_SCATTER_MIX           = 58, // [patch]
+    CC_SCATTER_HUE           = 59, // [patch]
+    CC_SCATTER_SATURATION    = 60, // [patch]
+    CC_SCATTER_VALUE         = 61, // [patch]
 
-    CC_FIELD_FORM            = 66, // [switch]
-    CC_FIELD_DIRECTION       = 67, // [switch]
-    CC_FIELD_COUNT           = 68, // [patch]
-    CC_FIELD_WIDTH           = 69, // [patch]
-    CC_FIELD_EDGE            = 70, // [patch]
-    CC_FIELD_SPEED           = 71, // [patch][rate]
-    CC_FIELD_POSITION        = 72, // [patch]
-    CC_FIELD_HUE             = 73, // [patch]
-    CC_FIELD_WHITE           = 74, // [patch]
-    CC_FIELD_DARK            = 75, // [patch]
+    CC_FIELD_FORM            = 62, // [switch]
+    CC_FIELD_DIRECTION       = 63, // [switch]
+    CC_FIELD_COUNT           = 65, // [patch]
+    CC_FIELD_WIDTH           = 66, // [patch]
+    CC_FIELD_EDGE            = 67, // [patch]
+    CC_FIELD_SPEED           = 68, // [patch][rate]
+    CC_FIELD_POSITION        = 69, // [patch]
+    CC_FIELD_HUE             = 70, // [patch]
+    CC_FIELD_WHITE           = 71, // [patch]
+    CC_FIELD_DARK            = 72, // [patch]
 
-    CC_FLOW_DENSITY          = 76, // [patch]
-    CC_FLOW_RATE             = 77, // [patch][rate]
-    CC_FLOW_HUE              = 78, // [patch]
-    CC_FLOW_WHITE            = 79, // [patch]
-    CC_FLOW_DARK             = 80, // [patch]
+    CC_FLOW_DENSITY          = 73, // [patch]
+    CC_FLOW_RATE             = 74, // [patch][rate]
+    CC_FLOW_HUE              = 75, // [patch]
+    CC_FLOW_WHITE            = 76, // [patch]
+    CC_FLOW_DARK             = 77, // [patch]
 
-    CC_CORE_HUE              = 81, // [patch]
-    CC_CORE_WHITE            = 82, // [patch]
-    CC_CORE_DARK             = 83, // [patch]
+    CC_CORE_HUE              = 78, // [patch]
+    CC_CORE_WHITE            = 79, // [patch]
+    CC_CORE_DARK             = 80, // [patch]
 
-    CC_ENVELOPE_1_ATTACK     = 84, // [patch]
-    CC_ENVELOPE_1_HOLD       = 85, // [patch]
-    CC_ENVELOPE_1_DECAY      = 86, // [patch]
-    CC_ENVELOPE_1_SUSTAIN    = 87, // [patch]
-    CC_ENVELOPE_1_RELEASE    = 88, // [patch]
-    CC_ENVELOPE_2_ATTACK     = 89, // [patch]
-    CC_ENVELOPE_2_HOLD       = 90, // [patch]
-    CC_ENVELOPE_2_DECAY      = 91, // [patch]
-    CC_ENVELOPE_2_SUSTAIN    = 92, // [patch]
-    CC_ENVELOPE_2_RELEASE    = 93, // [patch]
-    CC_ENVELOPE_3_ATTACK     = 94, // [patch]
-    CC_ENVELOPE_3_HOLD       = 95, // [patch]
-    CC_ENVELOPE_3_DECAY      = 96, // [patch]
-    CC_ENVELOPE_3_SUSTAIN    = 97, // [patch]
-    CC_ENVELOPE_3_RELEASE    = 98, // [patch]
-    CC_ENVELOPE_1_MOVES      = 99, // [switch]
-    CC_ENVELOPE_2_MOVES      = 100, // [switch]
-    CC_ENVELOPE_3_MOVES      = 101, // [switch]
+    CC_ENVELOPE_1_MOVES      = 81, // [switch]
+    CC_ENVELOPE_1_DELAY      = 82, // [patch]
+    CC_ENVELOPE_1_ATTACK     = 83, // [patch]
+    CC_ENVELOPE_1_HOLD       = 84, // [patch]
+    CC_ENVELOPE_1_DECAY      = 85, // [patch]
+    CC_ENVELOPE_1_SUSTAIN    = 86, // [patch]
+    CC_ENVELOPE_1_RELEASE    = 87, // [patch]
+
+    CC_ENVELOPE_2_MOVES      = 88, // [switch]
+    CC_ENVELOPE_2_DELAY      = 89, // [patch]
+    CC_ENVELOPE_2_ATTACK     = 90, // [patch]
+    CC_ENVELOPE_2_HOLD       = 91, // [patch]
+    CC_ENVELOPE_2_DECAY      = 92, // [patch]
+    CC_ENVELOPE_2_SUSTAIN    = 93, // [patch]
+    CC_ENVELOPE_2_RELEASE    = 94, // [patch]
+
+    CC_ENVELOPE_3_MOVES      = 95, // [switch]
+    CC_ENVELOPE_3_DELAY      = 96, // [patch]
+    CC_ENVELOPE_3_ATTACK     = 97, // [patch]
+    CC_ENVELOPE_3_HOLD       = 98, // [patch]
+    CC_ENVELOPE_3_DECAY      = 99, // [patch]
+    CC_ENVELOPE_3_SUSTAIN    = 100, // [patch]
+    CC_ENVELOPE_3_RELEASE    = 101, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -269,20 +274,21 @@ static inline uint8_t aurora_group_pattern(uint8_t value) {
 static const uint8_t AURORA_ENVELOPES = 3;
 
 enum AuroraEnvelopeStage : uint8_t {
-    ENVELOPE_ATTACK  = 0,
-    ENVELOPE_HOLD    = 1,
-    ENVELOPE_DECAY   = 2,
-    ENVELOPE_SUSTAIN = 3,
-    ENVELOPE_RELEASE = 4,
-    ENVELOPE_STAGES  = 5,
+    ENVELOPE_DELAY   = 0,
+    ENVELOPE_ATTACK  = 1,
+    ENVELOPE_HOLD    = 2,
+    ENVELOPE_DECAY   = 3,
+    ENVELOPE_SUSTAIN = 4,
+    ENVELOPE_RELEASE = 5,
+    ENVELOPE_STAGES  = 6,
 };
 
 static inline uint8_t aurora_envelope_cc(uint8_t envelope, uint8_t stage) {
-    return (uint8_t)(CC_ENVELOPE_1_ATTACK + envelope * ENVELOPE_STAGES + stage);
+    return (uint8_t)(CC_ENVELOPE_1_DELAY + envelope * (ENVELOPE_STAGES + 1) + stage);
 }
 
 static inline uint8_t aurora_envelope_moves_cc(uint8_t envelope) {
-    return (uint8_t)(CC_ENVELOPE_1_MOVES + envelope);
+    return (uint8_t)(CC_ENVELOPE_1_MOVES + envelope * (ENVELOPE_STAGES + 1));
 }
 
 static inline bool aurora_source_is_envelope(uint8_t source) {
@@ -325,7 +331,7 @@ static inline bool aurora_bipolar_capable(uint8_t cc) {
 
 static const uint8_t AURORA_AIM_DESTINATION_BASE = 104;
 
-static_assert(CC_ENVELOPE_3_MOVES < AURORA_AIM_DESTINATION_BASE, "");
+static_assert(CC_ENVELOPE_3_RELEASE < AURORA_AIM_DESTINATION_BASE, "");
 static_assert(AURORA_AIM_DESTINATION_BASE + 2 * AURORA_ROUTES <= AURORA_ARP_DESTINATION_BASE, "");
 static_assert(AURORA_ARP_DESTINATION_BASE + 2 * AURORA_ARP_CONTROL_COUNT <= 128, "");
 

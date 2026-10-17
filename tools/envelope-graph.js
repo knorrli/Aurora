@@ -15,7 +15,8 @@ function beatsShown(live, envelope) {
   const gate = beatsOf(live, 'cellGate');
   if (endOf(live) === Protocol.CELL_END.startOver) return gate * SHOWN_LIVES;
   if (endOf(live) === Protocol.CELL_END.gone) return gate + beatsOf(live, names.release);
-  const stages = beatsOf(live, names.attack) + beatsOf(live, names.hold) + beatsOf(live, names.decay);
+  const stages = beatsOf(live, names.delay) + beatsOf(live, names.attack) + beatsOf(live, names.hold)
+    + beatsOf(live, names.decay);
   return Math.max(stages * SUSTAIN_SHOWN, 1);
 }
 
