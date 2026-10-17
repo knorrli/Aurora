@@ -172,8 +172,8 @@ EMSCRIPTEN_KEEPALIVE int aurora_palette_color(int palette, int hue, int saturati
   return (rgb.r << 16) | (rgb.g << 8) | rgb.b;
 }
 
-EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave) {
-  return render::lfoWave(phase, (uint8_t)wave);
+EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave, int smooth) {
+  return render::lfoWave(phase, { (uint8_t)wave, (uint8_t)smooth });
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_convert(int cc, int value) {
@@ -260,8 +260,8 @@ EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
 
 EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_marks() { return render::PASS_MARKS; }
 
-EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave) {
-  return render::waveMean((uint8_t)wave);
+EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave, int smooth) {
+  return render::waveMean({ (uint8_t)wave, (uint8_t)smooth });
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }

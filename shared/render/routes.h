@@ -26,10 +26,15 @@ struct RouteTiming {
   float phase;
 };
 
+struct Wave {
+  uint8_t shape;
+  uint8_t smooth;
+};
+
 struct SpotRoute {
   uint8_t cc;
   float amount;
-  uint8_t wave;
+  Wave wave;
   RouteTiming timing;
 };
 
@@ -37,7 +42,7 @@ struct CellRoute {
   uint8_t cc;
   uint8_t route;
   uint8_t source;
-  uint8_t wave;
+  Wave wave;
   bool bipolar;
   float amount;
   float mean;
@@ -103,8 +108,10 @@ bool routeReach(const float *dialed, uint8_t cc, int16_t &low, int16_t &high);
 
 float waveRise(uint8_t wave);
 
-float lfoWave(float phase, uint8_t wave);
+Wave waveOf(const float *dialed, uint8_t route);
 
-float waveMean(uint8_t wave);
+float lfoWave(float phase, Wave wave);
+
+float waveMean(Wave wave);
 
 }

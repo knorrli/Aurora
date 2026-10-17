@@ -34,11 +34,11 @@ const xOfPhase = (phase, width) => WAVE_OVERHANG + phase / cycles() * periodWidt
 const phaseOfX = (x, width) => (x - WAVE_OVERHANG) / periodWidth(width) * cycles();
 
 function departureAt(route, phase, live) {
-  const wave = live[route.wave];
+  const wave = live[route.wave], smooth = live[route.smooth];
   const destination = Protocol.NAME_BY_CC[Protocol.routeTarget(live[route.destination])];
-  const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live), wave);
+  const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live), wave, smooth);
   const centered = Patch.swings(destination) || Protocol.routeBipolar(live[route.destination]);
-  return Protocol.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave) : at);
+  return Protocol.signedOf(live[route.amount]) * (centered ? at - Preview.waveMean(wave, smooth) : at);
 }
 
 const SOURCE_NAMES = [

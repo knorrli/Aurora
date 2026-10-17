@@ -11,6 +11,7 @@ const isAboveBase = layer => layer !== Protocol.PATCH_LAYER_BASE;
 const CC = Object.assign({}, Protocol.CC);
 
 const ROUTE_FIELDS = Object.keys(Protocol.ROUTE_FIELD);
+const ROUTE_CONTROL_ORDER = ['amount', 'ratio', 'wave', 'smooth', 'phase', 'hold'];
 const capitalized = word => word[0].toUpperCase() + word.slice(1);
 const routeName = (route, field) => `route${route + 1}${capitalized(field)}`;
 
@@ -23,7 +24,7 @@ const ROUTES = Array.from({ length: Protocol.ROUTES }, (_, route) => {
   return Object.assign({
     name: 'Route ' + (route + 1),
     fields: ROUTE_FIELDS.map(field => names[field]),
-    controls: ROUTE_FIELDS.filter(field => field !== 'destination').map(field => names[field]),
+    controls: ROUTE_CONTROL_ORDER.map(field => names[field]),
   }, names);
 });
 const ROUTE_FIELD_NAMES = ROUTES.flatMap(route => route.fields);
@@ -136,6 +137,7 @@ const ROUTE_READOUTS = {
     `×${Protocol.routeRatio(value)} · ${beatsText(cycleBeats(live, route, value, oneshotBeats))}`,
   phase: route => (value, live, oneshotBeats) => phaseText(value, live, route, oneshotBeats),
   wave: () => waveText,
+  smooth: () => value => (value === 0 ? 'straight' : percent(value / 127) + ' smooth'),
 };
 
 const BARS = '▁▂▃▄▅▆▇█';
@@ -453,6 +455,7 @@ for (const route of ROUTES) {
     },
   });
   control(route.wave, 'Wave', offLfo);
+  control(route.smooth, 'Smooth', offLfo);
   control(route.phase, 'Phase', offLfo);
   control(route.hold, 'Hold',
     { kind: 'two', options: [[OFF, 'live'], [ON, 'held']], inertWhen: live => !holdable(live, route) });
@@ -670,6 +673,7 @@ function pointsFor(name) {
     if (name === route.wave) return [Protocol.WAVE_SWELL, Protocol.WAVE_FALL, Protocol.WAVE_SQUARE];
     if (name === route.phase) return steps(Protocol.routePhaseStep);
     if (name === route.ratio) return steps(Protocol.routeRatio);
+    if (name === route.smooth) return [];
     return [64];
   }
   const at = value => real(name, value);

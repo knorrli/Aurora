@@ -193,7 +193,7 @@ static inline float aurora_route_phase(uint8_t value) {
 static const uint8_t AURORA_ROUTES = 8;
 
 static const uint8_t AURORA_ROUTE_BASE[AURORA_ROUTES] = {
-    128, 134, 140, 146, 152, 158, 164, 170,
+    128, 135, 142, 149, 156, 163, 170, 177,
 };
 
 enum AuroraRouteField : uint8_t {
@@ -203,11 +203,12 @@ enum AuroraRouteField : uint8_t {
     ROUTE_WAVE        = 3,
     ROUTE_PHASE       = 4,
     ROUTE_HOLD        = 5,
-    ROUTE_FIELDS      = 6,
+    ROUTE_SMOOTH      = 6,
+    ROUTE_FIELDS      = 7,
 };
 
 static const uint8_t AURORA_ROUTE_DEFAULTS[ROUTE_FIELDS] = {
-    0, 64, 0, WAVE_SWELL, 0, 0,
+    0, 64, 0, WAVE_SWELL, 0, 0, 127,
 };
 
 static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
@@ -542,7 +543,7 @@ enum AuroraLibraryState : uint8_t {
 
 static const uint8_t AURORA_PATCH_FORMAT    = 7;
 static const uint8_t AURORA_LAST_PATCH_SLOT = PROGRAM_SONG_FIRST - 1;
-static const uint8_t AURORA_PATCH_CC_COUNT  = 176;
+static const uint8_t AURORA_PATCH_CC_COUNT  = 184;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
 static const uint8_t AURORA_KEYPAD_KEYS     = 9;
 static const uint8_t AURORA_BANKS           = 12;

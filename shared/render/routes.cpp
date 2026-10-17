@@ -38,7 +38,18 @@ float waveRise(uint8_t wave) {
   return (wave <= WAVE_FALL) ? 1.0f - (float)wave / (float)WAVE_FALL : 0.0f;
 }
 
-float lfoWave(float phase, uint8_t wave) {
+Wave waveOf(const float *dialed, uint8_t route) {
+  return { roundedControl(dialed[routeByte(route, ROUTE_WAVE)]), roundedControl(dialed[routeByte(route, ROUTE_SMOOTH)]) };
+}
+
+static inline float eased(float x, float smooth) {
+  const float straight = clampUnit(x);
+  return straight + (raisedCosine(x) - straight) * smooth;
+}
+
+float lfoWave(float phase, Wave shaped) {
+  const uint8_t wave = shaped.shape;
+  const float smooth = (float)shaped.smooth / 127.0f;
   const float attack = waveRise(wave);
   float decay, hard;
   if (wave <= WAVE_FALL) {
@@ -58,11 +69,11 @@ float lfoWave(float phase, uint8_t wave) {
   const float u = fract(phase);
   if (decay > 0.0f && u <= decay) {
     const float soft = (1.0f - hard < 0.001f) ? 0.001f : 1.0f - hard;
-    const float shaped = raisedCosine(1.0f - u / decay) / soft;
-    return (shaped > 1.0f) ? 1.0f : shaped;
+    const float falling = eased(1.0f - u / decay, smooth) / soft;
+    return (falling > 1.0f) ? 1.0f : falling;
   }
   if (attack > 0.0f && u >= 1.0f - attack) {
-    return raisedCosine((u - (1.0f - attack)) / attack);
+    return eased((u - (1.0f - attack)) / attack, smooth);
   }
   return 0.0f;
 }
@@ -165,7 +176,7 @@ static bool unstaggered(uint8_t cc) {
 
 static const uint8_t INTEGRAL_STEPS = 128;
 
-float waveMean(uint8_t wave) {
+float waveMean(Wave wave) {
   float sum = 0.0f;
   for (uint8_t i = 0; i < INTEGRAL_STEPS; i++) {
     sum += lfoWave(((float)i + 0.5f) / (float)INTEGRAL_STEPS, wave);
@@ -175,6 +186,7 @@ float waveMean(uint8_t wave) {
 
 struct WaveIntegral {
   int16_t wave = -1;
+  int16_t smooth = -1;
   float mean;
   float center;
   float total[INTEGRAL_STEPS + 1];
@@ -182,10 +194,11 @@ struct WaveIntegral {
 
 static WaveIntegral integrals[RENDER_ROUTES];
 
-static const WaveIntegral &integralOf(uint8_t route, uint8_t wave) {
+static const WaveIntegral &integralOf(uint8_t route, Wave wave) {
   WaveIntegral &integral = integrals[route];
-  if (integral.wave == wave) return integral;
-  integral.wave = wave;
+  if (integral.wave == wave.shape && integral.smooth == wave.smooth) return integral;
+  integral.wave = wave.shape;
+  integral.smooth = wave.smooth;
 
   integral.mean = waveMean(wave);
   integral.total[0] = 0.0f;
@@ -297,7 +310,7 @@ void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, flo
     if (spotDestination(destination)) continue;
 
     const RouteTiming timing = routeTiming(dialed, route);
-    const uint8_t wave = roundedControl(dialed[routeByte(route, ROUTE_WAVE)]);
+    const Wave wave = waveOf(dialed, route);
     const float shift = staggerOf(route, destination, fanShift);
     const float phase = turnsOn(timing, clockBefore(route, lfo, beatsPerCycle, beatsAgo), shift);
     const float cycleBeats = oneshotRoute(route) ? oneshotClock.beats : beatsPerCycle;
@@ -335,7 +348,7 @@ float swingShiftAt(const float *dialed, uint8_t cc, float beatsPerCycle, float l
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
     const RouteTiming timing = routeTiming(dialed, route);
-    const WaveIntegral &integral = integralOf(route, roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
+    const WaveIntegral &integral = integralOf(route, waveOf(dialed, route));
     const float phase = turnsOn(timing, clockBefore(route, lfo, beatsPerCycle, beatsAgo),
                                 staggerOf(route, cc, fanShift));
     const float cycleBeats = oneshotRoute(route) ? oneshotClock.beats : beatsPerCycle;
@@ -355,7 +368,7 @@ uint8_t gatherCellRoutes(const float *dialed, float fanShift, CellRoute *out) {
     if (!playsPerCell(dialed, route, destination, source)) continue;
     const float amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;
-    const uint8_t wave = roundedControl(dialed[routeByte(route, ROUTE_WAVE)]);
+    const Wave wave = waveOf(dialed, route);
     const bool envelope = aurora_source_is_envelope(source);
     out[count++] = {
       destination,
@@ -443,7 +456,7 @@ uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out) {
     out[count++] = {
       destination,
       amount,
-      roundedControl(dialed[routeByte(route, ROUTE_WAVE)]),
+      waveOf(dialed, route),
       routeTiming(dialed, route),
     };
   }
@@ -509,13 +522,13 @@ bool routeReach(const float *dialed, uint8_t cc, int16_t &low, int16_t &high) {
     const bool fromPad = source == ROUTE_SOURCE_PAD_X || source == ROUTE_SOURCE_PAD_Y;
     const bool fromEnvelope = aurora_source_is_envelope(source);
     if (aurora_route_bipolar(roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]))) {
-      const float mean = fromEnvelope ? 0.0f : fromPad ? 0.5f : waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
+      const float mean = fromEnvelope ? 0.0f : fromPad ? 0.5f : waveMean(waveOf(dialed, route));
       const float reach = bipolarReach(cc, amount);
       bipolarUp += fmaxf(-reach * mean, reach * (1.0f - mean));
       bipolarDown += fminf(-reach * mean, reach * (1.0f - mean));
     } else if (swings(cc)) {
       const float reach = swingReach(cc, amount);
-      const float mean = fromPad || fromEnvelope ? 0.0f : waveMean(roundedControl(dialed[routeByte(route, ROUTE_WAVE)]));
+      const float mean = fromPad || fromEnvelope ? 0.0f : waveMean(waveOf(dialed, route));
       const float atTrough = -reach * mean;
       const float atPeak = reach * ((fromPad ? 0.5f : 1.0f) - mean);
       up += (atPeak > atTrough) ? atPeak : atTrough;

@@ -18,7 +18,7 @@ struct ArpRoute {
   uint8_t target;
   uint8_t arp;
   float amount;
-  uint8_t wave;
+  Wave wave;
   RouteTiming timing;
 };
 
@@ -31,7 +31,7 @@ static bool readArpRoute(const float *dialed, uint8_t route, ArpRoute &out) {
   if (aurora_route_source(ratio) != ROUTE_SOURCE_LFO) return false;
   out.amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
   if (fabsf(out.amount) < 0.001f) return false;
-  out.wave = roundedControl(dialed[routeByte(route, ROUTE_WAVE)]);
+  out.wave = waveOf(dialed, route);
   out.timing = routeTiming(dialed, route);
   return true;
 }
@@ -52,7 +52,7 @@ static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t 
   float level = 0.0f;
   for (uint8_t i = 0; i < count; i++) {
     const float into = (turns - pulses[i].start) / pulses[i].length;
-    level = fmaxf(level, lfoWave(into - waveRise(route.wave), route.wave));
+    level = fmaxf(level, lfoWave(into - waveRise(route.wave.shape), route.wave));
   }
   return level;
 }

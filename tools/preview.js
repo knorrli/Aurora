@@ -177,8 +177,8 @@ function connect(renderer) {
       const packed = renderer._aurora_palette_color(palette, hue, saturation);
       return [packed >> 16 & 255, packed >> 8 & 255, packed & 255];
     },
-    lfoWave: (phase, wave) => renderer._aurora_lfo_wave(phase, wave),
-    waveMean: wave => renderer._aurora_wave_mean(wave),
+    lfoWave: (phase, wave, smooth) => renderer._aurora_lfo_wave(phase, wave, smooth),
+    waveMean: (wave, smooth) => renderer._aurora_wave_mean(wave, smooth),
     convert: (cc, value) => renderer._aurora_convert(cc, value),
     fanWaveAt: (phase, frequency, strip) => renderer._aurora_fan_wave_at(phase, frequency, strip),
     arpPassLength: mode => renderer._aurora_arp_pass_length(mode),
