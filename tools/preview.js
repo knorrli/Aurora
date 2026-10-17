@@ -157,13 +157,12 @@ function connect(renderer) {
       pixels, pars: seenPars(), fan: readFan(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(),
       spots: readMarks(renderer._aurora_spots()), cells: readMarks(renderer._aurora_cells()),
       field: {
-        horizontal: Protocol.threeWayPosition(drawn[Protocol.CC.fieldDirection])
-          === Protocol.FIELD_DIRECTION.horizontal,
+        horizontal: Protocol.fourWayPosition(drawn[Protocol.CC.fieldDirection]) === Protocol.DIRECTION.horizontal,
         levels: Array.from(fieldLevels),
         across: Array.from(fieldAcross),
       },
       curve: renderer._aurora_curve_shown() && {
-        acrossWall: !!renderer._aurora_curve_across_wall(),
+        horizontal: !!renderer._aurora_curve_horizontal(),
         strips: Array.from({ length: STRIPS }, (_, strip) =>
           Array.from(curve.subarray(strip * BEND_POINTS, (strip + 1) * BEND_POINTS))),
         across: Array.from(curveAcross),
@@ -330,7 +329,7 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
     else drawField(context, frame.field.levels, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
   if (overlays.curve && frame.curve) {
-    if (frame.curve.acrossWall) {
+    if (frame.curve.horizontal) {
       drawAcross(context, frame.curve.across, frame.curve.strips.map(levels => levels[0]), FORM_MARK, CURVE_BASE, order, columnWidth, WALL_TOP, WALL_HEIGHT);
     } else {
       drawCurve(context, frame.curve.strips, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);

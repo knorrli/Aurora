@@ -56,7 +56,7 @@ enum AuroraCC : uint8_t {
     CC_CELL_RATE             = 43, // [patch]
     CC_CELL_GATE             = 44, // [patch]
 
-    CC_CELL_ACROSS           = 45, // [switch]
+    CC_CELL_DIRECTION        = 45, // [switch]
     CC_CELL_BRIGHTNESS       = 46, // [patch]
     CC_CELL_CURVE            = 47, // [patch]
     CC_CELL_CURVE_AT         = 48, // [patch]
@@ -159,7 +159,6 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_SCATTER_HUE,             64 },
     { CC_SCATTER_SATURATION,     127 },
     { CC_SCATTER_VALUE,          127 },
-    { CC_FIELD_DIRECTION,         64 },
     { CC_FIELD_COUNT,             24 },
     { CC_FIELD_WIDTH,             64 },
     { CC_FIELD_EDGE,              64 },
@@ -428,23 +427,17 @@ enum AuroraCellEnd : uint8_t {
     CELL_END_STAY       = 2,
 };
 
-enum AuroraCellAcross : uint8_t {
-    CELL_ACROSS_STRIP      = 0,
-    CELL_ACROSS_WALL       = 1,
-    CELL_ACROSS_CELL_BODY  = 2,
-    CELL_ACROSS_CELL_PLACE = 3,
+enum AuroraDirection : uint8_t {
+    DIRECTION_VERTICAL      = 0,
+    DIRECTION_HORIZONTAL    = 1,
+    DIRECTION_CELL          = 2,
+    DIRECTION_CELL_POSITION = 3,
 };
 
 enum AuroraFieldForm : uint8_t {
     FIELD_FORM_GRADIENT       = 0,
     FIELD_FORM_REGION         = 1,
     FIELD_FORM_ALL_BUT_REGION = 2,
-};
-
-enum AuroraFieldDirection : uint8_t {
-    FIELD_DIRECTION_HORIZONTAL = 0,
-    FIELD_DIRECTION_VERTICAL   = 1,
-    FIELD_DIRECTION_SHAPE      = 2,
 };
 
 enum AuroraPadMode : uint8_t {

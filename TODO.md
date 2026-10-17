@@ -77,9 +77,9 @@ Seen only in the preview so far. One look each, driven from the editor.
   - A gone cell's tail fades out after it.
   - An envelope set to step moves only on Rate's grid; with Rate on once it glides.
   - A route on Position moves a cell by its amount times the strip's length from where it is dialed, instead of landing at the strip's end as other controls do.
-  - A cell's front, for the curve's Cell body, is the way it is moving, so it flips when a route swings it back.
+  - A cell's front, for Direction's Cell, is the way it is moving, so it flips when a route swings it back.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
-- The brightness curve overlay draws Strip and Wall; what do Cell body and Cell place show?
+- The brightness curve overlay draws Vertical and Horizontal; what do Cell and Cell position show?
 - Position puts a cell's center on the strip's end, so a cell at the top or bottom shows only half. Should Position keep the whole cell on the strip?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.

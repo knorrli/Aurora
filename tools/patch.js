@@ -154,12 +154,12 @@ const isGradient = live => Protocol.threeWayPosition(live.fieldForm) === Protoco
 const fieldSize = (fraction, live) => {
   const settings = live || DEFAULT;
   const count = real('fieldCount', settings.fieldCount);
-  const direction = Protocol.threeWayPosition(settings.fieldDirection);
-  if (direction === Protocol.FIELD_DIRECTION.horizontal) {
+  const direction = Protocol.fourWayPosition(settings.fieldDirection);
+  if (direction === Protocol.DIRECTION.horizontal) {
     return (fraction * (Preview.STRIPS - 1) / count).toFixed(1) + ' strips';
   }
-  if (direction === Protocol.FIELD_DIRECTION.vertical) return pixels(fraction * Preview.PIXELS / count);
-  return percent(fraction / count) + ' of shape';
+  if (direction === Protocol.DIRECTION.cell) return percent(fraction / count) + ' of cell';
+  return pixels(fraction * Preview.PIXELS / count);
 };
 
 const upTheStrip = at =>
@@ -168,7 +168,13 @@ const backTheCell = at =>
   (at < 0.005 ? 'at the front' : at > 0.995 ? 'at the back' : Math.round(at * 100) + '% back');
 const acrossTheWall = at => Math.round(at * 100) + '% across';
 const beatsOrNone = (beats, none) => (beats === 0 ? none : PERIOD_NAMES[beats]);
-const acrossOf = live => Protocol.fourWayPosition((live || DEFAULT).cellAcross);
+const curveDirectionOf = live => Protocol.fourWayPosition((live || DEFAULT).cellDirection);
+
+const DIRECTION_NAMES = { vertical: 'vertical', horizontal: 'horizontal', cell: 'cell', cellPosition: 'cell position' };
+const directionSwitch = {
+  kind: 'four',
+  options: Object.entries(Protocol.DIRECTION).map(([key, position]) => [Protocol.fourWayValue(position), DIRECTION_NAMES[key]]),
+};
 
 const ENVELOPE_LABELS = { moves: 'Moves', attack: 'Attack', hold: 'Hold', decay: 'Decay', sustain: 'Sustain', release: 'Release' };
 const envelopeName = (envelope, field) => `envelope${envelope + 1}${capitalized(field)}`;
@@ -207,9 +213,9 @@ const READOUTS = {
   },
   cellCurveAt: (value, live) => {
     const at = real('cellCurveAt', value);
-    const across = acrossOf(live);
-    if (across === Protocol.CELL_ACROSS.wall) return acrossTheWall(at);
-    if (across === Protocol.CELL_ACROSS.cellBody) return backTheCell(at);
+    const direction = curveDirectionOf(live);
+    if (direction === Protocol.DIRECTION.horizontal) return acrossTheWall(at);
+    if (direction === Protocol.DIRECTION.cell) return backTheCell(at);
     return upTheStrip(at);
   },
   fanSpread: value => fanShift(Math.abs(real('fanSpread', value))),
@@ -398,10 +404,7 @@ const CELLS = {
     {
       title: 'Brightness', tone: 'cells',
       names: [
-        control('cellAcross', 'Across',
-          { kind: 'four', options: Object.entries(Protocol.CELL_ACROSS).map(([key, position]) =>
-            [Protocol.fourWayValue(position), { strip: 'strip', wall: 'wall', cellBody: 'cell body', cellPlace: 'cell place' }[key]]),
-            inertWhen: curveIsFlat }),
+        control('cellDirection', 'Direction', { ...directionSwitch, inertWhen: curveIsFlat }),
         control('cellBrightness', 'Brightness'),
         control('cellCurve', 'Curve'),
         control('cellCurveAt', 'Curve at', { inertWhen: curveIsFlat }),
@@ -494,9 +497,7 @@ const ENGINES = [
       control('fieldForm', 'Form',
         { kind: 'three', options: threeWayOptions(Protocol.FIELD_FORM,
           { gradient: 'gradient', region: 'region', allButRegion: 'all but region' }) }),
-      control('fieldDirection', 'Direction',
-        { kind: 'three', options: threeWayOptions(Protocol.FIELD_DIRECTION,
-          { horizontal: 'horizontal', vertical: 'vertical', shape: 'shape' }) }),
+      control('fieldDirection', 'Direction', directionSwitch),
       control('fieldCount', 'Count'),
       control('fieldWidth', 'Width', gradientInert),
       control('fieldEdge', 'Edge', gradientInert),

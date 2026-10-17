@@ -163,14 +163,18 @@ static float curveOf(float along, float amount, float at) {
   return amount > 0.0f ? 1.0f - amount * (1.0f - near) : 1.0f + amount * near;
 }
 
+static float placeOf(const StripLife &life, float center) {
+  return bentAlong(life.frame->bend, life.wraps ? fract(center / (float)PIXELS) : center / (float)PIXELS);
+}
+
 static float curveAtSample(const StripLife &life, uint16_t sample, float across, float center) {
   const Cells &cells = *life.cells;
   float along = 0.0f;
-  switch (cells.across) {
-    case CELL_ACROSS_STRIP: along = ((float)sample + 0.5f) / (float)STRIP_SAMPLES; break;
-    case CELL_ACROSS_WALL: along = (float)life.strip->index / (float)(STRIPS - 1); break;
-    case CELL_ACROSS_CELL_BODY: along = across; break;
-    default: along = bentAlong(life.frame->bend, life.wraps ? fract(center / (float)PIXELS) : center / (float)PIXELS); break;
+  switch (cells.direction) {
+    case DIRECTION_VERTICAL: along = ((float)sample + 0.5f) / (float)STRIP_SAMPLES; break;
+    case DIRECTION_HORIZONTAL: along = (float)life.strip->index / (float)(STRIPS - 1); break;
+    case DIRECTION_CELL: along = across; break;
+    default: along = placeOf(life, center); break;
   }
   return curveOf(along, cells.curve, cells.curveAt);
 }
@@ -190,15 +194,16 @@ static float seen(float presence) { return presence * presence; }
 
 static float directionOf(float velocity) { return velocity >= 0.0f ? 1.0f : -1.0f; }
 
-static void keep(CellSample &sample, float level, float body, float across, uint8_t cell) {
+static void keep(CellSample &sample, float level, float body, float across, float place, uint8_t cell) {
   if (level <= sample.level) return;
-  sample = { level, body, across, cell };
+  sample = { level, body, across, place, cell };
 }
 
 static void stampBody(const StripLife &life, const CellState &state, uint8_t cell, DrawnCells &out) {
   const float *logical = life.frame->logical;
   const float reach = state.halfWidth + state.edge;
   const float direction = directionOf(state.velocity);
+  const float place = placeOf(life, state.center);
   for (uint16_t i = firstSampleFrom(logical, state.center - reach);
        i < STRIP_SAMPLES && logical[i] <= state.center + reach; i++) {
     const float offset = logical[i] - state.center;
@@ -212,7 +217,7 @@ static void stampBody(const StripLife &life, const CellState &state, uint8_t cel
     }
     const float across = reach > 0.0001f ? 0.5f - 0.5f * direction * offset / reach : 0.5f;
     const float level = body * seen(state.brightness * curveAtSample(life, i, across, state.center));
-    keep(out.samples[i], level, body, across, cell);
+    keep(out.samples[i], level, body, across, place, cell);
   }
 }
 
@@ -236,6 +241,7 @@ static void stampTrail(const StripLife &life, const CellState *states, uint8_t c
     length += fabsf(states[j + 1].center - states[j].center);
   }
 
+  const float place = placeOf(life, head.center);
   const float *logical = life.frame->logical;
   for (uint8_t j = newest; j < TRAIL_STEPS; j++) {
     const CellState &newer = states[j];
@@ -252,7 +258,7 @@ static void stampTrail(const StripLife &life, const CellState *states, uint8_t c
       const float behind = -direction * (logical[i] - head.center);
       const float across = 0.5f + 0.5f * clampUnit(behind / length);
       const float level = trail * seen(curveAtSample(life, i, across, newer.center));
-      keep(out.samples[i], level, level, across, cell);
+      keep(out.samples[i], level, level, across, place, cell);
     }
   }
 }
@@ -290,7 +296,7 @@ float curveLevel(const Cells &cells, float along) { return curveOf(along, cells.
 
 void readCurve(const Cells &cells, uint8_t strip, float *out) {
   for (uint8_t i = 0; i < BEND_POINTS; i++) {
-    const float along = cells.across == CELL_ACROSS_WALL ? (float)strip / (float)(STRIPS - 1) : (float)i / (float)PIXELS;
+    const float along = cells.direction == DIRECTION_HORIZONTAL ? (float)strip / (float)(STRIPS - 1) : (float)i / (float)PIXELS;
     out[i] = curveOf(along, cells.curve, cells.curveAt);
   }
 }
@@ -308,7 +314,7 @@ void startCells(float beats, float start, float lfo, float lfoBeats, const Cells
 }
 
 void drawCells(const CellsFrame &frame, const CellsStrip &strip, DrawnCells &out) {
-  for (CellSample &sample : out.samples) sample = { 0.0f, 0.0f, 0.5f, NO_CELL };
+  for (CellSample &sample : out.samples) sample = { 0.0f, 0.0f, 0.5f, 0.5f, NO_CELL };
   out.marks.count = 0;
 
   static StripLife life;

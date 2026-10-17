@@ -23,7 +23,7 @@ bool coreActive(const Reading &reading);
 bool scatterActive(const Reading &reading, const float *dialed, uint8_t routes);
 
 float fieldAtPosition(const Field &field, float u, float drift);
-float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
+float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float withinCell, float cellPosition,
               float drift);
 
 struct ScatterSpots {

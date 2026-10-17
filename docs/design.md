@@ -43,7 +43,8 @@
 ## Brightness
 
 - Brightness is set with the cells: the cell's Brightness, routes to it, live or held, and the brightness curve. Brightness is today's Value, moved out of the color settings and renamed; the code follows the name. Hue and Saturation stay in the color settings.
-- The brightness curve works like Bend: an amount, positive or negative, and where along the strip it peaks. Across picks what the peak's place is measured along: Strip (a gradient pixel by pixel), Wall (strip by strip), Cell body (inside each cell, front to back), or Cell place (one even value per cell, read at its center).
+- The brightness curve works like Bend: an amount, positive or negative, and where along the strip it peaks. Direction picks what the peak's place is measured along: Vertical (a gradient pixel by pixel), Horizontal (strip by strip), Cell (inside each cell, front to back), or Cell position (one even value per cell, read at its center).
+- Field's Direction has the same four options. Cell position gives each cell one even color, read at its center; its tail takes the cell's color.
 - Dark in Field, Flow and Core stays, as shading toward black with the color pattern.
 - Shape brightness and color Dark multiply.
 

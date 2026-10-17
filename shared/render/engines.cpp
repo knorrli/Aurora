@@ -89,15 +89,19 @@ static float flowAt(const Flow &flow, uint8_t stripIndex, float along, float tim
 }
 
 static float positionAlongFieldDirection(const Field &field, uint8_t stripIndex, float alongPixels,
-                        float shapeAcross) {
-  if (field.direction == FIELD_DIRECTION_HORIZONTAL) return (float)stripIndex / (float)(STRIPS - 1);
-  if (field.direction == FIELD_DIRECTION_SHAPE) return shapeAcross;
-  return alongPixels / (float)(PIXELS - 1);
+                                        float withinCell, float cellPosition) {
+  switch (field.direction) {
+    case DIRECTION_HORIZONTAL: return (float)stripIndex / (float)(STRIPS - 1);
+    case DIRECTION_CELL: return withinCell;
+    case DIRECTION_CELL_POSITION: return cellPosition;
+    default: return alongPixels / (float)(PIXELS - 1);
+  }
 }
 
-float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float shapeAcross,
+float fieldAt(const Field &field, uint8_t stripIndex, float alongPixels, float withinCell, float cellPosition,
               float drift) {
-  return fieldAtPosition(field, positionAlongFieldDirection(field, stripIndex, alongPixels, shapeAcross), drift);
+  return fieldAtPosition(field, positionAlongFieldDirection(field, stripIndex, alongPixels, withinCell, cellPosition),
+                         drift);
 }
 
 float fieldAtPosition(const Field &field, float u, float drift) {

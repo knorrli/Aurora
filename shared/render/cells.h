@@ -33,6 +33,7 @@ struct CellSample {
   float level;
   float body;
   float across;
+  float place;
   uint8_t cell;
 };
 

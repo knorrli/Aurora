@@ -35,7 +35,7 @@ struct Cells {
   float brightness;
   float curve;
   float curveAt;
-  uint8_t across;
+  uint8_t direction;
   Envelope envelopes[AURORA_ENVELOPES];
 };
 

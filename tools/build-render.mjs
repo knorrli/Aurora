@@ -15,7 +15,7 @@ const inputs = [...inShared, 'shared/aurora_protocol.h', 'tools/render-api.cpp']
 const sources = inputs.filter(f => f.endsWith('.cpp')).map(f => join(ROOT, f));
 
 const EXPORTS = [
-  'aurora_controls', 'aurora_drawn_controls', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_field_levels', 'aurora_curve', 'aurora_curve_shown', 'aurora_curve_across_wall', 'aurora_curve_across', 'aurora_field_across', 'aurora_field_across_points', 'aurora_strip_marks_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_cells',
+  'aurora_controls', 'aurora_drawn_controls', 'aurora_pixels', 'aurora_pars', 'aurora_par_hue_places', 'aurora_par_hues', 'aurora_strips_hue', 'aurora_lfo', 'aurora_spots', 'aurora_field_levels', 'aurora_curve', 'aurora_curve_shown', 'aurora_curve_horizontal', 'aurora_curve_across', 'aurora_field_across', 'aurora_field_across_points', 'aurora_strip_marks_size', 'aurora_spot_destination', 'aurora_fan', 'aurora_bend', 'aurora_cells',
   'aurora_bend_points',
   'aurora_strip_count', 'aurora_par_count', 'aurora_pixels_per_strip', 'aurora_fan_curve_points',
   'aurora_palette_count', 'aurora_palette_name', 'aurora_palette_color', 'aurora_lfo_wave',

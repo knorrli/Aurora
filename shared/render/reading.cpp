@@ -187,7 +187,7 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   cells.brightness = at(CC_CELL_BRIGHTNESS);
   cells.curve = at(CC_CELL_CURVE);
   cells.curveAt = at(CC_CELL_CURVE_AT);
-  cells.across = aurora_four_way_position(roundedControl(dialed[CC_CELL_ACROSS]));
+  cells.direction = aurora_four_way_position(roundedControl(dialed[CC_CELL_DIRECTION]));
   for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
     Envelope &stages = cells.envelopes[envelope];
     stages.attack = at(aurora_envelope_cc(envelope, ENVELOPE_ATTACK));
@@ -209,7 +209,7 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
 
   Field &field = out.field;
   field.form = aurora_three_way_position(roundedControl(dialed[CC_FIELD_FORM]));
-  field.direction = aurora_three_way_position(roundedControl(dialed[CC_FIELD_DIRECTION]));
+  field.direction = aurora_four_way_position(roundedControl(dialed[CC_FIELD_DIRECTION]));
   field.hue = at(CC_FIELD_HUE);
   field.white = at(CC_FIELD_WHITE);
   field.dark = at(CC_FIELD_DARK);

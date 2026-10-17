@@ -83,7 +83,7 @@ static bool refused(uint8_t cc) {
     case CC_TEMPO_DIVISION:
     case CC_PALETTE:
     case CC_CELL_END:
-    case CC_CELL_ACROSS:
+    case CC_CELL_DIRECTION:
     case CC_ENVELOPE_1_MOVES:
     case CC_ENVELOPE_2_MOVES:
     case CC_ENVELOPE_3_MOVES:

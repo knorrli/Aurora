@@ -108,7 +108,7 @@ static Rgb drawPixel(const FrameContext &context, const StripContext &strip, con
 
     if (engines.fieldOn) {
       fieldTotal += fieldAt(reading.field, strip.index, (float)pixelIndex + acrossPixel,
-                            clampUnit(sample.across), strip.fieldDrift);
+                            clampUnit(sample.across), sample.place, strip.fieldDrift);
     }
     if (engines.scatterOn) {
       const ScatterSample here = scatterAt(reading.scatter, strip.scatterSpots,
@@ -210,8 +210,8 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   startCells(cellBeats, wall.cellsStart, context.lfo, context.wallReading.lfoBeats, context.wallReading.cells,
              context.cells);
   readBend(context.cells.bend, out.bend);
-  out.curveShown = context.wallReading.cells.across != CELL_ACROSS_CELL_BODY;
-  out.curveAcrossWall = context.wallReading.cells.across == CELL_ACROSS_WALL;
+  out.curveShown = context.wallReading.cells.direction != DIRECTION_CELL;
+  out.curveHorizontal = context.wallReading.cells.direction == DIRECTION_HORIZONTAL;
   for (uint8_t i = 0; i < FIELD_ACROSS_POINTS; i++) {
     out.curveAcross[i] = curveLevel(context.wallReading.cells, (float)i / (float)(FIELD_ACROSS_POINTS - 1));
   }

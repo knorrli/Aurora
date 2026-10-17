@@ -32,7 +32,7 @@ const CC = {
   cellEnd:           42,
   cellRate:          43,
   cellGate:          44,
-  cellAcross:        45,
+  cellDirection:     45,
   cellBrightness:    46,
   cellCurve:         47,
   cellCurveAt:       48,
@@ -90,8 +90,8 @@ const CC = {
   envelope3Moves:    101,
 };
 
-const TAGS = {"padHold":["ambient"],"padMode":["ambient"],"padWidth":["ambient"],"padGaps":["ambient"],"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"padX":["ambient"],"padY":["ambient"],"padTouch":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"cellChord":["patch"],"cellSpread":["patch"],"cellPosition":["patch"],"cellBend":["patch","unstaggered"],"cellBendAt":["patch","unstaggered"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellEnd":["switch"],"cellRate":["patch"],"cellGate":["patch"],"cellAcross":["switch"],"cellBrightness":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"fanSpread":["patch","unstaggered"],"fanLfo":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"],"envelope1Moves":["switch"],"envelope2Moves":["switch"],"envelope3Moves":["switch"]};
-const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"fanSpread":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldDirection":64,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
+const TAGS = {"padHold":["ambient"],"padMode":["ambient"],"padWidth":["ambient"],"padGaps":["ambient"],"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"padX":["ambient"],"padY":["ambient"],"padTouch":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"cellChord":["patch"],"cellSpread":["patch"],"cellPosition":["patch"],"cellBend":["patch","unstaggered"],"cellBendAt":["patch","unstaggered"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellEnd":["switch"],"cellRate":["patch"],"cellGate":["patch"],"cellDirection":["switch"],"cellBrightness":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"fanSpread":["patch","unstaggered"],"fanLfo":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"],"envelope1Moves":["switch"],"envelope2Moves":["switch"],"envelope3Moves":["switch"]};
+const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"fanSpread":64,"fanLfo":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
 
 const MIDI_CHANNEL = 1;
 const PROGRAM_BLACKOUT = 0;
@@ -105,11 +105,10 @@ const ONESHOTS = 20;
 const TICKS_PER_BEAT = 24;
 const TEMPO_DIVISION = {"quarter":0,"bar":1,"half":2,"eighth":3,"eighthTriplet":4,"sixteenth":5};
 const CELL_END = {"gone":0,"startOver":1,"stay":2};
-const CELL_ACROSS = {"strip":0,"wall":1,"cellBody":2,"cellPlace":3};
+const DIRECTION = {"vertical":0,"horizontal":1,"cell":2,"cellPosition":3};
 const ENVELOPES = 3;
 const ENVELOPE_STAGE = {"attack":0,"hold":1,"decay":2,"sustain":3,"release":4};
 const FIELD_FORM = {"gradient":0,"region":1,"allButRegion":2};
-const FIELD_DIRECTION = {"horizontal":0,"vertical":1,"shape":2};
 const ARP = {"unison":0,"steps":1,"ripple":2};
 const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
 const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
@@ -178,11 +177,10 @@ export const Protocol = {
   TICKS_PER_BEAT,
   TEMPO_DIVISION,
   CELL_END,
-  CELL_ACROSS,
+  DIRECTION,
   ENVELOPES,
   ENVELOPE_STAGE,
   FIELD_FORM,
-  FIELD_DIRECTION,
   ARP,
   ARP_MODE,
   HUE_LAYOUT,
