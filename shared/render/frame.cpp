@@ -210,6 +210,7 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   startCells(cellBeats, wall.cellsStart, context.lfo, context.wallReading.lfoBeats, context.wallReading.cells,
              context.cells);
   readBend(context.cells.bend, out.bend);
+  out.curveShown = context.wallReading.cells.across != CELL_ACROSS_CELL_BODY;
 
   const float sinceLastFrame = context.beats - wall.lastBeats;
   context.padElapsed = (sinceLastFrame > 0.0f && sinceLastFrame < (float)TAIL_MAX_BEATS) ? sinceLastFrame : 0.0f;
@@ -258,6 +259,7 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
     };
     drawCells(context.cells, cellsStrip, drawn);
     out.cells[index] = drawn.marks;
+    readCurve(strip.reading.cells, index, out.curve + index * BEND_POINTS);
     drawStrip(context, strip, drawn, out.pixels + index * PIXELS, out.fieldLevels + index * PIXELS);
   }
 

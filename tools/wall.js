@@ -13,7 +13,7 @@ const { byId } = dom;
 const BEAT_FLASH = 0.15;
 
 let wall = null;
-const OVERLAYS = ['cells', 'fan', 'bend', 'arp', 'palette', 'spots', 'field'];
+const OVERLAYS = ['cells', 'curve', 'fan', 'bend', 'arp', 'palette', 'spots', 'field'];
 const STORE_OVERLAYS = 'aurora.editor.overlays';
 
 const view = { overlays: readOverlays(), order: null, parOrder: null };

@@ -44,6 +44,9 @@ function connect(renderer) {
 
   const PASS_MARKS = renderer._aurora_arp_pass_marks();
   const STRIP_MARKS_SIZE = renderer._aurora_strip_marks_size();
+  const BEND_POINTS = renderer._aurora_bend_points();
+  const curveAt = renderer._aurora_curve() >> 2;
+  const curve = renderer.HEAPF32.subarray(curveAt, curveAt + STRIPS * BEND_POINTS);
   const fieldLevelsAt = renderer._aurora_field_levels() >> 2;
   const fieldLevels = renderer.HEAPF32.subarray(fieldLevelsAt, fieldLevelsAt + STRIPS * PIXELS);
   const fieldAcrossAt = renderer._aurora_field_across() >> 2;
@@ -158,6 +161,8 @@ function connect(renderer) {
         levels: Array.from(fieldLevels),
         across: Array.from(fieldAcross),
       },
+      curve: renderer._aurora_curve_shown() && Array.from({ length: STRIPS }, (_, strip) =>
+        Array.from(curve.subarray(strip * BEND_POINTS, (strip + 1) * BEND_POINTS))),
       hues: {
         palette: drawn[Protocol.CC.palette],
         strips: renderer._aurora_strips_hue(),
@@ -316,6 +321,7 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
     if (frame.field.horizontal) drawFieldAcross(context, frame.field, order, columnWidth, WALL_TOP, WALL_HEIGHT);
     else drawField(context, frame.field.levels, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
+  if (overlays.curve && frame.curve) drawCurve(context, frame.curve, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   if (overlays.spots && frame.spots) drawMarks(context, frame.spots, SPOT_MARK, 1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   if (overlays.cells && frame.cells) drawMarks(context, frame.cells, FORM_MARK, -1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
 }
@@ -380,6 +386,30 @@ function drawPalette(context, hues, width, height) {
     context.fillRect(x - 0.75, top + ribbonHeight + 1, 1.5, 4);
     context.fillText(pars.join(''), x, top + ribbonHeight + 13);
   }
+  context.restore();
+}
+
+const CURVE_REACH = 7;
+
+function drawCurve(context, curves, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT) {
+  const { PIXELS } = api;
+  const yAt = point => WALL_TOP + (PIXELS - point) * WALL_HEIGHT / PIXELS;
+  context.save();
+  order.forEach((strip, column) => {
+    const axis = columnWidth * (column + 1) + stripWidth / 2 + 6;
+    context.strokeStyle = 'rgba(255,255,255,0.12)';
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(axis, yAt(0));
+    context.lineTo(axis, yAt(PIXELS));
+    context.stroke();
+    context.beginPath();
+    curves[strip].forEach((level, point) => {
+      const x = axis + level * CURVE_REACH;
+      if (point === 0) context.moveTo(x, yAt(point)); else context.lineTo(x, yAt(point));
+    });
+    strokeOutlined(context, FORM_MARK, 1.5);
+  });
   context.restore();
 }
 
