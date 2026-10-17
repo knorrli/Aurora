@@ -22,7 +22,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
 - Bipolar routes: Bend at wobbling the bend point, the PARs' hue offset swinging either side of the strips, a square on a hue at full amount as a flip to the opposite color.
-- The fan: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, Randomize. Does its random draw want a seed?
+- Strip routes: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, a random draw across the strips. Does the random draw want a seed?
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
 - Morph between patches of different tempo divisions: does the jump read as a glitch? Should it carry position across instead?
 - Snap a press to the nearest beat with a click track: does a press just after the beat read as on it?
@@ -86,8 +86,10 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Two groups of cells, one painting over the other? Raindrops: born at random places, falling with a trail.
 - Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
-- Vary a route's amount across a group: across the strips, across a chord's cells, or across successive births. The moving cross: the outer strips' bars run top to bottom in opposite directions over 4 beats, the center strip still, the strips between at half. Cells dividing at the center: a chord of 2 whose cells bend opposite ways, or births taking turns. Five still bars born as one chord, alternating bright and faint.
-- Should Fan reach births and envelopes? Today a cell is born on every strip at the same moment and its envelope runs in step; Fan moves only where it sits and when its LFO hits. Fanned births would ripple across the wall.
+- How a group source lays its wave along the group: where a slope's ends and middle land across five strips and across a chord of any size, and how Ratio steps along births.
+- Can a route on a route's amount itself be routed, or is one level enough?
+- Can a Strip route delay births, so they ripple across the wall? Today a cell is born on every strip at the same moment and its envelope runs in step.
+- Once group routes are built, build advanced patches together in the preview: the moving cross, cells dividing together and taking turns, five bars alternating bright and faint.
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.

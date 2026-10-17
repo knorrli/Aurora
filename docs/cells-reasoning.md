@@ -41,7 +41,7 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - Birthplace and accent were knobs first. What set them apart was not position or brightness but being read once at birth and kept. Making that a setting on every route removed both knobs and gives every control a per-cell value: random-width raindrops, each drop its own hue.
 - The three cases, for brightness: a live LFO makes every cell pulse together; an envelope makes every cell fade the same way; a held route makes cells differ from each other but stay as born.
 - A synth's equivalent is a sample-and-hold that latches at note-on. Live Position is pitch bend for every note; held Position is each note's pitch.
-- All cells of one chord are born at the same moment, so a held route gives them all the same value. Varying across a chord, like cells bending opposite ways, is the same open question as scaling a route across the strips.
+- All cells of one chord are born at the same moment, so a held route gives them all the same value. Varying across a chord, like cells bending opposite ways, comes from a Note route.
 
 ## Why envelopes are route sources
 
@@ -76,13 +76,20 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 
 - The user pictures a moving cell as a modulated position, not a speed. Speed was a ramp on Position built into the engine, where every other modulation goes through routes.
 - An envelope on Position is one cell's journey; the LFO on Position moves every cell at once; with born-once cells wrapping, a falling wave at full amount is an endless glide.
-- The cost: the plainest moving look takes an envelope and a route instead of one knob, and Fan no longer spreads how fast cells go.
+- The cost: the plainest moving look takes an envelope and a route instead of one knob.
 
 ## Why Ends is a switch
 
 - Measured at a cell's center, Position's extremes put half the cell past the end: a bar born at an end could neither slide in from outside nor sit fully in view, and wrapping split a bar across both ends.
 - Outside makes falling bars and gliding chords dial with no tuning: born just out of view, carried across at full amount, wrapping out of view. Inside makes still bars and swings dial at the extremes, where the faders live.
 - Either alone breaks the other's looks: Outside leaves nothing drawn at the extremes, Inside never lets a bar slide in. A switch costs one control and no tuning.
+
+## Why groups are route sources
+
+- Fan was already a wave read across the strips instead of over time, wired to two fixed places. The test looks need that per-member value across strips, a chord's cells and births, and on a route's amount: the cross scales one envelope's journey from +1 to −1 across the strips.
+- Reading a route's wave along a group reuses Wave, Ratio and Phase, so ramps and alternation cost no new controls. Aiming a route at another route's amount is a modulation matrix's via slot.
+- It replaces Fan and frees its five CCs. A spread fader on every route would have cost 8 to 16 CCs and allowed only a slope; a bigger Fan would have kept one group and one scaling per patch.
+- The cost the user accepted: a scaled journey takes two routes, and a route set by another route is more abstract than anything else in the editor.
 
 ## Why Scatter stays
 
