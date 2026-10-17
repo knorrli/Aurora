@@ -44,6 +44,8 @@ struct DrawnCells {
 
 float envelopeLevelAt(const Envelope &envelope, float gateBeats, uint8_t end, float stepBeats, float age);
 
+float curveLevel(const Cells &cells, float along);
+
 void readCurve(const Cells &cells, uint8_t strip, float *out);
 
 void startCells(float beats, float start, float lfo, float lfoBeats, const Cells &cells, CellsFrame &out);

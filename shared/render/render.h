@@ -135,7 +135,9 @@ struct Frame {
   StripMarks spots[STRIPS];
   float fieldLevels[STRIPS * PIXELS];
   bool curveShown;
+  bool curveAcrossWall;
   float curve[STRIPS * BEND_POINTS];
+  float curveAcross[FIELD_ACROSS_POINTS];
   float fieldAcross[FIELD_ACROSS_POINTS];
 };
 

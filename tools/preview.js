@@ -47,6 +47,8 @@ function connect(renderer) {
   const BEND_POINTS = renderer._aurora_bend_points();
   const curveAt = renderer._aurora_curve() >> 2;
   const curve = renderer.HEAPF32.subarray(curveAt, curveAt + STRIPS * BEND_POINTS);
+  const curveAcrossAt = renderer._aurora_curve_across() >> 2;
+  const curveAcross = renderer.HEAPF32.subarray(curveAcrossAt, curveAcrossAt + renderer._aurora_field_across_points());
   const fieldLevelsAt = renderer._aurora_field_levels() >> 2;
   const fieldLevels = renderer.HEAPF32.subarray(fieldLevelsAt, fieldLevelsAt + STRIPS * PIXELS);
   const fieldAcrossAt = renderer._aurora_field_across() >> 2;
@@ -161,8 +163,12 @@ function connect(renderer) {
         levels: Array.from(fieldLevels),
         across: Array.from(fieldAcross),
       },
-      curve: renderer._aurora_curve_shown() && Array.from({ length: STRIPS }, (_, strip) =>
-        Array.from(curve.subarray(strip * BEND_POINTS, (strip + 1) * BEND_POINTS))),
+      curve: renderer._aurora_curve_shown() && {
+        acrossWall: !!renderer._aurora_curve_across_wall(),
+        strips: Array.from({ length: STRIPS }, (_, strip) =>
+          Array.from(curve.subarray(strip * BEND_POINTS, (strip + 1) * BEND_POINTS))),
+        across: Array.from(curveAcross),
+      },
       hues: {
         palette: drawn[Protocol.CC.palette],
         strips: renderer._aurora_strips_hue(),
@@ -318,10 +324,19 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
   if (overlays.arp && frame.arp) drawArpPass(context, frame.arp, frame.pars.length, width, height - PAR_BAND, PAR_BAND);
   if (overlays.palette && frame.hues) drawPalette(context, frame.hues, width, height);
   if (overlays.field && frame.field) {
-    if (frame.field.horizontal) drawFieldAcross(context, frame.field, order, columnWidth, WALL_TOP, WALL_HEIGHT);
+    if (frame.field.horizontal) {
+      drawAcross(context, frame.field.across, Array.from({ length: api.STRIPS }, (_, strip) => frame.field.levels[strip * api.PIXELS]),
+                 FIELD_MARK, FIELD_BASE, order, columnWidth, WALL_TOP, WALL_HEIGHT);
+    }
     else drawField(context, frame.field.levels, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   }
-  if (overlays.curve && frame.curve) drawCurve(context, frame.curve, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+  if (overlays.curve && frame.curve) {
+    if (frame.curve.acrossWall) {
+      drawAcross(context, frame.curve.across, frame.curve.strips.map(levels => levels[0]), FORM_MARK, CURVE_BASE, order, columnWidth, WALL_TOP, WALL_HEIGHT);
+    } else {
+      drawCurve(context, frame.curve.strips, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
+    }
+  }
   if (overlays.spots && frame.spots) drawMarks(context, frame.spots, SPOT_MARK, 1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
   if (overlays.cells && frame.cells) drawMarks(context, frame.cells, FORM_MARK, -1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
 }
@@ -435,12 +450,15 @@ function drawField(context, levels, order, columnWidth, stripWidth, WALL_TOP, WA
   context.restore();
 }
 
-function drawFieldAcross(context, field, order, columnWidth, WALL_TOP, WALL_HEIGHT) {
-  const { STRIPS, PIXELS } = api;
+const FIELD_BASE = 0.88;
+const CURVE_BASE = 0.76;
+
+function drawAcross(context, line, dots, style, baseShare, order, columnWidth, WALL_TOP, WALL_HEIGHT) {
+  const { STRIPS } = api;
   const step = order[1] - order[0];
   const monotonic = (step === 1 || step === -1) && order.every((strip, i) => i === 0 || strip - order[i - 1] === step);
   const xAtStrip = strip => columnWidth * (1 + (step === 1 ? strip - order[0] : order[0] - strip));
-  const base = WALL_TOP + WALL_HEIGHT * 0.88;
+  const base = WALL_TOP + WALL_HEIGHT * baseShare;
   const reach = WALL_HEIGHT * 0.08;
   context.save();
   context.strokeStyle = 'rgba(255,255,255,0.14)';
@@ -453,16 +471,16 @@ function drawFieldAcross(context, field, order, columnWidth, WALL_TOP, WALL_HEIG
   context.setLineDash([]);
   if (monotonic) {
     context.beginPath();
-    field.across.forEach((level, i) => {
-      const x = xAtStrip(i / (field.across.length - 1) * (STRIPS - 1));
+    line.forEach((level, i) => {
+      const x = xAtStrip(i / (line.length - 1) * (STRIPS - 1));
       if (i === 0) context.moveTo(x, base - level * reach); else context.lineTo(x, base - level * reach);
     });
-    strokeOutlined(context, FIELD_MARK, 1.5);
+    strokeOutlined(context, style, 1.5);
   }
   order.forEach((strip, column) => {
     context.beginPath();
-    context.arc(columnWidth * (column + 1), base - field.levels[strip * PIXELS] * reach, 3.2, 0, Math.PI * 2);
-    context.fillStyle = FIELD_MARK;
+    context.arc(columnWidth * (column + 1), base - dots[strip] * reach, 3.2, 0, Math.PI * 2);
+    context.fillStyle = style;
     context.fill();
     context.strokeStyle = OUTLINE;
     context.lineWidth = 1.5;

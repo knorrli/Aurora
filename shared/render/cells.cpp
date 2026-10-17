@@ -344,6 +344,8 @@ static void markCell(const StripLife &life, const CellState &state, float age, D
   marks.marks[marks.count++] = { center, state.halfWidth * 2.0f, lifeShare(life.life, age) };
 }
 
+float curveLevel(const Cells &cells, float along) { return curveOf(along, cells.curve, cells.curveAt); }
+
 void readCurve(const Cells &cells, uint8_t strip, float *out) {
   for (uint8_t i = 0; i < BEND_POINTS; i++) {
     const float along = cells.across == CELL_ACROSS_WALL ? (float)strip / (float)(STRIPS - 1) : (float)i / (float)PIXELS;

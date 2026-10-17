@@ -82,6 +82,8 @@ EMSCRIPTEN_KEEPALIVE render::StripMarks *aurora_cells() { return frame.cells; }
 EMSCRIPTEN_KEEPALIVE float *aurora_field_levels() { return frame.fieldLevels; }
 EMSCRIPTEN_KEEPALIVE float *aurora_curve() { return frame.curve; }
 EMSCRIPTEN_KEEPALIVE int aurora_curve_shown() { return frame.curveShown; }
+EMSCRIPTEN_KEEPALIVE int aurora_curve_across_wall() { return frame.curveAcrossWall; }
+EMSCRIPTEN_KEEPALIVE float *aurora_curve_across() { return frame.curveAcross; }
 EMSCRIPTEN_KEEPALIVE float *aurora_field_across() { return frame.fieldAcross; }
 EMSCRIPTEN_KEEPALIVE int aurora_field_across_points() { return render::FIELD_ACROSS_POINTS; }
 EMSCRIPTEN_KEEPALIVE int aurora_strip_marks_size() { return sizeof(render::StripMarks); }

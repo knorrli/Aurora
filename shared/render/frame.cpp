@@ -211,6 +211,10 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
              context.cells);
   readBend(context.cells.bend, out.bend);
   out.curveShown = context.wallReading.cells.across != CELL_ACROSS_CELL_BODY;
+  out.curveAcrossWall = context.wallReading.cells.across == CELL_ACROSS_WALL;
+  for (uint8_t i = 0; i < FIELD_ACROSS_POINTS; i++) {
+    out.curveAcross[i] = curveLevel(context.wallReading.cells, (float)i / (float)(FIELD_ACROSS_POINTS - 1));
+  }
 
   const float sinceLastFrame = context.beats - wall.lastBeats;
   context.padElapsed = (sinceLastFrame > 0.0f && sinceLastFrame < (float)TAIL_MAX_BEATS) ? sinceLastFrame : 0.0f;
