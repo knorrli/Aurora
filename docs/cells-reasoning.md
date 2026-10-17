@@ -84,6 +84,12 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - Outside makes falling bars and gliding chords dial with no tuning: born just out of view, carried across at full amount, wrapping out of view. Inside makes still bars and swings dial at the extremes, where the faders live.
 - Either alone breaks the other's looks: Outside leaves nothing drawn at the extremes, Inside never lets a bar slide in. A switch costs one control and no tuning.
 
+## Why Position routes move by the distance between a chord's cells
+
+- Measured in travels, a swing around each birthplace needed an amount worked out from Chord, ±10% at Chord 5, that broke whenever Chord changed and sat mid-fader. Measured in the distance between neighbors, full amount is the swing at any Chord, and a falling wave at full amount glides a born-once chord seamlessly, one neighbor along per cycle.
+- The distance ignores Spread, so a chord of 2 at Spread 0 still moves apart.
+- The cost the user accepted: at Chord above 1 a single route moves a cell at most one neighbor along, so a chord cannot be scattered over the whole strip. Cells at random places are births, not one chord.
+
 ## Why groups are route sources
 
 - Fan was already a wave read across the strips instead of over time, wired to two fixed places. The test looks need that per-member value across strips, a chord's cells and births, and on a route's amount: the cross scales one envelope's journey from +1 to −1 across the strips.

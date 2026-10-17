@@ -78,7 +78,6 @@ Seen only in the preview so far. One look each, driven from the editor.
   - An envelope set to step moves only on Rate's grid; with Rate on once it glides.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
 - The brightness curve overlay draws Vertical and Horizontal; what do Cell and Cell position show?
-- Five bars swinging around their birthplaces need a swing amount worked out from Chord: ±10% at Chord 5. Should a swing be measured against the gap between a chord's cells, the way Bounce swung each bar in its slot?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.

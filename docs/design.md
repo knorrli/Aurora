@@ -38,8 +38,8 @@
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
 - One cell's life is set per patch; the births and the per-strip settings make the wall from it.
 - Width is a cell's size on the strip, independent of Chord. The editor shows it in pixels.
-- Edge, Tail, Bend and Bend at work on cells as they do on Shape today. There is no Count and no Bounce: Chord and Spread place cells, and a looping envelope on Position swings a cell around its birthplace.
-- There is no Speed. A cell moves by routes on Position: an envelope for its own journey, the LFO for every cell at once. A route on Position moves a cell by its amount times the travel, and can carry it off the strip.
+- Edge, Tail, Bend and Bend at work on cells as they do on Shape today. There is no Count and no Bounce: Chord and Spread place cells, and the LFO's sine on Position, bipolar at full amount, swings each cell of a fully spread chord around its birthplace, the outer ones reaching the ends.
+- There is no Speed. A cell moves by routes on Position: an envelope for its own journey, the LFO for every cell at once. A route on Position moves a cell by its amount times the travel divided by Chord, the distance between neighboring cells at full Spread; at Chord 1 that is the whole travel. Nothing confines a cell to that distance: it can pass its neighbors and leave the strip.
 - Cells born at a Rate never wrap: a cell traveling off the strip is out of view until its gate ends. Cells born once wrap: leaving one end of the travel, they come back at the other. Outside, a cell is fully out of view when it wraps.
 - Births come from the beat timeline: when a patch starts, the cells born on earlier beats are already in flight. Held and random values come from the birth's number.
 - The plainest cell has no envelope routed. Still bars are a chord born once that stays. Moving bars are cells born at one end at Rate, carried across by an envelope on Position; the bars on the strip at once are how long each stays in view divided by Rate. Gliding bars are a chord born once, moved by the LFO's falling wave on Position at full amount.
