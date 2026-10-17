@@ -367,20 +367,14 @@ const CELLS = {
   name: 'Cells',
   groups: [
     {
-      title: 'Player', tone: 'cells',
+      title: 'Place', tone: 'place',
       names: [
-        control('cellRate', 'Rate'),
         control('cellChord', 'Chord'),
         control('cellSpread', 'Spread', { inertWhen: live => real('cellChord', live.cellChord) === 1 }),
-      ],
-    },
-    {
-      title: 'Life', tone: 'cells',
-      names: [
-        control('cellEnd', 'End',
-          { kind: 'three', options: threeWayOptions(Protocol.CELL_END,
-            { gone: 'gone', startOver: 'start over', stay: 'stay' }) }),
-        control('cellGate', 'Gate', { inertWhen: live => endsAs(live, 'stay') }),
+        control('cellPosition', 'Position'),
+        control('cellBend', 'Bend', inertWhileStill),
+        control('cellBendAt', 'Bend at',
+          { inertWhen: live => nothingTravels(live) || Math.abs(real('cellBend', live.cellBend)) < 0.005 }),
       ],
     },
     {
@@ -389,6 +383,16 @@ const CELLS = {
         control('cellWidth', 'Width'),
         control('cellEdge', 'Edge'),
         control('cellTail', 'Tail', inertWhileStill),
+      ],
+    },
+    {
+      title: 'Life', tone: 'cells',
+      names: [
+        control('cellEnd', 'End',
+          { kind: 'three', options: threeWayOptions(Protocol.CELL_END,
+            { gone: 'gone', startOver: 'start over', stay: 'stay' }) }),
+        control('cellRate', 'Rate'),
+        control('cellGate', 'Gate', { inertWhen: live => endsAs(live, 'stay') }),
       ],
     },
     {
@@ -401,15 +405,6 @@ const CELLS = {
         control('cellBrightness', 'Brightness'),
         control('cellCurve', 'Curve'),
         control('cellCurveAt', 'Curve at', { inertWhen: curveIsFlat }),
-      ],
-    },
-    {
-      title: 'Travel', tone: 'travel',
-      names: [
-        control('cellPosition', 'Position'),
-        control('cellBend', 'Bend', inertWhileStill),
-        control('cellBendAt', 'Bend at',
-          { inertWhen: live => nothingTravels(live) || Math.abs(real('cellBend', live.cellBend)) < 0.005 }),
       ],
     },
     {

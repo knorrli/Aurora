@@ -342,7 +342,7 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
 
 const PALETTE_MARK = 'rgba(176,162,236,0.95)';
 const FORM_MARK = 'rgba(240,206,100,0.95)';
-const TRAVEL_MARK = 'rgba(240,150,80,0.95)';
+const PLACE_MARK = 'rgba(240,150,80,0.95)';
 const FAN_MARK = 'rgba(236,96,84,0.95)';
 const FAN_MARK_SOFT = 'rgba(236,96,84,0.6)';
 const OUTLINE = 'rgba(10,11,14,0.85)';
@@ -630,7 +630,7 @@ function drawBend(context, bend, columnWidth, WALL_TOP, WALL_HEIGHT) {
     const x = axis + (value - middle) / middle * reach;
     if (i === 0) context.moveTo(x, yAt(i)); else context.lineTo(x, yAt(i));
   });
-  strokeOutlined(context, TRAVEL_MARK, 1.5);
+  strokeOutlined(context, PLACE_MARK, 1.5);
   context.restore();
 }
 

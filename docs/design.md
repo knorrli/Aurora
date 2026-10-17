@@ -26,13 +26,13 @@
 - A route on position moves a cell away from its birthplace.
 - One setting decides what happens when the gate ends. Gone: the envelopes release, and the cell disappears once the last one has finished. Start over: the envelopes start again from attack, and release never plays. Stay: the gate never ends, and the envelopes hold at sustain.
 - Going dark never ends a cell. Routes change cells and never end them.
-- The player starts cells on the clock and never ends one. It has three knobs: Rate, Chord and Spread.
+- The clock starts cells and never ends one. Rate, Chord and Spread decide the births.
 - Rate is how often cells are born, on the LFO's steps, landing on the beat grid. Its first step is born once.
 - Chord is how many cells each birth starts. Spread is how far apart they are: full spreads them evenly over the strip, zero puts them in one place.
 - Cells are born at the dialed Position.
 - A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
-- One cell's life is set per patch; the player and the per-strip settings make the wall from it.
+- One cell's life is set per patch; the births and the per-strip settings make the wall from it.
 - Width is a cell's size on the strip, independent of Chord. The editor shows it in pixels.
 - Edge, Tail, Bend and Bend at work on cells as they do on Shape today. There is no Count and no Bounce: Chord and Spread place cells, and a looping envelope on Position swings a cell around its birthplace.
 - There is no Speed. A cell moves by routes on Position: an envelope for its own journey, the LFO for every cell at once. A route on Position moves a cell by its amount times the strip's length, and can carry it off the strip.
