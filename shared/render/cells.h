@@ -25,8 +25,6 @@ struct CellsStrip {
   const Reading *reading;
   const Modulation *live;
   const PadLevels *pad;
-  float fanWave;
-  float fanShift;
 };
 
 struct CellSample {

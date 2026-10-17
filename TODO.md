@@ -64,7 +64,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 `docs/design.md` § Cells and § Brightness; the reasons in `docs/cells-reasoning.md`, deleted once cells are built and tested on the wall.
 
-- Dial cells in the preview. On this branch the controls list is 184 long and routes sit at 128 and up; the brain builds but its patch sync and storage wait for the CC numbers.
+- Dial cells in the preview. On this branch the controls list is 192 long and routes sit at 128 and up, eight fields each; the brain builds but its patch sync and storage wait for the CC numbers.
 - Confirm or change what the first build settled on its own:
   - Rate's first step, born once, is born when the patch starts, so its attack plays then.
   - Gate grows toward the top of the fader, unlike LFO Rate.
@@ -76,6 +76,14 @@ Seen only in the preview so far. One look each, driven from the editor.
   - Cells overlapping take the brighter one, color included.
   - A gone cell's tail fades out after it.
   - An envelope set to step moves only on Rate's grid; with Rate on once it glides.
+  - Polarity is its own route field; a route's destination holds the target, or another route's amount or phase.
+  - A group route's pattern is picked on the route's Wave field, shown as a Pattern row.
+  - A negative group amount on a one-sided control reverses the pattern and still pushes up: dimming every other bar means dialing Brightness low and pushing the others up.
+  - A route aimed at an amount moves it by twice its own amount, so a full Strip route scales a journey from −1 to +1. Aimed at a phase, a full route spreads the group over one whole cycle.
+  - Birth's Random draws a value per birth rather than shuffling. Births per LFO cycle count whole births.
+  - Routes on Delay read at the moment the birth would have landed undelayed; Note and Birth routes aimed at controls that are not per cell do nothing.
+  - The travel's ends include Edge's glow, and follow the cell's width as it changes, so a growing cell at an end stays flush.
+  - Born once with Inside, a cell leaving the travel jumps to the other end; only Outside draws it across.
 - Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
 - The brightness curve overlay draws Vertical and Horizontal; what do Cell and Cell position show?
 - CC numbers for cells: NRPN or a second MIDI channel? A second channel makes DAW control harder. 1, 7, 10 and 11 stay unused: a DAW or keyboard writes them unasked.

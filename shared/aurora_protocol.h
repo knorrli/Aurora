@@ -30,42 +30,38 @@ enum AuroraCC : uint8_t {
     CC_HUE                   = 21, // [patch][circular]
     CC_SATURATION            = 22, // [patch]
 
-    CC_PAR_HUE_OFFSET        = 24, // [patch][circular][unstaggered]
-    CC_PAR_SATURATION        = 25, // [patch][unstaggered]
-    CC_PAR_VALUE             = 26, // [patch][unstaggered]
+    CC_PAR_HUE_OFFSET        = 24, // [patch][circular]
+    CC_PAR_SATURATION        = 25, // [patch]
+    CC_PAR_VALUE             = 26, // [patch]
     CC_PAR_HUE_LAYOUT        = 27, // [switch]
-    CC_PAR_HUE_RANGE         = 28, // [patch][unstaggered]
+    CC_PAR_HUE_RANGE         = 28, // [patch]
 
     CC_TEMPO_DIVISION        = 29, // [switch]
     CC_LFO_RATE              = 30, // [patch]
 
     CC_ARP_MODE              = 31, // [switch]
-    CC_ARP_SPREAD            = 33, // [patch][unstaggered]
+    CC_ARP_SPREAD            = 33, // [patch]
 
-    CC_CELL_CHORD            = 34, // [patch]
-    CC_CELL_SPREAD           = 35, // [patch]
-    CC_CELL_POSITION         = 36, // [patch]
-    CC_CELL_BEND             = 37, // [patch][unstaggered]
-    CC_CELL_BEND_AT          = 38, // [patch][unstaggered]
+    CC_CELL_ENDS             = 34, // [switch]
+    CC_CELL_CHORD            = 35, // [patch]
+    CC_CELL_SPREAD           = 36, // [patch]
+    CC_CELL_POSITION         = 37, // [patch]
+    CC_CELL_BEND             = 38, // [patch]
+    CC_CELL_BEND_AT          = 39, // [patch]
 
-    CC_CELL_WIDTH            = 39, // [patch]
-    CC_CELL_EDGE             = 40, // [patch]
-    CC_CELL_TAIL             = 41, // [patch]
+    CC_CELL_WIDTH            = 40, // [patch]
+    CC_CELL_EDGE             = 41, // [patch]
+    CC_CELL_TAIL             = 42, // [patch]
 
-    CC_CELL_END              = 42, // [switch]
-    CC_CELL_RATE             = 43, // [patch]
-    CC_CELL_GATE             = 44, // [patch]
+    CC_CELL_END              = 43, // [switch]
+    CC_CELL_RATE             = 44, // [patch]
+    CC_CELL_DELAY            = 45, // [patch]
+    CC_CELL_GATE             = 46, // [patch]
 
-    CC_CELL_DIRECTION        = 45, // [switch]
-    CC_CELL_BRIGHTNESS       = 46, // [patch]
-    CC_CELL_CURVE            = 47, // [patch]
-    CC_CELL_CURVE_AT         = 48, // [patch]
-
-    CC_FAN_POSITION          = 49, // [patch][unstaggered]
-    CC_FAN_LFO_OFFSET        = 50, // [patch][unstaggered]
-    CC_FAN_FREQUENCY         = 51, // [patch][unstaggered]
-    CC_FAN_PHASE             = 52, // [patch][circular][unstaggered]
-    CC_FAN_RANDOMIZE         = 53, // [patch][unstaggered]
+    CC_CELL_DIRECTION        = 47, // [switch]
+    CC_CELL_BRIGHTNESS       = 48, // [patch]
+    CC_CELL_CURVE            = 49, // [patch]
+    CC_CELL_CURVE_AT         = 50, // [patch]
 
     CC_SCATTER_COUNT         = 54, // [patch]
     CC_SCATTER_WIDTH         = 55, // [patch]
@@ -146,9 +142,6 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CC_ENVELOPE_1_SUSTAIN,     127 },
     { CC_ENVELOPE_2_SUSTAIN,     127 },
     { CC_ENVELOPE_3_SUSTAIN,     127 },
-    { CC_FAN_POSITION,            64 },
-    { CC_FAN_LFO_OFFSET,          64 },
-    { CC_FAN_FREQUENCY,           32 },
     { CC_SCATTER_COUNT,           80 },
     { CC_SCATTER_WIDTH,           34 },
     { CC_SCATTER_EDGE,            40 },
@@ -189,7 +182,7 @@ static inline float aurora_route_phase(uint8_t value) {
 static const uint8_t AURORA_ROUTES = 8;
 
 static const uint8_t AURORA_ROUTE_BASE[AURORA_ROUTES] = {
-    128, 135, 142, 149, 156, 163, 170, 177,
+    128, 136, 144, 152, 160, 168, 176, 184,
 };
 
 enum AuroraRouteField : uint8_t {
@@ -200,11 +193,12 @@ enum AuroraRouteField : uint8_t {
     ROUTE_PHASE       = 4,
     ROUTE_HOLD        = 5,
     ROUTE_SMOOTH      = 6,
-    ROUTE_FIELDS      = 7,
+    ROUTE_POLARITY    = 7,
+    ROUTE_FIELDS      = 8,
 };
 
 static const uint8_t AURORA_ROUTE_DEFAULTS[ROUTE_FIELDS] = {
-    0, 64, 0, WAVE_SWELL, 0, 0, 127,
+    0, 64, 0, WAVE_SWELL, 0, 0, 127, 0,
 };
 
 static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
@@ -220,7 +214,10 @@ enum AuroraRouteSource : uint8_t {
     ROUTE_SOURCE_ENVELOPE_1 = 3,
     ROUTE_SOURCE_ENVELOPE_2 = 4,
     ROUTE_SOURCE_ENVELOPE_3 = 5,
-    ROUTE_SOURCES           = 6,
+    ROUTE_SOURCE_STRIP      = 6,
+    ROUTE_SOURCE_NOTE       = 7,
+    ROUTE_SOURCE_BIRTH      = 8,
+    ROUTE_SOURCES           = 9,
 };
 
 static const uint8_t AURORA_ROUTE_LFO_STEPS = 2 * AURORA_ROUTE_MAX_RATIO;
@@ -248,6 +245,27 @@ static inline bool aurora_route_once(uint8_t value) {
 
 static inline bool aurora_route_held(uint8_t value) { return value >= 64; }
 
+static inline bool aurora_route_bipolar(uint8_t value) { return value >= 64; }
+
+static inline bool aurora_source_is_group(uint8_t source) {
+    return source >= ROUTE_SOURCE_STRIP && source < ROUTE_SOURCES;
+}
+
+enum AuroraGroupPattern : uint8_t {
+    GROUP_SEQUENCE   = 0,
+    GROUP_MIRROR     = 1,
+    GROUP_EVENS_ODDS = 2,
+    GROUP_PAIRS      = 3,
+    GROUP_RANDOM     = 4,
+    GROUP_PATTERNS   = 5,
+};
+
+static inline uint8_t aurora_group_pattern(uint8_t value) {
+    const uint8_t last = GROUP_PATTERNS - 1;
+    const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
+    return step > last ? last : step;
+}
+
 static const uint8_t AURORA_ENVELOPES = 3;
 
 enum AuroraEnvelopeStage : uint8_t {
@@ -268,7 +286,7 @@ static inline uint8_t aurora_envelope_moves_cc(uint8_t envelope) {
 }
 
 static inline bool aurora_source_is_envelope(uint8_t source) {
-    return source >= ROUTE_SOURCE_ENVELOPE_1 && source < ROUTE_SOURCES;
+    return source >= ROUTE_SOURCE_ENVELOPE_1 && source <= ROUTE_SOURCE_ENVELOPE_3;
 }
 
 enum AuroraArp : uint8_t {
@@ -290,45 +308,53 @@ static inline uint8_t aurora_route_arp(uint8_t destination) {
     return (uint8_t)(ARP_STEPS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
 }
 
-static const uint8_t AURORA_BIPOLAR_DESTINATION_BASE = 106;
-
 static const uint8_t AURORA_BIPOLAR_CONTROLS[] = {
     CC_HUE, CC_PAR_HUE_OFFSET, CC_PAR_HUE_RANGE, CC_ARP_SPREAD,
     CC_CELL_POSITION, CC_CELL_BEND, CC_CELL_BEND_AT, CC_CELL_CURVE, CC_CELL_CURVE_AT,
-    CC_FAN_POSITION, CC_FAN_LFO_OFFSET, CC_FAN_PHASE,
     CC_FIELD_POSITION, CC_FIELD_HUE, CC_FLOW_HUE, CC_CORE_HUE,
 };
 static const uint8_t AURORA_BIPOLAR_CONTROL_COUNT =
     sizeof(AURORA_BIPOLAR_CONTROLS) / sizeof(AURORA_BIPOLAR_CONTROLS[0]);
 
-static_assert(AURORA_BIPOLAR_DESTINATION_BASE + AURORA_BIPOLAR_CONTROL_COUNT <= AURORA_ARP_DESTINATION_BASE, "");
+static inline bool aurora_bipolar_capable(uint8_t cc) {
+    for (uint8_t index = 0; index < AURORA_BIPOLAR_CONTROL_COUNT; index++) {
+        if (AURORA_BIPOLAR_CONTROLS[index] == cc) return true;
+    }
+    return false;
+}
+
+static const uint8_t AURORA_AIM_DESTINATION_BASE = 104;
+
+static_assert(CC_ENVELOPE_3_MOVES < AURORA_AIM_DESTINATION_BASE, "");
+static_assert(AURORA_AIM_DESTINATION_BASE + 2 * AURORA_ROUTES <= AURORA_ARP_DESTINATION_BASE, "");
 static_assert(AURORA_ARP_DESTINATION_BASE + 2 * AURORA_ARP_CONTROL_COUNT <= 128, "");
 
-static inline bool aurora_route_bipolar(uint8_t destination) {
-    return destination >= AURORA_BIPOLAR_DESTINATION_BASE
-        && destination < AURORA_BIPOLAR_DESTINATION_BASE + AURORA_BIPOLAR_CONTROL_COUNT;
+static inline bool aurora_route_aims_route(uint8_t destination) {
+    return destination >= AURORA_AIM_DESTINATION_BASE
+        && destination < AURORA_AIM_DESTINATION_BASE + 2 * AURORA_ROUTES;
+}
+
+static inline uint8_t aurora_aimed_route(uint8_t destination) {
+    return (uint8_t)((destination - AURORA_AIM_DESTINATION_BASE) % AURORA_ROUTES);
+}
+
+static inline bool aurora_aims_phase(uint8_t destination) {
+    return destination >= AURORA_AIM_DESTINATION_BASE + AURORA_ROUTES;
+}
+
+static inline uint8_t aurora_aim_destination(uint8_t route, bool phase) {
+    return (uint8_t)(AURORA_AIM_DESTINATION_BASE + (phase ? AURORA_ROUTES : 0) + route);
 }
 
 static inline uint8_t aurora_route_target(uint8_t destination) {
-    if (destination < AURORA_BIPOLAR_DESTINATION_BASE) return destination;
-    if (aurora_route_bipolar(destination)) {
-        return AURORA_BIPOLAR_CONTROLS[destination - AURORA_BIPOLAR_DESTINATION_BASE];
-    }
+    if (destination < AURORA_AIM_DESTINATION_BASE) return destination;
     if (destination < AURORA_ARP_DESTINATION_BASE) return 0;
     const uint8_t index = (uint8_t)((destination - AURORA_ARP_DESTINATION_BASE) / 2);
     return index < AURORA_ARP_CONTROL_COUNT ? AURORA_ARP_CONTROLS[index] : 0;
 }
 
-static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp, bool bipolar) {
-    if (arp == ARP_UNISON) {
-        if (!bipolar) return target;
-        for (uint8_t index = 0; index < AURORA_BIPOLAR_CONTROL_COUNT; index++) {
-            if (AURORA_BIPOLAR_CONTROLS[index] == target) {
-                return (uint8_t)(AURORA_BIPOLAR_DESTINATION_BASE + index);
-            }
-        }
-        return target;
-    }
+static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp) {
+    if (arp == ARP_UNISON) return target;
     for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
         if (AURORA_ARP_CONTROLS[index] != target) continue;
         return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_STEPS));
@@ -533,7 +559,7 @@ enum AuroraLibraryState : uint8_t {
 
 static const uint8_t AURORA_PATCH_FORMAT    = 7;
 static const uint8_t AURORA_LAST_PATCH_SLOT = PROGRAM_SONG_FIRST - 1;
-static const uint8_t AURORA_PATCH_CC_COUNT  = 184;
+static const uint8_t AURORA_PATCH_CC_COUNT  = 192;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
 static const uint8_t AURORA_KEYPAD_KEYS     = 9;
 static const uint8_t AURORA_BANKS           = 12;

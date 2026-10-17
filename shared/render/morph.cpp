@@ -35,6 +35,7 @@ static bool switched(uint8_t cc) {
     case CC_PAR_HUE_LAYOUT:
     case CC_TEMPO_DIVISION:
     case CC_ARP_MODE:
+    case CC_CELL_ENDS:
     case CC_CELL_END:
     case CC_CELL_DIRECTION:
     case CC_ENVELOPE_1_MOVES:
@@ -50,7 +51,8 @@ static bool switched(uint8_t cc) {
 
 static bool routeSwitch(uint8_t cc) {
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    if (cc == aurora_route_cc(route, ROUTE_DESTINATION) || cc == aurora_route_cc(route, ROUTE_HOLD)) return true;
+    if (cc == aurora_route_cc(route, ROUTE_DESTINATION) || cc == aurora_route_cc(route, ROUTE_HOLD)
+        || cc == aurora_route_cc(route, ROUTE_POLARITY)) return true;
   }
   return false;
 }

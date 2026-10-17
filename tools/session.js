@@ -261,23 +261,35 @@ function hasNoEffect(card, live) {
 }
 
 function routesOn(name, live) {
-  return Patch.ROUTES.filter(route => Protocol.routeTarget(live[route.destination]) === Patch.CC[name]);
+  return Patch.ROUTES.filter(route => Patch.targetName(live[route.destination]) === name);
 }
 
 const editedTarget = route => Protocol.routeTarget(editing().base[Patch.CC[route.destination]] | 0);
+const GROUP_SOURCES = [Protocol.ROUTE_SOURCE.strip, Protocol.ROUTE_SOURCE.note, Protocol.ROUTE_SOURCE.birth];
 
 function setRouteArp(route, arp) {
-  setValue(route.destination, Protocol.routeDestination(editedTarget(route), arp, false));
+  setValue(route.destination, Protocol.routeDestination(editedTarget(route), arp));
 }
 
 function setRouteBipolar(route, bipolar) {
-  setValue(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison, bipolar));
+  setValue(route.polarity, bipolar ? 127 : 0);
+}
+
+function setRoutePattern(route, pattern) {
+  setValue(route.wave, Protocol.groupPatternValue(pattern));
 }
 
 function setRouteSource(route, source) {
+  const live = liveControls();
   const lfo = source === Protocol.ROUTE_SOURCE.lfo;
-  const arpeggiated = Protocol.routeArp(editing().base[Patch.CC[route.destination]] | 0) !== Protocol.ARP.unison;
-  if (!lfo && arpeggiated) write(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison, false));
+  const destination = editing().base[Patch.CC[route.destination]] | 0;
+  if (!lfo && Protocol.routeArp(destination) !== Protocol.ARP.unison) {
+    write(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison));
+  }
+  const wasGroup = GROUP_SOURCES.includes(Protocol.routeSource(live[route.ratio]));
+  const toGroup = GROUP_SOURCES.includes(source);
+  if (toGroup && !wasGroup) write(route.wave, Protocol.groupPatternValue(0));
+  if (!toGroup && wasGroup) write(route.wave, Protocol.ROUTE_DEFAULTS.wave);
   setValue(route.ratio, lfo ? Protocol.routeRatioValue(1, false) : Protocol.routeSourceValue(source));
 }
 const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
@@ -320,7 +332,7 @@ function addRoute(name) {
   if (!free) return null;
   const current = editing();
   Library.freeRoute(current, free);
-  Library.writeCC(current.base, free.destination, Patch.CC[name]);
+  Library.writeCC(current.base, free.destination, Patch.destinationOf(name));
   write(free.amount, NEW_ROUTE_AMOUNT);
   changed();
   return free;
@@ -373,7 +385,7 @@ Object.assign(session, {
   transitioning,
   pinnedControls, liveControls, setValue, resetNames, changed,
   routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
-  layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, setRouteSource, select, selectLayer, resetTransition, forgetMissingPatches,
+  layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, setRoutePattern, setRouteSource, select, selectLayer, resetTransition, forgetMissingPatches,
   toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),
   toggleCardBypass: card => toggleIn(session.bypassedCards, card),
 });

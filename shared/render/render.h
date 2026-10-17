@@ -14,8 +14,6 @@ static const uint8_t MAX_COUNT = 20;
 static const uint8_t MAX_CELLS = 64;
 static const uint8_t SAMPLES_PER_PIXEL = 8;
 static const uint16_t STRIP_SAMPLES = PIXELS * SAMPLES_PER_PIXEL;
-static const uint8_t FAN_CURVE_STEPS_PER_STRIP = 24;
-static const uint16_t FAN_CURVE_POINTS = (STRIPS - 1) * FAN_CURVE_STEPS_PER_STRIP + 1;
 static const uint8_t BEND_POINTS = PIXELS + 1;
 static const uint8_t FIELD_ACROSS_POINTS = (STRIPS - 1) * 12 + 1;
 
@@ -34,7 +32,6 @@ static inline uint8_t roundedControl(float value) { return (uint8_t)(value + 0.5
 struct OneshotClock {
   float progress;
   float beats;
-  bool staggered;
 };
 
 static const uint8_t TAIL_MAX_BEATS = 8;
@@ -99,15 +96,6 @@ struct Wall {
 
 void restartCells(Wall &wall);
 
-struct FanReading {
-  float values[STRIPS];
-  float curve[FAN_CURVE_POINTS];
-  float turns;
-  float position;
-  float lfoOffset;
-  float randomize;
-};
-
 struct Mark {
   float center;
   float width;
@@ -125,10 +113,8 @@ struct Frame {
   float parHuePlaces[PARS];
   uint8_t stripsHue;
   uint8_t parHues[PARS];
-  FanReading fan;
   float bend[BEND_POINTS];
   float lfo;
-  float stripFanShift[STRIPS];
   StripMarks cells[STRIPS];
   StripMarks spots[STRIPS];
   float fieldLevels[STRIPS * PIXELS];

@@ -5,7 +5,6 @@
 #include <arp.h>
 #include <bend.h>
 #include <cells.h>
-#include <fan.h>
 #include <engines.h>
 #include <morph.h>
 #include <palettes.h>
@@ -56,16 +55,11 @@ static playback::Playback *player = nullptr;
 
 static_assert(sizeof(playback::Patch) == 4 + AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT, "");
 static_assert(sizeof(playback::Oneshot) == 1 + 2 * AURORA_PATCH_CC_COUNT, "");
-static_assert(offsetof(render::FanReading, curve) == sizeof(float) * render::STRIPS, "");
-static_assert(offsetof(render::FanReading, turns)
-                  == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS), "");
 static_assert(sizeof(render::Par) == 4, "");
 static_assert(offsetof(render::ArpPass, count) == sizeof(float) * 3, "");
 static_assert(offsetof(render::ArpPass, starts) == sizeof(float) * 4, "");
 static_assert(offsetof(render::ArpPass, pars)
                   == sizeof(float) * (4 + render::PASS_MARKS), "");
-static_assert(sizeof(render::FanReading)
-                  == sizeof(float) * (render::STRIPS + render::FAN_CURVE_POINTS + 4), "");
 
 extern "C" {
 
@@ -88,13 +82,11 @@ EMSCRIPTEN_KEEPALIVE float *aurora_field_across() { return frame.fieldAcross; }
 EMSCRIPTEN_KEEPALIVE int aurora_field_across_points() { return render::FIELD_ACROSS_POINTS; }
 EMSCRIPTEN_KEEPALIVE int aurora_strip_marks_size() { return sizeof(render::StripMarks); }
 EMSCRIPTEN_KEEPALIVE int aurora_spot_destination(int cc) { return render::spotDestination((uint8_t)cc); }
-EMSCRIPTEN_KEEPALIVE render::FanReading *aurora_fan() { return &frame.fan; }
 EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
 
 EMSCRIPTEN_KEEPALIVE int aurora_strip_count() { return render::STRIPS; }
 EMSCRIPTEN_KEEPALIVE int aurora_par_count() { return render::PARS; }
 EMSCRIPTEN_KEEPALIVE int aurora_pixels_per_strip() { return render::PIXELS; }
-EMSCRIPTEN_KEEPALIVE int aurora_fan_curve_points() { return render::FAN_CURVE_POINTS; }
 EMSCRIPTEN_KEEPALIVE int aurora_bend_points() { return render::BEND_POINTS; }
 
 EMSCRIPTEN_KEEPALIVE playback::Patch *aurora_patch_buffer() { return &patchBuffer; }
@@ -198,17 +190,22 @@ EMSCRIPTEN_KEEPALIVE int aurora_switch_on(int value) { return aurora_switch_is_o
 EMSCRIPTEN_KEEPALIVE int aurora_three_way(int value) { return aurora_three_way_position((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_four_way(int value) { return aurora_four_way_position((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_destination_arp(int destination) { return aurora_route_arp((uint8_t)destination); }
-EMSCRIPTEN_KEEPALIVE int aurora_destination_bipolar(int destination) { return aurora_route_bipolar((uint8_t)destination); }
 EMSCRIPTEN_KEEPALIVE int aurora_destination_target(int destination) { return aurora_route_target((uint8_t)destination); }
-EMSCRIPTEN_KEEPALIVE int aurora_destination(int target, int arp, int bipolar) {
-  return aurora_route_destination((uint8_t)target, (uint8_t)arp, bipolar != 0);
+EMSCRIPTEN_KEEPALIVE int aurora_destination(int target, int arp) {
+  return aurora_route_destination((uint8_t)target, (uint8_t)arp);
 }
-
-EMSCRIPTEN_KEEPALIVE float aurora_fan_wave_at(int phase, int frequency, int strip) {
-  render::Fan fan = {};
-  fan.phase = render::controlValue(CC_FAN_PHASE, (float)phase);
-  fan.frequency = render::controlValue(CC_FAN_FREQUENCY, (float)frequency);
-  return render::fanWave(fan, (uint8_t)strip);
+EMSCRIPTEN_KEEPALIVE int aurora_bipolar(int value) { return aurora_route_bipolar((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_bipolar_capable_of(int cc) { return aurora_bipolar_capable((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE int aurora_group_pattern_of(int value) { return aurora_group_pattern((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_aimed_route_of(int destination) {
+  return aurora_route_aims_route((uint8_t)destination) ? aurora_aimed_route((uint8_t)destination) : -1;
+}
+EMSCRIPTEN_KEEPALIVE int aurora_aims_phase_of(int destination) { return aurora_aims_phase((uint8_t)destination); }
+EMSCRIPTEN_KEEPALIVE int aurora_aim_destination_of(int route, int phase) {
+  return aurora_aim_destination((uint8_t)route, phase != 0);
+}
+EMSCRIPTEN_KEEPALIVE float aurora_group_level(int pattern, int index, int count, int salt) {
+  return render::groupLevel((uint8_t)pattern, (uint8_t)index, (uint8_t)count, (uint8_t)salt);
 }
 
 static render::Arp arpOf(int mode, int spread) {
@@ -241,8 +238,7 @@ EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {
   render::Modulation modulation;
   render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, frame.stripFanShift[strip], padReaching(strip, levels),
-                       modulation);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, (int8_t)strip, padReaching(strip, levels), modulation);
   return render::routedForDisplay(controls, &modulation, (uint8_t)cc);
 }
 
@@ -250,7 +246,7 @@ EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
   render::Modulation modulation;
   render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, padReaching(-1, levels), modulation);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, -1, padReaching(-1, levels), modulation);
   return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)cc, (uint8_t)par);
 }
 
@@ -258,7 +254,7 @@ EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
   render::Modulation modulation;
   render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
-  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, 0.0f, padReaching(-1, levels), modulation);
+  render::gatherRoutes(controls, beatsPerCycle, frame.lfo, -1, padReaching(-1, levels), modulation);
   return render::firstArpPass(controls, modulation, frame.lfo, arpPass) ? &arpPass : nullptr;
 }
 

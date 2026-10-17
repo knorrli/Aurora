@@ -5,7 +5,6 @@
 #include "bend.h"
 #include "cells.h"
 #include "clocks.h"
-#include "fan.h"
 #include "engines.h"
 #include "palettes.h"
 #include "pars.h"
@@ -39,8 +38,6 @@ struct FrameContext {
 struct StripContext {
   uint8_t index;
   Reading reading;
-  float fanWave;
-  float fanShift;
   float flowTime;
   float fieldDrift;
   float scatterTime;
@@ -68,14 +65,9 @@ static const PadLevels *padReaching(const FrameContext &context, int8_t strip) {
 
 static void readStrip(const FrameContext &context, uint8_t index, float *padShift,
                       Modulation &modulation, StripContext &strip, Frame &out) {
-  const Fan &fan = context.wallReading.fan;
   strip.index = index;
-  strip.fanWave = fanWave(fan, index);
-  strip.fanShift = fan.lfoOffset * strip.fanWave;
-  out.stripFanShift[index] = strip.fanShift;
-
   const float *dialed = context.stripDialed[index];
-  gatherRoutes(dialed, context.wallReading.lfoBeats, context.lfo, strip.fanShift,
+  gatherRoutes(dialed, context.wallReading.lfoBeats, context.lfo, (int8_t)index,
                padReaching(context, (int8_t)index), modulation);
   carryPadShift(context.padElapsed, padShift, modulation);
   readControls(dialed, &modulation, strip.reading);
@@ -187,20 +179,19 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   out.lfo = context.lfo;
 
   Modulation modulation;
-  gatherRoutes(wallControls, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
+  gatherRoutes(wallControls, context.wallReading.lfoBeats, context.lfo, -1, padReaching(context, -1),
                modulation);
   readControls(wallControls, &modulation, context.wallReading);
   hurry(context.wallReading, speed);
   if (pad.morphed && wallControls != pad.morphed) {
     Modulation parModulation;
-    gatherRoutes(pad.morphed, context.wallReading.lfoBeats, context.lfo, 0.0f, padReaching(context, -1),
+    gatherRoutes(pad.morphed, context.wallReading.lfoBeats, context.lfo, -1, padReaching(context, -1),
                  parModulation);
     readPars(pad.morphed, parModulation, context.lfo, out);
   } else {
     readPars(wallControls, modulation, context.lfo, out);
   }
   holdParPulses(milliseconds, wall, out);
-  readFan(context.wallReading, out.fan);
 
   const float cellBeats = cellClock(motion, context.beats, speed);
   if (wall.restarting) {
@@ -259,7 +250,6 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
 
     const CellsStrip cellsStrip = {
       index, context.stripDialed[index], &strip.reading, &modulation, padReaching(context, (int8_t)index),
-      strip.fanWave, strip.fanShift,
     };
     drawCells(context.cells, cellsStrip, drawn);
     out.cells[index] = drawn.marks;

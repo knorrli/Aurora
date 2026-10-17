@@ -38,16 +38,48 @@ struct SpotRoute {
   RouteTiming timing;
 };
 
-struct CellRoute {
-  uint8_t cc;
-  uint8_t route;
+struct RouteReading {
+  uint8_t destination;
+  bool aimsRoute;
+  uint8_t aimed;
+  bool aimsPhase;
   uint8_t source;
-  Wave wave;
+  bool held;
   bool bipolar;
+  bool perCell;
+  uint8_t pattern;
   float amount;
   float mean;
-  float shift;
+  Wave wave;
   RouteTiming timing;
+};
+
+struct Routes {
+  RouteReading routes[RENDER_ROUTES];
+};
+
+struct CellMember {
+  uint8_t note;
+  uint8_t chord;
+  uint8_t birthIndex;
+  uint8_t birthsInCycle;
+  int32_t birthNumber;
+  float age;
+  const float *envelopes;
+};
+
+struct RouteContext {
+  float lfo;
+  float beatsPerCycle;
+  float beatsAgo;
+  const PadLevels *pad;
+  int8_t strip;
+  const CellMember *cell;
+};
+
+struct Push {
+  float amount;
+  float bipolar;
 };
 
 void setOneshotClock(const OneshotClock &clock);
@@ -66,24 +98,23 @@ uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out);
 
 float landedControl(uint8_t cc, float base, float amount);
 
-void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
+void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,
                   const PadLevels *pad, Modulation &out);
 
-void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, float fanShift,
+void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,
                         const PadLevels *pad, float beatsAgo, Modulation &out);
 
 bool cellControl(uint8_t cc);
 
-uint8_t gatherCellRoutes(const float *dialed, float fanShift, CellRoute *out);
+void readRoutes(const float *dialed, Routes &out);
 
-float envelopeLevel(uint8_t source, const float *envelopes);
+Push cellPush(const Routes &routes, uint8_t cc, const RouteContext &context);
 
-float heldLevel(const CellRoute &route, float lfo, float beatsPerCycle, float beatsAgo);
+float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt);
 
 uint8_t envelopesUsed(const float *dialed);
 
-float cellRouted(uint8_t cc, float dialed, float amount, float bipolar, const CellRoute *routes,
-                 uint8_t count, const float *levels);
+float cellRouted(uint8_t cc, float dialed, float amount, float bipolar, float chord);
 
 void carryPadShift(float elapsedBeats, float *carried, Modulation &modulation);
 

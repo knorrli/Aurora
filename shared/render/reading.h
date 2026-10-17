@@ -9,6 +9,7 @@ namespace render {
 
 static const float MAX_SPEED_PIXELS_PER_BEAT = 60.0f;
 static const uint8_t MAX_CHORD = 16;
+static const float MAX_DELAY_STEPS = 2.0f;
 static const float EDGE_REACH_PIXELS = PIXELS * 0.25f;
 
 struct Envelope {
@@ -24,6 +25,8 @@ struct Cells {
   float rateBeats;
   uint8_t chord;
   float spread;
+  bool outside;
+  float delay;
   float gateBeats;
   uint8_t end;
   float width;
@@ -37,14 +40,6 @@ struct Cells {
   float curveAt;
   uint8_t direction;
   Envelope envelopes[AURORA_ENVELOPES];
-};
-
-struct Fan {
-  float position;
-  float lfoOffset;
-  float frequency;
-  float phase;
-  float randomize;
 };
 
 struct Field {
@@ -86,7 +81,6 @@ struct Scatter {
 
 struct Reading {
   Cells cells;
-  Fan fan;
   Field field;
   Flow flow;
   Core core;

@@ -32,7 +32,8 @@ const routeOf = name => ROUTES.find(route => route.fields.includes(name));
 
 const NAMES = Protocol.tagged('patch').concat(Protocol.tagged('switch'), ROUTE_FIELD_NAMES)
   .sort((a, b) => CC[a] - CC[b]);
-const SWITCHES = new Set(Protocol.tagged('switch').concat(ROUTES.flatMap(route => [route.destination, route.hold])));
+const SWITCHES = new Set(Protocol.tagged('switch')
+  .concat(ROUTES.flatMap(route => [route.destination, route.hold, route.polarity])));
 const isSwitch = name => SWITCHES.has(name);
 const CONTINUOUS = NAMES.filter(name => !isSwitch(name));
 
@@ -140,15 +141,6 @@ const ROUTE_READOUTS = {
   smooth: () => value => (value === 0 ? 'straight' : percent(value / 127) + ' smooth'),
 };
 
-const BARS = '▁▂▃▄▅▆▇█';
-const FAN_LANDMARKS = { 0: 'alike', 0.125: 'slope', 0.25: 'peak', 0.5: 'alternate' };
-const fanPicture = live => Preview.WALL_STRIP_ORDER.map(strip => {
-  const wave = Preview.fanWaveAt(live.fanPhase, live.fanFrequency, strip - 1);
-  return BARS[Math.round((wave + 1) / 2 * (BARS.length - 1))];
-}).join('');
-
-const fanShift = reach => '±' + pixels(reach * Preview.PIXELS);
-
 const isGradient = live => Protocol.threeWayPosition(live.fieldForm) === Protocol.FIELD_FORM.gradient;
 
 const fieldSize = (fraction, live) => {
@@ -198,7 +190,15 @@ const READOUTS = {
   cellWidth: value => pixels(real('cellWidth', value)),
   cellEdge: value => pixels(real('cellEdge', value)) + ' glow',
   cellTail: value => beatsOrNone(real('cellTail', value), 'none'),
-  cellPosition: value => upTheStrip(real('cellPosition', value) / Preview.PIXELS),
+  cellPosition: value => upTheStrip(real('cellPosition', value)),
+  cellDelay: (value, live) => {
+    const steps = real('cellDelay', value);
+    if (steps < 0.005) return 'none';
+    const settings = live || DEFAULT;
+    const rate = real('cellRate', settings.cellRate);
+    const step = rate > 0 ? rate : real('lfoRate', settings.lfoRate);
+    return `${percent(steps)} · ${beatsText(steps * step)}`;
+  },
   cellBend: value => {
     const ratio = Preview.bendSpeedRatio(value);
     if (ratio < 1.01) return 'even';
@@ -218,22 +218,6 @@ const READOUTS = {
     if (direction === Protocol.DIRECTION.cell) return backTheCell(at);
     return upTheStrip(at);
   },
-  fanPosition: value => fanShift(Math.abs(real('fanPosition', value))),
-  fanLfoOffset: value => '±' + Math.round(Math.abs(real('fanLfoOffset', value)) * 360) + '°',
-  fanFrequency: (value, live) => {
-    const turned = live.copy();
-    turned.fanFrequency = value;
-    const picture = fanPicture(turned);
-    const landmark = FAN_LANDMARKS[real('fanFrequency', value)];
-    return landmark ? `${picture} ${landmark}` : picture;
-  },
-  fanPhase: (value, live) => {
-    const turned = live.copy();
-    turned.fanPhase = value;
-    return fanPicture(turned);
-  },
-  fanRandomize: value => percent(real('fanRandomize', value)) + ' random',
-
   hue: value => degrees(real('hue', value)),
 
   lfoRate: value => PERIOD_NAMES[real('lfoRate', value)],
@@ -346,17 +330,13 @@ const threeWayOptions = (positions, labels) =>
   Object.entries(positions).map(([key, position]) => [Protocol.threeWayValue(position), labels[key]]);
 
 const soundingRoutes = live => ROUTES.filter(route =>
-  Protocol.routeTarget(live[route.destination]) !== 0 && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
+  live[route.destination] !== 0 && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
 const routedTo = (live, names) =>
   soundingRoutes(live).some(route => names.some(name => Protocol.routeTarget(live[route.destination]) === CC[name]));
-const atZero = (live, names) => names.every(name => real(name, live[name]) === 0);
 
-const nothingTravels = live => !routedTo(live, ['cellPosition', 'fanPosition']);
-const FAN_AMOUNTS = ['fanPosition', 'fanLfoOffset'];
-const fanIsFlat = live => atZero(live, FAN_AMOUNTS) && !routedTo(live, FAN_AMOUNTS);
+const nothingTravels = live => !routedTo(live, ['cellPosition']);
 const inertWhileStill = { inertWhen: nothingTravels };
 const bendIsFlat = live => Math.abs(real('cellBend', live.cellBend)) < 0.005 && !routedTo(live, ['cellBend']);
-const inertWhileFlat = { inertWhen: fanIsFlat };
 const endsAs = (live, end) => Protocol.threeWayPosition(live.cellEnd) === Protocol.CELL_END[end];
 const curveIsFlat = live => Math.abs(real('cellCurve', live.cellCurve)) < 0.005 && !routedTo(live, ['cellCurve']);
 const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route =>
@@ -370,24 +350,13 @@ const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
   unused: live => envelopeUnused(live, envelope),
 }));
 
-const FAN_SECTIONS = [
-  ['Amounts', [
-    control('fanPosition', 'Position'),
-    control('fanLfoOffset', 'LFO offset', { inertWhen: live => !soundingRoutes(live).length }),
-  ]],
-  ['Shape', [
-    control('fanFrequency', 'Frequency', inertWhileFlat),
-    control('fanPhase', 'Phase', inertWhileFlat),
-    control('fanRandomize', 'Randomize', inertWhileFlat),
-  ]],
-];
-
 const CELLS = {
   name: 'Cells',
   groups: [
     {
       title: 'Place', tone: 'place',
       names: [
+        control('cellEnds', 'Ends', { kind: 'two', options: [[OFF, 'inside'], [ON, 'outside']] }),
         control('cellChord', 'Chord'),
         control('cellSpread', 'Spread', { inertWhen: live => real('cellChord', live.cellChord) === 1 }),
         control('cellPosition', 'Position'),
@@ -410,6 +379,7 @@ const CELLS = {
           { kind: 'three', options: threeWayOptions(Protocol.CELL_END,
             { gone: 'gone', startOver: 'start over', stay: 'stay' }) }),
         control('cellRate', 'Rate'),
+        control('cellDelay', 'Delay'),
         control('cellGate', 'Gate', { inertWhen: live => endsAs(live, 'stay') }),
       ],
     },
@@ -422,17 +392,14 @@ const CELLS = {
         control('cellCurveAt', 'Curve at', { inertWhen: curveIsFlat }),
       ],
     },
-    {
-      title: 'Fan', tone: 'fan',
-      sections: FAN_SECTIONS,
-      names: FAN_SECTIONS.flatMap(([, names]) => names),
-    },
   ],
 };
 
 const fromLfo = (live, route) => Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE.lfo;
 const holdable = (live, route) => fromLfo(live, route)
   && Preview.cellControl(Protocol.routeTarget(live[route.destination]));
+const fromGroup = (live, route) => [Protocol.ROUTE_SOURCE.strip, Protocol.ROUTE_SOURCE.note, Protocol.ROUTE_SOURCE.birth]
+  .includes(Protocol.routeSource(live[route.ratio]));
 
 for (const route of ROUTES) {
   const offLfo = { inertWhen: live => !fromLfo(live, route) };
@@ -618,15 +585,30 @@ for (const card of ENVELOPE_CARDS) {
 for (const output of OUTPUTS) {
   for (const name of outputNames(output)) TONES[name] = 'out';
 }
+for (const route of ROUTES) {
+  for (const name of route.fields) {
+    TONES[name] = 'lfo';
+    PLACES[name] = route.name;
+  }
+}
 
-const ROUTABLE = new Set(Protocol.tagged('patch').filter(name => CONTROLS[name] && !Preview.routeRefused(CC[name])));
+const ROUTABLE = new Set(Protocol.tagged('patch').filter(name => CONTROLS[name] && !Preview.routeRefused(CC[name]))
+  .concat(ROUTES.flatMap(route => [route.amount, route.phase])));
 const routable = name => ROUTABLE.has(name);
-const routableDestination = number => {
-  const target = Protocol.routeTarget(number);
-  return number === 0 || (target !== 0 && routable(Protocol.NAME_BY_CC[target]));
+const targetName = destination => {
+  const aimed = Protocol.aimedRoute(destination);
+  if (aimed >= 0) return Protocol.aimsPhase(destination) ? ROUTES[aimed].phase : ROUTES[aimed].amount;
+  return Protocol.NAME_BY_CC[Protocol.routeTarget(destination)] || null;
 };
-const arpCapable = name => Protocol.routeDestination(CC[name], Protocol.ARP.steps, false) !== CC[name];
-const bipolarCapable = name => Protocol.routeDestination(CC[name], Protocol.ARP.unison, true) !== CC[name];
+const destinationOf = name => {
+  const route = routeOf(name);
+  if (route) return Protocol.aimDestination(ROUTES.indexOf(route), name === route.phase);
+  return CC[name];
+};
+const aimsRoute = destination => Protocol.aimedRoute(destination) >= 0;
+const routableDestination = number => number === 0 || routable(targetName(number));
+const arpCapable = name => Protocol.routeDestination(CC[name], Protocol.ARP.steps) !== CC[name];
+const bipolarCapable = name => !routeOf(name) && Protocol.bipolarCapable(CC[name]);
 const isCircular = name => Protocol.hasTag(name, 'circular');
 const swings = name => Protocol.hasTag(name, 'rate');
 
@@ -654,7 +636,7 @@ function wholeCounts(valueOf) {
 }
 
 const STEPPED = new Set([
-  'lfoRate', 'flowRate', 'scatterRate', 'fanFrequency', 'fieldSpeed',
+  'lfoRate', 'flowRate', 'scatterRate', 'fieldSpeed',
   'cellRate', 'cellChord', 'cellGate', 'cellTail',
   ...ENVELOPES.flatMap(stages => [stages.attack, stages.hold, stages.decay, stages.release]),
 ]);
@@ -682,5 +664,6 @@ export {
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
   CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
-  fromLfo, holdable, routable, routableDestination, arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
+  fromLfo, fromGroup, holdable, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
+  arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

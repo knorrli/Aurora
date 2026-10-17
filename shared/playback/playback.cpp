@@ -396,7 +396,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
   float live[AURORA_PATCH_CC_COUNT];
   computeLive(beats, live);
 
-  render::OneshotClock clock = { 0.0f, 1.0f, false };
+  render::OneshotClock clock = { 0.0f, 1.0f };
   uint8_t level = 255;
   if (pinned) {
     render::composeOneshot(pinnedControls, nullptr, nullptr, 1.0f, composed);
@@ -409,7 +409,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
       if (lastOneshotProgress < 0.0f || lastOneshotProgress >= 1.0f) firing = false;
     }
     render::composeOneshot(mixed, firing ? oneshot.controls : nullptr, oneshot.marks, firedStrength, composed);
-    if (firing) clock = { lastOneshotProgress, lengthBeats, oneshot.marks[CC_FAN_LFO_OFFSET] != 0 };
+    if (firing) clock = { lastOneshotProgress, lengthBeats };
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }
 

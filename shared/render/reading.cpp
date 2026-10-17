@@ -5,9 +5,6 @@
 namespace render {
 
 
-static const float FAN_FREQUENCY_STEPS = 16.0f;
-static const float FAN_MAX_CYCLES_PER_STRIP = 0.5f;
-
 static const float FIELD_MAX_HUE = 128.0f;
 static const float FIELD_MIN_COUNT = 0.5f;
 static const float FLOW_MAX_HUE = 128.0f;
@@ -89,14 +86,14 @@ static float lapsPerBeatOf(float value) {
   return (step < 0 ? -1.0f : 1.0f) / AURORA_LFO_PERIODS[(step < 0 ? -step : step) - 1];
 }
 
-static float fanFrequencyOf(float value) {
-  const long step = lroundf(value * FAN_FREQUENCY_STEPS / 127.0f);
-  return (float)step * (FAN_MAX_CYCLES_PER_STRIP / FAN_FREQUENCY_STEPS);
-}
-
 static float positionOf(float value) {
   const float laps = floorf(value / 127.0f);
-  return (laps + 0.5f + 0.5f * signedOf(value - 127.0f * laps)) * (float)PIXELS;
+  return laps + 0.5f + 0.5f * signedOf(value - 127.0f * laps);
+}
+
+static float delayOf(float value) {
+  const float steps = value / 127.0f;
+  return steps < 0.0f ? 0.0f : (steps > MAX_DELAY_STEPS ? MAX_DELAY_STEPS : steps);
 }
 
 float controlValue(uint8_t cc, float value) {
@@ -118,16 +115,13 @@ float controlValue(uint8_t cc, float value) {
     case CC_CELL_BEND_AT:
     case CC_CELL_CURVE_AT: return 0.5f + 0.5f * signedOf(value);
     case CC_CELL_POSITION: return positionOf(value);
+    case CC_CELL_DELAY: return delayOf(value);
     case CC_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
     case CC_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
     case CC_CELL_RATE: return cellRateBeatsOf(value);
     case CC_CELL_GATE: return gateBeatsOf(value);
     case CC_CELL_CHORD: return chordOf(value);
-    case CC_FAN_POSITION:
-    case CC_FAN_LFO_OFFSET: return signedOf(value) * 0.5f;
     case CC_SCATTER_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
-    case CC_FAN_FREQUENCY: return fanFrequencyOf(value);
-    case CC_FAN_PHASE: return value / 128.0f;
     case CC_LFO_RATE: return aurora_lfo_period(roundedControl(value));
 
     case CC_FIELD_HUE: return signedOf(value) * FIELD_MAX_HUE;
@@ -149,7 +143,6 @@ float controlValue(uint8_t cc, float value) {
     case CC_ENVELOPE_1_SUSTAIN:
     case CC_ENVELOPE_2_SUSTAIN:
     case CC_ENVELOPE_3_SUSTAIN:
-    case CC_FAN_RANDOMIZE:
     case CC_FIELD_WIDTH:
     case CC_FIELD_EDGE:
     case CC_FIELD_WHITE:
@@ -176,6 +169,8 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   cells.rateBeats = at(CC_CELL_RATE);
   cells.chord = (uint8_t)at(CC_CELL_CHORD);
   cells.spread = at(CC_CELL_SPREAD);
+  cells.outside = aurora_switch_is_on(roundedControl(dialed[CC_CELL_ENDS]));
+  cells.delay = at(CC_CELL_DELAY);
   cells.gateBeats = at(CC_CELL_GATE);
   cells.end = aurora_three_way_position(roundedControl(dialed[CC_CELL_END]));
   cells.width = at(CC_CELL_WIDTH);
@@ -197,13 +192,6 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
     stages.release = at(aurora_envelope_cc(envelope, ENVELOPE_RELEASE));
     stages.stepped = aurora_switch_is_on(roundedControl(dialed[aurora_envelope_moves_cc(envelope)]));
   }
-
-  Fan &fan = out.fan;
-  fan.position = at(CC_FAN_POSITION);
-  fan.lfoOffset = at(CC_FAN_LFO_OFFSET);
-  fan.frequency = at(CC_FAN_FREQUENCY);
-  fan.phase = at(CC_FAN_PHASE);
-  fan.randomize = at(CC_FAN_RANDOMIZE);
 
   out.lfoBeats = at(CC_LFO_RATE);
 

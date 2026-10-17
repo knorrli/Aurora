@@ -21,26 +21,23 @@ const CC = {
   lfoRate:           30,
   arpMode:           31,
   arpSpread:         33,
-  cellChord:         34,
-  cellSpread:        35,
-  cellPosition:      36,
-  cellBend:          37,
-  cellBendAt:        38,
-  cellWidth:         39,
-  cellEdge:          40,
-  cellTail:          41,
-  cellEnd:           42,
-  cellRate:          43,
-  cellGate:          44,
-  cellDirection:     45,
-  cellBrightness:    46,
-  cellCurve:         47,
-  cellCurveAt:       48,
-  fanPosition:       49,
-  fanLfoOffset:      50,
-  fanFrequency:      51,
-  fanPhase:          52,
-  fanRandomize:      53,
+  cellEnds:          34,
+  cellChord:         35,
+  cellSpread:        36,
+  cellPosition:      37,
+  cellBend:          38,
+  cellBendAt:        39,
+  cellWidth:         40,
+  cellEdge:          41,
+  cellTail:          42,
+  cellEnd:           43,
+  cellRate:          44,
+  cellDelay:         45,
+  cellGate:          46,
+  cellDirection:     47,
+  cellBrightness:    48,
+  cellCurve:         49,
+  cellCurveAt:       50,
   scatterCount:      54,
   scatterWidth:      55,
   scatterEdge:       56,
@@ -90,8 +87,8 @@ const CC = {
   envelope3Moves:    101,
 };
 
-const TAGS = {"padHold":["ambient"],"padMode":["ambient"],"padWidth":["ambient"],"padGaps":["ambient"],"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"padX":["ambient"],"padY":["ambient"],"padTouch":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"parHueOffset":["patch","circular","unstaggered"],"parSaturation":["patch","unstaggered"],"parValue":["patch","unstaggered"],"parHueLayout":["switch"],"parHueRange":["patch","unstaggered"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch","unstaggered"],"cellChord":["patch"],"cellSpread":["patch"],"cellPosition":["patch"],"cellBend":["patch","unstaggered"],"cellBendAt":["patch","unstaggered"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellEnd":["switch"],"cellRate":["patch"],"cellGate":["patch"],"cellDirection":["switch"],"cellBrightness":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"fanPosition":["patch","unstaggered"],"fanLfoOffset":["patch","unstaggered"],"fanFrequency":["patch","unstaggered"],"fanPhase":["patch","circular","unstaggered"],"fanRandomize":["patch","unstaggered"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"],"envelope1Moves":["switch"],"envelope2Moves":["switch"],"envelope3Moves":["switch"]};
-const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"fanPosition":64,"fanLfoOffset":64,"fanFrequency":32,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
+const TAGS = {"padHold":["ambient"],"padMode":["ambient"],"padWidth":["ambient"],"padGaps":["ambient"],"faderColor":["ambient"],"faderMotion":["ambient"],"faderExtent":["ambient"],"padX":["ambient"],"padY":["ambient"],"padTouch":["ambient"],"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"parHueOffset":["patch","circular"],"parSaturation":["patch"],"parValue":["patch"],"parHueLayout":["switch"],"parHueRange":["patch"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpSpread":["patch"],"cellEnds":["switch"],"cellChord":["patch"],"cellSpread":["patch"],"cellPosition":["patch"],"cellBend":["patch"],"cellBendAt":["patch"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellEnd":["switch"],"cellRate":["patch"],"cellDelay":["patch"],"cellGate":["patch"],"cellDirection":["switch"],"cellBrightness":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"],"envelope1Moves":["switch"],"envelope2Moves":["switch"],"envelope3Moves":["switch"]};
+const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
 
 const MIDI_CHANNEL = 1;
 const PROGRAM_BLACKOUT = 0;
@@ -115,21 +112,21 @@ const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
 const PAD_MODE = {"perPatch":0,"morph":1,"effects":2};
 const CORNER = {"bottomLeft":0,"bottomRight":1,"topLeft":2,"topRight":3};
 const KIT_PLACES = 24;
-const ROUTE_SOURCE = {"lfo":0,"padX":1,"padY":2,"envelope1":3,"envelope2":4,"envelope3":5};
+const ROUTE_SOURCE = {"lfo":0,"padX":1,"padY":2,"envelope1":3,"envelope2":4,"envelope3":5,"strip":6,"note":7,"birth":8};
 const PAD_WIDTH = {"center":0,"middle":1,"all":2};
 const WAVE_SWELL = 32;
 const WAVE_FALL = 64;
 const WAVE_SQUARE = 96;
 const LFO_PERIODS = [16,12,8,6,4,3,2,1.5,1,0.75,0.5,0.375,0.25];
 const ROUTES = 8;
-const ROUTE_BASE = [128,135,142,149,156,163,170,177];
-const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4,"hold":5,"smooth":6};
-const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0,"hold":0,"smooth":127};
+const ROUTE_BASE = [128,136,144,152,160,168,176,184];
+const ROUTE_FIELD = {"destination":0,"amount":1,"ratio":2,"wave":3,"phase":4,"hold":5,"smooth":6,"polarity":7};
+const ROUTE_DEFAULTS = {"destination":0,"amount":64,"ratio":0,"wave":32,"phase":0,"hold":0,"smooth":127,"polarity":0};
 const ROUTE_MAX_RATIO = 8;
 const ROUTE_PHASE_STEPS = 16;
 const PATCH_FORMAT = 7;
 const LAST_PATCH_SLOT = 108;
-const PATCH_CC_COUNT = 184;
+const PATCH_CC_COUNT = 192;
 const PATCH_NAME_LENGTH = 16;
 const PATCH_HEAD_LENGTH = 20;
 const PATCH_LAYER_BASE = 0;
@@ -142,7 +139,7 @@ const KEYPAD_KEYS = 9;
 const BANKS = 12;
 const SLOT_MAP_LENGTH = 16;
 const KIT_MAP_LENGTH = 4;
-const MARK_MAP_LENGTH = 27;
+const MARK_MAP_LENGTH = 28;
 const NO_ONESHOT = 127;
 const SONG_SECTIONS = 32;
 const SONG_HEAD_LENGTH = 4;
