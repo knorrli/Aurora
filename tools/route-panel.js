@@ -49,6 +49,12 @@ function curvesOf(route, live) {
   return Preview.WALL_STRIP_ORDER.map(strip => ({ amount: amounts[strip - 1], shift: shifts[strip - 1] }));
 }
 
+const curvesKey = curves => curves.map(curve => `${curve.amount.toFixed(3)} ${curve.shift.toFixed(3)}`).join(',');
+
+function redrawIfMoved(canvas, route, live) {
+  if (canvas.curves !== curvesKey(curvesOf(route, live))) drawWave(canvas, route, live);
+}
+
 function departureAt(route, phase, live, curve) {
   const wave = live[route.wave], smooth = live[route.smooth];
   const at = Preview.lfoWave(turnsOf(route, shownPhase(phase), live) + curve.shift, wave, smooth);
@@ -144,6 +150,7 @@ function drawWave(canvas, route, live) {
   }
 
   const curves = curvesOf(route, live);
+  canvas.curves = curvesKey(curves);
   context.strokeStyle = getComputedStyle(canvas).color;
   context.lineWidth = curves.length > 1 ? 1.5 : 2;
   context.lineJoin = 'round';
@@ -200,12 +207,16 @@ function drawPlayhead(canvas, route, lfo, live) {
 function paintPlayheads(lfo, live) {
   if (list.root) {
     for (const { route, line, canvas } of list.lines) {
-      if (!line.hidden) drawPlayhead(canvas, route, lfo, live);
+      if (line.hidden) continue;
+      redrawIfMoved(canvas, route, live);
+      drawPlayhead(canvas, route, lfo, live);
     }
   }
   if (panel.target) {
     for (const { route, block, canvas } of panel.blocks) {
-      if (!block.hidden) drawPlayhead(canvas, route, lfo, live);
+      if (block.hidden) continue;
+      redrawIfMoved(canvas, route, live);
+      drawPlayhead(canvas, route, lfo, live);
     }
   }
 }
