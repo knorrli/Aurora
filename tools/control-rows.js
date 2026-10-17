@@ -132,7 +132,7 @@ function withRouteAmounts(names) {
 const movable = (handle, label, names) =>
   LayerDrop.source(handle, () => ({ label, names: withRouteAmounts(names) }));
 
-function buildGroup(title, sections, label = title) {
+function buildGroup(title, sections, label = title, columns = false) {
   const box = element('div');
   const heading = element('h3', null, title);
   const groupNames = sections.flatMap(([, names]) => names);
@@ -140,14 +140,16 @@ function buildGroup(title, sections, label = title) {
   reset.classList.add('push-right');
   heading.appendChild(reset);
   movable(heading, label, groupNames);
-  const body = element('div');
+  const body = element('div', columns ? 'card-body' : null);
   for (const [subheading, names] of sections) {
+    const section = columns ? element('div') : body;
     if (subheading) {
       const handle = element('h4', 'subhead', subheading);
       movable(handle, `${label} · ${subheading}`, names);
-      body.appendChild(handle);
+      section.appendChild(handle);
     }
-    buildRows(body, names);
+    buildRows(section, names);
+    if (columns) body.appendChild(section);
   }
   box.append(heading, body);
   return box;
@@ -271,7 +273,8 @@ function build() {
   byId('lfo').replaceChildren(buildCard(Patch.LFO), buildEnvelopesCard(), buildRoutesCard());
   const groups = element('div', 'groups');
   groups.append(...Patch.CELLS.groups.map(group => {
-    const box = buildGroup(group.title, group.sections || [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`);
+    const box = buildGroup(group.title, group.sections || [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`,
+                           !!group.sections);
     box.classList.add(`tone-${group.tone}`);
     return box;
   }));
