@@ -94,6 +94,7 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 
 - Fan was already a wave read across the strips instead of over time, wired to two fixed places. The test looks need that per-member value across strips, a chord's cells and births, and on a route's amount: the cross scales one envelope's journey from +1 to −1 across the strips.
 - The arp's patterns are the shapes the looks need across a group: Sequence the cross, Mirror the chevron, Evens / odds the bright and faint bars and births taking turns. Stretched to the group, they stay right when Chord changes; laying a wave along the group needed one setting for slopes and another for alternation, and a different Ratio per Chord. The user already knows the patterns from the PARs.
+- Births never end, so Birth's stretched patterns count within one LFO cycle, the arp's pass. A held LFO wave steps births too, but starts over before reaching its end, so eight births on a fall wave stop one place short of the bottom.
 - Aiming a route at another route's amount is a modulation matrix's via slot.
 - It replaces Fan and frees its five CCs. A spread fader on every route would have cost 8 to 16 CCs and allowed only a slope; a bigger Fan would have kept one group and one scaling per patch.
 - The cost the user accepted: a scaled journey takes two routes, and a route set by another route is more abstract than anything else in the editor.

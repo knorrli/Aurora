@@ -85,7 +85,6 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Two groups of cells, one painting over the other? Raindrops: born at random places, falling with a trail.
 - Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
-- Births never end, so Sequence, Mirror and Pairs have no last birth to stretch to. What do they do on Birth?
 - Can a Strip route delay births, so they ripple across the wall? Today a cell is born on every strip at the same moment and its envelope runs in step.
 - Once group routes are built, build advanced patches together in the preview: the moving cross, cells dividing together and taking turns, five bars alternating bright and faint.
 - Can a oneshot play one cell?
