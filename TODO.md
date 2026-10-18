@@ -94,12 +94,12 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Two groups of cells, one painting over the other? Raindrops: born at random places, falling with a trail.
 - Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
-- Build advanced patches together in the preview: cells dividing together and taking turns, five bars alternating bright and faint, the stepped trail.
+- Build advanced patches together in the preview: five bars alternating bright and faint, the stepped trail.
 - Should Strip's and Note's Random draw a new order on each birth, and on each start over, instead of one fixed shuffle?
 - Accent still blends as before: it never changes settings and never crossfades a route. Should it follow the layer faders' rules?
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
-- Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.
+- Test looks: slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.
 
 ### Editor
 
