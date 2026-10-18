@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as Library from './library.js';
 import * as Midi from './midi-out.js';
 import * as Patch from './patch.js';
@@ -24,8 +24,7 @@ const micros = milliseconds => Math.round(milliseconds * 1000) >>> 0;
 const link = () => Midi.link;
 
 const clock = { sending: false, due: [], nextAt: null };
-const brain = { dialing: true, pinned: null };
-const fed = new Array(Protocol.PATCH_CC_COUNT).fill(-1);
+const brain = { dialing: true, layers: [] };
 const faders = Object.fromEntries(Object.keys(FADERS).map(layer => [layer, 0]));
 let shown = null;
 
@@ -94,51 +93,53 @@ function syncLibrary() {
 const dialedSlot = () => (session.editingOneshot() ? session.overSlotShown() : session.slot);
 const dialedPatch = () => (session.editingOneshot() ? session.over() : session.underneath());
 
-function forgetFed(bytes) {
-  for (const name of Patch.NAMES) fed[Patch.CC[name]] = bytes[Patch.CC[name]] | 0;
+
+const sounded = bytes => session.sounding(Patch.controls(bytes)).bytes;
+
+function dialedRecord() {
+  const patch = dialedPatch();
+  const record = patchRecord(patch);
+  record.layers[Protocol.PATCH_LAYER_BASE] = sounded(patch.base);
+  return record;
 }
 
-function feedBase() {
-  if (Preview.playback.slot() !== (dialedSlot() || 0)) return;
-  const live = session.sounding(Patch.controls(dialedPatch().base));
-  for (const name of Patch.NAMES) {
-    const cc = Patch.CC[name];
-    if (fed[cc] === live[name]) continue;
-    local(CONTROL_CHANGE, cc, live[name]);
-    fed[cc] = live[name];
-  }
+function dialBoth(slot, record, cut) {
+  Preview.playback.dial(slot, record, cut);
+  if (!link().output) return;
+  record.layers.forEach((bytes, layer) => {
+    const sent = bytes.join(',');
+    if (!cut && sent === brain.layers[layer]) return;
+    link().sendDialLayer(layer, bytes);
+    brain.layers[layer] = sent;
+  });
+  link().sendDial(slot, record, cut);
 }
 
 function syncPin() {
+  const layered = session.pinnedLayer();
   const pinned = session.pinnedControls();
-  if (pinned) Preview.playback.pin(session.sounding(pinned).bytes);
-  else Preview.playback.unpin();
-}
-
-function dial() {
-  brain.dialing = true;
-  brain.pinned = null;
+  if (layered) {
+    const bytes = sounded(layered.layer);
+    const steps = Math.round(layered.position * Protocol.PIN_POSITION_STEPS);
+    Preview.playback.pinLayer(bytes, layered.index, steps);
+    if (link().output) link().sendPinLayer(bytes, layered.index, steps);
+  } else if (pinned) {
+    const bytes = session.sounding(pinned).bytes;
+    Preview.playback.pin(bytes);
+    if (link().output) link().sendPin(bytes);
+  } else {
+    Preview.playback.unpin();
+    if (link().output) link().sendUnpin();
+  }
 }
 
 function play() {
   brain.dialing = false;
 }
 
-function pinBrain(drawn) {
-  if (!brain.dialing || !link().output) return;
-  const controls = drawn.slice(0, Protocol.PATCH_CC_COUNT);
-  const sent = controls.join(',');
-  if (sent === brain.pinned) return;
-  link().sendPin(controls);
-  brain.pinned = sent;
-}
-
 function cut() {
-  dial();
-  const patch = dialedPatch();
-  Preview.playback.cut(dialedSlot() || 0, patchRecord(patch));
-  forgetFed(patch.base);
-  feedBase();
+  brain.dialing = true;
+  dialBoth(dialedSlot() || 0, dialedRecord(), true);
   syncPin();
 }
 
@@ -151,14 +152,11 @@ function changed() {
     cut();
     return;
   }
-  if (dialedSlot() !== null) Preview.playback.patchChanged(dialedSlot());
-  feedBase();
+  dialBoth(dialedSlot() || 0, dialedRecord(), false);
   syncPin();
 }
 
-function follow(slot) {
-  const patch = session.patchAt(slot);
-  if (patch) forgetFed(patch.base);
+function follow() {
   syncPin();
 }
 
@@ -182,7 +180,7 @@ function fireNote(note) {
 function setFader(layer, position) {
   play();
   faders[layer] = position;
-  both(CONTROL_CHANGE, Patch.CC[FADERS[layer]], Math.round(position * 127));
+  both(CONTROL_CHANGE, Protocol.CC[FADERS[layer]], Math.round(position * 127));
 }
 
 const movePad = (cc, value) => both(CONTROL_CHANGE, cc, value);
@@ -191,8 +189,7 @@ function run(fromSlot) {
   const from = session.patchAt(fromSlot);
   if (!from) return;
   play();
-  Preview.playback.cut(fromSlot, patchRecord(from));
-  forgetFed(from.base);
+  dialBoth(fromSlot, patchRecord(from), true);
   press(session.slot);
   const beats = Preview.playback.beats();
   const length = Protocol.transitionBeats(session.patch().transitionTime);
@@ -203,7 +200,6 @@ function run(fromSlot) {
 function frame(now) {
   pumpClock(now);
   shown = Preview.playback.frame(micros(now));
-  pinBrain(shown.drawn);
   return shown;
 }
 
@@ -224,6 +220,6 @@ const oneshotProgress = () => Preview.playback.oneshotProgress();
 const oneshotIndex = () => Preview.playback.oneshotIndex();
 
 export {
-  FADERS, faders, start, syncLibrary, dial, cut, changed, follow, press, release, fireNote, setFader, movePad, run,
+  FADERS, faders, start, syncLibrary, cut, changed, follow, press, release, fireNote, setFader, movePad, run,
   sendClock, frame, shownControls, beats, slot, oneshotProgress, oneshotIndex,
 };

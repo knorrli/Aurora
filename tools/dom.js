@@ -38,6 +38,10 @@ function ccLabeled(tag, title, number) {
   return midiLabeled(tag, title, `CC ${number}`);
 }
 
+function numberLabeled(tag, title, number) {
+  return midiLabeled(tag, title, `#${number}`);
+}
+
 function fillLabeled(node, title, detail) {
   if (node.firstChild.textContent !== title) node.firstChild.textContent = title;
   if (node.lastChild.textContent !== detail) node.lastChild.textContent = detail;
@@ -48,4 +52,4 @@ function setOptions(select, options, value) {
   select.value = value;
 }
 
-export { byId, element, option, rangeInput, labeled, midiLabeled, ccLabeled, fillLabeled, setOptions };
+export { byId, element, option, rangeInput, labeled, midiLabeled, ccLabeled, numberLabeled, fillLabeled, setOptions };

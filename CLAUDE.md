@@ -2,7 +2,7 @@
 
 ## Code
 
-- No comments, anywhere. The code states what it does; a comment is out of date as soon as it is written. The one exception is the tag list after each CC in `shared/aurora_protocol.h` (`// [patch][rate]`): that is data `tools/gen-cc.mjs` reads, not a comment.
+- No comments, anywhere. The code states what it does; a comment is out of date as soon as it is written. The one exception is the tag list after each control in `shared/aurora_protocol.h` (`// [patch][rate]`): that is data `tools/gen-controls.mjs` reads, not a comment.
 - Names are descriptive words. No abbreviations unless universally obvious (MIDI, DMX, LED, RGB, CC).
 - A name in code is the name on screen. When the editor's label changes, the code follows.
 - American English.
@@ -15,7 +15,7 @@
 
 ## Generated files
 
-- `tools/cc.js`: `node tools/gen-cc.mjs` after changing `shared/aurora_protocol.h`.
+- `tools/controls.js`: `node tools/gen-controls.mjs` after changing `shared/aurora_protocol.h`.
 - `tools/render.js`: `node tools/build-render.mjs` after changing `shared/render/` or `shared/playback/` (needs Emscripten).
 - Both have `--check`.
 

@@ -97,7 +97,7 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 - The arp's patterns are the shapes the looks need across a group: Sequence the alternating diagonals, Mirror the chevron, Evens / odds the bright and faint bars and births taking turns. Stretched to the group, they stay right when Chord changes; laying a wave along the group needed one setting for slopes and another for alternation, and a different Ratio per Chord. The user already knows the patterns from the PARs.
 - Births never end, so Birth's stretched patterns count within one LFO cycle, the arp's pass. A held LFO wave steps births too, but starts over before reaching its end, so eight births on a fall wave stop one place short of the bottom.
 - Aiming a route at another route's amount is a modulation matrix's via slot.
-- It replaces Fan and frees its five CCs. A spread fader on every route would have cost 8 to 16 CCs and allowed only a slope; a bigger Fan would have kept one group and one scaling per patch.
+- It replaces Fan and frees its five controls. A spread fader on every route would have cost 8 to 16 controls and allowed only a slope; a bigger Fan would have kept one group and one scaling per patch.
 - The cost the user accepted: a scaled journey takes two routes, and a route set by another route is more abstract than anything else in the editor.
 
 ## Why Delay moves the whole life, and is a control
@@ -111,13 +111,7 @@ Temporary. This file holds the reasons behind `docs/design.md` § Cells and § B
 ## Why Scatter stays
 
 - Scatter paints over the strip with its own color and mix. One cell engine has one player and one kind of cell at a time, so merging the two would lose looks like a faint bar pattern with white spots flashing over it.
-- Merging would only have freed CCs by giving that up. Two groups of cells, one over the other, would cost more CCs, not fewer.
-
-## Why the preview comes first
-
-- Only 2, 8, 9, 19, 34 and 64 are free. 0, 32 and 120 to 127 are reserved by MIDI; 1, 7, 10 and 11 are written unasked by a DAW or keyboard on Aurora's channel.
-- The ways past 128 are NRPN or a second MIDI channel. The user dislikes the second channel because it makes DAW control harder, and has not looked at NRPN.
-- The preview runs the same render code as the brain on a plain list of values, so cells can be tested there with a longer list. No patches exist yet, so nothing has to be kept compatible. The CC decision waits until cells have proven themselves.
+- Merging would only have freed controls by giving that up. Two groups of cells, one over the other, would cost more controls, not fewer.
 
 ## Why brightness moves into the shape
 

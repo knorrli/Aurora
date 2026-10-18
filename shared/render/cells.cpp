@@ -14,7 +14,7 @@ static const float VELOCITY_BEATS = 1.0f / 64.0f;
 static const float WRAP_SLACK = 0.02f;
 
 static const uint8_t PER_CELL[] = {
-  CC_CELL_POSITION, CC_CELL_WIDTH, CC_CELL_EDGE, CC_CELL_BRIGHTNESS, CC_HUE, CC_SATURATION,
+  CONTROL_CELL_POSITION, CONTROL_CELL_WIDTH, CONTROL_CELL_EDGE, CONTROL_CELL_BRIGHTNESS, CONTROL_HUE, CONTROL_SATURATION,
 };
 static const uint8_t PER_CELL_COUNT = sizeof(PER_CELL) / sizeof(PER_CELL[0]);
 
@@ -160,9 +160,9 @@ static CellState evaluate(const StripLife &life, const Birth &birth, float beats
   const float *dialed = life.strip->dialed;
   const float chord = (float)life.cells->chord;
   const auto value = [&](uint8_t which) {
-    const uint8_t cc = PER_CELL[which];
-    const Push push = cellPush(life.routes, cc, context);
-    return controlValue(cc, cellRouted(cc, dialed[cc], live.amount[which] + push.amount,
+    const uint8_t control = PER_CELL[which];
+    const Push push = cellPush(life.routes, control, context);
+    return controlValue(control, cellRouted(control, dialed[control], live.amount[which] + push.amount,
                                        live.bipolar[which] + push.bipolar, chord));
   };
 
@@ -178,9 +178,9 @@ static CellState evaluate(const StripLife &life, const Birth &birth, float beats
 
 static float delayOf(const StripLife &life, const CellMember &member) {
   const RouteContext context = contextOf(life, 0.0f, member);
-  const Push push = cellPush(life.routes, CC_CELL_DELAY, context);
-  const float dialed = life.strip->dialed[CC_CELL_DELAY];
-  return controlValue(CC_CELL_DELAY, cellRouted(CC_CELL_DELAY, dialed, push.amount, push.bipolar, 1.0f));
+  const Push push = cellPush(life.routes, CONTROL_CELL_DELAY, context);
+  const float dialed = life.strip->dialed[CONTROL_CELL_DELAY];
+  return controlValue(CONTROL_CELL_DELAY, cellRouted(CONTROL_CELL_DELAY, dialed, push.amount, push.bipolar, 1.0f));
 }
 
 static float curveOf(float along, float amount, float at) {

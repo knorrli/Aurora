@@ -17,15 +17,27 @@ static const uint16_t STRIP_SAMPLES = PIXELS * SAMPLES_PER_PIXEL;
 static const uint8_t BEND_POINTS = PIXELS + 1;
 static const uint8_t FIELD_ACROSS_POINTS = (STRIPS - 1) * 12 + 1;
 
-static const uint8_t RENDER_ROUTES = 2 * AURORA_ROUTES;
-static const uint16_t RENDER_CONTROL_COUNT = AURORA_PATCH_CC_COUNT + AURORA_ROUTES * ROUTE_FIELDS;
+static const uint8_t ECHO_ROUTE_FIRST = 2 * AURORA_ROUTES;
+static const uint8_t RENDER_ROUTES = ECHO_ROUTE_FIRST + (AURORA_PATCH_LAYERS - 1) * AURORA_ROUTES;
+static const uint16_t ROUTE_SHARE_FIRST = AURORA_PATCH_CONTROLS + (RENDER_ROUTES - AURORA_ROUTES) * ROUTE_FIELDS;
+static const uint16_t RENDER_CONTROL_COUNT = ROUTE_SHARE_FIRST + RENDER_ROUTES;
 
-static inline uint8_t routeByte(uint8_t route, uint8_t field) {
-  if (route < AURORA_ROUTES) return aurora_route_cc(route, field);
-  return (uint8_t)(AURORA_PATCH_CC_COUNT + (route - AURORA_ROUTES) * ROUTE_FIELDS + field);
+static inline uint16_t routeControl(uint8_t route, uint8_t field) {
+  if (route < AURORA_ROUTES) return aurora_route_control(route, field);
+  return (uint16_t)(AURORA_PATCH_CONTROLS + (route - AURORA_ROUTES) * ROUTE_FIELDS + field);
 }
 
-static inline bool oneshotRoute(uint8_t route) { return route >= AURORA_ROUTES; }
+static inline uint8_t echoRoute(uint8_t layer, uint8_t route) {
+  return (uint8_t)(ECHO_ROUTE_FIRST + (layer - 1) * AURORA_ROUTES + route);
+}
+
+static inline uint16_t routeShare(uint8_t route) { return (uint16_t)(ROUTE_SHARE_FIRST + route); }
+
+static inline bool oneshotRoute(uint8_t route) { return route >= AURORA_ROUTES && route < ECHO_ROUTE_FIRST; }
+
+static inline uint8_t versionOf(uint8_t route) {
+  return route < ECHO_ROUTE_FIRST ? route : (uint8_t)((route - ECHO_ROUTE_FIRST) % AURORA_ROUTES);
+}
 
 static inline uint8_t roundedControl(float value) { return (uint8_t)(value + 0.5f); }
 

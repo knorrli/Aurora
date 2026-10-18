@@ -73,9 +73,9 @@ static void readStrip(const FrameContext &context, uint8_t index, float *padShif
   readControls(dialed, &modulation, strip.reading);
   hurry(strip.reading, context.speed);
 
-  strip.flowTime = context.flowTime + modulation.shift[CC_FLOW_RATE];
-  strip.fieldDrift = context.fieldDrift + modulation.shift[CC_FIELD_SPEED];
-  strip.scatterTime = context.scatterTime + modulation.shift[CC_SCATTER_RATE];
+  strip.flowTime = context.flowTime + modulation.shift[CONTROL_FLOW_RATE];
+  strip.fieldDrift = context.fieldDrift + modulation.shift[CONTROL_FIELD_SPEED];
+  strip.scatterTime = context.scatterTime + modulation.shift[CONTROL_SCATTER_RATE];
 }
 
 static Rgb drawPixel(const FrameContext &context, const StripContext &strip, const DrawnCells &cells,
@@ -170,8 +170,8 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   context.pad = &pad;
   context.speed = speed;
   context.padLevels = { pad.x, pad.y };
-  context.palette = roundedControl(wallControls[CC_PALETTE]);
-  context.beats = beatsAt(quarterNotes, roundedControl(wallControls[CC_TEMPO_DIVISION]));
+  context.palette = roundedControl(wallControls[CONTROL_PALETTE]);
+  context.beats = beatsAt(quarterNotes, roundedControl(wallControls[CONTROL_TEMPO_DIVISION]));
 
   readControls(wallControls, nullptr, context.wallReading);
   hurry(context.wallReading, speed);

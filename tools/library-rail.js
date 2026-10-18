@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
 import * as LibraryFile from './library-file.js';
@@ -24,8 +24,8 @@ let dragged = null;
 
 function patchColor(patch) {
   const controls = Patch.controls(patch.base);
-  const hue = Preview.convert(Patch.CC.hue, controls.hue) & 255;
-  const saturation = Preview.convert(Patch.CC.saturation, controls.saturation);
+  const hue = Preview.convert(Patch.NUMBER.hue, controls.hue) & 255;
+  const saturation = Preview.convert(Patch.NUMBER.saturation, controls.saturation);
   return `rgb(${Preview.paletteColor(controls.palette, hue, saturation).join(',')})`;
 }
 

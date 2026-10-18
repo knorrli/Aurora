@@ -7,11 +7,11 @@
 
 namespace render {
 struct Modulation {
-  float amount[AURORA_PATCH_CC_COUNT];
-  float swing[AURORA_PATCH_CC_COUNT];
-  float shift[AURORA_PATCH_CC_COUNT];
-  float bipolar[AURORA_PATCH_CC_COUNT];
-  float padSwing[AURORA_PATCH_CC_COUNT];
+  float amount[AURORA_PATCH_CONTROLS];
+  float swing[AURORA_PATCH_CONTROLS];
+  float shift[AURORA_PATCH_CONTROLS];
+  float bipolar[AURORA_PATCH_CONTROLS];
+  float padSwing[AURORA_PATCH_CONTROLS];
 };
 
 struct PadLevels {
@@ -32,7 +32,7 @@ struct Wave {
 };
 
 struct SpotRoute {
-  uint8_t cc;
+  uint8_t control;
   float amount;
   Wave wave;
   RouteTiming timing;
@@ -49,6 +49,7 @@ struct RouteReading {
   bool perCell;
   uint8_t pattern;
   float amount;
+  float share;
   float mean;
   Wave wave;
   RouteTiming timing;
@@ -90,13 +91,13 @@ float turnsOn(const RouteTiming &timing, float clock, float shift);
 
 float routeTurns(const RouteTiming &timing, float lfo, float shift);
 
-bool spotDestination(uint8_t cc);
+bool spotDestination(uint8_t control);
 
-bool circular(uint8_t cc);
+bool circular(uint8_t control);
 
 uint8_t gatherSpotRoutes(const float *dialed, SpotRoute *out);
 
-float landedControl(uint8_t cc, float base, float amount);
+float landedControl(uint8_t control, float base, float amount);
 
 void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,
                   const PadLevels *pad, Modulation &out);
@@ -104,11 +105,11 @@ void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, int8_t st
 void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,
                         const PadLevels *pad, float beatsAgo, Modulation &out);
 
-bool cellControl(uint8_t cc);
+bool cellControl(uint8_t control);
 
 void readRoutes(const float *dialed, Routes &out);
 
-Push cellPush(const Routes &routes, uint8_t cc, const RouteContext &context);
+Push cellPush(const Routes &routes, uint8_t control, const RouteContext &context);
 
 float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt);
 
@@ -118,23 +119,25 @@ float routeShiftAt(const Routes &routes, uint8_t route, const RouteContext &cont
 
 uint8_t envelopesUsed(const float *dialed);
 
-float cellRouted(uint8_t cc, float dialed, float amount, float bipolar, float chord);
+float cellRouted(uint8_t control, float dialed, float amount, float bipolar, float chord);
 
 void carryPadShift(float elapsedBeats, float *carried, Modulation &modulation);
 
-float routed(const float *dialed, const Modulation *modulation, uint8_t cc);
+float routed(const float *dialed, const Modulation *modulation, uint8_t control);
 
-uint8_t displayedByte(uint8_t cc, float value);
+uint8_t displayedByte(uint8_t control, float value);
 
-uint8_t routedForDisplay(const float *dialed, const Modulation *modulation, uint8_t cc);
+uint8_t routedForDisplay(const float *dialed, const Modulation *modulation, uint8_t control);
 
-bool routeRefused(uint8_t cc);
+bool routeRefused(uint8_t control);
 
 uint8_t routeTarget(const float *dialed, uint8_t route);
 
-bool routeAims(const float *dialed, uint8_t cc, uint8_t routes);
+bool routeArpeggiates(const float *dialed, uint8_t route);
 
-bool routeReach(const float *dialed, uint8_t cc, int16_t &low, int16_t &high);
+bool routeAims(const float *dialed, uint8_t control, uint8_t routes);
+
+bool routeReach(const float *dialed, uint8_t control, int16_t &low, int16_t &high);
 
 float waveRise(uint8_t wave);
 

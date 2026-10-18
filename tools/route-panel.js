@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as Rows from './control-rows.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
@@ -24,7 +24,7 @@ const LAST_PHASE_DRAWN = 0.9999;
 const wrapped = value => value - Math.floor(value);
 const cycles = () => (session.editingOneshot() ? 1 : WAVE_CYCLES);
 
-const turnsOf = (route, clock, live) => Preview.routeTurns(live[route.ratio], live[route.phase], clock);
+const turnsOf = (route, clock, live) => Preview.routeTurns(live[route.ratio], live[route.cycle], live[route.phase], clock);
 
 const shownPhase = phase => (phase < 0 || phase > cycles()
   ? phase - Math.floor(phase / cycles()) * cycles() : Math.min(phase, cycles() * LAST_PHASE_DRAWN));
@@ -44,20 +44,20 @@ const BIRTHS_SHOWN = 8;
 const STRAIGHT_THROUGH = [Protocol.GROUP_PATTERN.evensOdds, Protocol.GROUP_PATTERN.random];
 
 function birthsInCycle(live) {
-  const rate = Preview.convert(Protocol.CC.cellRate, live.cellRate);
-  return rate > 0 ? Math.floor(Preview.convert(Protocol.CC.lfoRate, live.lfoRate) / rate + 0.001) : 1;
+  const rate = Preview.convert(Protocol.NUMBER.cellRate, live.cellRate);
+  return rate > 0 ? Math.floor(Preview.convert(Protocol.NUMBER.lfoRate, live.lfoRate) / rate + 0.001) : 1;
 }
 
 function membersOf(route, live) {
   const source = sourceOf(route, live);
   if (source === Protocol.ROUTE_SOURCE.strip) return Preview.WALL_STRIP_ORDER.map(strip => strip - 1);
-  const count = source === Protocol.ROUTE_SOURCE.note ? Preview.convert(Protocol.CC.cellChord, live.cellChord)
-    : STRAIGHT_THROUGH.includes(Protocol.groupPattern(live[route.wave])) ? BIRTHS_SHOWN : birthsInCycle(live);
+  const count = source === Protocol.ROUTE_SOURCE.note ? Preview.convert(Protocol.NUMBER.cellChord, live.cellChord)
+    : STRAIGHT_THROUGH.includes(Protocol.groupPattern(live[route.pattern])) ? BIRTHS_SHOWN : birthsInCycle(live);
   return Array.from({ length: Math.max(1, count) }, (_, member) => member);
 }
 
 function memberLevel(route, member, live) {
-  const pattern = Protocol.groupPattern(live[route.wave]);
+  const pattern = Protocol.groupPattern(live[route.pattern]);
   const source = sourceOf(route, live);
   if (source === Protocol.ROUTE_SOURCE.birth && pattern === Protocol.GROUP_PATTERN.evensOdds) return member % 2;
   const count = source === Protocol.ROUTE_SOURCE.strip ? Preview.STRIPS : membersOf(route, live).length;
@@ -116,8 +116,8 @@ const SOURCE_NAMES = [
   ['strip', Protocol.ROUTE_SOURCE.strip], ['note', Protocol.ROUTE_SOURCE.note], ['birth', Protocol.ROUTE_SOURCE.birth],
 ];
 const PATTERN_NAMES = [['sequence', 0], ['mirror', 1], ['evens / odds', 2], ['pairs', 3], ['random', 4]];
-const patternName = (route, live) => PATTERN_NAMES.find(([, pattern]) => pattern === Protocol.groupPattern(live[route.wave]))[0];
-const sourceOf = (route, live) => Protocol.routeSource(live[route.ratio]);
+const patternName = (route, live) => PATTERN_NAMES.find(([, pattern]) => pattern === Protocol.groupPattern(live[route.pattern]))[0];
+const sourceOf = (route, live) => Protocol.routeSource(live[route.source]);
 const envelopeOf = (route, live) => sourceOf(route, live) - Protocol.ROUTE_SOURCE.envelope1;
 const fromEnvelope = (route, live) => envelopeOf(route, live) >= 0 && envelopeOf(route, live) < Protocol.ENVELOPES;
 const fromGroup = (route, live) => Patch.fromGroup(live, route);
@@ -278,7 +278,7 @@ function paintButtons(buttons, route) {
 
 function destinationRow(route, label, options, choose, name = route.destination) {
   const root = element('div', 'switch-row');
-  root.append(dom.ccLabeled('label', label, Patch.CC[name]));
+  root.append(dom.numberLabeled('label', label, Patch.NUMBER[name]));
   const picks = element('div', 'picks');
   const buttons = options.map(([name, option]) => {
     const button = element('button', null, name);
@@ -294,14 +294,13 @@ function destinationRow(route, label, options, choose, name = route.destination)
   return { root, buttons };
 }
 
-const setCycle = (route, once) =>
-  session.setValue(route.ratio, Protocol.routeRatioValue(Protocol.routeRatio(session.liveControls()[route.ratio]), once));
-const sourceRow = route => destinationRow(route, 'Source', SOURCE_NAMES, session.setRouteSource, route.ratio);
-const cycleRow = route => destinationRow(route, 'Cycle', [['loop', false], ['once', true]], setCycle, route.ratio);
-const arpRow = route => destinationRow(route, 'Arp', Object.entries(Protocol.ARP), session.setRouteArp);
+const setCycle = (route, once) => session.setValue(route.cycle, once ? 127 : 0);
+const sourceRow = route => destinationRow(route, 'Source', SOURCE_NAMES, session.setRouteSource, route.source);
+const cycleRow = route => destinationRow(route, 'Cycle', [['loop', false], ['once', true]], setCycle, route.cycle);
+const arpRow = route => destinationRow(route, 'Arp', Object.entries(Protocol.ARP), session.setRouteArp, route.arp);
 const polarityRow = route => destinationRow(route, 'Polarity', [['unipolar', false], ['bipolar', true]], session.setRouteBipolar,
   route.polarity);
-const patternRow = route => destinationRow(route, 'Pattern', PATTERN_NAMES, session.setRoutePattern, route.wave);
+const patternRow = route => destinationRow(route, 'Pattern', PATTERN_NAMES, session.setRoutePattern, route.pattern);
 
 function paintDestinationRow(row, shown, chosen) {
   row.root.hidden = !shown;
@@ -312,21 +311,21 @@ function paintDestinationRow(row, shown, chosen) {
 function paintArpRow(row, route, live) {
   const target = targetOf(route, live);
   const shown = !!target && Patch.arpCapable(target) && sourceOf(route, live) === Protocol.ROUTE_SOURCE.lfo;
-  paintDestinationRow(row, shown, Protocol.routeArp(live[route.destination]));
+  paintDestinationRow(row, shown, Protocol.routeArp(live[route.arp]));
 }
 
 function paintPatternRow(row, route, live) {
-  paintDestinationRow(row, fromGroup(route, live), Protocol.groupPattern(live[route.wave]));
+  paintDestinationRow(row, fromGroup(route, live), Protocol.groupPattern(live[route.pattern]));
 }
 
 function paintCycleRow(row, route, live) {
-  paintDestinationRow(row, true, Protocol.routeOnce(live[route.ratio]));
+  paintDestinationRow(row, true, Protocol.routeOnce(live[route.cycle]));
   row.root.classList.toggle('inert', !Patch.fromLfo(live, route));
 }
 
 function paintPolarityRow(row, route, live) {
   const target = targetOf(route, live);
-  const shown = !!target && Patch.bipolarCapable(target) && Protocol.routeArp(live[route.destination]) === Protocol.ARP.unison;
+  const shown = !!target && Patch.bipolarCapable(target) && !Patch.arpeggiates(live, route);
   paintDestinationRow(row, shown, Protocol.routeBipolar(live[route.polarity]));
 }
 
@@ -397,7 +396,7 @@ function buildList() {
     const buttons = routeButtons(route);
     line.append(target, values, canvas, buttons.root);
     LayerDrop.source(line, () => ({
-      label: `${route.name} (${destinationText(session.liveControls()[route.destination])})`,
+      label: `${route.name} (${destinationText(route, session.liveControls())})`,
       names: [route.amount],
     }));
     root.appendChild(line);
@@ -408,19 +407,20 @@ function buildList() {
 }
 
 function aimedRouteOf(route, live) {
-  return Patch.ROUTES[Protocol.aimedRoute(live[route.destination])];
+  const destination = live[route.destination];
+  return Patch.ROUTES.find(other => Patch.NUMBER[other.amount] === destination || Patch.NUMBER[other.phase] === destination);
 }
 
 function panelTargetOf(route, live) {
   return aiming(route, live) ? targetOf(aimedRouteOf(route, live), live) : targetOf(route, live);
 }
 
-function destinationText(destination) {
-  const name = Patch.targetName(destination);
+function destinationText(route, live) {
+  const name = targetOf(route, live);
   const control = Patch.CONTROLS[name];
-  if (!control) return `CC ${destination}`;
-  const arp = Object.keys(Protocol.ARP).find(key => Protocol.ARP[key] === Protocol.routeArp(destination));
-  const form = arp !== 'unison' ? ` · ${arp}` : '';
+  if (!control) return `#${live[route.destination]}`;
+  const arp = Object.keys(Protocol.ARP).find(key => Protocol.ARP[key] === Protocol.routeArp(live[route.arp]));
+  const form = Patch.arpeggiates(live, route) ? ` · ${arp}` : '';
   return `${Patch.PLACES[name]} · ${control.label}${form}`;
 }
 
@@ -438,7 +438,7 @@ function paintList(live) {
     if (!destination) continue;
     aimed++;
     const bipolar = Patch.bipolarCapable(targetOf(route, live)) && Protocol.routeBipolar(live[route.polarity]);
-    target.textContent = destinationText(destination) + (bipolar ? ' · bipolar' : '');
+    target.textContent = destinationText(route, live) + (bipolar ? ' · bipolar' : '');
     line.style.setProperty('--tone', `var(--${Patch.TONES[targetOf(route, live)]})`);
     const source = sourceOf(route, live);
     const shownControls = source === Protocol.ROUTE_SOURCE.lfo ? route.controls.filter(name => name !== route.hold) : [route.amount];
@@ -488,7 +488,7 @@ function paintPanel(live) {
     block.hidden = !live[route.destination] || panelTargetOf(route, live) !== panel.target;
     block.classList.toggle('aim', aims);
     title.textContent = aims
-      ? `${route.name} → ${aimedRouteOf(route, live).name} ${Protocol.aimsPhase(live[route.destination]) ? 'phase' : 'amount'}`
+      ? `${route.name} → ${aimedRouteOf(route, live).name} ${Patch.NUMBER[aimedRouteOf(route, live).phase] === live[route.destination] ? 'phase' : 'amount'}`
       : route.name;
     paintPatternRow(pattern, route, live);
     clock.textContent = clockedPerSpot(route, live) ? spotClockText(live) : '';

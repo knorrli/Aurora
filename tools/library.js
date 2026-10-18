@@ -1,12 +1,12 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as LibraryFile from './library-file.js';
 import * as Patch from './patch.js';
 import { Preview } from './preview.js';
 
 
-const byteOf = (bytes, name) => bytes[Patch.CC[name]] | 0;
+const byteOf = (bytes, name) => bytes[Patch.NUMBER[name]] | 0;
 
-const writeCC = (bytes, name, value) => { bytes[Patch.CC[name]] = Patch.clampToSevenBits(value); };
+const writeControl = (bytes, name, value) => { bytes[Patch.NUMBER[name]] = Patch.clampToSevenBits(value); };
 
 const emptyOverrides = () => Array.from({ length: Protocol.PATCH_LAYERS },
   (_, layer) => (Patch.isAboveBase(layer) ? {} : null));
@@ -51,8 +51,8 @@ const MARKABLE = Patch.NAMES.filter(name => !Patch.ROUTES.some(route => route.fi
 const isMarkable = name => MARKABLE.includes(name);
 
 function markBytes(oneshot) {
-  const marks = new Array(Protocol.PATCH_CC_COUNT).fill(0);
-  for (const name of Object.keys(oneshot.marks)) marks[Patch.CC[name]] = 1;
+  const marks = new Array(Protocol.PATCH_CONTROLS).fill(0);
+  for (const name of Object.keys(oneshot.marks)) marks[Patch.NUMBER[name]] = 1;
   return marks;
 }
 
@@ -60,7 +60,7 @@ const oneshotToFile = (oneshot, index) => ({
   index,
   name: oneshot.name,
   length: oneshot.length,
-  marks: Object.keys(oneshot.marks).map(name => Patch.CC[name]).sort((a, b) => a - b),
+  marks: Object.keys(oneshot.marks).map(name => Patch.NUMBER[name]).sort((a, b) => a - b),
   bytes: oneshot.base.slice(),
 });
 
@@ -68,21 +68,21 @@ const oneshotFromFile = fileOneshot => ({
   name: fileOneshot.name,
   length: fileOneshot.length,
   marks: Object.fromEntries(fileOneshot.marks
-    .map(cc => Protocol.NAME_BY_CC[cc]).filter(isMarkable).map(name => [name, true])),
+    .map(control => Protocol.NAME_BY_NUMBER[control]).filter(isMarkable).map(name => [name, true])),
   base: fileOneshot.bytes.slice(),
   overrides: emptyOverrides(),
 });
 
 function layerBytes(patch, layer) {
   const bytes = patch.base.slice();
-  for (const [name, value] of Object.entries(patch.overrides[layer] || {})) writeCC(bytes, name, value);
+  for (const [name, value] of Object.entries(patch.overrides[layer] || {})) writeControl(bytes, name, value);
   return bytes;
 }
 
 const changedIn = (patch, layer) => Object.keys(patch.overrides[layer] || {});
 
 function writeBase(patch, name, value) {
-  writeCC(patch.base, name, value);
+  writeControl(patch.base, name, value);
   for (const over of patch.overrides) {
     if (over && over[name] === byteOf(patch.base, name)) delete over[name];
   }
@@ -90,9 +90,13 @@ function writeBase(patch, name, value) {
 
 function freeRoute(patch, route) {
   for (const name of route.fields) {
-    writeCC(patch.base, name, Patch.DEFAULT[name]);
+    writeControl(patch.base, name, Patch.DEFAULT[name]);
     for (const over of patch.overrides) if (over) delete over[name];
   }
+}
+
+function mixLayer(baseBytes, layerBytes, layer, position) {
+  return Patch.controls(Preview.mixLayer(baseBytes, layerBytes, layer, position));
 }
 
 function blend(fromBytes, toBytes, position, switchesFrom) {
@@ -114,7 +118,7 @@ function keepAsLayer(patch, layer, shown) {
   const leftOnBase = [];
   for (const name of Patch.NAMES) {
     const value = Patch.clampToSevenBits(shown[name]);
-    if (Patch.isSwitch(name) || free.has(name)) {
+    if (free.has(name)) {
       if (value !== byteOf(patch.base, name)) leftOnBase.push(name);
     } else if (value !== byteOf(patch.base, name)) {
       over[name] = value;
@@ -130,7 +134,6 @@ function moveToLayer(patch, layer, names) {
   const over = patch.overrides[layer];
   const moved = [];
   for (const name of names) {
-    if (Patch.isSwitch(name)) continue;
     const value = byteOf(patch.base, name);
     if (value === Patch.DEFAULT[name]) continue;
     writeBase(patch, name, Patch.DEFAULT[name]);
@@ -154,7 +157,7 @@ function patchFromFile(filePatch) {
   const overrides = filePatch.layers.map((bytes, layer) => {
     if (!Patch.isAboveBase(layer)) return null;
     const over = {};
-    for (const name of Patch.CONTINUOUS) {
+    for (const name of Patch.NAMES) {
       if (!freeFields.has(name) && byteOf(bytes, name) !== byteOf(base, name)) over[name] = byteOf(bytes, name);
     }
     return over;
@@ -325,9 +328,9 @@ function newLibrary() {
 }
 
 export {
-  writeCC,
+  writeControl,
   newPatch, clonePatch, newOneshot, cloneOneshot, oneshotToFile, oneshotFromFile, isMarkable, markBytes, layerBytes, changedIn, writeBase, freeRoute,
-  blend, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
+  blend, mixLayer, keepAsBase, keepAsLayer, clearLayer, moveToLayer,
   patchToFile, patchFromFile, validatePatch, validateFile,
   filledSlots, firstEmptySlot, filledKit, firstEmptyKitPlace, lengthBeats, libraryToFile, libraryFromFile, newLibrary,
   newSong, sectionSlot, addSection, relabelSection, removeSection, moveSection,

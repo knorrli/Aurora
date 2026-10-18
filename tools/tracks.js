@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as Rows from './control-rows.js';
 import * as Patch from './patch.js';
 import { Preview } from './preview.js';
@@ -34,7 +34,7 @@ const markBackground = at => stops(['transparent', '0%', offset(at, -2)], ['var(
                               ['#fff', offset(at, -1), offset(at, 1)], ['var(--bg)', offset(at, 1), offset(at, 2)],
                               ['transparent', offset(at, 2), '100%']);
 
-const hueStepsPerFaderStep = () => Preview.convert(Patch.CC.parHueOffset, 127) / 127;
+const hueStepsPerFaderStep = () => Preview.convert(Patch.NUMBER.parHueOffset, 127) / 127;
 
 function wrappedSpans(low, high) {
   const spans = [[Math.max(0, low), Math.min(127, high)]];
@@ -45,10 +45,10 @@ function wrappedSpans(low, high) {
 
 function hueBandOf(input) {
   const live = session.liveControls();
-  const reach = Math.abs(Preview.convert(Patch.CC.parHueRange, live.parHueRange)) / hueStepsPerFaderStep();
+  const reach = Math.abs(Preview.convert(Patch.NUMBER.parHueRange, live.parHueRange)) / hueStepsPerFaderStep();
   if (reach < 0.5) return null;
   const center = +input.value;
-  const offsets = Preview.controlAtPars(Patch.CC.parHueOffset);
+  const offsets = Preview.controlAtPars(Patch.NUMBER.parHueOffset);
   const places = Preview.parHuePlaces();
   return {
     spans: wrappedSpans(center - reach, center + reach),
@@ -60,7 +60,7 @@ const PHASE_VALUES_PER_TURN = 127 * Protocol.ROUTE_PHASE_STEPS / (Protocol.ROUTE
 const amountValue = signed => (signed < 0 ? 64 + Math.max(signed, -1) * 64 : 64 + Math.min(signed, 1) * 63);
 
 function aimMean(live, aim) {
-  const source = Protocol.routeSource(live[aim.ratio]);
+  const source = Protocol.routeSource(live[aim.source]);
   if (source === Protocol.ROUTE_SOURCE.lfo) return Preview.waveMean(live[aim.wave], live[aim.smooth]);
   const envelope = source - Protocol.ROUTE_SOURCE.envelope1;
   return envelope >= 0 && envelope < Protocol.ENVELOPES ? 0 : 0.5;
@@ -98,13 +98,13 @@ function aimSwing(name) {
 function swingOf(name) {
   const aimed = aimSwing(name);
   if (aimed) return aimed;
-  const cc = Patch.CC[name];
-  const reach = Preview.routeReach(cc);
+  const control = Patch.NUMBER[name];
+  const reach = Preview.routeReach(control);
   if (!reach) return null;
   const [low, high] = reach;
   return {
     spans: wrappedSpans(low, high),
-    marks: READ_AT_PARS.has(name) ? Preview.controlAtPars(cc) : Preview.controlAtStrips(cc),
+    marks: READ_AT_PARS.has(name) ? Preview.controlAtPars(control) : Preview.controlAtStrips(control),
   };
 }
 

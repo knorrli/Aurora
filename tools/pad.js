@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as dom from './dom.js';
 import * as Playback from './playback.js';
 import { Preview } from './preview.js';

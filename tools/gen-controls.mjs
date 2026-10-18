@@ -8,7 +8,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HEADER = join(ROOT, 'shared/aurora_protocol.h');
 const ROUTES_SOURCE = join(ROOT, 'shared/render/routes.cpp');
 const MORPH_SOURCE = join(ROOT, 'shared/render/morph.cpp');
-const OUT = join(ROOT, 'tools/cc.js');
+const OUT = join(ROOT, 'tools/controls.js');
 
 const header = readFileSync(HEADER, 'utf8');
 
@@ -57,10 +57,14 @@ function constant(name) {
 }
 
 const cc = {};
+for (const match of enumBody('AuroraCC').matchAll(/^\s*CC_([A-Z0-9_]+)\s*=\s*(\d+),/gm)) {
+  cc[camel(match[1])] = Number(match[2]);
+}
+const number = {};
 const tags = {};
-for (const match of enumBody('AuroraCC').matchAll(/^\s*CC_([A-Z0-9_]+)\s*=\s*(\d+),(?: *\/\/ *([^\n]*))?/gm)) {
+for (const match of enumBody('AuroraControl').matchAll(/^\s*CONTROL_([A-Z0-9_]+)\s*=\s*(\d+),(?: *\/\/ *([^\n]*))?/gm)) {
   const key = camel(match[1]);
-  cc[key] = Number(match[2]);
+  number[key] = Number(match[2]);
   tags[key] = [...(match[3] || '').matchAll(/\[(\w+)\]/g)].map(tag => tag[1]);
 }
 const tagged = tag => Object.keys(tags).filter(name => tags[name].includes(tag));
@@ -70,21 +74,17 @@ const SENT_BY_DAWS = new Set([0, 1, 7, 10, 11, 32, 64]);
 const defaultsBody = header.match(/AURORA_CONTROL_DEFAULTS\[\]\s*=\s*\{([\s\S]*?)\n\};/);
 if (!defaultsBody) fail('AURORA_CONTROL_DEFAULTS');
 const controlDefaults = {};
-for (const match of defaultsBody[1].matchAll(/\{\s*CC_([A-Z0-9_]+),\s*(\d+)\s*\}/g)) {
+for (const match of defaultsBody[1].matchAll(/\{\s*CONTROL_([A-Z0-9_]+),\s*(\d+)\s*\}/g)) {
   controlDefaults[camel(match[1])] = Number(match[2]);
 }
 
 const routeCount = constant('AURORA_ROUTES');
-const routeBase = (header.match(/AURORA_ROUTE_BASE\[AURORA_ROUTES\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_ROUTE_BASE'))[1]
-  .split(',').map(text => text.trim()).filter(Boolean).map(Number);
-if (routeBase.length !== routeCount) throw new Error('AURORA_ROUTE_BASE does not match AURORA_ROUTES');
 const routeField = Object.fromEntries(enumEntries('AuroraRouteField')
   .filter(([key]) => key !== 'ROUTE_FIELDS')
   .map(([key, value]) => [camel(key.replace(/^ROUTE_/, '')), value]));
 
-const routeNumbers = routeBase.flatMap(base => Array.from({ length: Object.keys(routeField).length }, (_, field) => base + field));
-for (const [name, number] of [...Object.entries(cc), ...routeNumbers.map(number => ['a route', number])]) {
-  if (SENT_BY_DAWS.has(number)) throw new Error(`${HEADER}: ${name} is on CC ${number}, which DAWs send on their own`);
+for (const [name, value] of Object.entries(cc)) {
+  if (SENT_BY_DAWS.has(value)) throw new Error(`${HEADER}: ${name} is on CC ${value}, which DAWs send on their own`);
 }
 
 const routeDefaultValues = (header.match(/AURORA_ROUTE_DEFAULTS\[ROUTE_FIELDS\]\s*=\s*\{([^}]*)\}/) || fail('AURORA_ROUTE_DEFAULTS'))[1]
@@ -135,14 +135,14 @@ const generated = {
   WAVE_SQUARE: constant('WAVE_SQUARE'),
   LFO_PERIODS: lfoPeriods,
   ROUTES: routeCount,
-  ROUTE_BASE: routeBase,
+  FIRST_ROUTE_CONTROL: constant('AURORA_FIRST_ROUTE_CONTROL'),
   ROUTE_FIELD: routeField,
   ROUTE_DEFAULTS: routeDefaults,
   ROUTE_MAX_RATIO: constant('AURORA_ROUTE_MAX_RATIO'),
   ROUTE_PHASE_STEPS: constant('AURORA_ROUTE_PHASE_STEPS'),
   PATCH_FORMAT: constant('AURORA_PATCH_FORMAT'),
   LAST_PATCH_SLOT: constant('AURORA_LAST_PATCH_SLOT'),
-  PATCH_CC_COUNT: constant('AURORA_PATCH_CC_COUNT'),
+  PATCH_CONTROLS: constant('AURORA_PATCH_CONTROLS'),
   PATCH_NAME_LENGTH: constant('AURORA_PATCH_NAME_LENGTH'),
   PATCH_HEAD_LENGTH: constant('AURORA_PATCH_HEAD_LENGTH'),
   PATCH_LAYER_BASE: patchLayers.PATCH_LAYER_BASE,
@@ -157,6 +157,7 @@ const generated = {
   KIT_MAP_LENGTH: constant('AURORA_KIT_MAP_LENGTH'),
   MARK_MAP_LENGTH: constant('AURORA_MARK_MAP_LENGTH'),
   NO_ONESHOT: constant('AURORA_NO_ONESHOT'),
+  PIN_POSITION_STEPS: constant('AURORA_PIN_POSITION_STEPS'),
   SONG_SECTIONS: constant('AURORA_SONG_SECTIONS'),
   SONG_HEAD_LENGTH: constant('AURORA_SONG_HEAD_LENGTH'),
   LIBRARY_HEAD_LENGTH: constant('AURORA_LIBRARY_HEAD_LENGTH'),
@@ -169,34 +170,39 @@ const generated = {
   LIBRARY_STATE: enumByPrefix('AuroraLibraryState', 'LIBRARY_'),
 };
 
-const pairs = Object.entries(cc).sort((a, b) => a[1] - b[1]);
-const width = Math.max(...pairs.map(([name]) => name.length));
-const ccBody = pairs.map(([name, number]) => `    ${name}:${' '.repeat(width - name.length)} ${number},`).join('\n');
-const INTERNAL = new Set(['ROUTE_BASE']);
+const listed = map => {
+  const pairs = Object.entries(map).sort((a, b) => a[1] - b[1]);
+  const width = Math.max(...pairs.map(([name]) => name.length));
+  return pairs.map(([name, value]) => `  ${name}:${' '.repeat(width - name.length)} ${value},`).join('\n');
+};
 const constantLines = Object.entries(generated)
-  .map(([name, value]) => `  const ${name} = ${JSON.stringify(value)};`).join('\n');
+  .map(([name, value]) => `const ${name} = ${JSON.stringify(value)};`).join('\n');
 
 const out = `const CC = {
-${ccBody.replace(/^  /gm, '')}
+${listed(cc)}
+};
+
+const NUMBER = {
+${listed(number)}
 };
 
 const TAGS = ${JSON.stringify(tags)};
 const CONTROL_DEFAULTS = ${JSON.stringify(controlDefaults)};
 
-${constantLines.replace(/^  /gm, '')}
+${constantLines}
 
 const tagged = tag => Object.keys(TAGS).filter(name => TAGS[name].includes(tag));
 const hasTag = (name, tag) => (TAGS[name] || []).includes(tag);
 
-const NAME_BY_CC = {};
-for (const [name, number] of Object.entries(CC)) NAME_BY_CC[number] = name;
+const NAME_BY_NUMBER = {};
+for (const [name, value] of Object.entries(NUMBER)) NAME_BY_NUMBER[value] = name;
 
-const routeCC = (route, field) => ROUTE_BASE[route] + field;
+const routeNumber = (route, field) => FIRST_ROUTE_CONTROL + field * ROUTES + route;
 
 export const Protocol = {
-  CC, CONTROL_DEFAULTS, NAME_BY_CC, tagged, hasTag,
-${Object.keys(generated).filter(name => !INTERNAL.has(name)).map(name => `  ${name},`).join('\n')}
-  routeCC,
+  CC, NUMBER, CONTROL_DEFAULTS, NAME_BY_NUMBER, tagged, hasTag,
+${Object.keys(generated).map(name => `  ${name},`).join('\n')}
+  routeNumber,
 };
 `;
 
@@ -205,10 +211,10 @@ function checkCases(path, expected) {
   const file = path.slice(ROOT.length + 1);
   const problems = [];
   for (const [name, want] of Object.entries(expected)) {
-    const at = source.indexOf(`bool ${name}(uint8_t cc)`);
+    const at = source.indexOf(`bool ${name}(uint8_t control)`);
     if (at < 0) throw new Error(`${file}: no ${name}()`);
     const body = source.slice(at, source.indexOf('\n}', at));
-    const got = new Set([...body.matchAll(/case CC_([A-Z0-9_]+):/g)].map(match => camel(match[1])));
+    const got = new Set([...body.matchAll(/case CONTROL_([A-Z0-9_]+):/g)].map(match => camel(match[1])));
     for (const control of want) if (!got.has(control)) problems.push(`${file}: ${name}() is missing ${control}`);
     for (const control of got) if (!want.has(control)) problems.push(`${file}: ${name}() has ${control}, which the enum does not tag`);
   }
@@ -223,12 +229,11 @@ function checkRenderer() {
       circular: new Set(tagged('circular')),
     }),
     ...checkCases(MORPH_SOURCE, {
-      performed: new Set(tagged('ambient')),
       switched: new Set(tagged('switch')),
     }),
   ];
   for (const name of Object.keys(controlDefaults)) {
-    if (!(name in cc)) problems.push(`shared/aurora_protocol.h: AURORA_CONTROL_DEFAULTS names ${name}, which is not a CC`);
+    if (!(name in number)) problems.push(`shared/aurora_protocol.h: AURORA_CONTROL_DEFAULTS names ${name}, which is not a control`);
   }
   return problems;
 }
@@ -237,14 +242,14 @@ if (process.argv.includes('--check')) {
   const problems = checkRenderer();
   let current = '';
   try { current = readFileSync(OUT, 'utf8'); } catch { }
-  if (current !== out) problems.push('tools/cc.js is out of date — run: node tools/gen-cc.mjs');
+  if (current !== out) problems.push('tools/controls.js is out of date — run: node tools/gen-controls.mjs');
   if (problems.length) {
     for (const line of problems) console.error(line);
     process.exit(1);
   }
-  console.log(`tools/cc.js up to date — ${pairs.length} controls, ${routeCount} routes,`
+  console.log(`tools/controls.js up to date — ${Object.keys(number).length} controls, ${routeCount} routes,`
     + ` and routes.cpp and morph.cpp agree with the enum's tags`);
 } else {
   writeFileSync(OUT, out);
-  console.log(`tools/cc.js written — ${pairs.length} controls, ${routeCount} routes`);
+  console.log(`tools/controls.js written — ${Object.keys(number).length} controls, ${routeCount} routes`);
 }

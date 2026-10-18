@@ -13,160 +13,162 @@ enum AuroraProgram : uint8_t {
 static const uint8_t AURORA_SONGS = 19;
 
 enum AuroraCC : uint8_t {
-    CC_PAD_HOLD              = 3,  // [ambient]
-    CC_PAD_MODE              = 4,  // [ambient]
-    CC_PAD_WIDTH             = 5,  // [ambient]
-    CC_PAD_GAPS              = 6,  // [ambient]
+    CC_PAD_HOLD                 = 3,
+    CC_PAD_MODE                 = 4,
+    CC_PAD_WIDTH                = 5,
+    CC_PAD_GAPS                 = 6,
 
-    CC_FADER_COLOR           = 12, // [ambient]
-    CC_FADER_MOTION          = 13, // [ambient]
-    CC_FADER_EXTENT          = 14, // [ambient]
+    CC_FADER_COLOR              = 12,
+    CC_FADER_MOTION             = 13,
+    CC_FADER_EXTENT             = 14,
 
-    CC_PAD_X                 = 15, // [ambient]
-    CC_PAD_Y                 = 16, // [ambient]
-    CC_PAD_TOUCH             = 18, // [ambient]
+    CC_PAD_X                    = 15,
+    CC_PAD_Y                    = 16,
+    CC_PAD_TOUCH                = 18,
+};
 
-    CC_PALETTE               = 20, // [switch]
-    CC_HUE                   = 21, // [patch][circular]
-    CC_SATURATION            = 22, // [patch]
+enum AuroraControl : uint8_t {
+    CONTROL_PALETTE               = 0, // [switch]
+    CONTROL_HUE                   = 1, // [patch][circular]
+    CONTROL_SATURATION            = 2, // [patch]
 
-    CC_PAR_HUE_OFFSET        = 24, // [patch][circular]
-    CC_PAR_SATURATION        = 25, // [patch]
-    CC_PAR_VALUE             = 26, // [patch]
-    CC_PAR_HUE_LAYOUT        = 27, // [switch]
-    CC_PAR_HUE_RANGE         = 28, // [patch]
+    CONTROL_PAR_HUE_OFFSET        = 3, // [patch][circular]
+    CONTROL_PAR_SATURATION        = 4, // [patch]
+    CONTROL_PAR_VALUE             = 5, // [patch]
+    CONTROL_PAR_HUE_LAYOUT        = 6, // [switch]
+    CONTROL_PAR_HUE_RANGE         = 7, // [patch]
 
-    CC_TEMPO_DIVISION        = 29, // [switch]
-    CC_LFO_RATE              = 30, // [patch]
+    CONTROL_TEMPO_DIVISION        = 8, // [switch]
+    CONTROL_LFO_RATE              = 9, // [patch]
+    CONTROL_ARP_MODE              = 10, // [switch]
+    CONTROL_ARP_DIRECTION         = 11, // [switch]
+    CONTROL_ARP_SPREAD            = 12, // [patch]
 
-    CC_ARP_MODE              = 31, // [switch]
-    CC_ARP_SPREAD            = 33, // [patch]
+    CONTROL_CELL_ENDS             = 13, // [switch]
+    CONTROL_CELL_CHORD            = 14, // [patch]
+    CONTROL_CELL_SPREAD           = 15, // [patch]
+    CONTROL_CELL_POSITION         = 16, // [patch]
+    CONTROL_CELL_BEND             = 17, // [patch]
+    CONTROL_CELL_BEND_AT          = 18, // [patch]
 
-    CC_CELL_ENDS             = 34, // [switch]
-    CC_CELL_CHORD            = 35, // [patch]
-    CC_CELL_SPREAD           = 36, // [patch]
-    CC_CELL_POSITION         = 37, // [patch]
-    CC_CELL_BEND             = 38, // [patch]
-    CC_CELL_BEND_AT          = 39, // [patch]
+    CONTROL_CELL_WIDTH            = 19, // [patch]
+    CONTROL_CELL_EDGE             = 20, // [patch]
+    CONTROL_CELL_TAIL             = 21, // [patch]
 
-    CC_CELL_WIDTH            = 40, // [patch]
-    CC_CELL_EDGE             = 41, // [patch]
-    CC_CELL_TAIL             = 42, // [patch]
+    CONTROL_CELL_END              = 22, // [switch]
+    CONTROL_CELL_RATE             = 23, // [switch]
+    CONTROL_CELL_DELAY            = 24, // [patch]
+    CONTROL_CELL_GATE             = 25, // [patch]
 
-    CC_CELL_END              = 43, // [switch]
-    CC_CELL_RATE             = 44, // [patch]
-    CC_CELL_DELAY            = 45, // [patch]
-    CC_CELL_GATE             = 46, // [patch]
+    CONTROL_CELL_DIRECTION        = 26, // [switch]
+    CONTROL_CELL_BRIGHTNESS       = 27, // [patch]
+    CONTROL_CELL_CURVE            = 28, // [patch]
+    CONTROL_CELL_CURVE_AT         = 29, // [patch]
 
-    CC_CELL_DIRECTION        = 47, // [switch]
-    CC_CELL_BRIGHTNESS       = 48, // [patch]
-    CC_CELL_CURVE            = 49, // [patch]
-    CC_CELL_CURVE_AT         = 50, // [patch]
+    CONTROL_SCATTER_COUNT         = 30, // [patch]
+    CONTROL_SCATTER_WIDTH         = 31, // [patch]
+    CONTROL_SCATTER_EDGE          = 32, // [patch]
+    CONTROL_SCATTER_RATE          = 33, // [patch][rate]
+    CONTROL_SCATTER_SPEED         = 34, // [patch]
+    CONTROL_SCATTER_RANDOMIZE     = 35, // [patch]
+    CONTROL_SCATTER_POSITION      = 36, // [patch]
+    CONTROL_SCATTER_MIX           = 37, // [patch]
+    CONTROL_SCATTER_HUE           = 38, // [patch]
+    CONTROL_SCATTER_SATURATION    = 39, // [patch]
+    CONTROL_SCATTER_VALUE         = 40, // [patch]
 
-    CC_SCATTER_COUNT         = 51, // [patch]
-    CC_SCATTER_WIDTH         = 52, // [patch]
-    CC_SCATTER_EDGE          = 53, // [patch]
-    CC_SCATTER_RATE          = 54, // [patch][rate]
-    CC_SCATTER_SPEED         = 55, // [patch]
-    CC_SCATTER_RANDOMIZE     = 56, // [patch]
-    CC_SCATTER_POSITION      = 57, // [patch]
-    CC_SCATTER_MIX           = 58, // [patch]
-    CC_SCATTER_HUE           = 59, // [patch]
-    CC_SCATTER_SATURATION    = 60, // [patch]
-    CC_SCATTER_VALUE         = 61, // [patch]
+    CONTROL_FIELD_FORM            = 41, // [switch]
+    CONTROL_FIELD_DIRECTION       = 42, // [switch]
+    CONTROL_FIELD_COUNT           = 43, // [patch]
+    CONTROL_FIELD_WIDTH           = 44, // [patch]
+    CONTROL_FIELD_EDGE            = 45, // [patch]
+    CONTROL_FIELD_SPEED           = 46, // [patch][rate]
+    CONTROL_FIELD_POSITION        = 47, // [patch]
+    CONTROL_FIELD_HUE             = 48, // [patch]
+    CONTROL_FIELD_WHITE           = 49, // [patch]
+    CONTROL_FIELD_DARK            = 50, // [patch]
 
-    CC_FIELD_FORM            = 62, // [switch]
-    CC_FIELD_DIRECTION       = 63, // [switch]
-    CC_FIELD_COUNT           = 65, // [patch]
-    CC_FIELD_WIDTH           = 66, // [patch]
-    CC_FIELD_EDGE            = 67, // [patch]
-    CC_FIELD_SPEED           = 68, // [patch][rate]
-    CC_FIELD_POSITION        = 69, // [patch]
-    CC_FIELD_HUE             = 70, // [patch]
-    CC_FIELD_WHITE           = 71, // [patch]
-    CC_FIELD_DARK            = 72, // [patch]
+    CONTROL_FLOW_DENSITY          = 51, // [patch]
+    CONTROL_FLOW_RATE             = 52, // [patch][rate]
+    CONTROL_FLOW_HUE              = 53, // [patch]
+    CONTROL_FLOW_WHITE            = 54, // [patch]
+    CONTROL_FLOW_DARK             = 55, // [patch]
 
-    CC_FLOW_DENSITY          = 73, // [patch]
-    CC_FLOW_RATE             = 74, // [patch][rate]
-    CC_FLOW_HUE              = 75, // [patch]
-    CC_FLOW_WHITE            = 76, // [patch]
-    CC_FLOW_DARK             = 77, // [patch]
+    CONTROL_CORE_HUE              = 56, // [patch]
+    CONTROL_CORE_WHITE            = 57, // [patch]
+    CONTROL_CORE_DARK             = 58, // [patch]
 
-    CC_CORE_HUE              = 78, // [patch]
-    CC_CORE_WHITE            = 79, // [patch]
-    CC_CORE_DARK             = 80, // [patch]
+    CONTROL_ENVELOPE_1_MOVES      = 59, // [switch]
+    CONTROL_ENVELOPE_1_DELAY      = 60, // [patch]
+    CONTROL_ENVELOPE_1_ATTACK     = 61, // [patch]
+    CONTROL_ENVELOPE_1_HOLD       = 62, // [patch]
+    CONTROL_ENVELOPE_1_DECAY      = 63, // [patch]
+    CONTROL_ENVELOPE_1_SUSTAIN    = 64, // [patch]
+    CONTROL_ENVELOPE_1_RELEASE    = 65, // [patch]
 
-    CC_ENVELOPE_1_MOVES      = 81, // [switch]
-    CC_ENVELOPE_1_DELAY      = 82, // [patch]
-    CC_ENVELOPE_1_ATTACK     = 83, // [patch]
-    CC_ENVELOPE_1_HOLD       = 84, // [patch]
-    CC_ENVELOPE_1_DECAY      = 85, // [patch]
-    CC_ENVELOPE_1_SUSTAIN    = 86, // [patch]
-    CC_ENVELOPE_1_RELEASE    = 87, // [patch]
+    CONTROL_ENVELOPE_2_MOVES      = 66, // [switch]
+    CONTROL_ENVELOPE_2_DELAY      = 67, // [patch]
+    CONTROL_ENVELOPE_2_ATTACK     = 68, // [patch]
+    CONTROL_ENVELOPE_2_HOLD       = 69, // [patch]
+    CONTROL_ENVELOPE_2_DECAY      = 70, // [patch]
+    CONTROL_ENVELOPE_2_SUSTAIN    = 71, // [patch]
+    CONTROL_ENVELOPE_2_RELEASE    = 72, // [patch]
 
-    CC_ENVELOPE_2_MOVES      = 88, // [switch]
-    CC_ENVELOPE_2_DELAY      = 89, // [patch]
-    CC_ENVELOPE_2_ATTACK     = 90, // [patch]
-    CC_ENVELOPE_2_HOLD       = 91, // [patch]
-    CC_ENVELOPE_2_DECAY      = 92, // [patch]
-    CC_ENVELOPE_2_SUSTAIN    = 93, // [patch]
-    CC_ENVELOPE_2_RELEASE    = 94, // [patch]
-
-    CC_ENVELOPE_3_MOVES      = 95, // [switch]
-    CC_ENVELOPE_3_DELAY      = 96, // [patch]
-    CC_ENVELOPE_3_ATTACK     = 97, // [patch]
-    CC_ENVELOPE_3_HOLD       = 98, // [patch]
-    CC_ENVELOPE_3_DECAY      = 99, // [patch]
-    CC_ENVELOPE_3_SUSTAIN    = 100, // [patch]
-    CC_ENVELOPE_3_RELEASE    = 101, // [patch]
+    CONTROL_ENVELOPE_3_MOVES      = 73, // [switch]
+    CONTROL_ENVELOPE_3_DELAY      = 74, // [patch]
+    CONTROL_ENVELOPE_3_ATTACK     = 75, // [patch]
+    CONTROL_ENVELOPE_3_HOLD       = 76, // [patch]
+    CONTROL_ENVELOPE_3_DECAY      = 77, // [patch]
+    CONTROL_ENVELOPE_3_SUSTAIN    = 78, // [patch]
+    CONTROL_ENVELOPE_3_RELEASE    = 79, // [patch]
 };
 
 struct AuroraControlDefault {
-    uint8_t cc;
+    uint8_t control;
     uint8_t value;
 };
 
 static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
-    { CC_HUE,                     20 },
-    { CC_SATURATION,             127 },
-    { CC_CELL_BRIGHTNESS,        127 },
-    { CC_PAR_SATURATION,         127 },
-    { CC_PAR_VALUE,              127 },
-    { CC_PAR_HUE_RANGE,           64 },
-    { CC_ARP_SPREAD,             127 },
-    { CC_LFO_RATE,                64 },
-    { CC_CELL_END,               127 },
-    { CC_CELL_WIDTH,              20 },
-    { CC_CELL_POSITION,           64 },
-    { CC_CELL_BEND,               64 },
-    { CC_CELL_BEND_AT,            64 },
-    { CC_CELL_SPREAD,            127 },
-    { CC_CELL_GATE,               64 },
-    { CC_CELL_CURVE,              64 },
-    { CC_CELL_CURVE_AT,           64 },
-    { CC_ENVELOPE_1_SUSTAIN,     127 },
-    { CC_ENVELOPE_2_SUSTAIN,     127 },
-    { CC_ENVELOPE_3_SUSTAIN,     127 },
-    { CC_SCATTER_COUNT,           80 },
-    { CC_SCATTER_WIDTH,           34 },
-    { CC_SCATTER_EDGE,            40 },
-    { CC_SCATTER_RATE,            80 },
-    { CC_SCATTER_RANDOMIZE,      110 },
-    { CC_SCATTER_SPEED,           64 },
-    { CC_SCATTER_POSITION,        64 },
-    { CC_SCATTER_HUE,             64 },
-    { CC_SCATTER_SATURATION,     127 },
-    { CC_SCATTER_VALUE,          127 },
-    { CC_FIELD_COUNT,             24 },
-    { CC_FIELD_WIDTH,             64 },
-    { CC_FIELD_EDGE,              64 },
-    { CC_FIELD_SPEED,             64 },
-    { CC_FIELD_POSITION,          64 },
-    { CC_FIELD_HUE,               64 },
-    { CC_FLOW_DENSITY,            20 },
-    { CC_FLOW_RATE,               50 },
-    { CC_FLOW_HUE,                64 },
-    { CC_CORE_HUE,                64 },
+    { CONTROL_HUE,                  20 },
+    { CONTROL_SATURATION,          127 },
+    { CONTROL_CELL_BRIGHTNESS,     127 },
+    { CONTROL_PAR_SATURATION,      127 },
+    { CONTROL_PAR_VALUE,           127 },
+    { CONTROL_PAR_HUE_RANGE,        64 },
+    { CONTROL_ARP_SPREAD,          127 },
+    { CONTROL_LFO_RATE,             64 },
+    { CONTROL_CELL_END,            127 },
+    { CONTROL_CELL_WIDTH,           20 },
+    { CONTROL_CELL_POSITION,        64 },
+    { CONTROL_CELL_BEND,            64 },
+    { CONTROL_CELL_BEND_AT,         64 },
+    { CONTROL_CELL_SPREAD,         127 },
+    { CONTROL_CELL_GATE,            64 },
+    { CONTROL_CELL_CURVE,           64 },
+    { CONTROL_CELL_CURVE_AT,        64 },
+    { CONTROL_ENVELOPE_1_SUSTAIN,  127 },
+    { CONTROL_ENVELOPE_2_SUSTAIN,  127 },
+    { CONTROL_ENVELOPE_3_SUSTAIN,  127 },
+    { CONTROL_SCATTER_COUNT,        80 },
+    { CONTROL_SCATTER_WIDTH,        34 },
+    { CONTROL_SCATTER_EDGE,         40 },
+    { CONTROL_SCATTER_RATE,         80 },
+    { CONTROL_SCATTER_RANDOMIZE,   110 },
+    { CONTROL_SCATTER_SPEED,        64 },
+    { CONTROL_SCATTER_POSITION,     64 },
+    { CONTROL_SCATTER_HUE,          64 },
+    { CONTROL_SCATTER_SATURATION,  127 },
+    { CONTROL_SCATTER_VALUE,       127 },
+    { CONTROL_FIELD_COUNT,          24 },
+    { CONTROL_FIELD_WIDTH,          64 },
+    { CONTROL_FIELD_EDGE,           64 },
+    { CONTROL_FIELD_SPEED,          64 },
+    { CONTROL_FIELD_POSITION,       64 },
+    { CONTROL_FIELD_HUE,            64 },
+    { CONTROL_FLOW_DENSITY,         20 },
+    { CONTROL_FLOW_RATE,            50 },
+    { CONTROL_FLOW_HUE,             64 },
+    { CONTROL_CORE_HUE,             64 },
 };
 
 static const uint8_t WAVE_SWELL  = 32;
@@ -186,28 +188,40 @@ static inline float aurora_route_phase(uint8_t value) {
 
 static const uint8_t AURORA_ROUTES = 8;
 
-static const uint8_t AURORA_ROUTE_BASE[AURORA_ROUTES] = {
-    128, 136, 144, 152, 160, 168, 176, 184,
-};
-
 enum AuroraRouteField : uint8_t {
-    ROUTE_DESTINATION = 0,
-    ROUTE_AMOUNT      = 1,
-    ROUTE_RATIO       = 2,
-    ROUTE_WAVE        = 3,
-    ROUTE_PHASE       = 4,
-    ROUTE_HOLD        = 5,
-    ROUTE_SMOOTH      = 6,
-    ROUTE_POLARITY    = 7,
-    ROUTE_FIELDS      = 8,
+    ROUTE_AMOUNT      = 0,
+    ROUTE_PHASE       = 1,
+    ROUTE_DESTINATION = 2,
+    ROUTE_SOURCE      = 3,
+    ROUTE_CYCLE       = 4,
+    ROUTE_RATIO       = 5,
+    ROUTE_WAVE        = 6,
+    ROUTE_PATTERN     = 7,
+    ROUTE_SMOOTH      = 8,
+    ROUTE_HOLD        = 9,
+    ROUTE_POLARITY    = 10,
+    ROUTE_ARP         = 11,
+    ROUTE_FIELDS      = 12,
 };
 
 static const uint8_t AURORA_ROUTE_DEFAULTS[ROUTE_FIELDS] = {
-    0, 64, 0, WAVE_SWELL, 0, 0, 0, 0,
+    64, 0, 0, 0, 0, 0, WAVE_SWELL, 0, 0, 0, 0, 0,
 };
 
-static inline uint8_t aurora_route_cc(uint8_t route, uint8_t field) {
-    return (uint8_t)(AURORA_ROUTE_BASE[route] + field);
+static const uint8_t AURORA_FIRST_ROUTE_CONTROL = CONTROL_ENVELOPE_3_RELEASE + 1;
+static const uint8_t AURORA_PATCH_CONTROLS = AURORA_FIRST_ROUTE_CONTROL + ROUTE_FIELDS * AURORA_ROUTES;
+
+static_assert(AURORA_FIRST_ROUTE_CONTROL + (ROUTE_PHASE + 1) * AURORA_ROUTES <= 128, "");
+
+static inline uint8_t aurora_route_control(uint8_t route, uint8_t field) {
+    return (uint8_t)(AURORA_FIRST_ROUTE_CONTROL + field * AURORA_ROUTES + route);
+}
+
+static inline bool aurora_route_field_of(uint8_t control, uint8_t &route, uint8_t &field) {
+    if (control < AURORA_FIRST_ROUTE_CONTROL || control >= AURORA_PATCH_CONTROLS) return false;
+    route = (uint8_t)((control - AURORA_FIRST_ROUTE_CONTROL) % AURORA_ROUTES);
+    field = (uint8_t)((control - AURORA_FIRST_ROUTE_CONTROL) / AURORA_ROUTES);
+    return true;
 }
 
 static const uint8_t AURORA_ROUTE_MAX_RATIO = 8;
@@ -225,28 +239,19 @@ enum AuroraRouteSource : uint8_t {
     ROUTE_SOURCES           = 9,
 };
 
-static const uint8_t AURORA_ROUTE_LFO_STEPS = 2 * AURORA_ROUTE_MAX_RATIO;
-
-static inline uint8_t aurora_route_ratio_step(uint8_t value) {
-    const uint8_t last = AURORA_ROUTE_LFO_STEPS + ROUTE_SOURCES - 2;
+static inline uint8_t aurora_stepped(uint8_t value, uint8_t count) {
+    const uint8_t last = (uint8_t)(count - 1);
     const uint8_t step = (uint8_t)(((uint16_t)value * last + 63) / 127);
     return step > last ? last : step;
 }
 
-static inline uint8_t aurora_route_source(uint8_t value) {
-    const uint8_t step = aurora_route_ratio_step(value);
-    return step < AURORA_ROUTE_LFO_STEPS ? ROUTE_SOURCE_LFO : (uint8_t)(step - AURORA_ROUTE_LFO_STEPS + 1);
-}
+static inline uint8_t aurora_route_source(uint8_t value) { return aurora_stepped(value, ROUTE_SOURCES); }
 
 static inline uint8_t aurora_route_ratio(uint8_t value) {
-    const uint8_t step = aurora_route_ratio_step(value);
-    return step < AURORA_ROUTE_LFO_STEPS ? (uint8_t)(1 + step % AURORA_ROUTE_MAX_RATIO) : 1;
+    return (uint8_t)(1 + aurora_stepped(value, AURORA_ROUTE_MAX_RATIO));
 }
 
-static inline bool aurora_route_once(uint8_t value) {
-    const uint8_t step = aurora_route_ratio_step(value);
-    return step >= AURORA_ROUTE_MAX_RATIO && step < AURORA_ROUTE_LFO_STEPS;
-}
+static inline bool aurora_route_once(uint8_t value) { return value >= 64; }
 
 static inline bool aurora_route_held(uint8_t value) { return value >= 64; }
 
@@ -283,12 +288,12 @@ enum AuroraEnvelopeStage : uint8_t {
     ENVELOPE_STAGES  = 6,
 };
 
-static inline uint8_t aurora_envelope_cc(uint8_t envelope, uint8_t stage) {
-    return (uint8_t)(CC_ENVELOPE_1_DELAY + envelope * (ENVELOPE_STAGES + 1) + stage);
+static inline uint8_t aurora_envelope_control(uint8_t envelope, uint8_t stage) {
+    return (uint8_t)(CONTROL_ENVELOPE_1_DELAY + envelope * (ENVELOPE_STAGES + 1) + stage);
 }
 
-static inline uint8_t aurora_envelope_moves_cc(uint8_t envelope) {
-    return (uint8_t)(CC_ENVELOPE_1_MOVES + envelope * (ENVELOPE_STAGES + 1));
+static inline uint8_t aurora_envelope_moves_control(uint8_t envelope) {
+    return (uint8_t)(CONTROL_ENVELOPE_1_MOVES + envelope * (ENVELOPE_STAGES + 1));
 }
 
 static inline bool aurora_source_is_envelope(uint8_t source) {
@@ -301,71 +306,37 @@ enum AuroraArp : uint8_t {
     ARP_RIPPLE = 2,
 };
 
-static const uint8_t AURORA_ARP_DESTINATION_BASE = 122;
-
 static const uint8_t AURORA_ARP_CONTROLS[] = {
-    CC_PAR_HUE_OFFSET, CC_PAR_SATURATION, CC_PAR_VALUE,
+    CONTROL_PAR_HUE_OFFSET, CONTROL_PAR_SATURATION, CONTROL_PAR_VALUE,
 };
 static const uint8_t AURORA_ARP_CONTROL_COUNT =
     sizeof(AURORA_ARP_CONTROLS) / sizeof(AURORA_ARP_CONTROLS[0]);
 
-static inline uint8_t aurora_route_arp(uint8_t destination) {
-    if (destination < AURORA_ARP_DESTINATION_BASE) return ARP_UNISON;
-    return (uint8_t)(ARP_STEPS + (destination - AURORA_ARP_DESTINATION_BASE) % 2);
-}
-
-static const uint8_t AURORA_BIPOLAR_CONTROLS[] = {
-    CC_HUE, CC_PAR_HUE_OFFSET, CC_PAR_HUE_RANGE, CC_ARP_SPREAD,
-    CC_CELL_POSITION, CC_CELL_BEND, CC_CELL_BEND_AT, CC_CELL_CURVE, CC_CELL_CURVE_AT,
-    CC_FIELD_POSITION, CC_FIELD_HUE, CC_FLOW_HUE, CC_CORE_HUE,
-};
-static const uint8_t AURORA_BIPOLAR_CONTROL_COUNT =
-    sizeof(AURORA_BIPOLAR_CONTROLS) / sizeof(AURORA_BIPOLAR_CONTROLS[0]);
-
-static inline bool aurora_bipolar_capable(uint8_t cc) {
-    for (uint8_t index = 0; index < AURORA_BIPOLAR_CONTROL_COUNT; index++) {
-        if (AURORA_BIPOLAR_CONTROLS[index] == cc) return true;
+static inline bool aurora_arp_capable(uint8_t control) {
+    for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
+        if (AURORA_ARP_CONTROLS[index] == control) return true;
     }
     return false;
 }
 
-static const uint8_t AURORA_AIM_DESTINATION_BASE = 104;
-
-static_assert(CC_ENVELOPE_3_RELEASE < AURORA_AIM_DESTINATION_BASE, "");
-static_assert(AURORA_AIM_DESTINATION_BASE + 2 * AURORA_ROUTES <= AURORA_ARP_DESTINATION_BASE, "");
-static_assert(AURORA_ARP_DESTINATION_BASE + 2 * AURORA_ARP_CONTROL_COUNT <= 128, "");
-
-static inline bool aurora_route_aims_route(uint8_t destination) {
-    return destination >= AURORA_AIM_DESTINATION_BASE
-        && destination < AURORA_AIM_DESTINATION_BASE + 2 * AURORA_ROUTES;
+static inline uint8_t aurora_route_arp(uint8_t value) {
+    if (value < 43) return ARP_UNISON;
+    return value < 86 ? ARP_STEPS : ARP_RIPPLE;
 }
 
-static inline uint8_t aurora_aimed_route(uint8_t destination) {
-    return (uint8_t)((destination - AURORA_AIM_DESTINATION_BASE) % AURORA_ROUTES);
-}
+static const uint8_t AURORA_BIPOLAR_CONTROLS[] = {
+    CONTROL_HUE, CONTROL_PAR_HUE_OFFSET, CONTROL_PAR_HUE_RANGE, CONTROL_ARP_SPREAD,
+    CONTROL_CELL_POSITION, CONTROL_CELL_BEND, CONTROL_CELL_BEND_AT, CONTROL_CELL_CURVE, CONTROL_CELL_CURVE_AT,
+    CONTROL_FIELD_POSITION, CONTROL_FIELD_HUE, CONTROL_FLOW_HUE, CONTROL_CORE_HUE,
+};
+static const uint8_t AURORA_BIPOLAR_CONTROL_COUNT =
+    sizeof(AURORA_BIPOLAR_CONTROLS) / sizeof(AURORA_BIPOLAR_CONTROLS[0]);
 
-static inline bool aurora_aims_phase(uint8_t destination) {
-    return destination >= AURORA_AIM_DESTINATION_BASE + AURORA_ROUTES;
-}
-
-static inline uint8_t aurora_aim_destination(uint8_t route, bool phase) {
-    return (uint8_t)(AURORA_AIM_DESTINATION_BASE + (phase ? AURORA_ROUTES : 0) + route);
-}
-
-static inline uint8_t aurora_route_target(uint8_t destination) {
-    if (destination < AURORA_AIM_DESTINATION_BASE) return destination;
-    if (destination < AURORA_ARP_DESTINATION_BASE) return 0;
-    const uint8_t index = (uint8_t)((destination - AURORA_ARP_DESTINATION_BASE) / 2);
-    return index < AURORA_ARP_CONTROL_COUNT ? AURORA_ARP_CONTROLS[index] : 0;
-}
-
-static inline uint8_t aurora_route_destination(uint8_t target, uint8_t arp) {
-    if (arp == ARP_UNISON) return target;
-    for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
-        if (AURORA_ARP_CONTROLS[index] != target) continue;
-        return (uint8_t)(AURORA_ARP_DESTINATION_BASE + index * 2 + (arp - ARP_STEPS));
+static inline bool aurora_bipolar_capable(uint8_t control) {
+    for (uint8_t index = 0; index < AURORA_BIPOLAR_CONTROL_COUNT; index++) {
+        if (AURORA_BIPOLAR_CONTROLS[index] == control) return true;
     }
-    return target;
+    return false;
 }
 
 enum AuroraArpMode : uint8_t {
@@ -525,6 +496,7 @@ static const uint8_t AURORA_SYSEX_SIGNATURE_B    = 0x55;
 
 static const uint8_t AURORA_SYSEX_HEADER_LENGTH = 5;
 static const uint8_t AURORA_SYSEX_FRAME_LENGTH  = AURORA_SYSEX_HEADER_LENGTH + 1;
+static const uint16_t AURORA_PIN_POSITION_STEPS = 16383;
 
 enum AuroraSysEx : uint8_t {
     SYSEX_SYNC_BEGIN     = 0x01,
@@ -540,6 +512,10 @@ enum AuroraSysEx : uint8_t {
     SYSEX_SONGS_BEGIN    = 0x0B,
     SYSEX_SONG           = 0x0C,
     SYSEX_SONGS_COMMIT   = 0x0D,
+    SYSEX_DIAL_LAYER     = 0x0E,
+    SYSEX_DIAL           = 0x0F,
+    SYSEX_PIN_LAYER      = 0x10,
+    SYSEX_UNPIN          = 0x11,
 
     SYSEX_ACK            = 0x40,
     SYSEX_LIBRARY_INFO   = 0x41,
@@ -563,16 +539,15 @@ enum AuroraLibraryState : uint8_t {
     LIBRARY_UNREADABLE = 2,
 };
 
-static const uint8_t AURORA_PATCH_FORMAT    = 7;
+static const uint8_t AURORA_PATCH_FORMAT    = 8;
 static const uint8_t AURORA_LAST_PATCH_SLOT = PROGRAM_SONG_FIRST - 1;
-static const uint8_t AURORA_PATCH_CC_COUNT  = 192;
 static const uint8_t AURORA_PATCH_NAME_LENGTH  = 16;
 static const uint8_t AURORA_KEYPAD_KEYS     = 9;
 static const uint8_t AURORA_BANKS           = 12;
 
 static const uint8_t AURORA_SLOT_MAP_LENGTH    = (AURORA_LAST_PATCH_SLOT + 7) / 7;
 static const uint8_t AURORA_KIT_MAP_LENGTH     = (AURORA_KIT_PLACES + 6) / 7;
-static const uint8_t AURORA_MARK_MAP_LENGTH    = (AURORA_PATCH_CC_COUNT + 6) / 7;
+static const uint8_t AURORA_MARK_MAP_LENGTH    = (AURORA_PATCH_CONTROLS + 6) / 7;
 static const uint8_t AURORA_LIBRARY_HEAD_LENGTH = AURORA_SLOT_MAP_LENGTH + AURORA_KIT_MAP_LENGTH + 2;
 
 static inline bool aurora_map_has(const uint8_t *map, uint8_t index) {
@@ -595,12 +570,12 @@ enum AuroraPatchLayer : uint8_t {
 static const uint8_t AURORA_PATCH_HEAD_LENGTH = 4 + AURORA_PATCH_NAME_LENGTH;
 
 static const uint16_t AURORA_PATCH_LENGTH =
-    AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT;
+    AURORA_PATCH_HEAD_LENGTH + (uint16_t)AURORA_PATCH_LAYERS * AURORA_PATCH_CONTROLS;
 
 static const uint8_t AURORA_SONG_SECTIONS = 32;
 static const uint8_t AURORA_SONG_HEAD_LENGTH = 4;
 
 static const uint16_t AURORA_ONESHOT_LENGTH =
-    1 + AURORA_PATCH_NAME_LENGTH + AURORA_MARK_MAP_LENGTH + AURORA_PATCH_CC_COUNT;
+    1 + AURORA_PATCH_NAME_LENGTH + AURORA_MARK_MAP_LENGTH + AURORA_PATCH_CONTROLS;
 
 #endif

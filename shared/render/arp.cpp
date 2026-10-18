@@ -12,8 +12,9 @@ namespace render {
 static const uint8_t SHUFFLE_SALT = 71;
 
 Arp readArp(const float *dialed, const Modulation *modulation) {
-  return { aurora_arp_mode(roundedControl(dialed[CC_ARP_MODE])),
-           controlValue(CC_ARP_SPREAD, routed(dialed, modulation, CC_ARP_SPREAD)) };
+  return { aurora_arp_mode(roundedControl(dialed[CONTROL_ARP_MODE])),
+           controlValue(CONTROL_ARP_SPREAD, routed(dialed, modulation, CONTROL_ARP_SPREAD)),
+           aurora_switch_is_on(roundedControl(dialed[CONTROL_ARP_DIRECTION])) };
 }
 
 static bool hasDirection(uint8_t mode) {
@@ -46,7 +47,7 @@ uint8_t passLength(const Arp &arp) {
   return arpGroupCount(arp);
 }
 
-bool reversed(const Arp &arp) { return arp.spread < 0.0f && hasDirection(arp.mode); }
+bool reversed(const Arp &arp) { return arp.reverse && hasDirection(arp.mode); }
 
 int32_t turnsPerPass(const Arp &arp) {
   const long turns = lroundf(fabsf(arp.spread) * (float)passLength(arp));

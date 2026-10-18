@@ -8,7 +8,7 @@
 - Run the patch sync against the brain from `tools/protocol.html`: empty on a fresh flash; push eight and read back; a half library is refused and the old one survives; round-trip a file; pull the mains mid-sync; time a full 108.
 - From the editor, push a library with a kit and pull it back: the patches' picks, the kit and the default pair come back.
 - Play a song from the editor's songs view with the clock on: the wall follows the preview, tap, hold, accent and blackout included.
-- Dial with the brain attached: the wall matches the preview on a layer tab, mid-scrub and while editing a oneshot's controls; a key, a fader or a oneshot hands playing back to the brain.
+- Dial with the brain attached: the wall matches the preview on the base tab with faders up, on a layer tab mid-scrub and while editing a oneshot's controls; a key, a fader or a oneshot does the same on both.
 
 ### Looks
 
@@ -21,9 +21,11 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Layer faders flip settings halfway: does halfway read right, or should it be earlier or at the top?
+- A layer that changes a route's settings crossfades two versions of it: does the blend read well on the wall, and does the brain keep its frame rate with up to 40 extra routes?
+- A layer that brings in modulation the base leaves at 0, such as an envelope on Width: only the amount should fade in, with the layer's envelope shape from the first bit of the fader.
 - Swipe Position with a rise wave: climbs, drops back on the bar, tail drops at the fall. Try Bend on it.
 - Bipolar routes: Bend at wobbling the bend point, the PARs' hue offset swinging either side of the strips, a square on a hue at full amount as a flip to the opposite color.
-- Strip routes: a quarter-turn phase as a chevron (does it get Rain back?), staggered bars strobing in unison, a random draw across the strips. Does the random draw want a seed?
+- Cells looks dialed in the preview: ends Inside and Outside, swing, ripple, strum, births, alternating diagonals, dividing with an envelope's Delay, inchworm, glide.
 - White and Dark amounts from 0 up with S full and V at the top; Field and Flow White together; does Core Dark earn its place?
 - Morph between patches of different tempo divisions: does the jump read as a glitch? Should it carry position across instead?
 - Snap a press to the nearest beat with a click track: does a press just after the beat read as on it?
@@ -33,7 +35,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Anchor against a click track: should the peak or the leading edge land on the beat?
 - Play a set to find where the color layer's controls should stop.
 - Flow on darkened regions, strips against the preview: the preview drew it far stronger before it drew dim colors through the screen's curve.
-- Dial the starting looks by eye and save them as library patches; nothing about the morph is worth judging before. The old shape, fan, swing and color looks are in `git show 21a435c:tools/patch.js`.
+- Play the patches dialed in the preview; nothing about the morph is worth judging before.
 
 ### PARs
 
@@ -65,7 +67,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 
 `docs/design.md` § Cells and § Brightness; the reasons in `docs/cells-reasoning.md`, deleted once cells are built and tested on the wall.
 
-- Dial cells in the preview. On this branch the controls list is 192 long and routes sit at 128 and up, eight fields each; the brain builds but its patch sync and storage wait for the CC numbers.
+- Dial cells in the preview.
 - Confirm or change what the first build settled on its own:
   - Rate's first step, born once, is born when the patch starts, so its attack plays then.
   - Gate grows toward the top of the fader, unlike LFO Rate.
@@ -78,7 +80,6 @@ Seen only in the preview so far. One look each, driven from the editor.
   - A gone cell's tail fades out after it.
   - An envelope set to step moves only on Rate's grid; with Rate on once it glides.
   - Polarity is its own route field; a route's destination holds the target, or another route's amount or phase.
-  - A group route's pattern is picked on the route's Wave field, shown as a Pattern row.
   - A negative group amount on a one-sided control reverses the pattern and still pushes up: dimming every other bar means dialing Brightness low and pushing the others up.
   - A route aimed at an amount moves it by twice its own amount, so a full Strip route scales a journey from −1 to +1. Aimed at a phase, a full route spreads the group over one whole cycle.
   - Birth's Random draws a value per birth rather than shuffling. Births per LFO cycle count whole births.
@@ -95,11 +96,17 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
 - Build advanced patches together in the preview: cells dividing together and taking turns, five bars alternating bright and faint, the stepped trail.
 - Should Strip's and Note's Random draw a new order on each birth, and on each start over, instead of one fixed shuffle?
-- "Keep as… Motion" on the wall seemed to overwrite the base layer while dialing the alternating diagonals. Reproduce, then discuss how saving a wall look into a layer should work.
-- Editing the base while a layer fader is up in the Mix bar: rows show the played value, so a control that layer overrides snaps back while dragged. What should its slider show and move?
+- Accent still blends as before: it never changes settings and never crossfades a route. Should it follow the layer faders' rules?
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?
 - Test looks: bars born at the center that grow, divide and move out both ways, together or taking turns; slots of 5 pixels where a cell is born each beat one slot lower and fades over the next three; a faint bar pattern with Scatter's white spots flashing over it.
+
+### Editor
+
+- Rethink the editor and the patch editing workflow, saving and layers above all: how a look dialed on the base becomes a layer, what save, discard and keep as… do to which layer, and how a patch with layers is read at a glance.
+- "Keep as… Motion" on the wall seemed to overwrite the base layer while dialing the alternating diagonals. Reproduce, then discuss how saving a wall look into a layer should work.
+- Editing the base while a layer fader is up in the Mix bar: rows show the played value, so a control that layer overrides snaps back while dragged. What should its slider show and move?
+- A route that exists only on a layer still cannot be made: routes are claimed on the base.
 
 ### Hardware
 

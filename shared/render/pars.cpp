@@ -23,13 +23,11 @@ struct ArpRoute {
 };
 
 static bool readArpRoute(const float *dialed, uint8_t route, ArpRoute &out) {
-  const uint8_t aimedAt = roundedControl(dialed[routeByte(route, ROUTE_DESTINATION)]);
-  out.arp = aurora_route_arp(aimedAt);
-  out.target = aurora_route_target(aimedAt);
-  if (out.arp == ARP_UNISON || !out.target) return false;
-  const uint8_t ratio = roundedControl(dialed[routeByte(route, ROUTE_RATIO)]);
-  if (aurora_route_source(ratio) != ROUTE_SOURCE_LFO) return false;
-  out.amount = signedOf(dialed[routeByte(route, ROUTE_AMOUNT)]);
+  if (!routeArpeggiates(dialed, route)) return false;
+  out.arp = aurora_route_arp(roundedControl(dialed[routeControl(route, ROUTE_ARP)]));
+  out.target = routeTarget(dialed, route);
+  if (aurora_route_source(roundedControl(dialed[routeControl(route, ROUTE_SOURCE)])) != ROUTE_SOURCE_LFO) return false;
+  out.amount = signedOf(dialed[routeControl(route, ROUTE_AMOUNT)]);
   if (fabsf(out.amount) < 0.001f) return false;
   out.wave = waveOf(dialed, route);
   out.timing = routeTiming(dialed, route);
@@ -98,9 +96,9 @@ static uint8_t groupingOf(uint8_t layout) {
 
 static float bandPlace(const float *dialed, const Arp &arp, float lfo, uint8_t par,
                        float range) {
-  const uint8_t layout = aurora_hue_layout(roundedControl(dialed[CC_PAR_HUE_LAYOUT]));
+  const uint8_t layout = aurora_hue_layout(roundedControl(dialed[CONTROL_PAR_HUE_LAYOUT]));
   if (layout == HUE_LAYOUT_RANDOM) return fabsf(range) * drawnHue(dialed, arp, lfo, par);
-  const Arp grouping = { groupingOf(layout), 1.0f };
+  const Arp grouping = { groupingOf(layout), 1.0f, false };
   const uint8_t groups = arpGroupCount(grouping);
   if (groups < 2) return 0.0f;
   return range * (2.0f * (float)arpGroupOf(grouping, par) / (float)(groups - 1) - 1.0f);
@@ -122,11 +120,11 @@ bool firstArpPass(const float *dialed, const Modulation &modulation, float lfo, 
   return false;
 }
 
-uint8_t routedAtPar(const float *dialed, const Modulation &modulation, float lfo, uint8_t cc,
+uint8_t routedAtPar(const float *dialed, const Modulation &modulation, float lfo, uint8_t control,
                     uint8_t par) {
   Modulation atPar;
   parModulation(dialed, modulation, readArp(dialed, &modulation), lfo, par, atPar);
-  return displayedByte(cc, routed(dialed, &atPar, cc));
+  return displayedByte(control, routed(dialed, &atPar, control));
 }
 
 static uint8_t hueByte(float hue) { return (uint8_t)(int32_t)lroundf(wrappedHue(hue)); }
@@ -134,19 +132,19 @@ static uint8_t hueByte(float hue) { return (uint8_t)(int32_t)lroundf(wrappedHue(
 void readPars(const float *dialed, const Modulation &modulation, float lfo, Frame &out) {
   const Arp arp = readArp(dialed, &modulation);
   const float stripsHue = routedColor(dialed, &modulation).h;
-  const uint8_t palette = roundedControl(dialed[CC_PALETTE]);
+  const uint8_t palette = roundedControl(dialed[CONTROL_PALETTE]);
   out.stripsHue = hueByte(stripsHue);
 
   Modulation atPar;
   for (uint8_t par = 0; par < PARS; par++) {
     parModulation(dialed, modulation, arp, lfo, par, atPar);
-    auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, &atPar, cc)); };
-    const float place = bandPlace(dialed, arp, lfo, par, at(CC_PAR_HUE_RANGE));
+    auto at = [&](uint8_t control) { return controlValue(control, routed(dialed, &atPar, control)); };
+    const float place = bandPlace(dialed, arp, lfo, par, at(CONTROL_PAR_HUE_RANGE));
     out.parHuePlaces[par] = place;
-    const float hue = stripsHue + at(CC_PAR_HUE_OFFSET) + place;
+    const float hue = stripsHue + at(CONTROL_PAR_HUE_OFFSET) + place;
     out.parHues[par] = hueByte(hue);
-    out.pars[par] = { paletteColor(palette, hue, at(CC_PAR_SATURATION)),
-                      (uint8_t)lroundf(at(CC_PAR_VALUE)) };
+    out.pars[par] = { paletteColor(palette, hue, at(CONTROL_PAR_SATURATION)),
+                      (uint8_t)lroundf(at(CONTROL_PAR_VALUE)) };
   }
 }
 

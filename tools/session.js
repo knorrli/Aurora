@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as LibraryFile from './library-file.js';
 import * as Library from './library.js';
 import * as Patch from './patch.js';
@@ -138,7 +138,6 @@ function comingFrom() {
 
 const heldAt = () => (session.layerIndex === Protocol.PATCH_LAYER_ACCENT ? comingFrom() : null);
 
-const switchSource = () => (heldAt() || patch()).base;
 
 const transitioning = () =>
   !editingOneshot() && !isAboveBase() && !!comingFrom() && session.transition.position < 1;
@@ -160,10 +159,17 @@ function pinnedControls() {
   const current = patch();
   const position = session.transition.position;
   if (isAboveBase()) {
-    return Library.blend(current.base, Library.layerBytes(current, session.layerIndex), position, switchSource());
+    return Library.mixLayer(current.base, Library.layerBytes(current, session.layerIndex), session.layerIndex, position);
   }
   if (transitioning()) return Library.blend(comingFrom().base, current.base, position, comingFrom().base);
   return null;
+}
+
+function pinnedLayer() {
+  if (editingOneshot() || !isAboveBase()) return null;
+  const current = patch();
+  return { base: current.base, layer: Library.layerBytes(current, session.layerIndex),
+           index: session.layerIndex, position: session.transition.position };
 }
 
 function liveControls() {
@@ -179,14 +185,14 @@ function changed() {
 function write(name, value) {
   const current = editing();
   if (editingOneshot()) {
-    Library.writeCC(current.base, name, value);
+    Library.writeControl(current.base, name, value);
     if (!isRouteField(name)) current.marks[name] = true;
     return;
   }
   const over = current.overrides[session.layerIndex];
-  if (!isAboveBase() || Patch.isSwitch(name)) {
+  if (!isAboveBase()) {
     Library.writeBase(current, name, value);
-  } else if (Patch.clampToSevenBits(value) === (current.base[Patch.CC[name]] | 0)) {
+  } else if (Patch.clampToSevenBits(value) === (current.base[Patch.NUMBER[name]] | 0)) {
     delete over[name];
   } else {
     over[name] = Patch.clampToSevenBits(value);
@@ -200,7 +206,7 @@ function setValue(name, value) {
 
 function applyValues(values) {
   for (const [name, value] of Object.entries(values)) {
-    if (name in Patch.CC) write(name, value);
+    if (name in Patch.NUMBER) write(name, value);
   }
   changed();
 }
@@ -221,7 +227,7 @@ function resetNames(names) {
     changed();
   } else if (isAboveBase()) {
     const over = editing().overrides[session.layerIndex];
-    for (const name of names) if (!Patch.isSwitch(name)) delete over[name];
+    for (const name of names) delete over[name];
     changed();
   } else {
     applyValues(Object.fromEntries(names.filter(name => name in Patch.DEFAULT)
@@ -254,7 +260,7 @@ function hasNoEffect(card, live) {
   if (card === Patch.LFO || card === Patch.ROUTES_CARD) {
     return !Patch.ROUTES.some(route =>
       Patch.sounding(live, route)
-      && (card === Patch.ROUTES_CARD || Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE.lfo));
+      && (card === Patch.ROUTES_CARD || Protocol.routeSource(live[route.source]) === Protocol.ROUTE_SOURCE.lfo));
   }
   return (card.shownBy || card.amounts).every(name => live[name] === Patch.DEFAULT[name]
     && !routesOn(name, live).some(route => Patch.sounding(live, route)));
@@ -264,11 +270,8 @@ function routesOn(name, live) {
   return Patch.ROUTES.filter(route => Patch.targetName(live[route.destination]) === name);
 }
 
-const editedTarget = route => Protocol.routeTarget(editing().base[Patch.CC[route.destination]] | 0);
-const GROUP_SOURCES = [Protocol.ROUTE_SOURCE.strip, Protocol.ROUTE_SOURCE.note, Protocol.ROUTE_SOURCE.birth];
-
 function setRouteArp(route, arp) {
-  setValue(route.destination, Protocol.routeDestination(editedTarget(route), arp));
+  setValue(route.arp, Protocol.routeArpValue(arp));
 }
 
 function setRouteBipolar(route, bipolar) {
@@ -276,22 +279,14 @@ function setRouteBipolar(route, bipolar) {
 }
 
 function setRoutePattern(route, pattern) {
-  setValue(route.wave, Protocol.groupPatternValue(pattern));
+  setValue(route.pattern, Protocol.groupPatternValue(pattern));
 }
 
 function setRouteSource(route, source) {
-  const live = liveControls();
-  const lfo = source === Protocol.ROUTE_SOURCE.lfo;
-  const destination = editing().base[Patch.CC[route.destination]] | 0;
-  if (!lfo && Protocol.routeArp(destination) !== Protocol.ARP.unison) {
-    write(route.destination, Protocol.routeDestination(editedTarget(route), Protocol.ARP.unison));
-  }
-  const wasGroup = GROUP_SOURCES.includes(Protocol.routeSource(live[route.ratio]));
-  const toGroup = GROUP_SOURCES.includes(source);
-  if (toGroup && !wasGroup) write(route.wave, Protocol.groupPatternValue(0));
-  if (!toGroup && wasGroup) write(route.wave, Protocol.ROUTE_DEFAULTS.wave);
-  setValue(route.ratio, lfo ? Protocol.routeRatioValue(1, false) : Protocol.routeSourceValue(source));
+  if (source !== Protocol.ROUTE_SOURCE.lfo) write(route.arp, Protocol.routeArpValue(Protocol.ARP.unison));
+  setValue(route.source, Protocol.routeSourceValue(source));
 }
+
 const freeRouteSlots = live => Patch.ROUTES.filter(route => !live[route.destination]);
 
 function sameOverrides(one, other) {
@@ -306,7 +301,7 @@ function layerUnsaved(layer) {
     return saved ? !sameOverrides(session.draft.overrides[layer], saved.overrides[layer])
                  : Library.changedIn(session.draft, layer).length > 0;
   }
-  return !saved || session.draft.base.some((byte, cc) => byte !== saved.base[cc]);
+  return !saved || session.draft.base.some((byte, control) => byte !== saved.base[control]);
 }
 
 function routeRemovable(route) {
@@ -332,7 +327,7 @@ function addRoute(name) {
   if (!free) return null;
   const current = editing();
   Library.freeRoute(current, free);
-  Library.writeCC(current.base, free.destination, Patch.destinationOf(name));
+  Library.writeControl(current.base, free.destination, Patch.destinationOf(name));
   write(free.amount, NEW_ROUTE_AMOUNT);
   changed();
   return free;
@@ -383,7 +378,7 @@ Object.assign(session, {
   editingOneshot, editingCorner, underneath, over, overSlotShown, kitOneshot, resolvedPick, oneshot, oneshotBeats, marked, toggleMark, openOneshot,
   patch, patchAt, isAboveBase, overrides, editing, comingFrom, heldAt,
   transitioning,
-  pinnedControls, liveControls, setValue, resetNames, changed,
+  pinnedControls, pinnedLayer, liveControls, setValue, resetNames, changed,
   routeBypassed, cardBypassed, sounding, hasNoEffect, routesOn, freeRouteSlots,
   layerUnsaved, routeRemovable, freeRoute, addRoute, moveToLayer, setRouteArp, setRouteBipolar, setRoutePattern, setRouteSource, select, selectLayer, resetTransition, forgetMissingPatches,
   toggleRouteBypass: route => toggleIn(session.bypassedRoutes, route),

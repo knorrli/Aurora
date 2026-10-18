@@ -12,13 +12,13 @@ struct Patch {
   uint8_t transitionTime;
   uint8_t accentTime;
   uint8_t oneshots[2];
-  uint8_t layers[AURORA_PATCH_LAYERS][AURORA_PATCH_CC_COUNT];
+  uint8_t layers[AURORA_PATCH_LAYERS][AURORA_PATCH_CONTROLS];
 };
 
 struct Oneshot {
   uint8_t length;
-  uint8_t marks[AURORA_PATCH_CC_COUNT];
-  uint8_t controls[AURORA_PATCH_CC_COUNT];
+  uint8_t marks[AURORA_PATCH_CONTROLS];
+  uint8_t controls[AURORA_PATCH_CONTROLS];
 };
 
 class Library {
@@ -74,8 +74,10 @@ class Playback {
   void noteOff(uint8_t note, uint32_t micros);
 
   void cutTo(const Patch &patch, uint8_t slot);
+  void dial(const Patch &patch, uint8_t slot, bool cut);
   void patchChanged(uint8_t slot);
   void pin(const uint8_t *controls);
+  void pinLayer(const uint8_t *layer, uint8_t index, uint16_t steps);
   void unpin() { pinned = false; }
 
   const render::Frame &frame(uint32_t micros);
@@ -112,7 +114,7 @@ class Playback {
   Patch playing;
   Patch arriving;
   uint8_t playingSlot = 0;
-  float from[AURORA_PATCH_CC_COUNT];
+  float from[AURORA_PATCH_CONTROLS];
   Ramp morph = Ramp::steady(1.0f);
   Ramp accent = Ramp::steady(0.0f);
   bool switchesLanded = true;
@@ -144,7 +146,10 @@ class Playback {
   float lastOneshotProgress = 0.0f;
 
   bool pinned = false;
-  float pinnedControls[AURORA_PATCH_CC_COUNT];
+  bool pinnedMix = false;
+  float pinnedControls[render::RENDER_CONTROL_COUNT];
+  uint8_t pinnedLayers[AURORA_PATCH_LAYERS][AURORA_PATCH_CONTROLS];
+  float pinnedPositions[AURORA_PATCH_LAYERS] = {};
 
   float lastBeats = 0.0f;
   float composed[render::RENDER_CONTROL_COUNT];

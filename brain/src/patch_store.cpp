@@ -177,7 +177,7 @@ uint8_t stageHead(uint8_t slot, const uint8_t *head) {
 
 uint8_t stageLayer(uint8_t slot, uint8_t layer, const uint8_t *cc) {
     if (!staging || slot != nextSlot || nextPiece == 0 || layer != nextPiece - 1) return SYSEX_ERROR_SEQUENCE;
-    const uint8_t status = writeStage(cc, AURORA_PATCH_CC_COUNT);
+    const uint8_t status = writeStage(cc, AURORA_PATCH_CONTROLS);
     if (status != SYSEX_OK) return status;
     nextPiece++;
     if (nextPiece > AURORA_PATCH_LAYERS) finishPatches();
@@ -233,8 +233,8 @@ bool readHead(uint8_t slot, uint8_t *out) {
 
 bool readLayer(uint8_t slot, uint8_t layer, uint8_t *out) {
     if (layer >= AURORA_PATCH_LAYERS) return false;
-    const uint32_t offset = AURORA_PATCH_HEAD_LENGTH + (uint32_t)layer * AURORA_PATCH_CC_COUNT;
-    return readPatchAt(slot, offset, out, AURORA_PATCH_CC_COUNT);
+    const uint32_t offset = AURORA_PATCH_HEAD_LENGTH + (uint32_t)layer * AURORA_PATCH_CONTROLS;
+    return readPatchAt(slot, offset, out, AURORA_PATCH_CONTROLS);
 }
 
 bool readOneshot(uint8_t index, uint8_t *out) {

@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
 import * as LibraryFile from './library-file.js';

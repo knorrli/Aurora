@@ -101,7 +101,7 @@
 <div id="log"></div>
 
 <script type="module">
-  import { Protocol } from './cc.js';
+  import { Protocol } from './controls.js';
   import * as LibraryFile from './library-file.js';
   import { Link, statusText } from './link.js';
 
@@ -109,7 +109,7 @@
   const byId = id => document.getElementById(id);
   const BUTTONS = ['query', 'push', 'abort', 'read', 'verify', 'save', 'restore'];
 
-  const byteAt = (slot, layer, cc) => (slot * 7 + layer * 13 + cc * 3 + 11) & 0x7F;
+  const byteAt = (slot, layer, control) => (slot * 7 + layer * 13 + control * 3 + 11) & 0x7F;
 
   const testPatch = slot => ({
     slot,
@@ -117,7 +117,7 @@
     transitionTime: (slot * 2) & 0x7F,
     accentTime: (slot * 3) & 0x7F,
     layers: Array.from({ length: Protocol.PATCH_LAYERS }, (_, layer) =>
-      Array.from({ length: Protocol.PATCH_CC_COUNT }, (_, cc) => byteAt(slot, layer, cc))),
+      Array.from({ length: Protocol.PATCH_CONTROLS }, (_, control) => byteAt(slot, layer, control))),
   });
 
   const testSlots = count => (count === 1 ? [1]
@@ -200,8 +200,8 @@
     const byte = wantHead.findIndex((value, i) => read.head[i] !== value);
     if (byte >= 0) faults.push(`head byte ${byte}: got ${read.head[byte]}, expected ${wantHead[byte]}`);
     want.layers.forEach((bytes, layer) => {
-      const cc = bytes.findIndex((value, i) => read.patch.layers[layer][i] !== value);
-      if (cc >= 0) faults.push(`layer ${layer} byte ${cc}: got ${read.patch.layers[layer][cc]}, expected ${bytes[cc]}`);
+      const control = bytes.findIndex((value, i) => read.patch.layers[layer][i] !== value);
+      if (control >= 0) faults.push(`layer ${layer} byte ${control}: got ${read.patch.layers[layer][control]}, expected ${bytes[control]}`);
     });
     return faults;
   }
@@ -259,7 +259,7 @@
     say(`slot ${slot} is named "${read.patch.name}"`);
     const faults = compare(slot, read);
     if (!faults.length) {
-      good(`slot ${slot} matches what was pushed, all ${Protocol.PATCH_HEAD_LENGTH + Protocol.PATCH_LAYERS * Protocol.PATCH_CC_COUNT} bytes`);
+      good(`slot ${slot} matches what was pushed, all ${Protocol.PATCH_HEAD_LENGTH + Protocol.PATCH_LAYERS * Protocol.PATCH_CONTROLS} bytes`);
     } else faults.forEach(bad);
   }));
 

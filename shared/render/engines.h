@@ -13,8 +13,8 @@ enum Engine : uint8_t {
   ENGINE_SCATTER = 8,
 };
 
-uint8_t engineOf(uint8_t cc);
-bool showsEngine(uint8_t cc);
+uint8_t engineOf(uint8_t control);
+bool showsEngine(uint8_t control);
 uint8_t hiddenEngines(const float *dialed);
 
 bool fieldActive(const Reading &reading, const float *dialed, uint8_t routes);

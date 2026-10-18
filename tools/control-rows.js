@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
 import * as EnvelopeGraph from './envelope-graph.js';
@@ -15,7 +15,7 @@ const { element, byId } = dom;
 const rows = {};
 const cards = [];
 
-const controlLabel = name => dom.ccLabeled('label', Patch.CONTROLS[name].label, Patch.CC[name]);
+const controlLabel = name => dom.numberLabeled('label', Patch.CONTROLS[name].label, Patch.NUMBER[name]);
 
 function faderRow(host, name) {
   const control = Patch.CONTROLS[name];

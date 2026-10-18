@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import AuroraRenderModule from './render.js';
 
 const WALL_STRIP_ORDER = [5, 4, 3, 2, 1];
@@ -75,7 +75,7 @@ function connect(renderer) {
     };
   }
 
-  const morphed = at => Array.from(renderer.HEAPU8.subarray(at, at + Protocol.PATCH_CC_COUNT));
+  const morphed = at => Array.from(renderer.HEAPU8.subarray(at, at + Protocol.PATCH_CONTROLS));
 
   function stepsOf(reader) {
     const outputs = Array.from({ length: 128 }, (_, value) => reader(value));
@@ -92,7 +92,9 @@ function connect(renderer) {
   const steps = {
     lfoPeriod: stepsOf(value => renderer._aurora_lfo_period_beats(value)),
     transition: stepsOf(value => renderer._aurora_transition_length(value)),
-    ratio: stepsOf(value => renderer._aurora_ratio_step(value)),
+    ratio: stepsOf(value => renderer._aurora_ratio(value)),
+    source: stepsOf(value => renderer._aurora_source(value)),
+    arp: stepsOf(value => renderer._aurora_arp_of(value)),
     arpMode: stepsOf(value => renderer._aurora_arp_mode_of(value)),
     hueLayout: stepsOf(value => renderer._aurora_hue_layout_of(value)),
     threeWay: stepsOf(value => renderer._aurora_three_way(value)),
@@ -108,8 +110,8 @@ function connect(renderer) {
     routeRatio: value => renderer._aurora_ratio(value),
     routeOnce: value => !!renderer._aurora_once(value),
     routeSource: value => renderer._aurora_source(value),
-    routeSourceValue: source => steps.ratio.valueOf(2 * Protocol.ROUTE_MAX_RATIO + source - 1),
-    routeRatioValue: (ratio, once) => steps.ratio.valueOf((once ? Protocol.ROUTE_MAX_RATIO : 0) + ratio - 1),
+    routeSourceValue: source => steps.source.valueOf(source),
+    routeRatioValue: ratio => steps.ratio.valueOf(ratio - 1),
     routePhaseStep: value => renderer._aurora_phase_step(value),
     arpMode: value => renderer._aurora_arp_mode_of(value),
     arpModeValue: mode => steps.arpMode.valueOf(mode),
@@ -121,19 +123,15 @@ function connect(renderer) {
     threeWayValue: position => steps.threeWay.valueOf(position),
     fourWayPosition: value => renderer._aurora_four_way(value),
     fourWayValue: position => steps.fourWay.valueOf(position),
-    routeArp: destination => renderer._aurora_destination_arp(destination),
+    routeArp: value => renderer._aurora_arp_of(value),
+    routeArpValue: arp => steps.arp.valueOf(arp),
     routeBipolar: value => !!renderer._aurora_bipolar(value),
-    bipolarCapable: cc => !!renderer._aurora_bipolar_capable_of(cc),
-    routeTarget: destination => renderer._aurora_destination_target(destination),
-    routeDestination: (target, arp) => renderer._aurora_destination(target, arp),
-    aimedRoute: destination => renderer._aurora_aimed_route_of(destination),
-    aimsPhase: destination => !!renderer._aurora_aims_phase_of(destination),
-    aimDestination: (route, phase) => renderer._aurora_aim_destination_of(route, phase ? 1 : 0),
+    bipolarCapable: control => !!renderer._aurora_bipolar_capable_of(control),
     groupPattern: value => renderer._aurora_group_pattern_of(value),
     groupPatternValue: pattern => steps.groupPattern.valueOf(pattern),
   });
 
-  const PATCH_BYTES = 4 + Protocol.PATCH_LAYERS * Protocol.PATCH_CC_COUNT;
+  const PATCH_BYTES = 4 + Protocol.PATCH_LAYERS * Protocol.PATCH_CONTROLS;
   const NO_ONESHOT = 127;
   const drawnAt = renderer._aurora_drawn_controls();
 
@@ -146,12 +144,12 @@ function connect(renderer) {
   }
 
   function readFrame() {
-    const drawn = renderer.HEAPU8.subarray(drawnAt, drawnAt + Protocol.PATCH_CC_COUNT);
+    const drawn = renderer.HEAPU8.subarray(drawnAt, drawnAt + Protocol.PATCH_CONTROLS);
     return {
       pixels, pars: seenPars(), bend: Array.from(bend), arp: readArpPass(), lfo: renderer._aurora_lfo(),
       spots: readMarks(renderer._aurora_spots()), cells: readMarks(renderer._aurora_cells()),
       field: {
-        horizontal: Protocol.fourWayPosition(drawn[Protocol.CC.fieldDirection]) === Protocol.DIRECTION.horizontal,
+        horizontal: Protocol.fourWayPosition(drawn[Protocol.NUMBER.fieldDirection]) === Protocol.DIRECTION.horizontal,
         levels: Array.from(fieldLevels),
         across: Array.from(fieldAcross),
       },
@@ -162,7 +160,7 @@ function connect(renderer) {
         across: Array.from(curveAcross),
       },
       hues: {
-        palette: drawn[Protocol.CC.palette],
+        palette: drawn[Protocol.NUMBER.palette],
         strips: renderer._aurora_strips_hue(),
         pars: Array.from(parHues),
       },
@@ -182,33 +180,38 @@ function connect(renderer) {
     },
     lfoWave: (phase, wave, smooth) => renderer._aurora_lfo_wave(phase, wave, smooth),
     waveMean: (wave, smooth) => renderer._aurora_wave_mean(wave, smooth),
-    convert: (cc, value) => renderer._aurora_convert(cc, value),
+    convert: (control, value) => renderer._aurora_convert(control, value),
     groupLevel: (pattern, index, count, salt) => renderer._aurora_group_level(pattern, index, count, salt),
     arpPassLength: mode => renderer._aurora_arp_pass_length(mode),
     arpTurnsPerPass: (mode, spread) => renderer._aurora_arp_turns_per_pass(mode, spread),
-    arpReversed: (mode, spread) => !!renderer._aurora_arp_reversed(mode, spread),
-    routeTurns: (ratio, phase, clock) => renderer._aurora_route_turns(ratio, phase, clock),
+    routeTurns: (ratio, cycle, phase, clock) => renderer._aurora_route_turns(ratio, cycle, phase, clock),
     bendSpeedRatio: bend => renderer._aurora_bend_speed_ratio(bend),
 
-    controlAtStrips: cc => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_control_at_strip(cc, i)),
+    controlAtStrips: control => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_control_at_strip(control, i)),
     routeAmountAtStrips: route => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_route_amount_at_strip(route, i)),
     routeShiftAtStrips: route => Array.from({ length: STRIPS }, (_, i) => renderer._aurora_route_shift_at_strip(route, i)),
     parHuePlaces: () => Array.from(huePlaces),
-    controlAtPars: cc => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(cc, i)),
-    routeRefused: cc => !!renderer._aurora_route_refused(cc),
-    cellControl: cc => !!renderer._aurora_cell_control(cc),
+    controlAtPars: control => Array.from({ length: PARS }, (_, i) => renderer._aurora_control_at_par(control, i)),
+    routeRefused: control => !!renderer._aurora_route_refused(control),
+    cellControl: control => !!renderer._aurora_cell_control(control),
+    arpCapable: control => !!renderer._aurora_arp_capable_of(control),
     envelopeLevel: (stages, gate, end, rate, age) =>
       renderer._aurora_envelope_level(stages.delay, stages.attack, stages.hold, stages.decay, stages.sustain, stages.release,
                                       stages.moves, gate, end, rate, age),
-    spotDestination: cc => !!renderer._aurora_spot_destination(cc),
+    spotDestination: control => !!renderer._aurora_spot_destination(control),
+    mixLayer(baseBytes, layerBytes, layer, position) {
+      renderer.HEAPU8.set(baseBytes, renderer._aurora_morph_from());
+      renderer.HEAPU8.set(layerBytes, renderer._aurora_morph_to());
+      return morphed(renderer._aurora_mix_layer(layer, position));
+    },
     blend(fromBytes, toBytes, position, switchBytes, switchesFromStart) {
       renderer.HEAPU8.set(fromBytes, renderer._aurora_morph_from());
       renderer.HEAPU8.set(toBytes, renderer._aurora_morph_to());
       renderer.HEAPU8.set(switchBytes, renderer._aurora_morph_switches());
       return morphed(renderer._aurora_blend(position, switchesFromStart ? 1 : 0));
     },
-    routeReach(cc) {
-      const at = renderer._aurora_route_reach(cc);
+    routeReach(control) {
+      const at = renderer._aurora_route_reach(control);
       return at ? [renderer.HEAPF32[at >> 2], renderer.HEAPF32[(at >> 2) + 1]] : null;
     },
 
@@ -230,16 +233,19 @@ function connect(renderer) {
       defaultOneshots: picks => renderer._aurora_library_default_oneshots(
         ...picks.map(pick => (pick === null ? NO_ONESHOT : pick))),
       message: (status, first, second, micros) => renderer._aurora_playback_message(status, first, second, micros),
-      cut(slot, patch) {
+      dial(slot, patch, cut) {
         writePatch(patch);
-        renderer._aurora_playback_cut(slot);
+        renderer._aurora_playback_dial(slot, cut ? 1 : 0);
       },
-      patchChanged: slot => renderer._aurora_playback_patch_changed(slot),
       pin(bytes) {
         renderer.HEAPU8.set(bytes, controls);
         renderer._aurora_playback_pin();
       },
       unpin: () => renderer._aurora_playback_unpin(),
+      pinLayer(layerBytes, layer, steps) {
+        renderer.HEAPU8.set(layerBytes, renderer._aurora_morph_to());
+        renderer._aurora_playback_pin_layer(layer, steps);
+      },
       frame(micros) {
         renderer._aurora_playback_frame(micros);
         return readFrame();

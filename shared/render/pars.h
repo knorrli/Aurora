@@ -14,7 +14,7 @@ void holdParPulses(uint32_t milliseconds, Wall &wall, Frame &out);
 
 bool firstArpPass(const float *dialed, const Modulation &modulation, float lfo, ArpPass &out);
 
-uint8_t routedAtPar(const float *dialed, const Modulation &modulation, float lfo, uint8_t cc,
+uint8_t routedAtPar(const float *dialed, const Modulation &modulation, float lfo, uint8_t control,
                     uint8_t par);
 
 }

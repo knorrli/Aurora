@@ -49,9 +49,9 @@ static float chordOf(float value) {
   return (float)(1 + ((uint16_t)roundedControl(value) * (MAX_CHORD - 1) + 63) / 127);
 }
 
-static bool envelopeTime(uint8_t cc) {
-  if (cc < CC_ENVELOPE_1_DELAY || cc > CC_ENVELOPE_3_RELEASE) return false;
-  const uint8_t stage = (uint8_t)((cc - CC_ENVELOPE_1_DELAY) % (ENVELOPE_STAGES + 1));
+static bool envelopeTime(uint8_t control) {
+  if (control < CONTROL_ENVELOPE_1_DELAY || control > CONTROL_ENVELOPE_3_RELEASE) return false;
+  const uint8_t stage = (uint8_t)((control - CONTROL_ENVELOPE_1_DELAY) % (ENVELOPE_STAGES + 1));
   return stage != ENVELOPE_SUSTAIN && stage != ENVELOPE_STAGES;
 }
 
@@ -97,145 +97,145 @@ static float delayOf(float value) {
   return steps < 0.0f ? 0.0f : (steps > MAX_DELAY_STEPS ? MAX_DELAY_STEPS : steps);
 }
 
-float controlValue(uint8_t cc, float value) {
-  if (envelopeTime(cc)) return envelopeBeatsOf(value);
-  switch (cc) {
-    case CC_HUE: return hueOf(value);
-    case CC_SATURATION:
-    case CC_PAR_VALUE:
-    case CC_PAR_HUE_OFFSET:
-    case CC_PAR_SATURATION: return levelOf(value);
-    case CC_PAR_HUE_RANGE: return signedOf(value) * 128.0f;
+float controlValue(uint8_t control, float value) {
+  if (envelopeTime(control)) return envelopeBeatsOf(value);
+  switch (control) {
+    case CONTROL_HUE: return hueOf(value);
+    case CONTROL_SATURATION:
+    case CONTROL_PAR_VALUE:
+    case CONTROL_PAR_HUE_OFFSET:
+    case CONTROL_PAR_SATURATION: return levelOf(value);
+    case CONTROL_PAR_HUE_RANGE: return signedOf(value) * 128.0f;
 
-    case CC_SCATTER_COUNT: return smoothCountOf(value);
-    case CC_FIELD_COUNT: return fieldCountOf(value);
+    case CONTROL_SCATTER_COUNT: return smoothCountOf(value);
+    case CONTROL_FIELD_COUNT: return fieldCountOf(value);
 
-    case CC_CELL_BEND:
-    case CC_CELL_CURVE:
-    case CC_ARP_SPREAD: return signedOf(value);
-    case CC_CELL_BEND_AT:
-    case CC_CELL_CURVE_AT: return 0.5f + 0.5f * signedOf(value);
-    case CC_CELL_POSITION: return positionOf(value);
-    case CC_CELL_DELAY: return delayOf(value);
-    case CC_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
-    case CC_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
-    case CC_CELL_RATE: return cellRateBeatsOf(value);
-    case CC_CELL_GATE: return gateBeatsOf(value);
-    case CC_CELL_CHORD: return chordOf(value);
-    case CC_SCATTER_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
-    case CC_LFO_RATE: return aurora_lfo_period(roundedControl(value));
+    case CONTROL_CELL_BEND:
+    case CONTROL_CELL_CURVE: return signedOf(value);
+    case CONTROL_ARP_SPREAD: return unitOf(value);
+    case CONTROL_CELL_BEND_AT:
+    case CONTROL_CELL_CURVE_AT: return 0.5f + 0.5f * signedOf(value);
+    case CONTROL_CELL_POSITION: return positionOf(value);
+    case CONTROL_CELL_DELAY: return delayOf(value);
+    case CONTROL_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
+    case CONTROL_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
+    case CONTROL_CELL_RATE: return cellRateBeatsOf(value);
+    case CONTROL_CELL_GATE: return gateBeatsOf(value);
+    case CONTROL_CELL_CHORD: return chordOf(value);
+    case CONTROL_SCATTER_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
+    case CONTROL_LFO_RATE: return aurora_lfo_period(roundedControl(value));
 
-    case CC_FIELD_HUE: return signedOf(value) * FIELD_MAX_HUE;
-    case CC_FIELD_SPEED: return lapsPerBeatOf(value);
-    case CC_FIELD_POSITION: return signedOf(value) * 0.5f;
-    case CC_FLOW_HUE: return signedOf(value) * FLOW_MAX_HUE;
-    case CC_FLOW_RATE: return flowCyclesPerBeatOf(value);
-    case CC_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
-    case CC_CORE_HUE: return signedOf(value) * CORE_MAX_HUE;
-    case CC_SCATTER_RATE: return 1.0f / aurora_lfo_period(roundedControl(value));
-    case CC_SCATTER_HUE: return signedOf(value) * SCATTER_MAX_HUE;
+    case CONTROL_FIELD_HUE: return signedOf(value) * FIELD_MAX_HUE;
+    case CONTROL_FIELD_SPEED: return lapsPerBeatOf(value);
+    case CONTROL_FIELD_POSITION: return signedOf(value) * 0.5f;
+    case CONTROL_FLOW_HUE: return signedOf(value) * FLOW_MAX_HUE;
+    case CONTROL_FLOW_RATE: return flowCyclesPerBeatOf(value);
+    case CONTROL_FLOW_DENSITY: return 0.12f * powf(180.0f, unitOf(value));
+    case CONTROL_CORE_HUE: return signedOf(value) * CORE_MAX_HUE;
+    case CONTROL_SCATTER_RATE: return 1.0f / aurora_lfo_period(roundedControl(value));
+    case CONTROL_SCATTER_HUE: return signedOf(value) * SCATTER_MAX_HUE;
 
-    case CC_SCATTER_POSITION: return signedOf(value);
+    case CONTROL_SCATTER_POSITION: return signedOf(value);
 
-    case CC_CELL_TAIL: return tailBeatsOf(value);
+    case CONTROL_CELL_TAIL: return tailBeatsOf(value);
 
-    case CC_CELL_BRIGHTNESS:
-    case CC_CELL_SPREAD:
-    case CC_ENVELOPE_1_SUSTAIN:
-    case CC_ENVELOPE_2_SUSTAIN:
-    case CC_ENVELOPE_3_SUSTAIN:
-    case CC_FIELD_WIDTH:
-    case CC_FIELD_EDGE:
-    case CC_FIELD_WHITE:
-    case CC_FIELD_DARK:
-    case CC_FLOW_WHITE:
-    case CC_FLOW_DARK:
-    case CC_CORE_WHITE:
-    case CC_CORE_DARK:
-    case CC_SCATTER_SATURATION:
-    case CC_SCATTER_VALUE:
-    case CC_SCATTER_MIX:
-    case CC_SCATTER_WIDTH:
-    case CC_SCATTER_EDGE:
-    case CC_SCATTER_RANDOMIZE: return unitOf(value);
+    case CONTROL_CELL_BRIGHTNESS:
+    case CONTROL_CELL_SPREAD:
+    case CONTROL_ENVELOPE_1_SUSTAIN:
+    case CONTROL_ENVELOPE_2_SUSTAIN:
+    case CONTROL_ENVELOPE_3_SUSTAIN:
+    case CONTROL_FIELD_WIDTH:
+    case CONTROL_FIELD_EDGE:
+    case CONTROL_FIELD_WHITE:
+    case CONTROL_FIELD_DARK:
+    case CONTROL_FLOW_WHITE:
+    case CONTROL_FLOW_DARK:
+    case CONTROL_CORE_WHITE:
+    case CONTROL_CORE_DARK:
+    case CONTROL_SCATTER_SATURATION:
+    case CONTROL_SCATTER_VALUE:
+    case CONTROL_SCATTER_MIX:
+    case CONTROL_SCATTER_WIDTH:
+    case CONTROL_SCATTER_EDGE:
+    case CONTROL_SCATTER_RANDOMIZE: return unitOf(value);
 
     default: return value;
   }
 }
 
 void readControls(const float *dialed, const Modulation *modulation, Reading &out) {
-  auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, modulation, cc)); };
+  auto at = [&](uint8_t control) { return controlValue(control, routed(dialed, modulation, control)); };
 
   Cells &cells = out.cells;
-  cells.rateBeats = at(CC_CELL_RATE);
-  cells.chord = (uint8_t)at(CC_CELL_CHORD);
-  cells.spread = at(CC_CELL_SPREAD);
-  cells.outside = aurora_switch_is_on(roundedControl(dialed[CC_CELL_ENDS]));
-  cells.delay = at(CC_CELL_DELAY);
-  cells.gateBeats = at(CC_CELL_GATE);
-  cells.end = aurora_three_way_position(roundedControl(dialed[CC_CELL_END]));
-  cells.width = at(CC_CELL_WIDTH);
-  cells.edge = at(CC_CELL_EDGE);
-  cells.tailBeats = at(CC_CELL_TAIL);
-  cells.position = at(CC_CELL_POSITION);
-  cells.bend = at(CC_CELL_BEND);
-  cells.bendAt = at(CC_CELL_BEND_AT);
-  cells.brightness = at(CC_CELL_BRIGHTNESS);
-  cells.curve = at(CC_CELL_CURVE);
-  cells.curveAt = at(CC_CELL_CURVE_AT);
-  cells.direction = aurora_four_way_position(roundedControl(dialed[CC_CELL_DIRECTION]));
+  cells.rateBeats = at(CONTROL_CELL_RATE);
+  cells.chord = (uint8_t)at(CONTROL_CELL_CHORD);
+  cells.spread = at(CONTROL_CELL_SPREAD);
+  cells.outside = aurora_switch_is_on(roundedControl(dialed[CONTROL_CELL_ENDS]));
+  cells.delay = at(CONTROL_CELL_DELAY);
+  cells.gateBeats = at(CONTROL_CELL_GATE);
+  cells.end = aurora_three_way_position(roundedControl(dialed[CONTROL_CELL_END]));
+  cells.width = at(CONTROL_CELL_WIDTH);
+  cells.edge = at(CONTROL_CELL_EDGE);
+  cells.tailBeats = at(CONTROL_CELL_TAIL);
+  cells.position = at(CONTROL_CELL_POSITION);
+  cells.bend = at(CONTROL_CELL_BEND);
+  cells.bendAt = at(CONTROL_CELL_BEND_AT);
+  cells.brightness = at(CONTROL_CELL_BRIGHTNESS);
+  cells.curve = at(CONTROL_CELL_CURVE);
+  cells.curveAt = at(CONTROL_CELL_CURVE_AT);
+  cells.direction = aurora_four_way_position(roundedControl(dialed[CONTROL_CELL_DIRECTION]));
   for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
     Envelope &stages = cells.envelopes[envelope];
-    stages.delay = at(aurora_envelope_cc(envelope, ENVELOPE_DELAY));
-    stages.attack = at(aurora_envelope_cc(envelope, ENVELOPE_ATTACK));
-    stages.hold = at(aurora_envelope_cc(envelope, ENVELOPE_HOLD));
-    stages.decay = at(aurora_envelope_cc(envelope, ENVELOPE_DECAY));
-    stages.sustain = at(aurora_envelope_cc(envelope, ENVELOPE_SUSTAIN));
-    stages.release = at(aurora_envelope_cc(envelope, ENVELOPE_RELEASE));
-    stages.stepped = aurora_switch_is_on(roundedControl(dialed[aurora_envelope_moves_cc(envelope)]));
+    stages.delay = at(aurora_envelope_control(envelope, ENVELOPE_DELAY));
+    stages.attack = at(aurora_envelope_control(envelope, ENVELOPE_ATTACK));
+    stages.hold = at(aurora_envelope_control(envelope, ENVELOPE_HOLD));
+    stages.decay = at(aurora_envelope_control(envelope, ENVELOPE_DECAY));
+    stages.sustain = at(aurora_envelope_control(envelope, ENVELOPE_SUSTAIN));
+    stages.release = at(aurora_envelope_control(envelope, ENVELOPE_RELEASE));
+    stages.stepped = aurora_switch_is_on(roundedControl(dialed[aurora_envelope_moves_control(envelope)]));
   }
 
-  out.lfoBeats = at(CC_LFO_RATE);
+  out.lfoBeats = at(CONTROL_LFO_RATE);
 
   Field &field = out.field;
-  field.form = aurora_three_way_position(roundedControl(dialed[CC_FIELD_FORM]));
-  field.direction = aurora_four_way_position(roundedControl(dialed[CC_FIELD_DIRECTION]));
-  field.hue = at(CC_FIELD_HUE);
-  field.white = at(CC_FIELD_WHITE);
-  field.dark = at(CC_FIELD_DARK);
-  field.width = at(CC_FIELD_WIDTH);
-  field.edge = at(CC_FIELD_EDGE);
-  field.count = at(CC_FIELD_COUNT);
-  field.cellsPerBeat = at(CC_FIELD_SPEED);
-  field.position = at(CC_FIELD_POSITION);
+  field.form = aurora_three_way_position(roundedControl(dialed[CONTROL_FIELD_FORM]));
+  field.direction = aurora_four_way_position(roundedControl(dialed[CONTROL_FIELD_DIRECTION]));
+  field.hue = at(CONTROL_FIELD_HUE);
+  field.white = at(CONTROL_FIELD_WHITE);
+  field.dark = at(CONTROL_FIELD_DARK);
+  field.width = at(CONTROL_FIELD_WIDTH);
+  field.edge = at(CONTROL_FIELD_EDGE);
+  field.count = at(CONTROL_FIELD_COUNT);
+  field.cellsPerBeat = at(CONTROL_FIELD_SPEED);
+  field.position = at(CONTROL_FIELD_POSITION);
 
   Flow &flow = out.flow;
-  flow.hue = at(CC_FLOW_HUE);
-  flow.white = at(CC_FLOW_WHITE);
-  flow.dark = at(CC_FLOW_DARK);
-  flow.cyclesPerBeat = at(CC_FLOW_RATE);
-  flow.density = at(CC_FLOW_DENSITY);
+  flow.hue = at(CONTROL_FLOW_HUE);
+  flow.white = at(CONTROL_FLOW_WHITE);
+  flow.dark = at(CONTROL_FLOW_DARK);
+  flow.cyclesPerBeat = at(CONTROL_FLOW_RATE);
+  flow.density = at(CONTROL_FLOW_DENSITY);
 
   Core &core = out.core;
-  core.hue = at(CC_CORE_HUE);
-  core.white = at(CC_CORE_WHITE);
-  core.dark = at(CC_CORE_DARK);
+  core.hue = at(CONTROL_CORE_HUE);
+  core.white = at(CONTROL_CORE_WHITE);
+  core.dark = at(CONTROL_CORE_DARK);
 
   Scatter &scatter = out.scatter;
-  scatter.rate = at(CC_SCATTER_RATE);
-  scatter.count = at(CC_SCATTER_COUNT);
-  scatter.width = at(CC_SCATTER_WIDTH);
-  scatter.edge = at(CC_SCATTER_EDGE);
-  scatter.randomize = at(CC_SCATTER_RANDOMIZE);
-  scatter.speed = at(CC_SCATTER_SPEED);
-  scatter.mix = at(CC_SCATTER_MIX);
+  scatter.rate = at(CONTROL_SCATTER_RATE);
+  scatter.count = at(CONTROL_SCATTER_COUNT);
+  scatter.width = at(CONTROL_SCATTER_WIDTH);
+  scatter.edge = at(CONTROL_SCATTER_EDGE);
+  scatter.randomize = at(CONTROL_SCATTER_RANDOMIZE);
+  scatter.speed = at(CONTROL_SCATTER_SPEED);
+  scatter.mix = at(CONTROL_SCATTER_MIX);
 
   out.color = routedColor(dialed, modulation);
 }
 
 Hsv routedColor(const float *dialed, const Modulation *modulation) {
-  auto at = [&](uint8_t cc) { return controlValue(cc, routed(dialed, modulation, cc)); };
-  return { at(CC_HUE), at(CC_SATURATION), FULL_LEVEL };
+  auto at = [&](uint8_t control) { return controlValue(control, routed(dialed, modulation, control)); };
+  return { at(CONTROL_HUE), at(CONTROL_SATURATION), FULL_LEVEL };
 }
 
 void hurry(Reading &reading, float speed) {

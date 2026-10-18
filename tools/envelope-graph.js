@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as Patch from './patch.js';
 import { Preview } from './preview.js';
 
@@ -7,7 +7,7 @@ const SUSTAIN_SHOWN = 1.25;
 const PADDING = 5;
 const OVERHANG = 10;
 
-const beatsOf = (live, name) => Preview.convert(Patch.CC[name], live[name]);
+const beatsOf = (live, name) => Preview.convert(Patch.NUMBER[name], live[name]);
 const endOf = live => Protocol.threeWayPosition(live.cellEnd);
 
 function beatsShown(live, envelope) {

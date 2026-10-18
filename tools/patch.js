@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import { Preview } from './preview.js';
 
 
@@ -8,7 +8,7 @@ const LAYERS_ABOVE_BASE = [Protocol.PATCH_LAYER_COLOR, Protocol.PATCH_LAYER_MOTI
 const LAYERS = [Protocol.PATCH_LAYER_BASE, ...LAYERS_ABOVE_BASE];
 const isAboveBase = layer => layer !== Protocol.PATCH_LAYER_BASE;
 
-const CC = Object.assign({}, Protocol.CC);
+const NUMBER = Object.assign({}, Protocol.NUMBER);
 
 const ROUTE_FIELDS = Object.keys(Protocol.ROUTE_FIELD);
 const ROUTE_CONTROL_ORDER = ['amount', 'ratio', 'wave', 'smooth', 'phase', 'hold'];
@@ -19,7 +19,7 @@ const ROUTES = Array.from({ length: Protocol.ROUTES }, (_, route) => {
   const names = {};
   for (const field of ROUTE_FIELDS) {
     names[field] = routeName(route, field);
-    CC[names[field]] = Protocol.routeCC(route, Protocol.ROUTE_FIELD[field]);
+    NUMBER[names[field]] = Protocol.routeNumber(route, Protocol.ROUTE_FIELD[field]);
   }
   return Object.assign({
     name: 'Route ' + (route + 1),
@@ -31,11 +31,7 @@ const ROUTE_FIELD_NAMES = ROUTES.flatMap(route => route.fields);
 const routeOf = name => ROUTES.find(route => route.fields.includes(name));
 
 const NAMES = Protocol.tagged('patch').concat(Protocol.tagged('switch'), ROUTE_FIELD_NAMES)
-  .sort((a, b) => CC[a] - CC[b]);
-const SWITCHES = new Set(Protocol.tagged('switch')
-  .concat(ROUTES.flatMap(route => [route.destination, route.hold, route.polarity])));
-const isSwitch = name => SWITCHES.has(name);
-const CONTINUOUS = NAMES.filter(name => !isSwitch(name));
+  .sort((a, b) => NUMBER[a] - NUMBER[b]);
 
 const clampToSevenBits = value => (value < 0 ? 0 : value > 127 ? 127 : value | 0);
 
@@ -43,15 +39,15 @@ class Controls {
   constructor(bytes) { this.bytes = bytes; }
   copy() { return new Controls(this.bytes.slice()); }
 }
-for (const name of Object.keys(CC)) {
+for (const name of Object.keys(NUMBER)) {
   Object.defineProperty(Controls.prototype, name, {
-    get() { return this.bytes[CC[name]] | 0; },
-    set(value) { this.bytes[CC[name]] = clampToSevenBits(value); },
+    get() { return this.bytes[NUMBER[name]] | 0; },
+    set(value) { this.bytes[NUMBER[name]] = clampToSevenBits(value); },
   });
 }
 const controls = bytes => new Controls(bytes);
 
-const real = (name, value) => Preview.convert(CC[name], value);
+const real = (name, value) => Preview.convert(NUMBER[name], value);
 
 const percent = ratio => (ratio * 100).toFixed(0) + '%';
 const sign = ratio => (ratio < 0 ? '−' : '+');
@@ -115,7 +111,7 @@ const waveText = value => {
   return at === value ? name : `${WAVE_NAMES[next - 1][1]} → ${name}`;
 };
 
-const perSpot = destination => Preview.spotDestination(Protocol.routeTarget(destination));
+const perSpot = destination => Preview.spotDestination(destination);
 
 const cycleBeats = (live, route, ratioValue, oneshotBeats) => {
   const settings = live || DEFAULT;
@@ -285,8 +281,7 @@ const READOUTS = {
   parHueOffset: value => '+' + degrees(real('parHueOffset', value)),
   arpSpread: (value, live) => {
     const mode = (live || DEFAULT).arpMode;
-    const pace = `${Math.round(Preview.arpPassLength(mode) / Preview.arpTurnsPerPass(mode, value) * 100) / 100} a cycle`;
-    return Preview.arpReversed(mode, value) ? '← ' + pace : pace;
+    return `${Math.round(Preview.arpPassLength(mode) / Preview.arpTurnsPerPass(mode, value) * 100) / 100} a cycle`;
   },
   parHueRange: value => {
     const reach = Math.round(real('parHueRange', value));
@@ -313,7 +308,7 @@ for (const [name, readout] of Object.entries(READOUTS)) {
   READOUTS[name] = (value, live, oneshotBeats) => inPulses(readout(value, live, oneshotBeats), live);
 }
 
-const DEFAULT = controls(new Array(Protocol.PATCH_CC_COUNT).fill(0));
+const DEFAULT = controls(new Array(Protocol.PATCH_CONTROLS).fill(0));
 for (const name of NAMES) DEFAULT[name] = Protocol.CONTROL_DEFAULTS[name] || 0;
 for (const route of ROUTES) {
   for (const field of ROUTE_FIELDS) DEFAULT[route[field]] = Protocol.ROUTE_DEFAULTS[field];
@@ -330,13 +325,13 @@ const threeWayOptions = (positions, labels) =>
   Object.entries(positions).map(([key, position]) => [Protocol.threeWayValue(position), labels[key]]);
 
 const aimsAt = (live, aimed, phase) => ROUTES.filter(route =>
-  live[route.destination] === Protocol.aimDestination(ROUTES.indexOf(aimed), phase)
+  live[route.destination] === NUMBER[phase ? aimed.phase : aimed.amount]
   && live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount);
 const sounding = (live, route) => live[route.destination] !== 0
   && (live[route.amount] !== Protocol.ROUTE_DEFAULTS.amount || aimsAt(live, route, false).length > 0);
 const soundingRoutes = live => ROUTES.filter(route => sounding(live, route));
 const routedTo = (live, names) =>
-  soundingRoutes(live).some(route => names.some(name => Protocol.routeTarget(live[route.destination]) === CC[name]));
+  soundingRoutes(live).some(route => names.some(name => live[route.destination] === NUMBER[name]));
 
 const nothingTravels = live => !routedTo(live, ['cellPosition']);
 const inertWhileStill = { inertWhen: nothingTravels };
@@ -344,7 +339,7 @@ const bendIsFlat = live => Math.abs(real('cellBend', live.cellBend)) < 0.005 && 
 const endsAs = (live, end) => Protocol.threeWayPosition(live.cellEnd) === Protocol.CELL_END[end];
 const curveIsFlat = live => Math.abs(real('cellCurve', live.cellCurve)) < 0.005 && !routedTo(live, ['cellCurve']);
 const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route =>
-  Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`]);
+  Protocol.routeSource(live[route.source]) === Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`]);
 
 const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
   name: `Envelope ${envelope + 1}`, tone: 'lfo', envelope,
@@ -399,24 +394,15 @@ const CELLS = {
   ],
 };
 
-const fromLfo = (live, route) => Protocol.routeSource(live[route.ratio]) === Protocol.ROUTE_SOURCE.lfo;
-const holdable = (live, route) => fromLfo(live, route)
-  && Preview.cellControl(Protocol.routeTarget(live[route.destination]));
+const fromLfo = (live, route) => Protocol.routeSource(live[route.source]) === Protocol.ROUTE_SOURCE.lfo;
+const holdable = (live, route) => fromLfo(live, route) && Preview.cellControl(live[route.destination]);
 const fromGroup = (live, route) => [Protocol.ROUTE_SOURCE.strip, Protocol.ROUTE_SOURCE.note, Protocol.ROUTE_SOURCE.birth]
-  .includes(Protocol.routeSource(live[route.ratio]));
+  .includes(Protocol.routeSource(live[route.source]));
 
 for (const route of ROUTES) {
   const offLfo = { inertWhen: live => !fromLfo(live, route) };
   control(route.amount, 'Amount');
-  control(route.ratio, 'Ratio', {
-    ...offLfo,
-    positions: {
-      count: Protocol.ROUTE_MAX_RATIO,
-      positionOf: value => Protocol.routeRatio(value) - 1,
-      valueAt: (position, live) => (fromLfo(live, route)
-        ? Protocol.routeRatioValue(position + 1, Protocol.routeOnce(live[route.ratio])) : live[route.ratio]),
-    },
-  });
+  control(route.ratio, 'Ratio', offLfo);
   control(route.wave, 'Wave', offLfo);
   control(route.smooth, 'Smooth', offLfo);
   control(route.phase, 'Phase', offLfo);
@@ -431,8 +417,9 @@ const ARP_MODE_NAMES = {
   pairs: 'pairs', mirror: 'mirror', random: 'random',
 };
 
-const arpRouted = live =>
-  soundingRoutes(live).some(route => Protocol.routeArp(live[route.destination]) !== Protocol.ARP.unison);
+const arpeggiates = (live, route) => Protocol.routeArp(live[route.arp]) !== Protocol.ARP.unison
+  && Preview.arpCapable(live[route.destination]);
+const arpRouted = live => soundingRoutes(live).some(route => arpeggiates(live, route));
 
 const LFO = {
   name: 'LFO', tone: 'lfo',
@@ -444,6 +431,9 @@ const LFO = {
         options: Object.entries(Protocol.ARP_MODE)
           .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]),
         inertWhen: live => !arpRouted(live) }),
+    control('arpDirection', 'Direction',
+      { kind: 'two', options: [[OFF, 'forward'], [ON, 'reverse']],
+        inertWhen: live => !arpRouted(live) || Protocol.arpMode(live.arpMode) === Protocol.ARP_MODE.random }),
     control('arpSpread', 'Spread',
       { inertWhen: live => !arpRouted(live) }),
   ],
@@ -596,23 +586,16 @@ for (const route of ROUTES) {
   }
 }
 
-const ROUTABLE = new Set(Protocol.tagged('patch').filter(name => CONTROLS[name] && !Preview.routeRefused(CC[name]))
+const ROUTABLE = new Set(Protocol.tagged('patch').filter(name => CONTROLS[name] && !Preview.routeRefused(NUMBER[name]))
   .concat(ROUTES.flatMap(route => [route.amount, route.phase])));
 const routable = name => ROUTABLE.has(name);
-const targetName = destination => {
-  const aimed = Protocol.aimedRoute(destination);
-  if (aimed >= 0) return Protocol.aimsPhase(destination) ? ROUTES[aimed].phase : ROUTES[aimed].amount;
-  return Protocol.NAME_BY_CC[Protocol.routeTarget(destination)] || null;
-};
-const destinationOf = name => {
-  const route = routeOf(name);
-  if (route) return Protocol.aimDestination(ROUTES.indexOf(route), name === route.phase);
-  return CC[name];
-};
-const aimsRoute = destination => Protocol.aimedRoute(destination) >= 0;
+const NAME_BY_NUMBER = Object.fromEntries(Object.entries(NUMBER).map(([name, number]) => [number, name]));
+const targetName = destination => (destination ? NAME_BY_NUMBER[destination] || null : null);
+const destinationOf = name => NUMBER[name];
+const aimsRoute = destination => ROUTES.some(route => destination === NUMBER[route.amount] || destination === NUMBER[route.phase]);
 const routableDestination = number => number === 0 || routable(targetName(number));
-const arpCapable = name => Protocol.routeDestination(CC[name], Protocol.ARP.steps) !== CC[name];
-const bipolarCapable = name => !routeOf(name) && Protocol.bipolarCapable(CC[name]);
+const arpCapable = name => Preview.arpCapable(NUMBER[name]);
+const bipolarCapable = name => !routeOf(name) && Protocol.bipolarCapable(NUMBER[name]);
 const isCircular = name => Protocol.hasTag(name, 'circular');
 const swings = name => Protocol.hasTag(name, 'rate');
 
@@ -664,10 +647,10 @@ function pointsFor(name) {
 
 export {
   LAYER_NAMES, LAYERS, LAYERS_ABOVE_BASE, isAboveBase,
-  CC, NAMES, CONTINUOUS, isSwitch, controls, CONTROLS, READOUTS, DEFAULT,
+  NUMBER, NAMES, controls, CONTROLS, READOUTS, DEFAULT,
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
   CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
-  fromLfo, fromGroup, holdable, sounding, aimsAt, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
+  fromLfo, fromGroup, arpeggiates, holdable, sounding, aimsAt, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
   arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

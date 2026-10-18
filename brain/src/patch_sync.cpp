@@ -1,6 +1,7 @@
 #include "patch_sync.h"
 
 #include <Arduino.h>
+#include <string.h>
 
 #include "aurora_protocol.h"
 #include "patch_store.h"
@@ -12,6 +13,8 @@ const uint16_t REPLY_MAX = AURORA_SYSEX_FRAME_LENGTH + 1 + AURORA_ONESHOT_LENGTH
 uint8_t reply[REPLY_MAX];
 
 uint8_t pendingError = SYSEX_OK;
+
+playback::Patch dialing;
 
 void send(uint8_t type, const uint8_t *payload, uint16_t payloadLength) {
     reply[0] = 0xF0;
@@ -51,7 +54,7 @@ void sendLibraryInfo() {
 }
 
 void sendPatch(uint8_t slot) {
-    uint8_t payload[2 + AURORA_PATCH_CC_COUNT];
+    uint8_t payload[2 + AURORA_PATCH_CONTROLS];
 
     payload[0] = slot;
     if (!patch_store::readHead(slot, payload + 1)) {
@@ -67,7 +70,7 @@ void sendPatch(uint8_t slot) {
             ack(SYSEX_QUERY_PATCH, SYSEX_ERROR_STORAGE);
             return;
         }
-        send(SYSEX_PATCH_LAYER_OUT, payload, 2 + AURORA_PATCH_CC_COUNT);
+        send(SYSEX_PATCH_LAYER_OUT, payload, 2 + AURORA_PATCH_CONTROLS);
     }
 }
 
@@ -118,7 +121,7 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
         }
 
         case SYSEX_PATCH_LAYER: {
-            if (payloadLength != 2 + AURORA_PATCH_CC_COUNT) {
+            if (payloadLength != 2 + AURORA_PATCH_CONTROLS) {
                 fail(type, SYSEX_ERROR_RANGE);
                 return;
             }
@@ -161,7 +164,31 @@ void onSysEx(const uint8_t *data, uint16_t length, bool complete) {
             return;
 
         case SYSEX_PIN:
-            if (payloadLength == AURORA_PATCH_CC_COUNT) player::get().pin(payload);
+            if (payloadLength == AURORA_PATCH_CONTROLS) player::get().pin(payload);
+            return;
+
+        case SYSEX_DIAL_LAYER:
+            if (payloadLength == 1 + AURORA_PATCH_CONTROLS && payload[0] < AURORA_PATCH_LAYERS) {
+                memcpy(dialing.layers[payload[0]], payload + 1, AURORA_PATCH_CONTROLS);
+            }
+            return;
+
+        case SYSEX_DIAL:
+            if (payloadLength != 6) return;
+            dialing.transitionTime = payload[2];
+            dialing.accentTime = payload[3];
+            dialing.oneshots[0] = payload[4];
+            dialing.oneshots[1] = payload[5];
+            player::get().dial(dialing, payload[0], payload[1] != 0);
+            return;
+
+        case SYSEX_PIN_LAYER:
+            if (payloadLength != 3 + AURORA_PATCH_CONTROLS) return;
+            player::get().pinLayer(payload + 3, payload[0], (uint16_t)((payload[1] << 7) | payload[2]));
+            return;
+
+        case SYSEX_UNPIN:
+            player::get().unpin();
             return;
 
         case SYSEX_QUERY_ONESHOT:

@@ -27,15 +27,15 @@ static void defaultPatch(Patch &out) {
   out.accentTime = 0;
   out.oneshots[0] = out.oneshots[1] = AURORA_NO_ONESHOT;
   uint8_t *base = out.layers[PATCH_LAYER_BASE];
-  memset(base, 0, AURORA_PATCH_CC_COUNT);
-  for (const AuroraControlDefault &control : AURORA_CONTROL_DEFAULTS) base[control.cc] = control.value;
+  memset(base, 0, AURORA_PATCH_CONTROLS);
+  for (const AuroraControlDefault &entry : AURORA_CONTROL_DEFAULTS) base[entry.control] = entry.value;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
     for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
-      base[aurora_route_cc(route, field)] = AURORA_ROUTE_DEFAULTS[field];
+      base[aurora_route_control(route, field)] = AURORA_ROUTE_DEFAULTS[field];
     }
   }
   for (uint8_t layer = PATCH_LAYER_BASE + 1; layer < AURORA_PATCH_LAYERS; layer++) {
-    memcpy(out.layers[layer], base, AURORA_PATCH_CC_COUNT);
+    memcpy(out.layers[layer], base, AURORA_PATCH_CONTROLS);
   }
 }
 
@@ -80,8 +80,7 @@ void Playback::controlChange(uint8_t cc, uint8_t value) {
     case CC_FADER_MOTION: moveFader(PATCH_LAYER_MOTION, value); return;
     case CC_FADER_EXTENT: moveFader(PATCH_LAYER_EXTENT, value); return;
     default:
-      if (movePad(cc, value)) return;
-      if (cc < AURORA_PATCH_CC_COUNT) playing.layers[PATCH_LAYER_BASE][cc] = value;
+      movePad(cc, value);
   }
 }
 
@@ -345,13 +344,13 @@ void Playback::advance(float beats) {
 }
 
 void Playback::computeLive(float beats, float *out) const {
-  float base[AURORA_PATCH_CC_COUNT];
+  float base[AURORA_PATCH_CONTROLS];
   render::controlsOf(playing.layers[PATCH_LAYER_BASE], base);
   const float *switches = switchesLanded ? base : from;
   render::blendPatches(from, base, morph.at(beats), switches, !switchesLanded, out);
   const float pushed = accent.at(beats);
   if (pushed > 0.0f) {
-    float accentLayer[AURORA_PATCH_CC_COUNT];
+    float accentLayer[AURORA_PATCH_CONTROLS];
     render::controlsOf(playing.layers[PATCH_LAYER_ACCENT], accentLayer);
     render::blendPatches(base, accentLayer, pushed, switches, false, out);
   }
@@ -373,6 +372,14 @@ void Playback::cutTo(const Patch &patch, uint8_t slot) {
   render::restartCells(wall);
 }
 
+void Playback::dial(const Patch &patch, uint8_t slot, bool cut) {
+  if (cut || slot != playingSlot) {
+    cutTo(patch, slot);
+    return;
+  }
+  playing = patch;
+}
+
 void Playback::patchChanged(uint8_t slot) {
   if (slot == PROGRAM_BLACKOUT || slot != playingSlot || !library.patch(slot, arriving)) return;
   playing.transitionTime = arriving.transitionTime;
@@ -380,28 +387,47 @@ void Playback::patchChanged(uint8_t slot) {
   playing.oneshots[0] = arriving.oneshots[0];
   playing.oneshots[1] = arriving.oneshots[1];
   for (uint8_t layer = PATCH_LAYER_BASE + 1; layer < AURORA_PATCH_LAYERS; layer++) {
-    memcpy(playing.layers[layer], arriving.layers[layer], AURORA_PATCH_CC_COUNT);
+    memcpy(playing.layers[layer], arriving.layers[layer], AURORA_PATCH_CONTROLS);
   }
 }
 
 void Playback::pin(const uint8_t *controls) {
   render::controlsOf(controls, pinnedControls);
+  render::silenceRenderRoutes(pinnedControls);
   pinned = true;
+  pinnedMix = false;
+}
+
+void Playback::pinLayer(const uint8_t *layer, uint8_t index, uint16_t steps) {
+  if (index <= PATCH_LAYER_BASE || index >= AURORA_PATCH_LAYERS) return;
+  const uint8_t *base = playing.layers[PATCH_LAYER_BASE];
+  for (uint8_t each = 0; each < AURORA_PATCH_LAYERS; each++) {
+    memcpy(pinnedLayers[each], each == index ? layer : base, AURORA_PATCH_CONTROLS);
+    pinnedPositions[each] = each == index ? (float)steps / (float)AURORA_PIN_POSITION_STEPS : 0.0f;
+  }
+  pinned = true;
+  pinnedMix = true;
 }
 
 const render::Frame &Playback::frame(uint32_t micros) {
   const float beats = tempo.beatsAt(micros);
   advance(beats);
   lastBeats = beats;
-  float live[AURORA_PATCH_CC_COUNT];
+  float live[AURORA_PATCH_CONTROLS];
   computeLive(beats, live);
 
   render::OneshotClock clock = { 0.0f, 1.0f };
   uint8_t level = 255;
-  if (pinned) {
+  if (pinned && pinnedMix) {
+    float base[AURORA_PATCH_CONTROLS];
+    render::controlsOf(pinnedLayers[PATCH_LAYER_BASE], base);
+    float mixed[render::RENDER_CONTROL_COUNT];
+    render::mixLayers(base, pinnedLayers, pinnedPositions, mixed);
+    render::composeOneshot(mixed, nullptr, nullptr, 1.0f, composed);
+  } else if (pinned) {
     render::composeOneshot(pinnedControls, nullptr, nullptr, 1.0f, composed);
   } else {
-    float mixed[AURORA_PATCH_CC_COUNT];
+    float mixed[render::RENDER_CONTROL_COUNT];
     render::mixLayers(live, playing.layers, faders, mixed);
     const float lengthBeats = aurora_lfo_period(oneshot.length);
     if (firing) {

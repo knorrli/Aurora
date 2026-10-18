@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 
 
 const KIND = 'patch library';
@@ -79,8 +79,8 @@ function validatePatch(patch, where) {
   }
   for (let layer = 0; layer < Protocol.PATCH_LAYERS; layer++) {
     const bytes = patch.layers[layer];
-    if (!Array.isArray(bytes) || bytes.length !== Protocol.PATCH_CC_COUNT) {
-      return `${where} layer ${layer} is not ${Protocol.PATCH_CC_COUNT} bytes`;
+    if (!Array.isArray(bytes) || bytes.length !== Protocol.PATCH_CONTROLS) {
+      return `${where} layer ${layer} is not ${Protocol.PATCH_CONTROLS} bytes`;
     }
     if (!bytes.every(isSevenBit)) return `${where} layer ${layer} holds something that is not a 7-bit value`;
   }
@@ -94,9 +94,9 @@ function validateOneshot(oneshot, where) {
     return `${where} needs a name of up to ${Protocol.PATCH_NAME_LENGTH} printable ASCII characters`;
   }
   if (!isSevenBit(oneshot.length)) return `${where} needs a length of 0–127`;
-  if (!Array.isArray(oneshot.bytes) || oneshot.bytes.length !== Protocol.PATCH_CC_COUNT
+  if (!Array.isArray(oneshot.bytes) || oneshot.bytes.length !== Protocol.PATCH_CONTROLS
       || !oneshot.bytes.every(isSevenBit)) {
-    return `${where} is not ${Protocol.PATCH_CC_COUNT} 7-bit values`;
+    return `${where} is not ${Protocol.PATCH_CONTROLS} 7-bit values`;
   }
   if (!Array.isArray(oneshot.marks) || !oneshot.marks.every(isSevenBit)) return `${where} marks something that is not a CC`;
   return null;
@@ -249,8 +249,8 @@ function oneshotFromBytes(index, bytes) {
     index,
     name: nameFrom(bytes.slice(1, marksAt)),
     length: bytes[0],
-    marks: indexesInMap(bytes.slice(marksAt, controlsAt), Protocol.PATCH_CC_COUNT),
-    bytes: bytes.slice(controlsAt, controlsAt + Protocol.PATCH_CC_COUNT),
+    marks: indexesInMap(bytes.slice(marksAt, controlsAt), Protocol.PATCH_CONTROLS),
+    bytes: bytes.slice(controlsAt, controlsAt + Protocol.PATCH_CONTROLS),
   };
 }
 

@@ -14,14 +14,14 @@ The Arduino Nano rig it replaces is at the tag `aurora-nano-final`.
 
 ## MIDI
 
-Channel 1 only. Program Changes 1–108 recall patches, 0 is the blackout, 109–127 are songs. Note 57 holds a key, notes 58–79 fire oneshots, CCs carry every control, MIDI clock carries tempo.
+Channel 1 only. Program Changes 1–108 recall patches, 0 is the blackout, 109–127 are songs. Note 57 holds a key, notes 58–79 fire oneshots, CCs carry the layer faders and the pad, MIDI clock carries tempo. Patches and the controls inside them travel as SysEx.
 
 ## Commands
 
 ```bash
 cd brain && pio run -t upload        # flash the brain
 node tools/build-render.mjs          # after changing shared/render/ or shared/playback/
-node tools/gen-cc.mjs                # after changing shared/aurora_protocol.h
+node tools/gen-controls.mjs          # after changing shared/aurora_protocol.h
 python3 -m http.server   # from the repo root, then open http://localhost:8000/tools/editor.html in Chrome
 ```
 

@@ -13,26 +13,26 @@ static bool pushesColor(float hue, float white, float dark) {
   return fabsf(hue) > 0.5f || fabsf(white) > 0.001f || fabsf(dark) > 0.001f;
 }
 
-uint8_t engineOf(uint8_t cc) {
-  if (cc >= CC_CELL_CHORD && cc <= CC_CELL_CURVE_AT) return ENGINE_CELLS;
-  if (cc >= CC_CORE_HUE && cc <= CC_ENVELOPE_3_MOVES) return ENGINE_CELLS;
-  if (cc >= CC_SCATTER_COUNT && cc <= CC_SCATTER_VALUE) return ENGINE_SCATTER;
-  if (cc >= CC_FIELD_FORM && cc <= CC_FIELD_DARK) return ENGINE_FIELD;
-  if (cc >= CC_FLOW_DENSITY && cc <= CC_FLOW_DARK) return ENGINE_FLOW;
+uint8_t engineOf(uint8_t control) {
+  if (control >= CONTROL_CELL_CHORD && control <= CONTROL_CELL_CURVE_AT) return ENGINE_CELLS;
+  if (control >= CONTROL_CORE_HUE && control <= CONTROL_ENVELOPE_3_MOVES) return ENGINE_CELLS;
+  if (control >= CONTROL_SCATTER_COUNT && control <= CONTROL_SCATTER_VALUE) return ENGINE_SCATTER;
+  if (control >= CONTROL_FIELD_FORM && control <= CONTROL_FIELD_DARK) return ENGINE_FIELD;
+  if (control >= CONTROL_FLOW_DENSITY && control <= CONTROL_FLOW_DARK) return ENGINE_FLOW;
   return 0;
 }
 
-bool showsEngine(uint8_t cc) {
-  switch (cc) {
-    case CC_CELL_WIDTH:
-    case CC_CELL_EDGE:
-    case CC_SCATTER_MIX:
-    case CC_FIELD_HUE:
-    case CC_FIELD_WHITE:
-    case CC_FIELD_DARK:
-    case CC_FLOW_HUE:
-    case CC_FLOW_WHITE:
-    case CC_FLOW_DARK:
+bool showsEngine(uint8_t control) {
+  switch (control) {
+    case CONTROL_CELL_WIDTH:
+    case CONTROL_CELL_EDGE:
+    case CONTROL_SCATTER_MIX:
+    case CONTROL_FIELD_HUE:
+    case CONTROL_FIELD_WHITE:
+    case CONTROL_FIELD_DARK:
+    case CONTROL_FLOW_HUE:
+    case CONTROL_FLOW_WHITE:
+    case CONTROL_FLOW_DARK:
       return true;
     default:
       return false;
@@ -48,8 +48,8 @@ uint8_t hiddenEngines(const float *dialed) {
   if (!flowActive(reading)) hidden |= ENGINE_FLOW;
   if (!scatterActive(reading, dialed, AURORA_ROUTES)) hidden |= ENGINE_SCATTER;
   for (uint8_t route = 0; route < AURORA_ROUTES; route++) {
-    const uint8_t target = aurora_route_target(roundedControl(dialed[aurora_route_cc(route, ROUTE_DESTINATION)]));
-    const float amount = signedOf(dialed[aurora_route_cc(route, ROUTE_AMOUNT)]);
+    const uint8_t target = routeTarget(dialed, route);
+    const float amount = signedOf(dialed[aurora_route_control(route, ROUTE_AMOUNT)]);
     if (fabsf(amount) > 0.001f && showsEngine(target)) hidden &= (uint8_t)~engineOf(target);
   }
   return hidden;
@@ -57,8 +57,8 @@ uint8_t hiddenEngines(const float *dialed) {
 
 bool fieldActive(const Reading &reading, const float *dialed, uint8_t routes) {
   return pushesColor(reading.field.hue, reading.field.white, reading.field.dark)
-      || routeAims(dialed, CC_FIELD_HUE, routes) || routeAims(dialed, CC_FIELD_WHITE, routes)
-      || routeAims(dialed, CC_FIELD_DARK, routes);
+      || routeAims(dialed, CONTROL_FIELD_HUE, routes) || routeAims(dialed, CONTROL_FIELD_WHITE, routes)
+      || routeAims(dialed, CONTROL_FIELD_DARK, routes);
 }
 
 bool flowActive(const Reading &reading) {
@@ -70,7 +70,7 @@ bool coreActive(const Reading &reading) {
 }
 
 bool scatterActive(const Reading &reading, const float *dialed, uint8_t routes) {
-  return reading.scatter.mix > 0.001f || routeAims(dialed, CC_SCATTER_MIX, routes);
+  return reading.scatter.mix > 0.001f || routeAims(dialed, CONTROL_SCATTER_MIX, routes);
 }
 
 static float flowAt(const Flow &flow, uint8_t stripIndex, float along, float time) {
@@ -151,20 +151,20 @@ static float spotWave(const SpotRoute &route, float clock, float before) {
   const float phase = turnsOn(route.timing, clock, 0.0f);
   const float now = lfoWave(phase, route.wave);
   const bool brightens = route.amount > 0.0f
-      && (route.cc == CC_SCATTER_MIX || route.cc == CC_SCATTER_VALUE);
+      && (route.control == CONTROL_SCATTER_MIX || route.control == CONTROL_SCATTER_VALUE);
   const float earlier = turnsOn(route.timing, before, 0.0f);
   if (!brightens || earlier >= phase) return now;
   if (phase - earlier >= 1.0f || floorf(phase) > floorf(earlier)) return 1.0f;
   return fmaxf(now, lfoWave(earlier, route.wave));
 }
 
-static float spotControl(uint8_t cc, const float *dialed, const SpotRoute *routes,
+static float spotControl(uint8_t control, const float *dialed, const SpotRoute *routes,
                          uint8_t routeCount, float clock, float before) {
   float amount = 0.0f;
   for (uint8_t i = 0; i < routeCount; i++) {
-    if (routes[i].cc == cc) amount += routes[i].amount * spotWave(routes[i], clock, before);
+    if (routes[i].control == control) amount += routes[i].amount * spotWave(routes[i], clock, before);
   }
-  return controlValue(cc, landedControl(cc, dialed[cc], amount));
+  return controlValue(control, landedControl(control, dialed[control], amount));
 }
 
 void placeScatter(const Scatter &scatter, const float *dialed, const SpotRoute *routes,
@@ -185,20 +185,20 @@ void placeScatter(const Scatter &scatter, const float *dialed, const SpotRoute *
     const uint32_t life = (uint32_t)(int32_t)floorf(clock);
     if (lit < 1.0f && (float)hash8(stripIndex, place * 131u + life, 97) >= lit * 256.0f) continue;
 
-    const auto control = [&](uint8_t cc) {
-      return spotControl(cc, dialed, routes, routeCount, clock, earlier);
+    const auto spotValue = [&](uint8_t control) {
+      return spotControl(control, dialed, routes, routeCount, clock, earlier);
     };
-    const float mix = control(CC_SCATTER_MIX);
+    const float mix = spotValue(CONTROL_SCATTER_MIX);
     if (mix <= 0.001f) continue;
 
     const float landing = (float)hash8(stripIndex, place * 131u + life, 61) / 255.0f * (float)PIXELS;
     const float beatsSinceLanding = (fabsf(scatter.rate) > 0.0001f) ? fract(clock) / fabsf(scatter.rate) : 0.0f;
-    out.centers[out.count] = landing + scatter.speed * beatsSinceLanding + control(CC_SCATTER_POSITION) * POSITION_REACH_PIXELS;
-    out.widths[out.count] = fmaxf(control(CC_SCATTER_WIDTH), 1.0f / out.reach);
+    out.centers[out.count] = landing + scatter.speed * beatsSinceLanding + spotValue(CONTROL_SCATTER_POSITION) * POSITION_REACH_PIXELS;
+    out.widths[out.count] = fmaxf(spotValue(CONTROL_SCATTER_WIDTH), 1.0f / out.reach);
     out.mixes[out.count] = mix;
-    out.hues[out.count] = control(CC_SCATTER_HUE);
-    out.saturations[out.count] = control(CC_SCATTER_SATURATION);
-    out.values[out.count] = control(CC_SCATTER_VALUE);
+    out.hues[out.count] = spotValue(CONTROL_SCATTER_HUE);
+    out.saturations[out.count] = spotValue(CONTROL_SCATTER_SATURATION);
+    out.values[out.count] = spotValue(CONTROL_SCATTER_VALUE);
     out.lives[out.count] = fract(clock);
     out.count++;
   }

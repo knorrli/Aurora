@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as Rows from './control-rows.js';
 import * as dom from './dom.js';
 import * as Keep from './keep.js';
@@ -164,7 +164,7 @@ function follow(slot) {
 }
 
 function sendPatchToWall() {
-  Playback.dial();
+  Playback.cut();
   say(`sent "${session.patch().name}"`);
 }
 
@@ -189,7 +189,7 @@ function wireMidiToggle() {
   }
   showMidi(stored);
   byId('midiToggle').addEventListener('click', () => showMidi(!document.body.classList.contains('show-midi')));
-  byId('tempoDivisionCC').textContent = `CC ${Patch.CC.tempoDivision}`;
+  byId('tempoDivisionNumber').textContent = `#${Patch.NUMBER.tempoDivision}`;
 }
 
 function measureTopbar() {

@@ -22,8 +22,8 @@ bool StoredLibrary::oneshot(uint8_t index, playback::Oneshot &out) {
     if (!patch_store::readOneshot(index, stored)) return false;
     out.length = stored[0];
     const uint8_t *marks = stored + 1 + AURORA_PATCH_NAME_LENGTH;
-    for (uint8_t cc = 0; cc < AURORA_PATCH_CC_COUNT; cc++) out.marks[cc] = aurora_map_has(marks, cc);
-    memcpy(out.controls, marks + AURORA_MARK_MAP_LENGTH, AURORA_PATCH_CC_COUNT);
+    for (uint8_t cc = 0; cc < AURORA_PATCH_CONTROLS; cc++) out.marks[cc] = aurora_map_has(marks, cc);
+    memcpy(out.controls, marks + AURORA_MARK_MAP_LENGTH, AURORA_PATCH_CONTROLS);
     return true;
 }
 

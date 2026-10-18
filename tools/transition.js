@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as dom from './dom.js';
 import * as Editor from './editor.js';
 import * as Library from './library.js';
@@ -165,7 +165,7 @@ function buildMix() {
   const rows = element('div', 'mix-rows');
   for (const [layer, fader] of Object.entries(Playback.FADERS)) {
     const row = element('div', 'row');
-    const label = dom.ccLabeled('label', Patch.LAYER_NAMES[layer], Patch.CC[fader]);
+    const label = dom.ccLabeled('label', Patch.LAYER_NAMES[layer], Protocol.CC[fader]);
     const track = element('div', 'track');
     const slider = dom.rangeInput(127);
     slider.id = 'mix' + layer;

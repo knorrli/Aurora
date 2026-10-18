@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as LibraryFile from './library-file.js';
 
 
@@ -165,8 +165,25 @@ class Link {
     patch.layers.forEach((bytes, layer) => this.sendSysEx(TYPE.patchLayer, [patch.slot, layer, ...bytes]));
   }
 
+  sendDialLayer(layer, bytes) {
+    this.sendSysEx(TYPE.dialLayer, [layer, ...bytes]);
+  }
+
+  sendDial(slot, patch, cut) {
+    this.sendSysEx(TYPE.dial, [slot, cut ? 1 : 0, patch.transitionTime, patch.accentTime,
+      ...patch.oneshots.map(pick => (pick === null ? Protocol.NO_ONESHOT : pick))]);
+  }
+
   sendPin(controls) {
     this.sendSysEx(TYPE.pin, controls);
+  }
+
+  sendPinLayer(bytes, layer, steps) {
+    this.sendSysEx(TYPE.pinLayer, [layer, steps >> 7, steps & 0x7F, ...bytes]);
+  }
+
+  sendUnpin() {
+    this.sendSysEx(TYPE.unpin);
   }
 
   sendOneshot(oneshot) {

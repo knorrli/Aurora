@@ -92,7 +92,7 @@ struct Reading {
 
 float signedOf(float value);
 
-float controlValue(uint8_t cc, float value);
+float controlValue(uint8_t control, float value);
 
 void readControls(const float *dialed, const Modulation *modulation, Reading &out);
 

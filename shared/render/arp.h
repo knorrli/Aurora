@@ -9,6 +9,7 @@ namespace render {
 struct Arp {
   uint8_t mode;
   float spread;
+  bool reverse;
 };
 
 Arp readArp(const float *dialed, const Modulation *modulation);

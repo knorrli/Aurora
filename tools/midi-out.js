@@ -1,4 +1,4 @@
-import { Protocol } from './cc.js';
+import { Protocol } from './controls.js';
 import * as dom from './dom.js';
 import { Link } from './link.js';
 import * as Playback from './playback.js';
@@ -38,7 +38,7 @@ function paintPorts() {
 
 function connected() {
   paintPorts();
-  if (link.output) Playback.dial();
+  if (link.output) Playback.cut();
 }
 
 async function open() {

@@ -14,16 +14,16 @@
 #include <render.h>
 #include <routes.h>
 
-static uint8_t live[AURORA_PATCH_CC_COUNT];
+static uint8_t live[AURORA_PATCH_CONTROLS];
 static float controls[render::RENDER_CONTROL_COUNT];
 static uint8_t drawnBytes[render::RENDER_CONTROL_COUNT];
 static render::Frame frame;
 static float reach[2];
 static render::ArpPass arpPass;
-static uint8_t morphFrom[AURORA_PATCH_CC_COUNT];
-static uint8_t morphTo[AURORA_PATCH_CC_COUNT];
-static uint8_t morphSwitches[AURORA_PATCH_CC_COUNT];
-static uint8_t morphOut[AURORA_PATCH_CC_COUNT];
+static uint8_t morphFrom[AURORA_PATCH_CONTROLS];
+static uint8_t morphTo[AURORA_PATCH_CONTROLS];
+static uint8_t morphSwitches[AURORA_PATCH_CONTROLS];
+static uint8_t morphOut[AURORA_PATCH_CONTROLS];
 
 class EditorLibrary : public playback::Library {
  public:
@@ -53,8 +53,8 @@ static playback::Patch patchBuffer;
 static playback::Oneshot oneshotBuffer;
 static playback::Playback *player = nullptr;
 
-static_assert(sizeof(playback::Patch) == 4 + AURORA_PATCH_LAYERS * AURORA_PATCH_CC_COUNT, "");
-static_assert(sizeof(playback::Oneshot) == 1 + 2 * AURORA_PATCH_CC_COUNT, "");
+static_assert(sizeof(playback::Patch) == 4 + AURORA_PATCH_LAYERS * AURORA_PATCH_CONTROLS, "");
+static_assert(sizeof(playback::Oneshot) == 1 + 2 * AURORA_PATCH_CONTROLS, "");
 static_assert(sizeof(render::Par) == 4, "");
 static_assert(offsetof(render::ArpPass, count) == sizeof(float) * 3, "");
 static_assert(offsetof(render::ArpPass, starts) == sizeof(float) * 4, "");
@@ -81,7 +81,7 @@ EMSCRIPTEN_KEEPALIVE float *aurora_curve_across() { return frame.curveAcross; }
 EMSCRIPTEN_KEEPALIVE float *aurora_field_across() { return frame.fieldAcross; }
 EMSCRIPTEN_KEEPALIVE int aurora_field_across_points() { return render::FIELD_ACROSS_POINTS; }
 EMSCRIPTEN_KEEPALIVE int aurora_strip_marks_size() { return sizeof(render::StripMarks); }
-EMSCRIPTEN_KEEPALIVE int aurora_spot_destination(int cc) { return render::spotDestination((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE int aurora_spot_destination(int control) { return render::spotDestination((uint8_t)control); }
 EMSCRIPTEN_KEEPALIVE float *aurora_bend() { return frame.bend; }
 
 EMSCRIPTEN_KEEPALIVE int aurora_strip_count() { return render::STRIPS; }
@@ -139,16 +139,21 @@ EMSCRIPTEN_KEEPALIVE void aurora_playback_message(int status, int first, int sec
   }
 }
 
-EMSCRIPTEN_KEEPALIVE void aurora_playback_cut(int slot) { player->cutTo(patchBuffer, (uint8_t)slot); }
-EMSCRIPTEN_KEEPALIVE void aurora_playback_patch_changed(int slot) { player->patchChanged((uint8_t)slot); }
 EMSCRIPTEN_KEEPALIVE void aurora_playback_pin() { player->pin(live); }
 EMSCRIPTEN_KEEPALIVE void aurora_playback_unpin() { player->unpin(); }
+EMSCRIPTEN_KEEPALIVE void aurora_playback_dial(int slot, int cut) {
+  player->dial(patchBuffer, (uint8_t)slot, cut != 0);
+}
+EMSCRIPTEN_KEEPALIVE void aurora_playback_pin_layer(int layer, int steps) {
+  player->pinLayer(morphTo, (uint8_t)layer, (uint16_t)steps);
+}
 
 EMSCRIPTEN_KEEPALIVE void aurora_playback_frame(uint32_t micros) {
   frame = player->frame(micros);
   memcpy(controls, player->drawnControls(), sizeof(controls));
   for (uint16_t i = 0; i < render::RENDER_CONTROL_COUNT; i++) {
-    drawnBytes[i] = render::displayedByte((uint8_t)i, controls[i]);
+    drawnBytes[i] = i < AURORA_PATCH_CONTROLS ? render::displayedByte((uint8_t)i, controls[i])
+                                              : render::roundedControl(controls[i]);
   }
 }
 
@@ -172,14 +177,13 @@ EMSCRIPTEN_KEEPALIVE float aurora_lfo_wave(float phase, int wave, int smooth) {
   return render::lfoWave(phase, { (uint8_t)wave, (uint8_t)smooth });
 }
 
-EMSCRIPTEN_KEEPALIVE float aurora_convert(int cc, int value) {
-  return render::controlValue((uint8_t)cc, (float)value);
+EMSCRIPTEN_KEEPALIVE float aurora_convert(int control, int value) {
+  return render::controlValue((uint8_t)control, (float)value);
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_lfo_period_beats(int value) { return aurora_lfo_period((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE float aurora_transition_length(int value) { return aurora_transition_beats((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE float aurora_signed(int value) { return render::signedOf((float)value); }
-EMSCRIPTEN_KEEPALIVE int aurora_ratio_step(int value) { return aurora_route_ratio_step((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_ratio(int value) { return aurora_route_ratio((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_once(int value) { return aurora_route_once((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_source(int value) { return aurora_route_source((uint8_t)value); }
@@ -189,41 +193,30 @@ EMSCRIPTEN_KEEPALIVE int aurora_hue_layout_of(int value) { return aurora_hue_lay
 EMSCRIPTEN_KEEPALIVE int aurora_switch_on(int value) { return aurora_switch_is_on((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_three_way(int value) { return aurora_three_way_position((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_four_way(int value) { return aurora_four_way_position((uint8_t)value); }
-EMSCRIPTEN_KEEPALIVE int aurora_destination_arp(int destination) { return aurora_route_arp((uint8_t)destination); }
-EMSCRIPTEN_KEEPALIVE int aurora_destination_target(int destination) { return aurora_route_target((uint8_t)destination); }
-EMSCRIPTEN_KEEPALIVE int aurora_destination(int target, int arp) {
-  return aurora_route_destination((uint8_t)target, (uint8_t)arp);
-}
+EMSCRIPTEN_KEEPALIVE int aurora_arp_of(int value) { return aurora_route_arp((uint8_t)value); }
+EMSCRIPTEN_KEEPALIVE int aurora_arp_capable_of(int control) { return aurora_arp_capable((uint8_t)control); }
 EMSCRIPTEN_KEEPALIVE int aurora_bipolar(int value) { return aurora_route_bipolar((uint8_t)value); }
-EMSCRIPTEN_KEEPALIVE int aurora_bipolar_capable_of(int cc) { return aurora_bipolar_capable((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE int aurora_bipolar_capable_of(int control) { return aurora_bipolar_capable((uint8_t)control); }
 EMSCRIPTEN_KEEPALIVE int aurora_group_pattern_of(int value) { return aurora_group_pattern((uint8_t)value); }
-EMSCRIPTEN_KEEPALIVE int aurora_aimed_route_of(int destination) {
-  return aurora_route_aims_route((uint8_t)destination) ? aurora_aimed_route((uint8_t)destination) : -1;
-}
-EMSCRIPTEN_KEEPALIVE int aurora_aims_phase_of(int destination) { return aurora_aims_phase((uint8_t)destination); }
-EMSCRIPTEN_KEEPALIVE int aurora_aim_destination_of(int route, int phase) {
-  return aurora_aim_destination((uint8_t)route, phase != 0);
-}
 EMSCRIPTEN_KEEPALIVE float aurora_group_level(int pattern, int index, int count, int salt) {
   return render::groupLevel((uint8_t)pattern, (uint8_t)index, (uint8_t)count, (uint8_t)salt);
 }
 
 static render::Arp arpOf(int mode, int spread) {
-  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CC_ARP_SPREAD, (float)spread) };
+  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CONTROL_ARP_SPREAD, (float)spread), false };
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_length(int mode) { return render::passLength(arpOf(mode, 127)); }
 EMSCRIPTEN_KEEPALIVE int aurora_arp_turns_per_pass(int mode, int spread) { return render::turnsPerPass(arpOf(mode, spread)); }
-EMSCRIPTEN_KEEPALIVE int aurora_arp_reversed(int mode, int spread) { return render::reversed(arpOf(mode, spread)); }
 
-EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int phase, float clock) {
-  const render::RouteTiming timing = { 0, aurora_route_ratio((uint8_t)ratio), aurora_route_once((uint8_t)ratio),
+EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int cycle, int phase, float clock) {
+  const render::RouteTiming timing = { 0, aurora_route_ratio((uint8_t)ratio), aurora_route_once((uint8_t)cycle),
                                        aurora_route_phase((uint8_t)phase) };
   return render::turnsOn(timing, clock, 0.0f);
 }
 
 EMSCRIPTEN_KEEPALIVE float aurora_bend_speed_ratio(int bend) {
-  return render::bendSpeedRatio(render::controlValue(CC_CELL_BEND, (float)bend));
+  return render::bendSpeedRatio(render::controlValue(CONTROL_CELL_BEND, (float)bend));
 }
 
 static const render::PadLevels *padReaching(int strip, render::PadLevels &levels) {
@@ -234,27 +227,27 @@ static const render::PadLevels *padReaching(int strip, render::PadLevels &levels
   return &levels;
 }
 
-EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int cc, int strip) {
+EMSCRIPTEN_KEEPALIVE int aurora_control_at_strip(int control, int strip) {
   render::Modulation modulation;
   render::PadLevels levels;
-  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CONTROL_LFO_RATE, controls[CONTROL_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, (int8_t)strip, padReaching(strip, levels), modulation);
-  return render::routedForDisplay(controls, &modulation, (uint8_t)cc);
+  return render::routedForDisplay(controls, &modulation, (uint8_t)control);
 }
 
-EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int cc, int par) {
+EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int control, int par) {
   render::Modulation modulation;
   render::PadLevels levels;
-  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CONTROL_LFO_RATE, controls[CONTROL_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, -1, padReaching(-1, levels), modulation);
-  return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)cc, (uint8_t)par);
+  return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)control, (uint8_t)par);
 }
 
 static float routeAtStrip(int route, int strip, bool shift) {
   static render::Routes routes;
   render::readRoutes(controls, routes);
   render::PadLevels levels;
-  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CONTROL_LFO_RATE, controls[CONTROL_LFO_RATE]);
   const render::RouteContext context = { frame.lfo, beatsPerCycle, 0.0f, padReaching(strip, levels), (int8_t)strip, nullptr };
   return shift ? render::routeShiftAt(routes, (uint8_t)route, context) : render::routeAmountAt(routes, (uint8_t)route, context);
 }
@@ -265,7 +258,7 @@ EMSCRIPTEN_KEEPALIVE float aurora_route_shift_at_strip(int route, int strip) { r
 EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
   render::Modulation modulation;
   render::PadLevels levels;
-  const float beatsPerCycle = render::controlValue(CC_LFO_RATE, controls[CC_LFO_RATE]);
+  const float beatsPerCycle = render::controlValue(CONTROL_LFO_RATE, controls[CONTROL_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, -1, padReaching(-1, levels), modulation);
   return render::firstArpPass(controls, modulation, frame.lfo, arpPass) ? &arpPass : nullptr;
 }
@@ -276,20 +269,20 @@ EMSCRIPTEN_KEEPALIVE float aurora_wave_mean(int wave, int smooth) {
   return render::waveMean({ (uint8_t)wave, (uint8_t)smooth });
 }
 
-EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int cc) { return render::routeRefused((uint8_t)cc); }
-EMSCRIPTEN_KEEPALIVE int aurora_cell_control(int cc) { return render::cellControl((uint8_t)cc); }
+EMSCRIPTEN_KEEPALIVE int aurora_route_refused(int control) { return render::routeRefused((uint8_t)control); }
+EMSCRIPTEN_KEEPALIVE int aurora_cell_control(int control) { return render::cellControl((uint8_t)control); }
 EMSCRIPTEN_KEEPALIVE int aurora_route_held(int value) { return aurora_route_held((uint8_t)value); }
 
 EMSCRIPTEN_KEEPALIVE float aurora_envelope_level(int delay, int attack, int hold, int decay, int sustain, int release,
                                                  int moves, int gate, int end, int rate, float age) {
   const render::Envelope envelope = {
-    render::controlValue(CC_ENVELOPE_1_DELAY, (float)delay), render::controlValue(CC_ENVELOPE_1_ATTACK, (float)attack), render::controlValue(CC_ENVELOPE_1_HOLD, (float)hold),
-    render::controlValue(CC_ENVELOPE_1_DECAY, (float)decay), render::controlValue(CC_ENVELOPE_1_SUSTAIN, (float)sustain),
-    render::controlValue(CC_ENVELOPE_1_RELEASE, (float)release), aurora_switch_is_on((uint8_t)moves),
+    render::controlValue(CONTROL_ENVELOPE_1_DELAY, (float)delay), render::controlValue(CONTROL_ENVELOPE_1_ATTACK, (float)attack), render::controlValue(CONTROL_ENVELOPE_1_HOLD, (float)hold),
+    render::controlValue(CONTROL_ENVELOPE_1_DECAY, (float)decay), render::controlValue(CONTROL_ENVELOPE_1_SUSTAIN, (float)sustain),
+    render::controlValue(CONTROL_ENVELOPE_1_RELEASE, (float)release), aurora_switch_is_on((uint8_t)moves),
   };
-  return render::envelopeLevelAt(envelope, render::controlValue(CC_CELL_GATE, (float)gate),
+  return render::envelopeLevelAt(envelope, render::controlValue(CONTROL_CELL_GATE, (float)gate),
                                  aurora_three_way_position((uint8_t)end),
-                                 render::controlValue(CC_CELL_RATE, (float)rate), age);
+                                 render::controlValue(CONTROL_CELL_RATE, (float)rate), age);
 }
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_from() { return morphFrom; }
@@ -297,19 +290,46 @@ EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_to() { return morphTo; }
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_morph_switches() { return morphSwitches; }
 
 EMSCRIPTEN_KEEPALIVE uint8_t *aurora_blend(float position, int switchesFromStart) {
-  float from[AURORA_PATCH_CC_COUNT], to[AURORA_PATCH_CC_COUNT], switches[AURORA_PATCH_CC_COUNT];
-  float blended[AURORA_PATCH_CC_COUNT];
+  float from[AURORA_PATCH_CONTROLS], to[AURORA_PATCH_CONTROLS], switches[AURORA_PATCH_CONTROLS];
+  float blended[AURORA_PATCH_CONTROLS];
   render::controlsOf(morphFrom, from);
   render::controlsOf(morphTo, to);
   render::controlsOf(morphSwitches, switches);
   render::blendPatches(from, to, position, switches, switchesFromStart != 0, blended);
-  for (uint16_t i = 0; i < AURORA_PATCH_CC_COUNT; i++) morphOut[i] = render::displayedByte((uint8_t)i, blended[i]);
+  for (uint16_t i = 0; i < AURORA_PATCH_CONTROLS; i++) morphOut[i] = render::displayedByte((uint8_t)i, blended[i]);
   return morphOut;
 }
 
-EMSCRIPTEN_KEEPALIVE float *aurora_route_reach(int cc) {
+EMSCRIPTEN_KEEPALIVE uint8_t *aurora_mix_layer(int layer, float position) {
+  static uint8_t layers[AURORA_PATCH_LAYERS][AURORA_PATCH_CONTROLS];
+  float positions[AURORA_PATCH_LAYERS] = {};
+  for (uint8_t each = 0; each < AURORA_PATCH_LAYERS; each++) {
+    memcpy(layers[each], each == layer ? morphTo : morphFrom, AURORA_PATCH_CONTROLS);
+  }
+  positions[layer] = position;
+  float base[AURORA_PATCH_CONTROLS];
+  static float mixed[render::RENDER_CONTROL_COUNT];
+  render::controlsOf(morphFrom, base);
+  render::mixLayers(base, layers, positions, mixed);
+  bool used[AURORA_PATCH_CONTROLS];
+  render::usedControls(morphTo, used);
+  for (uint16_t i = 0; i < AURORA_PATCH_CONTROLS; i++) {
+    morphOut[i] = used[i] ? render::displayedByte((uint8_t)i, mixed[i]) : morphTo[i];
+  }
+  for (uint8_t route = 0; route < AURORA_ROUTES && position >= 0.5f; route++) {
+    const uint8_t echo = render::echoRoute((uint8_t)layer, route);
+    if (!render::roundedControl(mixed[render::routeControl(echo, ROUTE_DESTINATION)])) continue;
+    for (uint8_t field = 0; field < ROUTE_FIELDS; field++) {
+      const uint8_t control = aurora_route_control(route, field);
+      morphOut[control] = morphTo[control];
+    }
+  }
+  return morphOut;
+}
+
+EMSCRIPTEN_KEEPALIVE float *aurora_route_reach(int control) {
   int16_t low, high;
-  if (!render::routeReach(controls, (uint8_t)cc, low, high)) return nullptr;
+  if (!render::routeReach(controls, (uint8_t)control, low, high)) return nullptr;
   reach[0] = low;
   reach[1] = high;
   return reach;
