@@ -68,6 +68,9 @@
 ```
 
 - Switch centers about 10 cm apart, rows about 12 cm apart, wider gaps between the three groups.
+- Enclosure: Hammond 1456WL3WHBU sloped console, beige top, blue case. 508 mm wide, 287 mm deep; 33 mm high at the front, rising at 15° for about 161 mm to 76 mm, then flat to the back. 2 mm aluminum top and case.
+- Both rows on the sloped part, none on the flat top.
+- Switches: Musikding 1PST Fußtaster, 12 mm hole, a little over 20 mm from the bottom to the nut, lugs pointing sideways.
 
 ## Touchpad
 
