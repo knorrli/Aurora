@@ -223,7 +223,7 @@ function buildEnvelopeBody(card) {
 
 function buildEnvelopesCard() {
   const root = element('article', 'card envelope-card');
-  root.dataset.tone = 'lfo';
+  root.dataset.tone = 'envelope';
   const head = element('div', 'card-head');
   const state = element('span', 'card-state');
   const tabs = Patch.ENVELOPE_CARDS.map((card, envelope) => {

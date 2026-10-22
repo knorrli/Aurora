@@ -351,7 +351,7 @@ const movesInert = (live, envelope) => !(cellsPlay(live, envelope) && real('cell
 const releaseInert = (live, envelope) => !endsAs(live, 'gone') && !arpPlays(live, envelope);
 
 const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
-  name: `Envelope ${envelope + 1}`, tone: 'lfo', envelope,
+  name: `Envelope ${envelope + 1}`, tone: 'envelope', envelope,
   names: Object.entries(stages).map(([field, name]) => control(name, ENVELOPE_LABELS[field], field === 'moves'
     ? { kind: 'two', options: [[OFF, 'glide'], [ON, 'step']], inertWhen: live => movesInert(live, envelope) }
     : { inertWhen: live => field === 'release' && releaseInert(live, envelope) })),
@@ -373,7 +373,7 @@ const CELLS = {
       ],
     },
     {
-      title: 'Form', tone: 'cells',
+      title: 'Form', tone: 'form',
       names: [
         control('cellWidth', 'Width'),
         control('cellEdge', 'Edge'),
@@ -381,7 +381,7 @@ const CELLS = {
       ],
     },
     {
-      title: 'Life', tone: 'cells',
+      title: 'Life', tone: 'life',
       names: [
         control('cellEnd', 'End',
           { kind: 'three', options: threeWayOptions(Protocol.CELL_END,
@@ -392,7 +392,7 @@ const CELLS = {
       ],
     },
     {
-      title: 'Brightness', tone: 'cells',
+      title: 'Brightness', tone: 'brightness',
       names: [
         control('cellDirection', 'Direction', { ...directionSwitch, inertWhen: curveIsFlat }),
         control('cellBrightness', 'Brightness'),
@@ -435,7 +435,7 @@ const ARP_MODE_NAMES = {
 const LFO = { name: 'LFO', tone: 'lfo', source: [control('lfoRate', 'Rate')], amounts: [] };
 
 const ARP = {
-  name: 'Arp', tone: 'lfo',
+  name: 'Arp', tone: 'arp',
   amounts: [],
   source: [
     control('arpMode', 'Mode',
@@ -448,7 +448,7 @@ const ARP = {
   ],
 };
 
-const ROUTES_CARD = { name: 'Routes', tone: 'lfo', source: [], amounts: [] };
+const ROUTES_CARD = { name: 'Routes', tone: 'routes', source: [], amounts: [] };
 
 const ENGINES = [
   {
@@ -471,7 +471,7 @@ const ENGINES = [
     shownBy: ['scatterMix'],
   },
   {
-    name: 'Field', tone: 'color',
+    name: 'Field', tone: 'field',
     source: [
       control('fieldForm', 'Form',
         { kind: 'three', options: threeWayOptions(Protocol.FIELD_FORM,
@@ -490,7 +490,7 @@ const ENGINES = [
     ],
   },
   {
-    name: 'Flow', tone: 'color',
+    name: 'Flow', tone: 'flow',
     source: [
       control('flowDensity', 'Density'),
       control('flowRate', 'Rate'),
@@ -502,7 +502,7 @@ const ENGINES = [
     ],
   },
   {
-    name: 'Core', tone: 'color',
+    name: 'Core', tone: 'core',
     source: [],
     amounts: [
       control('coreHue', 'Hue'),
@@ -590,7 +590,7 @@ for (const output of OUTPUTS) {
 }
 for (const route of ROUTES) {
   for (const name of route.fields) {
-    TONES[name] = 'lfo';
+    TONES[name] = 'routes';
     PLACES[name] = route.name;
   }
 }

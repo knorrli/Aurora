@@ -9,8 +9,11 @@
     --bg: #14151a; --panel: #1c1e26; --sunk: #101118; --line: #2c2f3a; --rail: #3a3e4d;
     --text: #e6e7ec; --dim: #8b8fa3; --faint: #5f6475;
     --select: #d4d7e0; --warn: #d9b03f; --ok: #4a9e6a; --bad: #cf5c5c;
-    --cells: #e6c454; --place: #e08a3c; --color: #6fa8dc; --lfo: #d466d6; --scatter: #7bc4a4;
-    --out: #8f7fd4;
+    --lfo: #a58cf5; --arp: #c88af0; --envelope: #8577e6; --routes: #cdbcff;
+    --place: #e5a23e; --form: #e6c454; --life: #cfd660; --brightness: #f3dd95;
+    --scatter: #7bc4a4;
+    --field: #6fa8dc; --flow: #55c3d9; --core: #a3c6ee;
+    --out: #9a9eb0;
     --topbar: 56px;
   }
   * { box-sizing: border-box; }
@@ -141,29 +144,29 @@
   .overlay-buttons { display: grid; gap: 3px; margin-top: 9px; }
   .overlay-buttons > div { display: flex; gap: 3px; }
   .overlay-buttons .tiny { padding: 2px 5px; }
-  .overlay-buttons button:not(.on)[data-tone=cells] { color: var(--cells); }
-  .overlay-buttons button:not(.on)[data-tone=place] { color: var(--place); }
-  .overlay-buttons button:not(.on)[data-tone=lfo] { color: var(--lfo); }
-  .overlay-buttons button:not(.on)[data-tone=scatter] { color: var(--scatter); }
-  .overlay-buttons button:not(.on)[data-tone=color] { color: var(--color); }
-  .overlay-buttons button:not(.on)[data-tone=out] { color: var(--out); }
-  .overlay-buttons button.on[data-tone=cells] { background: var(--cells); border-color: var(--cells); }
-  .overlay-buttons button.on[data-tone=place] { background: var(--place); border-color: var(--place); }
-  .overlay-buttons button.on[data-tone=lfo] { background: var(--lfo); border-color: var(--lfo); }
-  .overlay-buttons button.on[data-tone=scatter] { background: var(--scatter); border-color: var(--scatter); }
-  .overlay-buttons button.on[data-tone=color] { background: var(--color); border-color: var(--color); }
-  .overlay-buttons button.on[data-tone=out] { background: var(--out); border-color: var(--out); }
+  [data-tone] { --tone: var(--rail); }
+  [data-tone=lfo], .tone-lfo { --tone: var(--lfo); }
+  [data-tone=arp], .tone-arp { --tone: var(--arp); }
+  [data-tone=envelope], .tone-envelope { --tone: var(--envelope); }
+  [data-tone=routes], .tone-routes { --tone: var(--routes); }
+  [data-tone=place], .tone-place { --tone: var(--place); }
+  [data-tone=form], .tone-form { --tone: var(--form); }
+  [data-tone=life], .tone-life { --tone: var(--life); }
+  [data-tone=brightness], .tone-brightness { --tone: var(--brightness); }
+  [data-tone=scatter], .tone-scatter { --tone: var(--scatter); }
+  [data-tone=field], .tone-field { --tone: var(--field); }
+  [data-tone=flow], .tone-flow { --tone: var(--flow); }
+  [data-tone=core], .tone-core { --tone: var(--core); }
+  [data-tone=out], .tone-out { --tone: var(--out); }
+  .overlay-buttons button:not(.on)[data-tone] { color: var(--tone); }
+  .overlay-buttons button.on[data-tone] { background: var(--tone); border-color: var(--tone); }
 
-  .cells { border-left: 3px solid var(--cells); }
+  .cells { border-left: 3px solid var(--form); }
   .cells .groups { row-gap: 0; }
-  .cells .groups > div { margin-left: -16px; padding: 0 0 16px 13px; border-left: 3px solid var(--cells); }
+  .cells .groups > div { margin-left: -16px; padding: 0 0 16px 13px; border-left: 3px solid var(--tone, var(--form)); }
   .cells .groups > div:last-child { margin-bottom: -13px; padding-bottom: 13px; }
-  .cells .tone-cells h3 { color: var(--cells); }
-  .cells .groups > .tone-place { border-left-color: var(--place); }
-  .cells .tone-place h3 { color: var(--place); }
-  .cells .groups > .tone-lfo { border-left-color: var(--lfo); }
-  .cells .tone-lfo h3 { color: var(--lfo); }
-  .cells-name { font-size: 12px; letter-spacing: .18em; color: var(--cells); margin-bottom: 12px; }
+  .cells .groups > div h3 { color: var(--tone, var(--form)); }
+  .cells-name { font-size: 12px; letter-spacing: .18em; color: var(--form); margin-bottom: 12px; }
   .push-right { margin-left: auto; }
 
   .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px 22px; }
@@ -246,9 +249,9 @@
     width: 24px; height: 20px; padding: 0; font-size: 13px; line-height: 1;
     color: var(--faint); background: none; border: 1px solid var(--line);
   }
-  .routes-button.aimed { color: var(--lfo); border-color: var(--lfo); }
+  .routes-button.aimed { color: var(--routes); border-color: var(--routes); }
   .routes-button.aimed.sounding { background: #4a2f38; }
-  .routes-button.open { color: var(--bg); background: var(--lfo); border-color: var(--lfo); }
+  .routes-button.open { color: var(--bg); background: var(--routes); border-color: var(--routes); }
 
   .row > output, .showing { font-variant-numeric: tabular-nums; }
   .row > output { text-align: right; line-height: 1.25; white-space: nowrap; }
@@ -276,14 +279,10 @@
   .cards { display: flex; flex-direction: column; gap: 14px; }
   .card-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px; }
   .card { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 13px; border-left: 3px solid var(--rail); }
-  .card[data-tone=lfo] { border-left-color: var(--lfo); }
-  .card[data-tone=scatter] { border-left-color: var(--scatter); }
-  .card[data-tone=color] { border-left-color: var(--color); }
+  .card[data-tone] { border-left-color: var(--tone); }
   .card-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 11px; }
   .card-name { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-  .card[data-tone=lfo] .card-name { color: var(--lfo); }
-  .card[data-tone=scatter] .card-name { color: var(--scatter); }
-  .card[data-tone=color] .card-name { color: var(--color); }
+  .card[data-tone] .card-name { color: var(--tone); }
   .card-state { margin-right: auto; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
   .card.bypassed .card-body, .card.no-effect .card-body { opacity: .38; }
   .card-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px 22px; }
@@ -292,22 +291,22 @@
   .envelope-card.no-effect .card-body { opacity: .38; }
   .envelope-card .card-body[hidden] { display: none; }
   .envelope-tab.unused:not(.on) { opacity: .45; }
-  .envelope-graph { position: relative; min-height: 64px; color: var(--lfo); }
+  .envelope-graph { position: relative; min-height: 64px; color: var(--envelope); }
   .envelope-graph canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
   .route-panel {
-    position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--lfo);
+    position: absolute; z-index: 30; background: var(--panel); border: 1px solid var(--routes);
     border-radius: 6px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.55);
   }
   .route-block { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
   .route-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
-  .route-name { color: var(--lfo); }
+  .route-name { color: var(--routes); }
   .route-clock { margin-right: auto; margin-left: 10px; }
   .route-buttons { display: flex; gap: 5px; }
   .route-block.bypassed > :not(.route-head) { opacity: .38; }
   .route-panel .row { grid-template-columns: 108px minmax(64px, 1fr) 128px 24px; }
   .route-block.aim { margin-left: 18px; padding-left: 10px; border-left: 2px solid var(--line); }
-  .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; color: var(--tone, var(--lfo)); }
+  .route-wave { width: 100%; height: 46px; display: block; margin-top: 8px; color: var(--tone, var(--routes)); }
   .route-foot { display: flex; justify-content: space-between; align-items: center; }
   .card.bypassed .route-list .route-line, .card.no-effect .route-list .route-line { opacity: .38; }
   .route-line {
@@ -517,16 +516,16 @@
           <div class="overlay-buttons" id="wallOverlays">
             <div>
               <button class="tiny" data-overlay="palette" data-tone="out">palette</button>
-              <button class="tiny" data-overlay="arp" data-tone="lfo">arpeggiator</button>
+              <button class="tiny" data-overlay="arp" data-tone="arp">arpeggiator</button>
             </div>
             <div>
-              <button class="tiny" data-overlay="cells" data-tone="cells">cells</button>
-              <button class="tiny" data-overlay="curve" data-tone="cells">curve</button>
+              <button class="tiny" data-overlay="cells" data-tone="form">cells</button>
+              <button class="tiny" data-overlay="curve" data-tone="brightness">curve</button>
               <button class="tiny" data-overlay="bend" data-tone="place">bend</button>
             </div>
             <div>
               <button class="tiny" data-overlay="spots" data-tone="scatter">spots</button>
-              <button class="tiny" data-overlay="field" data-tone="color">field</button>
+              <button class="tiny" data-overlay="field" data-tone="field">field</button>
             </div>
           </div>
           <div class="rowline">

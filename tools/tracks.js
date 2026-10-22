@@ -116,13 +116,13 @@ function paintTrack(input, swing, points, circular, band) {
   if (swing) {
     for (const [low, high] of swing.spans) {
       const from = reaching(input, low), to = reaching(input, high);
-      backgrounds.push(stops(['transparent', '0%', from], ['var(--lfo)', from, to], ['transparent', to, '100%']));
+      backgrounds.push(stops(['transparent', '0%', from], ['var(--routes)', from, to], ['transparent', to, '100%']));
     }
   }
   if (band) {
     for (const [low, high] of band.spans) {
       const from = reaching(input, low), to = reaching(input, high);
-      backgrounds.push(stops(['transparent', '0%', from], ['var(--color)', from, to], ['transparent', to, '100%']));
+      backgrounds.push(stops(['transparent', '0%', from], ['var(--out)', from, to], ['transparent', to, '100%']));
     }
   }
   const at = reaching(input, +input.value);
