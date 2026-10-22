@@ -329,7 +329,7 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
   }
   if (overlays.curve && frame.curve) {
     if (frame.curve.horizontal) {
-      drawAcross(context, frame.curve.across, frame.curve.strips.map(levels => levels[0]), FORM_MARK, CURVE_BASE, order, columnWidth, WALL_TOP, WALL_HEIGHT);
+      drawAcross(context, frame.curve.across, frame.curve.strips.map(levels => levels[0]), BRIGHTNESS_MARK, CURVE_BASE, order, columnWidth, WALL_TOP, WALL_HEIGHT);
     } else {
       drawCurve(context, frame.curve.strips, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
     }
@@ -338,8 +338,10 @@ function draw(context, glow, frame, order, parOrder, width, height, overlays) {
   if (overlays.cells && frame.cells) drawMarks(context, frame.cells, FORM_MARK, -1, order, columnWidth, stripWidth, WALL_TOP, WALL_HEIGHT);
 }
 
-const PALETTE_MARK = 'rgba(176,162,236,0.95)';
+const PALETTE_MARK = 'rgba(170,174,190,0.95)';
 const FORM_MARK = 'rgba(240,206,100,0.95)';
+const BRIGHTNESS_MARK = 'rgba(246,226,160,0.95)';
+const ARP_MARK = 'rgba(200,138,240,';
 const PLACE_MARK = 'rgba(240,150,80,0.95)';
 const OUTLINE = 'rgba(10,11,14,0.85)';
 const SPOT_MARK = 'rgba(140,220,184,0.95)';
@@ -418,7 +420,7 @@ function drawCurve(context, curves, order, columnWidth, stripWidth, WALL_TOP, WA
       const x = axis + level * CURVE_REACH;
       if (point === 0) context.moveTo(x, yAt(point)); else context.lineTo(x, yAt(point));
     });
-    strokeOutlined(context, FORM_MARK, 1.5);
+    strokeOutlined(context, BRIGHTNESS_MARK, 1.5);
   });
   context.restore();
 }
@@ -533,15 +535,15 @@ function drawArpPass(context, pass, pars, width, top, bandHeight) {
   for (const { start, par } of pass.marks) {
     const y = first + par * rowHeight;
     const tail = context.createLinearGradient(xAt(start), 0, xAt(start + pass.length), 0);
-    tail.addColorStop(0, 'rgba(220,120,222,0.4)');
-    tail.addColorStop(1, 'rgba(220,120,222,0)');
+    tail.addColorStop(0, ARP_MARK + '0.4)');
+    tail.addColorStop(1, ARP_MARK + '0)');
     context.fillStyle = tail;
     context.fillRect(xAt(start), y + 1, xAt(start + pass.length) - xAt(start), rowHeight - 2);
     context.save();
     context.translate(-span, 0);
     context.fillRect(xAt(start), y + 1, xAt(start + pass.length) - xAt(start), rowHeight - 2);
     context.restore();
-    context.fillStyle = 'rgba(220,120,222,0.95)';
+    context.fillStyle = ARP_MARK + '0.95)';
     context.fillRect(xAt(start) - 1, y, 2.5, rowHeight - 1);
   }
 
