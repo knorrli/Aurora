@@ -86,7 +86,7 @@ Seen only in the preview so far. One look each, driven from the editor.
   - Routes on Delay read at the moment the birth would have landed undelayed; Note and Birth routes aimed at controls that are not per cell do nothing.
   - The travel's ends include Edge's glow, and follow the cell's width as it changes, so a growing cell at an end stays flush.
   - Born once with Inside, a cell leaving the travel jumps to the other end; only Outside draws it across.
-- Envelopes on any control: what starts one outside a cell? On a oneshot, the fire, with its length as the gate, which could replace Cycle once there. On a patch, each birth? Once also loops a wave once per LFO cycle on patch routes.
+- Build the arp's Rate and Gate, and envelopes as arp sources (`docs/design.md` § Arpeggiator).
 - The brightness curve overlay draws Vertical and Horizontal; what do Cell and Cell position show?
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.
@@ -95,7 +95,7 @@ Seen only in the preview so far. One look each, driven from the editor.
 - Scatter limited by the cells: a switch for spots only inside cells, only outside them, or everywhere.
 - Scatter's Value is not squared like a cell's brightness, so a spot at 50% looks brighter than a cell at 50%. Square it too?
 - Build advanced patches together in the preview: five bars alternating bright and faint, the stepped trail.
-- Should Strip's and Note's Random draw a new order on each birth, and on each start over, instead of one fixed shuffle?
+- On a patch, Strip's Random is one fixed shuffle. Should it draw a new order on each start over?
 - Accent still blends as before: it never changes settings and never crossfades a route. Should it follow the layer faders' rules?
 - Can a oneshot play one cell?
 - Does Field's Dark overlap too much with the brightness curve?

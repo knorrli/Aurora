@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#include "arp.h"
 #include "reading.h"
 #include "render_math.h"
 
@@ -10,7 +11,7 @@ namespace render {
 static const float SHORTEST_STAB_CYCLES = 0.06f;
 static const float ONCE_END = 0.9999f;
 
-static OneshotClock oneshotClock = { 0.0f, 1.0f };
+static OneshotClock oneshotClock = { 0.0f, 1.0f, 0 };
 
 void setOneshotClock(const OneshotClock &clock) { oneshotClock = clock; }
 
@@ -28,8 +29,10 @@ uint8_t routeTarget(const float *dialed, uint8_t route) { return fieldOf(dialed,
 
 bool routeArpeggiates(const float *dialed, uint8_t route) {
   return aurora_route_arp(fieldOf(dialed, route, ROUTE_ARP)) != ARP_UNISON
-      && aurora_arp_capable(routeTarget(dialed, route));
+      && arpCapable(routeTarget(dialed, route));
 }
+
+uint32_t routeDraw(uint8_t route) { return oneshotRoute(route) ? oneshotClock.fire : 0; }
 
 float turnsOn(const RouteTiming &timing, float clock, float shift) {
   if (!timing.once) return clock * (float)timing.ratio + shift - timing.phase;
@@ -114,6 +117,19 @@ static bool refused(uint8_t control) {
 
 bool routeRefused(uint8_t control) { return control == 0 || control >= AURORA_FIRST_ROUTE_CONTROL || refused(control); }
 
+static bool stripArpRefused(uint8_t control) {
+  switch (control) {
+    case CONTROL_PAR_HUE_RANGE:
+    case CONTROL_ARP_SPREAD:
+    case CONTROL_CELL_BEND:
+    case CONTROL_CELL_BEND_AT:
+    case CONTROL_CELL_DELAY:
+      return true;
+    default:
+      return false;
+  }
+}
+
 static bool swings(uint8_t control) {
   switch (control) {
     case CONTROL_FIELD_SPEED:
@@ -124,6 +140,12 @@ static bool swings(uint8_t control) {
       return false;
   }
 }
+
+bool stripArpControl(uint8_t control) {
+  return !routeRefused(control) && !aurora_par_arp_control(control) && !stripArpRefused(control) && !swings(control);
+}
+
+bool arpCapable(uint8_t control) { return aurora_par_arp_control(control) || stripArpControl(control); }
 
 bool circular(uint8_t control) {
   switch (control) {
@@ -276,7 +298,7 @@ static float pairsLevel(uint8_t index, uint8_t count) {
   return stretched((uint8_t)(groups - 1 - (count - 1 - index) / 2), groups);
 }
 
-static uint8_t shuffledRank(uint8_t index, uint8_t count, uint8_t salt) {
+static uint8_t shuffledRank(uint8_t index, uint8_t count, uint32_t salt) {
   if (count > MAX_CHORD) return index;
   uint8_t order[MAX_CHORD];
   for (uint8_t i = 0; i < count; i++) order[i] = i;
@@ -292,7 +314,7 @@ static uint8_t shuffledRank(uint8_t index, uint8_t count, uint8_t salt) {
   return index;
 }
 
-float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt) {
+float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint32_t salt) {
   if (count == 0 || index >= count) return 0.5f;
   const uint8_t groups = (uint8_t)((count + 1) / 2);
   switch (pattern) {
@@ -307,12 +329,17 @@ float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt) {
   }
 }
 
-static float birthLevel(uint8_t pattern, const CellMember &cell, uint8_t salt) {
+static float birthLevel(uint8_t pattern, const CellMember &cell, uint32_t salt) {
   switch (pattern) {
     case GROUP_EVENS_ODDS: return (float)(((cell.birthNumber % 2) + 2) % 2);
     case GROUP_RANDOM: return (float)(hash32((uint32_t)cell.birthNumber, salt, BIRTH_SALT) & 0xFF) / 255.0f;
     default: return groupLevel(pattern, cell.birthIndex, cell.birthsInCycle, salt);
   }
+}
+
+static uint32_t groupSalt(uint8_t route, uint32_t birth) {
+  const uint32_t draw = routeDraw(route);
+  return draw || birth ? hash32(route, draw, birth) : route;
 }
 
 static bool perCellSource(const RouteReading &reading) {
@@ -382,15 +409,15 @@ static bool levelOf(const RouteReading &reading, uint8_t route, const RouteConte
       return true;
     case ROUTE_SOURCE_STRIP:
       if (context.strip < 0) return false;
-      out = groupLevel(reading.pattern, (uint8_t)context.strip, STRIPS, route);
+      out = groupLevel(reading.pattern, (uint8_t)context.strip, STRIPS, groupSalt(route, 0));
       return true;
     case ROUTE_SOURCE_NOTE:
       if (!cell) return false;
-      out = groupLevel(reading.pattern, cell->note, cell->chord, route);
+      out = groupLevel(reading.pattern, cell->note, cell->chord, groupSalt(route, (uint32_t)cell->birthNumber));
       return true;
     case ROUTE_SOURCE_BIRTH:
       if (!cell) return false;
-      out = birthLevel(reading.pattern, *cell, route);
+      out = birthLevel(reading.pattern, *cell, groupSalt(route, 0));
       return true;
     default:
       if (!cell || !cell->envelopes) return false;
@@ -434,6 +461,17 @@ float routeAmountAt(const Routes &routes, uint8_t route, const RouteContext &con
 static float amountOf(const Routes &routes, uint8_t route, const RouteContext &context) {
   const float amount = routes.routes[route].amount + aimedAt(routes, route, false, context);
   return amount > 1.0f ? 1.0f : (amount < -1.0f ? -1.0f : amount);
+}
+
+static void addStripArpRoutes(const float *dialed, float beatsPerCycle, float lfo, uint8_t strip, float beatsAgo,
+                              Modulation &out) {
+  const Arp arp = readArp(dialed, &out, STRIPS);
+  for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
+    ArpRoute arpRoute;
+    if (!readArpRoute(dialed, route, arpRoute) || !stripArpControl(arpRoute.target)) continue;
+    const float turns = turnsOn(arpRoute.timing, clockBefore(route, lfo, beatsPerCycle, beatsAgo), 0.0f);
+    out.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, turns, strip);
+  }
 }
 
 void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,
@@ -486,6 +524,7 @@ void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, int
     out.swing[destination] += reach * (level - integral.mean);
     out.shift[destination] += reach * totalAt(integral, phase) * cycleBeats / (float)reading.timing.ratio;
   }
+  if (strip >= 0) addStripArpRoutes(dialed, beatsPerCycle, lfo, (uint8_t)strip, beatsAgo, out);
 }
 
 void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,

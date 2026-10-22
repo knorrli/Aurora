@@ -242,6 +242,7 @@ void Playback::noteOff(uint8_t note, uint32_t micros) {
 void Playback::fire(uint8_t index, float strength, float beats) {
   if (index >= AURORA_ONESHOTS || !library.oneshot(index, oneshot)) return;
   firing = true;
+  fires++;
   firedIndex = index;
   firedAtBeats = beats;
   firedStrength = strength;
@@ -416,7 +417,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
   float live[AURORA_PATCH_CONTROLS];
   computeLive(beats, live);
 
-  render::OneshotClock clock = { 0.0f, 1.0f };
+  render::OneshotClock clock = { 0.0f, 1.0f, 0 };
   uint8_t level = 255;
   if (pinned && pinnedMix) {
     float base[AURORA_PATCH_CONTROLS];
@@ -435,7 +436,7 @@ const render::Frame &Playback::frame(uint32_t micros) {
       if (lastOneshotProgress < 0.0f || lastOneshotProgress >= 1.0f) firing = false;
     }
     render::composeOneshot(mixed, firing ? oneshot.controls : nullptr, oneshot.marks, firedStrength, composed);
-    if (firing) clock = { lastOneshotProgress, lengthBeats };
+    if (firing) clock = { lastOneshotProgress, lengthBeats, fires };
     level = (uint8_t)lroundf(render::clampUnit(brightnessAt(beats)) * 255.0f);
   }
 

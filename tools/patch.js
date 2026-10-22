@@ -419,7 +419,6 @@ const ARP_MODE_NAMES = {
 
 const arpeggiates = (live, route) => Protocol.routeArp(live[route.arp]) !== Protocol.ARP.unison
   && Preview.arpCapable(live[route.destination]);
-const arpRouted = live => soundingRoutes(live).some(route => arpeggiates(live, route));
 
 const LFO = {
   name: 'LFO', tone: 'lfo',
@@ -429,13 +428,9 @@ const LFO = {
     control('arpMode', 'Mode',
       { kind: 'steps', step: Protocol.arpMode,
         options: Object.entries(Protocol.ARP_MODE)
-          .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]),
-        inertWhen: live => !arpRouted(live) }),
-    control('arpDirection', 'Direction',
-      { kind: 'two', options: [[OFF, 'forward'], [ON, 'reverse']],
-        inertWhen: live => !arpRouted(live) || Protocol.arpMode(live.arpMode) === Protocol.ARP_MODE.random }),
-    control('arpSpread', 'Spread',
-      { inertWhen: live => !arpRouted(live) }),
+          .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]) }),
+    control('arpDirection', 'Direction', { kind: 'two', options: [[OFF, 'forward'], [ON, 'reverse']] }),
+    control('arpSpread', 'Spread'),
   ],
 };
 

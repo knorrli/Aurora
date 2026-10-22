@@ -306,15 +306,15 @@ enum AuroraArp : uint8_t {
     ARP_RIPPLE = 2,
 };
 
-static const uint8_t AURORA_ARP_CONTROLS[] = {
+static const uint8_t AURORA_PAR_ARP_CONTROLS[] = {
     CONTROL_PAR_HUE_OFFSET, CONTROL_PAR_SATURATION, CONTROL_PAR_VALUE,
 };
-static const uint8_t AURORA_ARP_CONTROL_COUNT =
-    sizeof(AURORA_ARP_CONTROLS) / sizeof(AURORA_ARP_CONTROLS[0]);
+static const uint8_t AURORA_PAR_ARP_CONTROL_COUNT =
+    sizeof(AURORA_PAR_ARP_CONTROLS) / sizeof(AURORA_PAR_ARP_CONTROLS[0]);
 
-static inline bool aurora_arp_capable(uint8_t control) {
-    for (uint8_t index = 0; index < AURORA_ARP_CONTROL_COUNT; index++) {
-        if (AURORA_ARP_CONTROLS[index] == control) return true;
+static inline bool aurora_par_arp_control(uint8_t control) {
+    for (uint8_t index = 0; index < AURORA_PAR_ARP_CONTROL_COUNT; index++) {
+        if (AURORA_PAR_ARP_CONTROLS[index] == control) return true;
     }
     return false;
 }

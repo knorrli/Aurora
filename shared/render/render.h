@@ -44,6 +44,7 @@ static inline uint8_t roundedControl(float value) { return (uint8_t)(value + 0.5
 struct OneshotClock {
   float progress;
   float beats;
+  uint32_t fire;
 };
 
 static const uint8_t TAIL_MAX_BEATS = 8;

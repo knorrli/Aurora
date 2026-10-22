@@ -111,7 +111,7 @@ void readRoutes(const float *dialed, Routes &out);
 
 Push cellPush(const Routes &routes, uint8_t control, const RouteContext &context);
 
-float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint8_t salt);
+float groupLevel(uint8_t pattern, uint8_t index, uint8_t count, uint32_t salt);
 
 float routeAmountAt(const Routes &routes, uint8_t route, const RouteContext &context);
 
@@ -134,6 +134,12 @@ bool routeRefused(uint8_t control);
 uint8_t routeTarget(const float *dialed, uint8_t route);
 
 bool routeArpeggiates(const float *dialed, uint8_t route);
+
+bool stripArpControl(uint8_t control);
+
+bool arpCapable(uint8_t control);
+
+uint32_t routeDraw(uint8_t route);
 
 bool routeAims(const float *dialed, uint8_t control, uint8_t routes);
 

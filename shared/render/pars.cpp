@@ -14,53 +14,21 @@ static const uint32_t SHORTEST_PAR_PULSE_MILLISECONDS = 25;
 static const uint8_t PAR_LIT_LEVEL = 16;
 static const uint8_t CYCLE_DRAW_SALT = 97;
 
-struct ArpRoute {
-  uint8_t target;
-  uint8_t arp;
-  float amount;
-  Wave wave;
-  RouteTiming timing;
-};
-
-static bool readArpRoute(const float *dialed, uint8_t route, ArpRoute &out) {
-  if (!routeArpeggiates(dialed, route)) return false;
-  out.arp = aurora_route_arp(roundedControl(dialed[routeControl(route, ROUTE_ARP)]));
-  out.target = routeTarget(dialed, route);
-  if (aurora_route_source(roundedControl(dialed[routeControl(route, ROUTE_SOURCE)])) != ROUTE_SOURCE_LFO) return false;
-  out.amount = signedOf(dialed[routeControl(route, ROUTE_AMOUNT)]);
-  if (fabsf(out.amount) < 0.001f) return false;
-  out.wave = waveOf(dialed, route);
-  out.timing = routeTiming(dialed, route);
-  return true;
-}
-
 static float turnsAt(const ArpRoute &route, float lfo) {
   return routeTurns(route.timing, lfo, 0.0f);
 }
 
 static bool lastPulseOf(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par,
                         Pulse &pulse) {
-  return lastPulse(arp, route.arp == ARP_RIPPLE, turnsAt(route, lfo), par, pulse);
-}
-
-static float arpLevel(const ArpRoute &route, const Arp &arp, float lfo, uint8_t par) {
-  const float turns = turnsAt(route, lfo);
-  Pulse pulses[LIVE_PULSES];
-  const uint8_t count = livePulses(arp, route.arp == ARP_RIPPLE, turns, par, pulses);
-  float level = 0.0f;
-  for (uint8_t i = 0; i < count; i++) {
-    const float into = (turns - pulses[i].start) / pulses[i].length;
-    level = fmaxf(level, lfoWave(into - waveRise(route.wave.shape), route.wave));
-  }
-  return level;
+  return lastPulse(drawnFor(arp, route.timing.route), route.arp == ARP_RIPPLE, turnsAt(route, lfo), par, pulse);
 }
 
 static void addArpRoutes(const float *dialed, const Arp &arp, float lfo, uint8_t par,
                           Modulation &modulation) {
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
-    if (!readArpRoute(dialed, route, arpRoute)) continue;
-    modulation.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, lfo, par);
+    if (!readArpRoute(dialed, route, arpRoute) || !aurora_par_arp_control(arpRoute.target)) continue;
+    modulation.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, turnsAt(arpRoute, lfo), par);
   }
 }
 
@@ -71,7 +39,8 @@ static float drawnHue(const float *dialed, const Arp &arp, float lfo, uint8_t pa
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     Pulse pulse;
-    if (!readArpRoute(dialed, route, arpRoute) || !lastPulseOf(arpRoute, arp, lfo, par, pulse)) {
+    if (!readArpRoute(dialed, route, arpRoute) || !aurora_par_arp_control(arpRoute.target)
+        || !lastPulseOf(arpRoute, arp, lfo, par, pulse)) {
       continue;
     }
     const float litAt = (pulse.start + arpRoute.timing.phase) / (float)arpRoute.timing.ratio;
@@ -98,7 +67,7 @@ static float bandPlace(const float *dialed, const Arp &arp, float lfo, uint8_t p
                        float range) {
   const uint8_t layout = aurora_hue_layout(roundedControl(dialed[CONTROL_PAR_HUE_LAYOUT]));
   if (layout == HUE_LAYOUT_RANDOM) return fabsf(range) * drawnHue(dialed, arp, lfo, par);
-  const Arp grouping = { groupingOf(layout), 1.0f, false };
+  const Arp grouping = { groupingOf(layout), 1.0f, false, PARS, 0 };
   const uint8_t groups = arpGroupCount(grouping);
   if (groups < 2) return 0.0f;
   return range * (2.0f * (float)arpGroupOf(grouping, par) / (float)(groups - 1) - 1.0f);
@@ -113,8 +82,8 @@ static void parModulation(const float *dialed, const Modulation &modulation, con
 bool firstArpPass(const float *dialed, const Modulation &modulation, float lfo, ArpPass &out) {
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
-    if (!readArpRoute(dialed, route, arpRoute)) continue;
-    passAt(readArp(dialed, &modulation), arpRoute.arp == ARP_RIPPLE, turnsAt(arpRoute, lfo), out);
+    if (!readArpRoute(dialed, route, arpRoute) || !aurora_par_arp_control(arpRoute.target)) continue;
+    passAt(drawnFor(readArp(dialed, &modulation, PARS), route), arpRoute.arp == ARP_RIPPLE, turnsAt(arpRoute, lfo), out);
     return true;
   }
   return false;
@@ -123,14 +92,14 @@ bool firstArpPass(const float *dialed, const Modulation &modulation, float lfo, 
 uint8_t routedAtPar(const float *dialed, const Modulation &modulation, float lfo, uint8_t control,
                     uint8_t par) {
   Modulation atPar;
-  parModulation(dialed, modulation, readArp(dialed, &modulation), lfo, par, atPar);
+  parModulation(dialed, modulation, readArp(dialed, &modulation, PARS), lfo, par, atPar);
   return displayedByte(control, routed(dialed, &atPar, control));
 }
 
 static uint8_t hueByte(float hue) { return (uint8_t)(int32_t)lroundf(wrappedHue(hue)); }
 
 void readPars(const float *dialed, const Modulation &modulation, float lfo, Frame &out) {
-  const Arp arp = readArp(dialed, &modulation);
+  const Arp arp = readArp(dialed, &modulation, PARS);
   const float stripsHue = routedColor(dialed, &modulation).h;
   const uint8_t palette = roundedControl(dialed[CONTROL_PALETTE]);
   out.stripsHue = hueByte(stripsHue);

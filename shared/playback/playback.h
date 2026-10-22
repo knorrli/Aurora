@@ -139,6 +139,7 @@ class Playback {
   render::Par frozenPars[render::PARS];
 
   bool firing = false;
+  uint32_t fires = 0;
   Oneshot oneshot;
   uint8_t firedIndex = AURORA_NO_ONESHOT;
   float firedAtBeats = 0.0f;

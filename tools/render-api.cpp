@@ -194,16 +194,16 @@ EMSCRIPTEN_KEEPALIVE int aurora_switch_on(int value) { return aurora_switch_is_o
 EMSCRIPTEN_KEEPALIVE int aurora_three_way(int value) { return aurora_three_way_position((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_four_way(int value) { return aurora_four_way_position((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_arp_of(int value) { return aurora_route_arp((uint8_t)value); }
-EMSCRIPTEN_KEEPALIVE int aurora_arp_capable_of(int control) { return aurora_arp_capable((uint8_t)control); }
+EMSCRIPTEN_KEEPALIVE int aurora_arp_capable_of(int control) { return render::arpCapable((uint8_t)control); }
 EMSCRIPTEN_KEEPALIVE int aurora_bipolar(int value) { return aurora_route_bipolar((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE int aurora_bipolar_capable_of(int control) { return aurora_bipolar_capable((uint8_t)control); }
 EMSCRIPTEN_KEEPALIVE int aurora_group_pattern_of(int value) { return aurora_group_pattern((uint8_t)value); }
 EMSCRIPTEN_KEEPALIVE float aurora_group_level(int pattern, int index, int count, int salt) {
-  return render::groupLevel((uint8_t)pattern, (uint8_t)index, (uint8_t)count, (uint8_t)salt);
+  return render::groupLevel((uint8_t)pattern, (uint8_t)index, (uint8_t)count, (uint32_t)salt);
 }
 
 static render::Arp arpOf(int mode, int spread) {
-  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CONTROL_ARP_SPREAD, (float)spread), false };
+  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CONTROL_ARP_SPREAD, (float)spread), false, render::PARS, 0 };
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_length(int mode) { return render::passLength(arpOf(mode, 127)); }
