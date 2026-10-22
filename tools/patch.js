@@ -432,11 +432,12 @@ const ARP_MODE_NAMES = {
   pairs: 'pairs', mirror: 'mirror', random: 'random',
 };
 
-const LFO = {
-  name: 'LFO', tone: 'lfo',
-  source: [control('lfoRate', 'Rate')],
+const LFO = { name: 'LFO', tone: 'lfo', source: [control('lfoRate', 'Rate')], amounts: [] };
+
+const ARP = {
+  name: 'Arp', tone: 'lfo',
   amounts: [],
-  arpeggiator: [
+  source: [
     control('arpMode', 'Mode',
       { kind: 'steps', step: Protocol.arpMode,
         options: Object.entries(Protocol.ARP_MODE)
@@ -558,13 +559,13 @@ const PARS = {
 
 const OUTPUTS = [SHARED_COLOR, STRIPS, PARS];
 const outputNames = output => output.sections.flatMap(([, names]) => names);
-const cardNames = card => [...card.source, ...card.amounts, ...(card.arpeggiator || [])];
+const cardNames = card => [...card.source, ...card.amounts];
 
 const PLACES = {};
 for (const group of CELLS.groups) {
   for (const name of group.names) PLACES[name] = `${CELLS.name} · ${group.title}`;
 }
-for (const card of [LFO, ...ENGINES]) {
+for (const card of [LFO, ARP, ...ENGINES]) {
   for (const name of cardNames(card)) PLACES[name] = card.name;
 }
 for (const card of ENVELOPE_CARDS) {
@@ -578,7 +579,7 @@ const TONES = {};
 for (const group of CELLS.groups) {
   for (const name of group.names) TONES[name] = group.tone;
 }
-for (const card of [LFO, ...ENGINES]) {
+for (const card of [LFO, ARP, ...ENGINES]) {
   for (const name of cardNames(card)) TONES[name] = card.tone;
 }
 for (const card of ENVELOPE_CARDS) {
@@ -632,7 +633,7 @@ function wholeCounts(valueOf) {
 
 const STEPPED = new Set([
   'lfoRate', 'flowRate', 'scatterRate', 'fieldSpeed',
-  'cellRate', 'cellChord', 'cellGate', 'cellTail',
+  'cellRate', 'cellChord', 'cellGate', 'cellTail', 'arpRate', 'arpGate',
   ...ENVELOPES.flatMap(stages => [stages.delay, stages.attack, stages.hold, stages.decay, stages.release]),
 ]);
 
@@ -658,7 +659,7 @@ export {
   NUMBER, NAMES, controls, CONTROLS, READOUTS, DEFAULT,
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
-  CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
+  CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ARP, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
   fromLfo, fromEnvelope, clockedByLfo, fromGroup, arpeggiates, holdable, sounding, aimsAt, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
   arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

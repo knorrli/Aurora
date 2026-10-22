@@ -170,19 +170,21 @@ function buildCard(card) {
 
   const head = element('div', 'card-head');
   const state = element('span', 'card-state');
-  const bypass = card === Patch.LFO ? null : bypassButton(card);
+  const bypass = card === Patch.LFO || card === Patch.ARP ? null : bypassButton(card);
   head.append(element('span', 'card-name', card.name), state, ...(bypass ? [bypass] : []),
               resetButton(Patch.cardNames(card)));
   movable(head, card.name, Patch.cardNames(card));
   root.appendChild(head);
 
   const body = element('div', 'card-body');
-  for (const [title, names] of [['Source', card.source], ['Amounts', card.amounts], ['Arpeggiator', card.arpeggiator || []]]) {
-    if (!names.length) continue;
+  const sections = [['Source', card.source], ['Amounts', card.amounts]].filter(([, names]) => names.length);
+  for (const [title, names] of sections) {
     const box = element('div');
-    const handle = element('h4', null, title);
-    movable(handle, `${card.name} · ${title}`, names);
-    box.appendChild(handle);
+    if (sections.length > 1) {
+      const handle = element('h4', null, title);
+      movable(handle, `${card.name} · ${title}`, names);
+      box.appendChild(handle);
+    }
     buildRows(box, names);
     body.appendChild(box);
   }
@@ -270,7 +272,9 @@ function paintEnvelopeGraphs(live) {
 
 function build() {
   byId('outputs').replaceChildren(...Patch.OUTPUTS.map(output => buildGroup(output.title, output.sections)));
-  byId('lfo').replaceChildren(buildCard(Patch.LFO), buildEnvelopesCard(), buildRoutesCard());
+  const clocks = element('div', 'card-pair');
+  clocks.append(buildCard(Patch.LFO), buildCard(Patch.ARP));
+  byId('lfo').replaceChildren(clocks, buildEnvelopesCard(), buildRoutesCard());
   const groups = element('div', 'groups');
   groups.append(...Patch.CELLS.groups.map(group => {
     const box = buildGroup(group.title, group.sections || [[null, group.names]], `${Patch.CELLS.name} · ${group.title}`,
