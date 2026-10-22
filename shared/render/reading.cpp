@@ -112,15 +112,16 @@ float controlValue(uint8_t control, float value) {
 
     case CONTROL_CELL_BEND:
     case CONTROL_CELL_CURVE: return signedOf(value);
-    case CONTROL_ARP_SPREAD: return unitOf(value);
     case CONTROL_CELL_BEND_AT:
     case CONTROL_CELL_CURVE_AT: return 0.5f + 0.5f * signedOf(value);
     case CONTROL_CELL_POSITION: return positionOf(value);
     case CONTROL_CELL_DELAY: return delayOf(value);
     case CONTROL_CELL_WIDTH: return unitOf(value) * (float)PIXELS;
     case CONTROL_CELL_EDGE: return unitOf(value) * EDGE_REACH_PIXELS;
-    case CONTROL_CELL_RATE: return cellRateBeatsOf(value);
-    case CONTROL_CELL_GATE: return gateBeatsOf(value);
+    case CONTROL_CELL_RATE:
+    case CONTROL_ARP_RATE: return cellRateBeatsOf(value);
+    case CONTROL_CELL_GATE:
+    case CONTROL_ARP_GATE: return gateBeatsOf(value);
     case CONTROL_CELL_CHORD: return chordOf(value);
     case CONTROL_SCATTER_SPEED: return squaredRate(value, MAX_SPEED_PIXELS_PER_BEAT);
     case CONTROL_LFO_RATE: return aurora_lfo_period(roundedControl(value));
@@ -163,6 +164,20 @@ float controlValue(uint8_t control, float value) {
   }
 }
 
+void readEnvelope(const float *dialed, const Modulation *modulation, uint8_t envelope, Envelope &out) {
+  auto at = [&](uint8_t stage) {
+    const uint8_t control = aurora_envelope_control(envelope, stage);
+    return controlValue(control, routed(dialed, modulation, control));
+  };
+  out.delay = at(ENVELOPE_DELAY);
+  out.attack = at(ENVELOPE_ATTACK);
+  out.hold = at(ENVELOPE_HOLD);
+  out.decay = at(ENVELOPE_DECAY);
+  out.sustain = at(ENVELOPE_SUSTAIN);
+  out.release = at(ENVELOPE_RELEASE);
+  out.stepped = aurora_switch_is_on(roundedControl(dialed[aurora_envelope_moves_control(envelope)]));
+}
+
 void readControls(const float *dialed, const Modulation *modulation, Reading &out) {
   auto at = [&](uint8_t control) { return controlValue(control, routed(dialed, modulation, control)); };
 
@@ -185,14 +200,7 @@ void readControls(const float *dialed, const Modulation *modulation, Reading &ou
   cells.curveAt = at(CONTROL_CELL_CURVE_AT);
   cells.direction = aurora_four_way_position(roundedControl(dialed[CONTROL_CELL_DIRECTION]));
   for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
-    Envelope &stages = cells.envelopes[envelope];
-    stages.delay = at(aurora_envelope_control(envelope, ENVELOPE_DELAY));
-    stages.attack = at(aurora_envelope_control(envelope, ENVELOPE_ATTACK));
-    stages.hold = at(aurora_envelope_control(envelope, ENVELOPE_HOLD));
-    stages.decay = at(aurora_envelope_control(envelope, ENVELOPE_DECAY));
-    stages.sustain = at(aurora_envelope_control(envelope, ENVELOPE_SUSTAIN));
-    stages.release = at(aurora_envelope_control(envelope, ENVELOPE_RELEASE));
-    stages.stepped = aurora_switch_is_on(roundedControl(dialed[aurora_envelope_moves_control(envelope)]));
+    readEnvelope(dialed, modulation, envelope, cells.envelopes[envelope]);
   }
 
   out.lfoBeats = at(CONTROL_LFO_RATE);

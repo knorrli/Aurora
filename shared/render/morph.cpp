@@ -19,6 +19,7 @@ static bool switched(uint8_t control) {
     case CONTROL_TEMPO_DIVISION:
     case CONTROL_ARP_MODE:
     case CONTROL_ARP_DIRECTION:
+    case CONTROL_ARP_RATE:
     case CONTROL_CELL_ENDS:
     case CONTROL_CELL_END:
     case CONTROL_CELL_RATE:
@@ -170,8 +171,9 @@ static Usage usageOf(const float *controls) {
     if (!(usage.routes & (1 << route))) continue;
     const uint8_t source = aurora_route_source(roundedControl(controls[aurora_route_control(route, ROUTE_SOURCE)]));
     if (aurora_source_is_envelope(source)) usage.envelopes |= (uint8_t)(1 << (source - ROUTE_SOURCE_ENVELOPE_1));
-    if (source == ROUTE_SOURCE_LFO) usage.lfo = true;
-    if (routeArpeggiates(controls, route)) usage.arp = true;
+    const bool arpeggiates = routeArpeggiates(controls, route);
+    if (source == ROUTE_SOURCE_LFO && !arpeggiates) usage.lfo = true;
+    if (arpeggiates) usage.arp = true;
   }
   usage.hiddenEngines = hiddenEngines(controls);
   return usage;
@@ -189,7 +191,8 @@ static bool uses(const Usage &usage, uint8_t control) {
     case CONTROL_LFO_RATE: return usage.lfo;
     case CONTROL_ARP_MODE:
     case CONTROL_ARP_DIRECTION:
-    case CONTROL_ARP_SPREAD:
+    case CONTROL_ARP_RATE:
+    case CONTROL_ARP_GATE:
       return usage.arp;
     default:
       return true;

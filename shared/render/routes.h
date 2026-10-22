@@ -85,6 +85,15 @@ struct Push {
 
 void setOneshotClock(const OneshotClock &clock);
 
+struct PlayerClock {
+  float beats;
+  float start;
+};
+
+void setPlayerClock(const PlayerClock &clock);
+
+PlayerClock routeClock(uint8_t route);
+
 RouteTiming routeTiming(const float *dialed, uint8_t route);
 
 float turnsOn(const RouteTiming &timing, float clock, float shift);

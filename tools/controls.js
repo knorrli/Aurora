@@ -24,78 +24,79 @@ const NUMBER = {
   lfoRate:           9,
   arpMode:           10,
   arpDirection:      11,
-  arpSpread:         12,
-  cellEnds:          13,
-  cellChord:         14,
-  cellSpread:        15,
-  cellPosition:      16,
-  cellBend:          17,
-  cellBendAt:        18,
-  cellWidth:         19,
-  cellEdge:          20,
-  cellTail:          21,
-  cellEnd:           22,
-  cellRate:          23,
-  cellDelay:         24,
-  cellGate:          25,
-  cellDirection:     26,
-  cellBrightness:    27,
-  cellCurve:         28,
-  cellCurveAt:       29,
-  scatterCount:      30,
-  scatterWidth:      31,
-  scatterEdge:       32,
-  scatterRate:       33,
-  scatterSpeed:      34,
-  scatterRandomize:  35,
-  scatterPosition:   36,
-  scatterMix:        37,
-  scatterHue:        38,
-  scatterSaturation: 39,
-  scatterValue:      40,
-  fieldForm:         41,
-  fieldDirection:    42,
-  fieldCount:        43,
-  fieldWidth:        44,
-  fieldEdge:         45,
-  fieldSpeed:        46,
-  fieldPosition:     47,
-  fieldHue:          48,
-  fieldWhite:        49,
-  fieldDark:         50,
-  flowDensity:       51,
-  flowRate:          52,
-  flowHue:           53,
-  flowWhite:         54,
-  flowDark:          55,
-  coreHue:           56,
-  coreWhite:         57,
-  coreDark:          58,
-  envelope1Moves:    59,
-  envelope1Delay:    60,
-  envelope1Attack:   61,
-  envelope1Hold:     62,
-  envelope1Decay:    63,
-  envelope1Sustain:  64,
-  envelope1Release:  65,
-  envelope2Moves:    66,
-  envelope2Delay:    67,
-  envelope2Attack:   68,
-  envelope2Hold:     69,
-  envelope2Decay:    70,
-  envelope2Sustain:  71,
-  envelope2Release:  72,
-  envelope3Moves:    73,
-  envelope3Delay:    74,
-  envelope3Attack:   75,
-  envelope3Hold:     76,
-  envelope3Decay:    77,
-  envelope3Sustain:  78,
-  envelope3Release:  79,
+  arpRate:           12,
+  arpGate:           13,
+  cellEnds:          14,
+  cellChord:         15,
+  cellSpread:        16,
+  cellPosition:      17,
+  cellBend:          18,
+  cellBendAt:        19,
+  cellWidth:         20,
+  cellEdge:          21,
+  cellTail:          22,
+  cellEnd:           23,
+  cellRate:          24,
+  cellDelay:         25,
+  cellGate:          26,
+  cellDirection:     27,
+  cellBrightness:    28,
+  cellCurve:         29,
+  cellCurveAt:       30,
+  scatterCount:      31,
+  scatterWidth:      32,
+  scatterEdge:       33,
+  scatterRate:       34,
+  scatterSpeed:      35,
+  scatterRandomize:  36,
+  scatterPosition:   37,
+  scatterMix:        38,
+  scatterHue:        39,
+  scatterSaturation: 40,
+  scatterValue:      41,
+  fieldForm:         42,
+  fieldDirection:    43,
+  fieldCount:        44,
+  fieldWidth:        45,
+  fieldEdge:         46,
+  fieldSpeed:        47,
+  fieldPosition:     48,
+  fieldHue:          49,
+  fieldWhite:        50,
+  fieldDark:         51,
+  flowDensity:       52,
+  flowRate:          53,
+  flowHue:           54,
+  flowWhite:         55,
+  flowDark:          56,
+  coreHue:           57,
+  coreWhite:         58,
+  coreDark:          59,
+  envelope1Moves:    60,
+  envelope1Delay:    61,
+  envelope1Attack:   62,
+  envelope1Hold:     63,
+  envelope1Decay:    64,
+  envelope1Sustain:  65,
+  envelope1Release:  66,
+  envelope2Moves:    67,
+  envelope2Delay:    68,
+  envelope2Attack:   69,
+  envelope2Hold:     70,
+  envelope2Decay:    71,
+  envelope2Sustain:  72,
+  envelope2Release:  73,
+  envelope3Moves:    74,
+  envelope3Delay:    75,
+  envelope3Attack:   76,
+  envelope3Hold:     77,
+  envelope3Decay:    78,
+  envelope3Sustain:  79,
+  envelope3Release:  80,
 };
 
-const TAGS = {"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"parHueOffset":["patch","circular"],"parSaturation":["patch"],"parValue":["patch"],"parHueLayout":["switch"],"parHueRange":["patch"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpDirection":["switch"],"arpSpread":["patch"],"cellEnds":["switch"],"cellChord":["patch"],"cellSpread":["patch"],"cellPosition":["patch"],"cellBend":["patch"],"cellBendAt":["patch"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellEnd":["switch"],"cellRate":["switch"],"cellDelay":["patch"],"cellGate":["patch"],"cellDirection":["switch"],"cellBrightness":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"envelope1Moves":["switch"],"envelope1Delay":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Moves":["switch"],"envelope2Delay":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Moves":["switch"],"envelope3Delay":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"]};
-const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpSpread":127,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
+const TAGS = {"palette":["switch"],"hue":["patch","circular"],"saturation":["patch"],"parHueOffset":["patch","circular"],"parSaturation":["patch"],"parValue":["patch"],"parHueLayout":["switch"],"parHueRange":["patch"],"tempoDivision":["switch"],"lfoRate":["patch"],"arpMode":["switch"],"arpDirection":["switch"],"arpRate":["switch"],"arpGate":["patch"],"cellEnds":["switch"],"cellChord":["patch"],"cellSpread":["patch"],"cellPosition":["patch"],"cellBend":["patch"],"cellBendAt":["patch"],"cellWidth":["patch"],"cellEdge":["patch"],"cellTail":["patch"],"cellEnd":["switch"],"cellRate":["switch"],"cellDelay":["patch"],"cellGate":["patch"],"cellDirection":["switch"],"cellBrightness":["patch"],"cellCurve":["patch"],"cellCurveAt":["patch"],"scatterCount":["patch"],"scatterWidth":["patch"],"scatterEdge":["patch"],"scatterRate":["patch","rate"],"scatterSpeed":["patch"],"scatterRandomize":["patch"],"scatterPosition":["patch"],"scatterMix":["patch"],"scatterHue":["patch"],"scatterSaturation":["patch"],"scatterValue":["patch"],"fieldForm":["switch"],"fieldDirection":["switch"],"fieldCount":["patch"],"fieldWidth":["patch"],"fieldEdge":["patch"],"fieldSpeed":["patch","rate"],"fieldPosition":["patch"],"fieldHue":["patch"],"fieldWhite":["patch"],"fieldDark":["patch"],"flowDensity":["patch"],"flowRate":["patch","rate"],"flowHue":["patch"],"flowWhite":["patch"],"flowDark":["patch"],"coreHue":["patch"],"coreWhite":["patch"],"coreDark":["patch"],"envelope1Moves":["switch"],"envelope1Delay":["patch"],"envelope1Attack":["patch"],"envelope1Hold":["patch"],"envelope1Decay":["patch"],"envelope1Sustain":["patch"],"envelope1Release":["patch"],"envelope2Moves":["switch"],"envelope2Delay":["patch"],"envelope2Attack":["patch"],"envelope2Hold":["patch"],"envelope2Decay":["patch"],"envelope2Sustain":["patch"],"envelope2Release":["patch"],"envelope3Moves":["switch"],"envelope3Delay":["patch"],"envelope3Attack":["patch"],"envelope3Hold":["patch"],"envelope3Decay":["patch"],"envelope3Sustain":["patch"],"envelope3Release":["patch"]};
+const CONTROL_DEFAULTS = {"hue":20,"saturation":127,"cellBrightness":127,"parSaturation":127,"parValue":127,"parHueRange":64,"arpGate":64,"lfoRate":64,"cellEnd":127,"cellWidth":20,"cellPosition":64,"cellBend":64,"cellBendAt":64,"cellSpread":127,"cellGate":64,"cellCurve":64,"cellCurveAt":64,"envelope1Sustain":127,"envelope2Sustain":127,"envelope3Sustain":127,"scatterCount":80,"scatterWidth":34,"scatterEdge":40,"scatterRate":80,"scatterRandomize":110,"scatterSpeed":64,"scatterPosition":64,"scatterHue":64,"scatterSaturation":127,"scatterValue":127,"fieldCount":24,"fieldWidth":64,"fieldEdge":64,"fieldSpeed":64,"fieldPosition":64,"fieldHue":64,"flowDensity":20,"flowRate":50,"flowHue":64,"coreHue":64};
 
 const MIDI_CHANNEL = 1;
 const PROGRAM_BLACKOUT = 0;
@@ -113,7 +114,7 @@ const DIRECTION = {"vertical":0,"horizontal":1,"cell":2,"cellPosition":3};
 const ENVELOPES = 3;
 const ENVELOPE_STAGE = {"delay":0,"attack":1,"hold":2,"decay":3,"sustain":4,"release":5};
 const FIELD_FORM = {"gradient":0,"region":1,"allButRegion":2};
-const ARP = {"unison":0,"steps":1,"ripple":2};
+const ARP = {"unison":0,"steps":1};
 const ARP_MODE = {"sequence":0,"bounce":1,"evensOdds":2,"pairs":3,"mirror":4,"random":5};
 const GROUP_PATTERN = {"sequence":0,"mirror":1,"evensOdds":2,"pairs":3,"random":4,"patterns":5};
 const HUE_LAYOUT = {"gradient":0,"evensOdds":1,"pairs":2,"mirror":3,"random":4};
@@ -127,14 +128,14 @@ const WAVE_FALL = 64;
 const WAVE_SQUARE = 96;
 const LFO_PERIODS = [16,12,8,6,4,3,2,1.5,1,0.75,0.5,0.375,0.25];
 const ROUTES = 8;
-const FIRST_ROUTE_CONTROL = 80;
+const FIRST_ROUTE_CONTROL = 81;
 const ROUTE_FIELD = {"amount":0,"phase":1,"destination":2,"source":3,"cycle":4,"ratio":5,"wave":6,"pattern":7,"smooth":8,"hold":9,"polarity":10,"arp":11};
 const ROUTE_DEFAULTS = {"amount":64,"phase":0,"destination":0,"source":0,"cycle":0,"ratio":0,"wave":32,"pattern":0,"smooth":0,"hold":0,"polarity":0,"arp":0};
 const ROUTE_MAX_RATIO = 8;
 const ROUTE_PHASE_STEPS = 16;
 const PATCH_FORMAT = 8;
 const LAST_PATCH_SLOT = 108;
-const PATCH_CONTROLS = 176;
+const PATCH_CONTROLS = 177;
 const PATCH_NAME_LENGTH = 16;
 const PATCH_HEAD_LENGTH = 20;
 const PATCH_LAYER_BASE = 0;

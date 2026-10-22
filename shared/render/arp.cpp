@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "aurora_protocol.h"
-#include "reading.h"
+#include "cells.h"
 #include "render.h"
 #include "render_math.h"
 
@@ -11,11 +11,21 @@ namespace render {
 
 static const uint32_t SHUFFLE_SALT = 71;
 static const uint32_t DRAW_STRIDE = 256;
+static const int32_t MAX_NOTES_SCANNED = 256;
 
 Arp readArp(const float *dialed, const Modulation *modulation, uint8_t members) {
-  return { aurora_arp_mode(roundedControl(dialed[CONTROL_ARP_MODE])),
-           controlValue(CONTROL_ARP_SPREAD, routed(dialed, modulation, CONTROL_ARP_SPREAD)),
-           aurora_switch_is_on(roundedControl(dialed[CONTROL_ARP_DIRECTION])), members, 0 };
+  auto at = [&](uint8_t control) { return controlValue(control, routed(dialed, modulation, control)); };
+  Arp arp;
+  arp.mode = aurora_arp_mode(roundedControl(dialed[CONTROL_ARP_MODE]));
+  arp.reverse = aurora_switch_is_on(roundedControl(dialed[CONTROL_ARP_DIRECTION]));
+  arp.rateBeats = at(CONTROL_ARP_RATE);
+  arp.gateBeats = at(CONTROL_ARP_GATE);
+  arp.members = members;
+  arp.draw = 0;
+  for (uint8_t envelope = 0; envelope < AURORA_ENVELOPES; envelope++) {
+    readEnvelope(dialed, modulation, envelope, arp.envelopes[envelope]);
+  }
+  return arp;
 }
 
 static bool hasDirection(uint8_t mode) {
@@ -50,15 +60,12 @@ uint8_t passLength(const Arp &arp) {
 
 bool reversed(const Arp &arp) { return arp.reverse && hasDirection(arp.mode); }
 
-int32_t turnsPerPass(const Arp &arp) {
-  const long turns = lroundf(fabsf(arp.spread) * (float)passLength(arp));
-  return turns < 1 ? 1 : (int32_t)turns;
-}
-
 static int32_t wrapped(int32_t value, int32_t length) {
   const int32_t rest = value % length;
   return rest < 0 ? rest + length : rest;
 }
+
+static int32_t passOf(int32_t step, int32_t length) { return (step - wrapped(step, length)) / length; }
 
 static void shuffledPass(const Arp &arp, int32_t pass, uint8_t *order) {
   for (uint8_t i = 0; i < arp.members; i++) order[i] = i;
@@ -87,135 +94,128 @@ static uint8_t groupAtStep(const Arp &arp, uint8_t step) {
   return reversed(arp) ? (uint8_t)(arpGroupCount(arp) - 1 - group) : group;
 }
 
-static bool stepLights(const Arp &arp, const uint8_t *order, uint8_t step, uint8_t member) {
-  return arp.mode == ARP_MODE_RANDOM ? order[step] == member
-                                     : groupAtStep(arp, step) == arpGroupOf(arp, member);
+static bool placeLights(const Arp &arp, const uint8_t *order, uint8_t place, uint8_t member) {
+  return arp.mode == ARP_MODE_RANDOM ? order[place] == member
+                                     : groupAtStep(arp, place) == arpGroupOf(arp, member);
 }
 
-static bool turnLights(const Arp &arp, int32_t turn, uint8_t member) {
-  const uint8_t steps = passLength(arp);
-  const int32_t turns = turnsPerPass(arp);
-  const int32_t place = wrapped(turn, turns);
+static bool stepLights(const ArpRoute &route, const Arp &arp, int32_t step, uint8_t member) {
+  if (route.arp == ARP_UNISON) return true;
+  const int32_t length = passLength(arp);
   uint8_t order[MAX_ARP_MEMBERS];
-  if (arp.mode == ARP_MODE_RANDOM) randomPass(arp, (turn - place) / turns, order);
-  for (uint8_t step = 0; step < steps; step++) {
-    if ((int32_t)step * turns / steps != place) continue;
-    if (stepLights(arp, order, step, member)) return true;
+  if (arp.mode == ARP_MODE_RANDOM) randomPass(arp, passOf(step, length), order);
+  return placeLights(arp, order, (uint8_t)wrapped(step, length), member);
+}
+
+static bool once(const Arp &arp) { return arp.rateBeats <= 0.0f; }
+
+static float noteLife(const ArpRoute &route, const Arp &arp) {
+  if (!aurora_source_is_envelope(route.source)) return arp.gateBeats;
+  return arp.gateBeats + arp.envelopes[route.source - ROUTE_SOURCE_ENVELOPE_1].release;
+}
+
+static float noteLevel(const ArpRoute &route, const Arp &arp, float age) {
+  if (aurora_source_is_envelope(route.source)) {
+    const Envelope &envelope = arp.envelopes[route.source - ROUTE_SOURCE_ENVELOPE_1];
+    return envelopeLevelAt(envelope, arp.gateBeats, CELL_END_GONE, arp.rateBeats, age);
   }
-  return false;
+  if (age >= arp.gateBeats) return 0.0f;
+  return lfoWave(age / arp.gateBeats - waveRise(route.wave.shape), route.wave);
 }
 
-static bool lastTurn(const Arp &arp, float turns, uint8_t member, Pulse &out) {
-  const int32_t turn = (int32_t)floorf(turns);
-  const int32_t reach = 2 * (int32_t)passLength(arp);
-  for (int32_t back = 0; back < reach; back++) {
-    if (!turnLights(arp, turn - back, member)) continue;
-    out = { (float)(turn - back), 1.0f, (uint32_t)(turn - back) };
-    return true;
-  }
-  return false;
-}
+struct Timeline {
+  float now;
+  int32_t latest;
+};
 
-static bool lastRipple(const Arp &arp, float turns, uint8_t member, Pulse &out) {
-  const uint8_t steps = passLength(arp);
-  const float apart = fabsf(arp.spread);
-  const int32_t pass = (int32_t)floorf(turns / (float)steps);
-  bool found = false;
-  for (int32_t which = pass; which >= pass - 1; which--) {
-    uint8_t order[MAX_ARP_MEMBERS];
-    if (arp.mode == ARP_MODE_RANDOM) randomPass(arp, which, order);
-    for (uint8_t step = 0; step < steps; step++) {
-      if (!stepLights(arp, order, step, member)) continue;
-      const float start = (float)(which * steps) + (float)step * apart;
-      if (start > turns || (found && start <= out.start)) continue;
-      out = { start, (float)steps, (uint32_t)(which * steps + step) };
-      found = true;
-    }
-  }
-  return found;
-}
-
-uint8_t livePulses(const Arp &arp, bool ripple, float turns, uint8_t member, Pulse *out) {
-  if (!ripple) {
-    Pulse pulse;
-    if (!lastTurn(arp, turns, member, pulse) || turns - pulse.start >= 1.0f) return 0;
-    out[0] = pulse;
-    return 1;
-  }
-  const uint8_t steps = passLength(arp);
-  const float apart = fabsf(arp.spread);
-  const int32_t pass = (int32_t)floorf(turns / (float)steps);
-  uint8_t count = 0;
-  for (int32_t which = pass; which >= pass - 1; which--) {
-    uint8_t order[MAX_ARP_MEMBERS];
-    if (arp.mode == ARP_MODE_RANDOM) randomPass(arp, which, order);
-    for (uint8_t step = 0; step < steps && count < LIVE_PULSES; step++) {
-      if (!stepLights(arp, order, step, member)) continue;
-      const float start = (float)(which * steps) + (float)step * apart;
-      if (start > turns || turns - start >= (float)steps) continue;
-      out[count++] = { start, (float)steps, (uint32_t)(which * steps + step) };
-    }
-  }
-  return count;
-}
-
-bool lastPulse(const Arp &arp, bool ripple, float turns, uint8_t member, Pulse &out) {
-  return ripple ? lastRipple(arp, turns, member, out) : lastTurn(arp, turns, member, out);
-}
-
-bool readArpRoute(const float *dialed, uint8_t route, ArpRoute &out) {
-  if (!routeArpeggiates(dialed, route)) return false;
-  out.arp = aurora_route_arp(roundedControl(dialed[routeControl(route, ROUTE_ARP)]));
-  out.target = routeTarget(dialed, route);
-  if (aurora_route_source(roundedControl(dialed[routeControl(route, ROUTE_SOURCE)])) != ROUTE_SOURCE_LFO) return false;
-  out.amount = signedOf(dialed[routeControl(route, ROUTE_AMOUNT)]);
-  if (fabsf(out.amount) < 0.001f) return false;
-  out.wave = waveOf(dialed, route);
-  out.timing = routeTiming(dialed, route);
-  return true;
-}
-
-Arp drawnFor(const Arp &arp, uint8_t route) {
+static Arp drawnFor(const Arp &arp, uint8_t route) {
   Arp drawn = arp;
   drawn.draw = routeDraw(route);
   return drawn;
 }
 
-float arpLevel(const ArpRoute &route, const Arp &arp, float turns, uint8_t member) {
-  Pulse pulses[LIVE_PULSES];
-  const uint8_t count =
-      livePulses(drawnFor(arp, route.timing.route), route.arp == ARP_RIPPLE, turns, member, pulses);
+static Timeline timelineOf(const ArpRoute &route, const Arp &arp, float beatsAgo) {
+  const PlayerClock clock = routeClock(route.route);
+  if (once(arp)) return { clock.beats - clock.start - beatsAgo, 0 };
+  const float now = clock.beats - beatsAgo;
+  return { now, (int32_t)floorf(now / arp.rateBeats) };
+}
+
+static float ageOf(const Arp &arp, const Timeline &timeline, int32_t step) {
+  return once(arp) ? timeline.now : timeline.now - (float)step * arp.rateBeats;
+}
+
+static int32_t earliestStep(const Arp &arp, const Timeline &timeline, int32_t scanned) {
+  return once(arp) ? 0 : timeline.latest - scanned + 1;
+}
+
+bool readArpRoute(const float *dialed, uint8_t route, ArpRoute &out) {
+  if (!routeArpeggiates(dialed, route)) return false;
+  out.route = route;
+  out.arp = aurora_route_arp(roundedControl(dialed[routeControl(route, ROUTE_ARP)]));
+  out.target = routeTarget(dialed, route);
+  out.source = aurora_route_source(roundedControl(dialed[routeControl(route, ROUTE_SOURCE)]));
+  if (out.source != ROUTE_SOURCE_LFO && !aurora_source_is_envelope(out.source)) return false;
+  out.amount = signedOf(dialed[routeControl(route, ROUTE_AMOUNT)]);
+  if (fabsf(out.amount) < 0.001f) return false;
+  out.wave = waveOf(dialed, route);
+  return true;
+}
+
+bool lastNote(const ArpRoute &route, const Arp &arp, float beatsAgo, uint8_t member, Note &out) {
+  const Arp drawn = drawnFor(arp, route.route);
+  const Timeline timeline = timelineOf(route, drawn, beatsAgo);
+  const int32_t reach = once(drawn) ? 1 : 2 * (int32_t)passLength(drawn);
+  for (int32_t step = timeline.latest; step >= earliestStep(drawn, timeline, reach); step--) {
+    const float age = ageOf(drawn, timeline, step);
+    if (age < 0.0f || !stepLights(route, drawn, step, member)) continue;
+    out = { step, age };
+    return true;
+  }
+  return false;
+}
+
+float arpLevel(const ArpRoute &route, const Arp &arp, float beatsAgo, uint8_t member) {
+  const Arp drawn = drawnFor(arp, route.route);
+  const Timeline timeline = timelineOf(route, drawn, beatsAgo);
+  const float life = noteLife(route, drawn);
   float level = 0.0f;
-  for (uint8_t i = 0; i < count; i++) {
-    const float into = (turns - pulses[i].start) / pulses[i].length;
-    level = fmaxf(level, lfoWave(into - waveRise(route.wave.shape), route.wave));
+  for (int32_t step = timeline.latest; step >= earliestStep(drawn, timeline, MAX_NOTES_SCANNED); step--) {
+    const float age = ageOf(drawn, timeline, step);
+    if (age >= life) break;
+    if (age < 0.0f || !stepLights(route, drawn, step, member)) continue;
+    level = fmaxf(level, noteLevel(route, drawn, age));
   }
   return level;
 }
 
-static void mark(ArpPass &out, float start, uint8_t par) {
+static void mark(ArpPass &out, float start, uint8_t member) {
   if (out.count >= PASS_MARKS) return;
   out.starts[out.count] = start;
-  out.pars[out.count] = par;
+  out.pars[out.count] = member;
   out.count++;
 }
 
-void passAt(const Arp &arp, bool ripple, float turns, ArpPass &out) {
-  const uint8_t steps = passLength(arp);
-  const int32_t length = ripple ? steps : turnsPerPass(arp);
-  const int32_t pass = (int32_t)floorf(turns / (float)length);
-  out.turns = (float)length;
-  out.at = turns - (float)(pass * length);
-  out.length = ripple ? (float)steps : 1.0f;
+void passAt(const ArpRoute &route, const Arp &arp, ArpPass &out) {
+  const Arp drawn = drawnFor(arp, route.route);
+  const Timeline timeline = timelineOf(route, drawn, 0.0f);
+  out.length = drawn.gateBeats;
   out.count = 0;
-
-  uint8_t order[MAX_ARP_MEMBERS];
-  if (arp.mode == ARP_MODE_RANDOM) randomPass(arp, pass, order);
-  for (uint8_t step = 0; step < steps; step++) {
-    const float start = ripple ? (float)step * fabsf(arp.spread)
-                               : (float)((int32_t)step * length / steps);
-    for (uint8_t member = 0; member < arp.members; member++) {
-      if (stepLights(arp, order, step, member)) mark(out, start, member);
+  if (once(drawn)) {
+    out.beats = drawn.gateBeats;
+    out.at = fminf(fmaxf(timeline.now, 0.0f), out.beats);
+    for (uint8_t member = 0; member < drawn.members; member++) {
+      if (stepLights(route, drawn, 0, member)) mark(out, 0.0f, member);
+    }
+    return;
+  }
+  const int32_t length = route.arp == ARP_UNISON ? 1 : passLength(drawn);
+  const int32_t first = passOf(timeline.latest, length) * length;
+  out.beats = (float)length * drawn.rateBeats;
+  out.at = timeline.now - (float)first * drawn.rateBeats;
+  for (int32_t place = 0; place < length; place++) {
+    for (uint8_t member = 0; member < drawn.members; member++) {
+      if (stepLights(route, drawn, first + place, member)) mark(out, (float)place * drawn.rateBeats, member);
     }
   }
 }

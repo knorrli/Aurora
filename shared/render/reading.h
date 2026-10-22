@@ -94,6 +94,8 @@ float signedOf(float value);
 
 float controlValue(uint8_t control, float value);
 
+void readEnvelope(const float *dialed, const Modulation *modulation, uint8_t envelope, Envelope &out);
+
 void readControls(const float *dialed, const Modulation *modulation, Reading &out);
 
 void hurry(Reading &reading, float speed);

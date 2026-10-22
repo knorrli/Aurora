@@ -183,6 +183,11 @@ const READOUTS = {
     return chord > 1 ? pixels(spread * Preview.PIXELS / chord) + ' apart' : percent(spread);
   },
   cellGate: value => PERIOD_NAMES[real('cellGate', value)],
+  arpRate: value => {
+    const beats = real('arpRate', value);
+    return beats === 0 ? 'once' : 'every ' + PERIOD_NAMES[beats];
+  },
+  arpGate: value => PERIOD_NAMES[real('arpGate', value)],
   cellWidth: value => pixels(real('cellWidth', value)),
   cellEdge: value => pixels(real('cellEdge', value)) + ' glow',
   cellTail: value => beatsOrNone(real('cellTail', value), 'none'),
@@ -279,10 +284,6 @@ const READOUTS = {
   coreDark: value => percent(real('coreDark', value)),
 
   parHueOffset: value => '+' + degrees(real('parHueOffset', value)),
-  arpSpread: (value, live) => {
-    const mode = (live || DEFAULT).arpMode;
-    return `${Math.round(Preview.arpPassLength(mode) / Preview.arpTurnsPerPass(mode, value) * 100) / 100} a cycle`;
-  },
   parHueRange: value => {
     const reach = Math.round(real('parHueRange', value));
     return reach === 0 ? 'one hue' : `±${degrees(Math.abs(reach))} ${reach < 0 ? 'high' : 'low'} first`;
@@ -338,14 +339,22 @@ const inertWhileStill = { inertWhen: nothingTravels };
 const bendIsFlat = live => Math.abs(real('cellBend', live.cellBend)) < 0.005 && !routedTo(live, ['cellBend']);
 const endsAs = (live, end) => Protocol.threeWayPosition(live.cellEnd) === Protocol.CELL_END[end];
 const curveIsFlat = live => Math.abs(real('cellCurve', live.cellCurve)) < 0.005 && !routedTo(live, ['cellCurve']);
-const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route =>
-  Protocol.routeSource(live[route.source]) === Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`]);
+const playsEnvelope = (live, route, envelope) =>
+  Protocol.routeSource(live[route.source]) === Protocol.ROUTE_SOURCE[`envelope${envelope + 1}`];
+const envelopeUnused = (live, envelope) => !soundingRoutes(live).some(route => playsEnvelope(live, route, envelope));
+const arpPlays = (live, envelope) => soundingRoutes(live)
+  .some(route => playsEnvelope(live, route, envelope) && arpeggiates(live, route));
+const cellsPlay = (live, envelope) => soundingRoutes(live)
+  .some(route => playsEnvelope(live, route, envelope) && !arpeggiates(live, route));
+const movesInert = (live, envelope) => !(cellsPlay(live, envelope) && real('cellRate', live.cellRate) > 0)
+  && !(arpPlays(live, envelope) && real('arpRate', live.arpRate) > 0);
+const releaseInert = (live, envelope) => !endsAs(live, 'gone') && !arpPlays(live, envelope);
 
 const ENVELOPE_CARDS = ENVELOPES.map((stages, envelope) => ({
   name: `Envelope ${envelope + 1}`, tone: 'lfo', envelope,
   names: Object.entries(stages).map(([field, name]) => control(name, ENVELOPE_LABELS[field], field === 'moves'
-    ? { kind: 'two', options: [[OFF, 'glide'], [ON, 'step']], inertWhen: live => real('cellRate', live.cellRate) === 0 }
-    : { inertWhen: live => field === 'release' && !endsAs(live, 'gone') })),
+    ? { kind: 'two', options: [[OFF, 'glide'], [ON, 'step']], inertWhen: live => movesInert(live, envelope) }
+    : { inertWhen: live => field === 'release' && releaseInert(live, envelope) })),
   unused: live => envelopeUnused(live, envelope),
 }));
 
@@ -395,17 +404,23 @@ const CELLS = {
 };
 
 const fromLfo = (live, route) => Protocol.routeSource(live[route.source]) === Protocol.ROUTE_SOURCE.lfo;
+const fromEnvelope = (live, route) => [Protocol.ROUTE_SOURCE.envelope1, Protocol.ROUTE_SOURCE.envelope2,
+  Protocol.ROUTE_SOURCE.envelope3].includes(Protocol.routeSource(live[route.source]));
+const arpeggiates = (live, route) => Protocol.routeArp(live[route.arp]) !== Protocol.ARP.unison
+  && Preview.arpCapable(live[route.destination]);
+const clockedByLfo = (live, route) => fromLfo(live, route) && !arpeggiates(live, route);
 const holdable = (live, route) => fromLfo(live, route) && Preview.cellControl(live[route.destination]);
 const fromGroup = (live, route) => [Protocol.ROUTE_SOURCE.strip, Protocol.ROUTE_SOURCE.note, Protocol.ROUTE_SOURCE.birth]
   .includes(Protocol.routeSource(live[route.source]));
 
 for (const route of ROUTES) {
   const offLfo = { inertWhen: live => !fromLfo(live, route) };
+  const offLfoClock = { inertWhen: live => !clockedByLfo(live, route) };
   control(route.amount, 'Amount');
-  control(route.ratio, 'Ratio', offLfo);
+  control(route.ratio, 'Ratio', offLfoClock);
   control(route.wave, 'Wave', offLfo);
   control(route.smooth, 'Smooth', offLfo);
-  control(route.phase, 'Phase', offLfo);
+  control(route.phase, 'Phase', offLfoClock);
   control(route.hold, 'Hold',
     { kind: 'two', options: [[OFF, 'live'], [ON, 'held']], inertWhen: live => !holdable(live, route) });
 }
@@ -417,9 +432,6 @@ const ARP_MODE_NAMES = {
   pairs: 'pairs', mirror: 'mirror', random: 'random',
 };
 
-const arpeggiates = (live, route) => Protocol.routeArp(live[route.arp]) !== Protocol.ARP.unison
-  && Preview.arpCapable(live[route.destination]);
-
 const LFO = {
   name: 'LFO', tone: 'lfo',
   source: [control('lfoRate', 'Rate')],
@@ -430,7 +442,8 @@ const LFO = {
         options: Object.entries(Protocol.ARP_MODE)
           .map(([key, mode]) => [Protocol.arpModeValue(mode), ARP_MODE_NAMES[key]]) }),
     control('arpDirection', 'Direction', { kind: 'two', options: [[OFF, 'forward'], [ON, 'reverse']] }),
-    control('arpSpread', 'Spread'),
+    control('arpRate', 'Rate'),
+    control('arpGate', 'Gate'),
   ],
 };
 
@@ -646,6 +659,6 @@ export {
   clampToSevenBits,
   LFO_PERIOD_NAMES, periodStep, periodValue, TRANSITION_NAMES, transitionStep, transitionValue, TEMPO_DIVISIONS,
   CELLS, ENVELOPES, ENVELOPE_CARDS, envelopeStages, LFO, ROUTES_CARD, ENGINES, OUTPUTS, ROUTES, PLACES, TONES, cardNames,
-  fromLfo, fromGroup, arpeggiates, holdable, sounding, aimsAt, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
+  fromLfo, fromEnvelope, clockedByLfo, fromGroup, arpeggiates, holdable, sounding, aimsAt, routable, routableDestination, targetName, destinationOf, aimsRoute, routeOf,
   arpCapable, bipolarCapable, perSpot, isCircular, swings, pointsFor,
 };

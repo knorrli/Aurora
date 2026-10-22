@@ -15,9 +15,10 @@
 Seen only in the preview so far. One look each, driven from the editor.
 
 - Palettes: dark ends of Cyberpunk, Space, Nature and TV; Art's pastel at S full; mirrored Sky 35; the PARs' hue offset inside a three-color palette.
-- PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on a ripple, ripple in random mode, a steps strobe over each of those, random per pulse on steps. Do the PARs want different speeds, for an oscillation that looks random?
+- PARs over cyan strips flowing green to blue: all swinging together, a still gradient, a gradient moving on an arp whose Gate is longer than its Rate, the same in random mode, a steps strobe over each of those, random per pulse on steps. Do the PARs want different speeds, for an oscillation that looks random?
 - The five strobe looks: strips in unison with the PARs chasing left to right; strips chasing with the PARs in unison; one side strobing while the other sits full on or off; strips and PARs on different waves; the same at different rates.
 - Arp modes on steps, one each: sequence, bounce, evens / odds, pairs, mirror, random; reverse on the ones with a direction.
+- A oneshot that flashes one random strip white and fades it: Envelope 1 on Brightness, Arp steps, Mode random, Rate once.
 - Try to defeat the blackout: transport stopped, mic trigger firing, PARs at full. Then any key brings the wall back.
 - Region inside out across the strips at count 1, then the dark case with V at the top.
 - Layer faders flip settings halfway: does halfway read right, or should it be earlier or at the top?
@@ -86,7 +87,6 @@ Seen only in the preview so far. One look each, driven from the editor.
   - Routes on Delay read at the moment the birth would have landed undelayed; Note and Birth routes aimed at controls that are not per cell do nothing.
   - The travel's ends include Edge's glow, and follow the cell's width as it changes, so a growing cell at an end stays flush.
   - Born once with Inside, a cell leaving the travel jumps to the other end; only Outside draws it across.
-- Build the arp's Rate and Gate, and envelopes as arp sources (`docs/design.md` § Arpeggiator).
 - The brightness curve overlay draws Vertical and Horizontal; what do Cell and Cell position show?
 - Do envelopes need curves or steps inside a stage? A raindrop speeds up as it falls.
 - A random source for routes; held, it gives each cell its own value.

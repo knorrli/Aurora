@@ -34,7 +34,7 @@
 - Ends sets what Position's extremes mean, for the whole patch. Inside: at either extreme the cell's edge sits flush with the strip's end, the whole cell in view. Outside: at either extreme the cell sits just past the end, out of view. That span is the cell's travel; Spread and routes on Position are measured along it.
 - A route plays live or is held per cell. Live moves every living cell at once. Held is read once when a cell is born and kept for its life: a held route on Position spreads births, a held route on brightness is an accent.
 - A route's source is the LFO, the pad, an envelope, or a group: Strip, Note or Birth. A group source gives each member a number from 0 to 1 by one of the PAR arp's patterns, stretched to fit any number of members: Strip across the strips, Note across a chord's cells, Birth across successive births. Sequence is a slope, Mirror sets the center apart from the outsides, Evens / odds alternates, Pairs steps by two, Random shuffles: on a oneshot anew on each fire, on Note anew on each birth. A negative amount reverses it.
-- On Birth, Sequence, Mirror and Pairs stretch over the births of one LFO cycle and start over with the next, like the arp's passes; a cycle with one birth gives it the middle. Evens / odds and Random count births straight through.
+- On Birth, Sequence, Mirror and Pairs stretch over the births of one LFO cycle and start over with the next; a cycle with one birth gives it the middle. Evens / odds and Random count births straight through.
 - A route can aim at another route's amount or phase, setting it per strip, per cell or per birth. A route aimed at a route cannot itself be aimed at.
 - There is no Fan. Its Position is a Strip route on Position; its LFO offset is a Strip route on another route's phase.
 - The band's MIDI and audio never start cells; live triggers stay oneshots.
@@ -53,16 +53,6 @@
 - Field's Direction has the same four options. Cell position gives each cell one even color, read at its center; its tail takes the cell's color.
 - Dark in Field, Flow and Core stays, as shading toward black with the color pattern.
 - Shape brightness and color Dark multiply.
-
-## Arpeggiator
-
-- The arp is a player, like the cells' births: each step starts a note. Its settings are one set per patch, shared by every arp route on PARs and strips: Mode, Direction, Rate and Gate. There is no Spread.
-- Rate is how often a step lands, from the LFO's lengths, on the beat grid. Its first choice is once: one step, which on a oneshot is the fire. A route's Ratio and Phase do not move the arp.
-- Gate is how long each note is held, from the LFO's lengths.
-- An arp route's members are the PARs or the strips, whichever its target belongs to. A route's Arp is Unison or Steps: Steps plays one member per step in Mode's order, Unison plays every member on each step. There is no Ripple; a Gate longer than the Rate overlaps the notes.
-- With the LFO as the source, each note plays the route's wave once over its gate.
-- With an envelope as the source, each note runs that envelope on its member: delay, attack, hold, decay, sustain until the gate ends, then release.
-- Notes that overlap on one member all run to their end; the member shows the highest.
 
 ## Oneshots
 

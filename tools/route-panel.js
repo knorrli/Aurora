@@ -310,7 +310,7 @@ function paintDestinationRow(row, shown, chosen) {
 
 function paintArpRow(row, route, live) {
   const target = targetOf(route, live);
-  const shown = !!target && Patch.arpCapable(target) && sourceOf(route, live) === Protocol.ROUTE_SOURCE.lfo;
+  const shown = !!target && Patch.arpCapable(target) && (Patch.fromLfo(live, route) || Patch.fromEnvelope(live, route));
   paintDestinationRow(row, shown, Protocol.routeArp(live[route.arp]));
 }
 
@@ -320,7 +320,7 @@ function paintPatternRow(row, route, live) {
 
 function paintCycleRow(row, route, live) {
   paintDestinationRow(row, true, Protocol.routeOnce(live[route.cycle]));
-  row.root.classList.toggle('inert', !Patch.fromLfo(live, route));
+  row.root.classList.toggle('inert', !Patch.clockedByLfo(live, route));
 }
 
 function paintPolarityRow(row, route, live) {

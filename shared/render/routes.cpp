@@ -15,6 +15,15 @@ static OneshotClock oneshotClock = { 0.0f, 1.0f, 0 };
 
 void setOneshotClock(const OneshotClock &clock) { oneshotClock = clock; }
 
+static PlayerClock playerClock = { 0.0f, 0.0f };
+
+void setPlayerClock(const PlayerClock &clock) { playerClock = clock; }
+
+PlayerClock routeClock(uint8_t route) {
+  if (oneshotRoute(route)) return { oneshotClock.progress * oneshotClock.beats, 0.0f };
+  return playerClock;
+}
+
 static uint8_t fieldOf(const float *dialed, uint8_t route, uint8_t field) {
   return roundedControl(dialed[routeControl(route, field)]);
 }
@@ -109,6 +118,7 @@ static bool refused(uint8_t control) {
     case CONTROL_PAR_HUE_LAYOUT:
     case CONTROL_ARP_MODE:
     case CONTROL_ARP_DIRECTION:
+    case CONTROL_ARP_RATE:
       return true;
     default:
       return false;
@@ -120,7 +130,7 @@ bool routeRefused(uint8_t control) { return control == 0 || control >= AURORA_FI
 static bool stripArpRefused(uint8_t control) {
   switch (control) {
     case CONTROL_PAR_HUE_RANGE:
-    case CONTROL_ARP_SPREAD:
+    case CONTROL_ARP_GATE:
     case CONTROL_CELL_BEND:
     case CONTROL_CELL_BEND_AT:
     case CONTROL_CELL_DELAY:
@@ -463,14 +473,15 @@ static float amountOf(const Routes &routes, uint8_t route, const RouteContext &c
   return amount > 1.0f ? 1.0f : (amount < -1.0f ? -1.0f : amount);
 }
 
-static void addStripArpRoutes(const float *dialed, float beatsPerCycle, float lfo, uint8_t strip, float beatsAgo,
-                              Modulation &out) {
-  const Arp arp = readArp(dialed, &out, STRIPS);
+static void addStripArpRoutes(const float *dialed, uint8_t strip, float beatsAgo, Modulation &out) {
+  Arp arp;
+  bool read = false;
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     ArpRoute arpRoute;
     if (!readArpRoute(dialed, route, arpRoute) || !stripArpControl(arpRoute.target)) continue;
-    const float turns = turnsOn(arpRoute.timing, clockBefore(route, lfo, beatsPerCycle, beatsAgo), 0.0f);
-    out.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, turns, strip);
+    if (!read) arp = readArp(dialed, &out, STRIPS);
+    read = true;
+    out.amount[arpRoute.target] += arpRoute.amount * arpLevel(arpRoute, arp, beatsAgo, strip);
   }
 }
 
@@ -524,7 +535,7 @@ void gatherRoutesBefore(const float *dialed, float beatsPerCycle, float lfo, int
     out.swing[destination] += reach * (level - integral.mean);
     out.shift[destination] += reach * totalAt(integral, phase) * cycleBeats / (float)reading.timing.ratio;
   }
-  if (strip >= 0) addStripArpRoutes(dialed, beatsPerCycle, lfo, (uint8_t)strip, beatsAgo, out);
+  if (strip >= 0) addStripArpRoutes(dialed, (uint8_t)strip, beatsAgo, out);
 }
 
 void gatherRoutes(const float *dialed, float beatsPerCycle, float lfo, int8_t strip,
@@ -552,7 +563,7 @@ uint8_t envelopesUsed(const float *dialed) {
   uint8_t used = 0;
   for (uint8_t route = 0; route < RENDER_ROUTES; route++) {
     const uint8_t source = sourceOf(dialed, route);
-    if (!aurora_source_is_envelope(source)) continue;
+    if (!aurora_source_is_envelope(source) || routeArpeggiates(dialed, route)) continue;
     if (!roundedControl(dialed[routeControl(route, ROUTE_DESTINATION)])) continue;
     const float amount = signedOf(dialed[routeControl(route, ROUTE_AMOUNT)]);
     if (amount > -0.001f && amount < 0.001f) continue;

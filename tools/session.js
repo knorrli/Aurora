@@ -283,7 +283,9 @@ function setRoutePattern(route, pattern) {
 }
 
 function setRouteSource(route, source) {
-  if (source !== Protocol.ROUTE_SOURCE.lfo) write(route.arp, Protocol.routeArpValue(Protocol.ARP.unison));
+  const playsNotes = [Protocol.ROUTE_SOURCE.lfo, Protocol.ROUTE_SOURCE.envelope1, Protocol.ROUTE_SOURCE.envelope2,
+    Protocol.ROUTE_SOURCE.envelope3].includes(source);
+  if (!playsNotes) write(route.arp, Protocol.routeArpValue(Protocol.ARP.unison));
   setValue(route.source, Protocol.routeSourceValue(source));
 }
 

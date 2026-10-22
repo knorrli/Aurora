@@ -42,85 +42,86 @@ enum AuroraControl : uint8_t {
     CONTROL_LFO_RATE              = 9, // [patch]
     CONTROL_ARP_MODE              = 10, // [switch]
     CONTROL_ARP_DIRECTION         = 11, // [switch]
-    CONTROL_ARP_SPREAD            = 12, // [patch]
+    CONTROL_ARP_RATE              = 12, // [switch]
+    CONTROL_ARP_GATE              = 13, // [patch]
 
-    CONTROL_CELL_ENDS             = 13, // [switch]
-    CONTROL_CELL_CHORD            = 14, // [patch]
-    CONTROL_CELL_SPREAD           = 15, // [patch]
-    CONTROL_CELL_POSITION         = 16, // [patch]
-    CONTROL_CELL_BEND             = 17, // [patch]
-    CONTROL_CELL_BEND_AT          = 18, // [patch]
+    CONTROL_CELL_ENDS             = 14, // [switch]
+    CONTROL_CELL_CHORD            = 15, // [patch]
+    CONTROL_CELL_SPREAD           = 16, // [patch]
+    CONTROL_CELL_POSITION         = 17, // [patch]
+    CONTROL_CELL_BEND             = 18, // [patch]
+    CONTROL_CELL_BEND_AT          = 19, // [patch]
 
-    CONTROL_CELL_WIDTH            = 19, // [patch]
-    CONTROL_CELL_EDGE             = 20, // [patch]
-    CONTROL_CELL_TAIL             = 21, // [patch]
+    CONTROL_CELL_WIDTH            = 20, // [patch]
+    CONTROL_CELL_EDGE             = 21, // [patch]
+    CONTROL_CELL_TAIL             = 22, // [patch]
 
-    CONTROL_CELL_END              = 22, // [switch]
-    CONTROL_CELL_RATE             = 23, // [switch]
-    CONTROL_CELL_DELAY            = 24, // [patch]
-    CONTROL_CELL_GATE             = 25, // [patch]
+    CONTROL_CELL_END              = 23, // [switch]
+    CONTROL_CELL_RATE             = 24, // [switch]
+    CONTROL_CELL_DELAY            = 25, // [patch]
+    CONTROL_CELL_GATE             = 26, // [patch]
 
-    CONTROL_CELL_DIRECTION        = 26, // [switch]
-    CONTROL_CELL_BRIGHTNESS       = 27, // [patch]
-    CONTROL_CELL_CURVE            = 28, // [patch]
-    CONTROL_CELL_CURVE_AT         = 29, // [patch]
+    CONTROL_CELL_DIRECTION        = 27, // [switch]
+    CONTROL_CELL_BRIGHTNESS       = 28, // [patch]
+    CONTROL_CELL_CURVE            = 29, // [patch]
+    CONTROL_CELL_CURVE_AT         = 30, // [patch]
 
-    CONTROL_SCATTER_COUNT         = 30, // [patch]
-    CONTROL_SCATTER_WIDTH         = 31, // [patch]
-    CONTROL_SCATTER_EDGE          = 32, // [patch]
-    CONTROL_SCATTER_RATE          = 33, // [patch][rate]
-    CONTROL_SCATTER_SPEED         = 34, // [patch]
-    CONTROL_SCATTER_RANDOMIZE     = 35, // [patch]
-    CONTROL_SCATTER_POSITION      = 36, // [patch]
-    CONTROL_SCATTER_MIX           = 37, // [patch]
-    CONTROL_SCATTER_HUE           = 38, // [patch]
-    CONTROL_SCATTER_SATURATION    = 39, // [patch]
-    CONTROL_SCATTER_VALUE         = 40, // [patch]
+    CONTROL_SCATTER_COUNT         = 31, // [patch]
+    CONTROL_SCATTER_WIDTH         = 32, // [patch]
+    CONTROL_SCATTER_EDGE          = 33, // [patch]
+    CONTROL_SCATTER_RATE          = 34, // [patch][rate]
+    CONTROL_SCATTER_SPEED         = 35, // [patch]
+    CONTROL_SCATTER_RANDOMIZE     = 36, // [patch]
+    CONTROL_SCATTER_POSITION      = 37, // [patch]
+    CONTROL_SCATTER_MIX           = 38, // [patch]
+    CONTROL_SCATTER_HUE           = 39, // [patch]
+    CONTROL_SCATTER_SATURATION    = 40, // [patch]
+    CONTROL_SCATTER_VALUE         = 41, // [patch]
 
-    CONTROL_FIELD_FORM            = 41, // [switch]
-    CONTROL_FIELD_DIRECTION       = 42, // [switch]
-    CONTROL_FIELD_COUNT           = 43, // [patch]
-    CONTROL_FIELD_WIDTH           = 44, // [patch]
-    CONTROL_FIELD_EDGE            = 45, // [patch]
-    CONTROL_FIELD_SPEED           = 46, // [patch][rate]
-    CONTROL_FIELD_POSITION        = 47, // [patch]
-    CONTROL_FIELD_HUE             = 48, // [patch]
-    CONTROL_FIELD_WHITE           = 49, // [patch]
-    CONTROL_FIELD_DARK            = 50, // [patch]
+    CONTROL_FIELD_FORM            = 42, // [switch]
+    CONTROL_FIELD_DIRECTION       = 43, // [switch]
+    CONTROL_FIELD_COUNT           = 44, // [patch]
+    CONTROL_FIELD_WIDTH           = 45, // [patch]
+    CONTROL_FIELD_EDGE            = 46, // [patch]
+    CONTROL_FIELD_SPEED           = 47, // [patch][rate]
+    CONTROL_FIELD_POSITION        = 48, // [patch]
+    CONTROL_FIELD_HUE             = 49, // [patch]
+    CONTROL_FIELD_WHITE           = 50, // [patch]
+    CONTROL_FIELD_DARK            = 51, // [patch]
 
-    CONTROL_FLOW_DENSITY          = 51, // [patch]
-    CONTROL_FLOW_RATE             = 52, // [patch][rate]
-    CONTROL_FLOW_HUE              = 53, // [patch]
-    CONTROL_FLOW_WHITE            = 54, // [patch]
-    CONTROL_FLOW_DARK             = 55, // [patch]
+    CONTROL_FLOW_DENSITY          = 52, // [patch]
+    CONTROL_FLOW_RATE             = 53, // [patch][rate]
+    CONTROL_FLOW_HUE              = 54, // [patch]
+    CONTROL_FLOW_WHITE            = 55, // [patch]
+    CONTROL_FLOW_DARK             = 56, // [patch]
 
-    CONTROL_CORE_HUE              = 56, // [patch]
-    CONTROL_CORE_WHITE            = 57, // [patch]
-    CONTROL_CORE_DARK             = 58, // [patch]
+    CONTROL_CORE_HUE              = 57, // [patch]
+    CONTROL_CORE_WHITE            = 58, // [patch]
+    CONTROL_CORE_DARK             = 59, // [patch]
 
-    CONTROL_ENVELOPE_1_MOVES      = 59, // [switch]
-    CONTROL_ENVELOPE_1_DELAY      = 60, // [patch]
-    CONTROL_ENVELOPE_1_ATTACK     = 61, // [patch]
-    CONTROL_ENVELOPE_1_HOLD       = 62, // [patch]
-    CONTROL_ENVELOPE_1_DECAY      = 63, // [patch]
-    CONTROL_ENVELOPE_1_SUSTAIN    = 64, // [patch]
-    CONTROL_ENVELOPE_1_RELEASE    = 65, // [patch]
+    CONTROL_ENVELOPE_1_MOVES      = 60, // [switch]
+    CONTROL_ENVELOPE_1_DELAY      = 61, // [patch]
+    CONTROL_ENVELOPE_1_ATTACK     = 62, // [patch]
+    CONTROL_ENVELOPE_1_HOLD       = 63, // [patch]
+    CONTROL_ENVELOPE_1_DECAY      = 64, // [patch]
+    CONTROL_ENVELOPE_1_SUSTAIN    = 65, // [patch]
+    CONTROL_ENVELOPE_1_RELEASE    = 66, // [patch]
 
-    CONTROL_ENVELOPE_2_MOVES      = 66, // [switch]
-    CONTROL_ENVELOPE_2_DELAY      = 67, // [patch]
-    CONTROL_ENVELOPE_2_ATTACK     = 68, // [patch]
-    CONTROL_ENVELOPE_2_HOLD       = 69, // [patch]
-    CONTROL_ENVELOPE_2_DECAY      = 70, // [patch]
-    CONTROL_ENVELOPE_2_SUSTAIN    = 71, // [patch]
-    CONTROL_ENVELOPE_2_RELEASE    = 72, // [patch]
+    CONTROL_ENVELOPE_2_MOVES      = 67, // [switch]
+    CONTROL_ENVELOPE_2_DELAY      = 68, // [patch]
+    CONTROL_ENVELOPE_2_ATTACK     = 69, // [patch]
+    CONTROL_ENVELOPE_2_HOLD       = 70, // [patch]
+    CONTROL_ENVELOPE_2_DECAY      = 71, // [patch]
+    CONTROL_ENVELOPE_2_SUSTAIN    = 72, // [patch]
+    CONTROL_ENVELOPE_2_RELEASE    = 73, // [patch]
 
-    CONTROL_ENVELOPE_3_MOVES      = 73, // [switch]
-    CONTROL_ENVELOPE_3_DELAY      = 74, // [patch]
-    CONTROL_ENVELOPE_3_ATTACK     = 75, // [patch]
-    CONTROL_ENVELOPE_3_HOLD       = 76, // [patch]
-    CONTROL_ENVELOPE_3_DECAY      = 77, // [patch]
-    CONTROL_ENVELOPE_3_SUSTAIN    = 78, // [patch]
-    CONTROL_ENVELOPE_3_RELEASE    = 79, // [patch]
+    CONTROL_ENVELOPE_3_MOVES      = 74, // [switch]
+    CONTROL_ENVELOPE_3_DELAY      = 75, // [patch]
+    CONTROL_ENVELOPE_3_ATTACK     = 76, // [patch]
+    CONTROL_ENVELOPE_3_HOLD       = 77, // [patch]
+    CONTROL_ENVELOPE_3_DECAY      = 78, // [patch]
+    CONTROL_ENVELOPE_3_SUSTAIN    = 79, // [patch]
+    CONTROL_ENVELOPE_3_RELEASE    = 80, // [patch]
 };
 
 struct AuroraControlDefault {
@@ -135,7 +136,7 @@ static const AuroraControlDefault AURORA_CONTROL_DEFAULTS[] = {
     { CONTROL_PAR_SATURATION,      127 },
     { CONTROL_PAR_VALUE,           127 },
     { CONTROL_PAR_HUE_RANGE,        64 },
-    { CONTROL_ARP_SPREAD,          127 },
+    { CONTROL_ARP_GATE,             64 },
     { CONTROL_LFO_RATE,             64 },
     { CONTROL_CELL_END,            127 },
     { CONTROL_CELL_WIDTH,           20 },
@@ -303,7 +304,6 @@ static inline bool aurora_source_is_envelope(uint8_t source) {
 enum AuroraArp : uint8_t {
     ARP_UNISON = 0,
     ARP_STEPS  = 1,
-    ARP_RIPPLE = 2,
 };
 
 static const uint8_t AURORA_PAR_ARP_CONTROLS[] = {
@@ -319,13 +319,10 @@ static inline bool aurora_par_arp_control(uint8_t control) {
     return false;
 }
 
-static inline uint8_t aurora_route_arp(uint8_t value) {
-    if (value < 43) return ARP_UNISON;
-    return value < 86 ? ARP_STEPS : ARP_RIPPLE;
-}
+static inline uint8_t aurora_route_arp(uint8_t value) { return value >= 64 ? ARP_STEPS : ARP_UNISON; }
 
 static const uint8_t AURORA_BIPOLAR_CONTROLS[] = {
-    CONTROL_HUE, CONTROL_PAR_HUE_OFFSET, CONTROL_PAR_HUE_RANGE, CONTROL_ARP_SPREAD,
+    CONTROL_HUE, CONTROL_PAR_HUE_OFFSET, CONTROL_PAR_HUE_RANGE,
     CONTROL_CELL_POSITION, CONTROL_CELL_BEND, CONTROL_CELL_BEND_AT, CONTROL_CELL_CURVE, CONTROL_CELL_CURVE_AT,
     CONTROL_FIELD_POSITION, CONTROL_FIELD_HUE, CONTROL_FLOW_HUE, CONTROL_CORE_HUE,
 };

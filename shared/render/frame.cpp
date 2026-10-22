@@ -178,6 +178,13 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   context.lfo = anchoredLfoPhase(motion, context.beats, 1.0f / context.wallReading.lfoBeats);
   out.lfo = context.lfo;
 
+  const float cellBeats = cellClock(motion, context.beats, speed);
+  if (wall.restarting) {
+    wall.cellsStart = cellBeats;
+    wall.restarting = false;
+  }
+  setPlayerClock({ cellBeats, wall.cellsStart });
+
   Modulation modulation;
   gatherRoutes(wallControls, context.wallReading.lfoBeats, context.lfo, -1, padReaching(context, -1),
                modulation);
@@ -193,11 +200,6 @@ void renderFrame(const float *controls, float quarterNotes, uint32_t millisecond
   }
   holdParPulses(milliseconds, wall, out);
 
-  const float cellBeats = cellClock(motion, context.beats, speed);
-  if (wall.restarting) {
-    wall.cellsStart = cellBeats;
-    wall.restarting = false;
-  }
   startCells(cellBeats, wall.cellsStart, context.lfo, context.wallReading.lfoBeats, context.wallReading.cells,
              context.cells);
   readBend(context.cells.bend, out.bend);

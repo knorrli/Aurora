@@ -12,9 +12,8 @@ void readPars(const float *dialed, const Modulation &modulation, float lfo, Fram
 
 void holdParPulses(uint32_t milliseconds, Wall &wall, Frame &out);
 
-bool firstArpPass(const float *dialed, const Modulation &modulation, float lfo, ArpPass &out);
+bool firstArpPass(const float *dialed, const Modulation &modulation, ArpPass &out);
 
-uint8_t routedAtPar(const float *dialed, const Modulation &modulation, float lfo, uint8_t control,
-                    uint8_t par);
+uint8_t routedAtPar(const float *dialed, const Modulation &modulation, uint8_t control, uint8_t par);
 
 }

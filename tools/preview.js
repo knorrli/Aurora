@@ -70,7 +70,7 @@ function connect(renderer) {
     const count = renderer.HEAPU8[at + 12];
     const parsAt = at + 4 * (4 + PASS_MARKS);
     return {
-      turns: floats[0], at: floats[1], length: floats[2],
+      beats: floats[0], at: floats[1], length: floats[2],
       marks: Array.from({ length: count }, (_, i) => ({ start: floats[4 + i], par: renderer.HEAPU8[parsAt + i] })),
     };
   }
@@ -182,8 +182,6 @@ function connect(renderer) {
     waveMean: (wave, smooth) => renderer._aurora_wave_mean(wave, smooth),
     convert: (control, value) => renderer._aurora_convert(control, value),
     groupLevel: (pattern, index, count, salt) => renderer._aurora_group_level(pattern, index, count, salt),
-    arpPassLength: mode => renderer._aurora_arp_pass_length(mode),
-    arpTurnsPerPass: (mode, spread) => renderer._aurora_arp_turns_per_pass(mode, spread),
     routeTurns: (ratio, cycle, phase, clock) => renderer._aurora_route_turns(ratio, cycle, phase, clock),
     bendSpeedRatio: bend => renderer._aurora_bend_speed_ratio(bend),
 
@@ -523,7 +521,7 @@ function drawArpPass(context, pass, pars, width, top, bandHeight) {
   const span = width * 0.92;
   const rowHeight = bandHeight * 0.5 / pars;
   const first = top + bandHeight * 0.1;
-  const xAt = turns => left + span * turns / pass.turns;
+  const xAt = beats => left + span * beats / pass.beats;
 
   context.save();
   context.fillStyle = 'rgba(10,11,14,0.25)';

@@ -202,13 +202,6 @@ EMSCRIPTEN_KEEPALIVE float aurora_group_level(int pattern, int index, int count,
   return render::groupLevel((uint8_t)pattern, (uint8_t)index, (uint8_t)count, (uint32_t)salt);
 }
 
-static render::Arp arpOf(int mode, int spread) {
-  return { aurora_arp_mode((uint8_t)mode), render::controlValue(CONTROL_ARP_SPREAD, (float)spread), false, render::PARS, 0 };
-}
-
-EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_length(int mode) { return render::passLength(arpOf(mode, 127)); }
-EMSCRIPTEN_KEEPALIVE int aurora_arp_turns_per_pass(int mode, int spread) { return render::turnsPerPass(arpOf(mode, spread)); }
-
 EMSCRIPTEN_KEEPALIVE float aurora_route_turns(int ratio, int cycle, int phase, float clock) {
   const render::RouteTiming timing = { 0, aurora_route_ratio((uint8_t)ratio), aurora_route_once((uint8_t)cycle),
                                        aurora_route_phase((uint8_t)phase) };
@@ -240,7 +233,7 @@ EMSCRIPTEN_KEEPALIVE int aurora_control_at_par(int control, int par) {
   render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CONTROL_LFO_RATE, controls[CONTROL_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, -1, padReaching(-1, levels), modulation);
-  return render::routedAtPar(controls, modulation, frame.lfo, (uint8_t)control, (uint8_t)par);
+  return render::routedAtPar(controls, modulation, (uint8_t)control, (uint8_t)par);
 }
 
 static float routeAtStrip(int route, int strip, bool shift) {
@@ -260,7 +253,7 @@ EMSCRIPTEN_KEEPALIVE render::ArpPass *aurora_arp_pass() {
   render::PadLevels levels;
   const float beatsPerCycle = render::controlValue(CONTROL_LFO_RATE, controls[CONTROL_LFO_RATE]);
   render::gatherRoutes(controls, beatsPerCycle, frame.lfo, -1, padReaching(-1, levels), modulation);
-  return render::firstArpPass(controls, modulation, frame.lfo, arpPass) ? &arpPass : nullptr;
+  return render::firstArpPass(controls, modulation, arpPass) ? &arpPass : nullptr;
 }
 
 EMSCRIPTEN_KEEPALIVE int aurora_arp_pass_marks() { return render::PASS_MARKS; }
